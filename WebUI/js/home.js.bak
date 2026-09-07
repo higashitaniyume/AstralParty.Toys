@@ -41,18 +41,65 @@
     },
 
     setupEventListeners() {
-      // 1. Right Button 1: 维基 -> Jump to BWiki page
-      $('btnMenuWiki')?.addEventListener('click', () => {
-        showPage('wiki');
-      });
-
-      // 2. Right Button 2: 工具 -> Jump to Replay Analysis Tool
-      $('btnMenuTools')?.addEventListener('click', () => {
+      // 1. Primary Action: 开始游戏 -> Jump to Tools / Replay Analysis Tool
+      $('btnStartGame')?.addEventListener('click', () => {
         showPage('tools');
       });
 
-      // 3. Left Portrait Click & Speech Bubble Click
-      $('heroPortraitWrapper')?.addEventListener('click', () => {
+      // 2. Role / Hero -> Compendium / Wiki
+      $('btnMenuRole')?.addEventListener('click', () => {
+        showPage('wiki');
+      });
+
+      // 3. Shop Button & Banner
+      $('btnMenuShop')?.addEventListener('click', () => this.showShopModal());
+      $('btnBannerShop')?.addEventListener('click', () => this.showShopModal());
+
+      // 4. Gacha / Lottery
+      $('btnMenuGacha')?.addEventListener('click', () => this.showGachaModal());
+
+      // 5. Activity Button & Left Event Badge
+      $('btnMenuActivity')?.addEventListener('click', () => this.showAnnouncementsModal());
+      $('btnEventTrial')?.addEventListener('click', () => this.showEventTrialModal());
+
+      // 6. ClearPass Top-Left & Banner
+      $('btnHomeClearPass')?.addEventListener('click', () => this.showClearPassModal());
+      $('btnBannerPass')?.addEventListener('click', () => this.showClearPassModal());
+
+      // 7. HUD View Controls
+      $('btnToggleHud')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const home = $('homeView');
+        if (home) {
+          const isHidden = home.classList.toggle('hud-hidden');
+          showToast(isHidden ? '已隐藏界面（点击右下角按钮恢复）' : '已恢复界面');
+        }
+      });
+
+      $('btnResetView')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const img = $('heroPortraitImg');
+        if (img) {
+          img.style.transform = '';
+          showToast('视角已重置');
+        }
+      });
+
+      // 8. Fashion / Dress Button -> Switch Character Portrait
+      $('btnSwitchHeroDress')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.pickRandomPortrait();
+        showToast(`已更换看板娘：${AppState.currentPortrait?.heroName || '角色'}`);
+      });
+
+      // 9. Portrait Click & Speech Bubble Click
+      $('heroPortraitWrapper')?.addEventListener('click', (e) => {
+        // If HUD is hidden, clicking screen restores HUD
+        const home = $('homeView');
+        if (home?.classList.contains('hud-hidden')) {
+          home.classList.remove('hud-hidden');
+          return;
+        }
         this.triggerInteraction(true);
       });
 
@@ -61,9 +108,31 @@
         this.triggerInteraction(false);
       });
 
-      // 4. Bottom Dock Bar: Settings button
-      $('dockBtnSettings')?.addEventListener('click', () => {
-        showPage('settings');
+      // 10. Bottom Dock Bar Navigation
+      $('dockBtnWiki')?.addEventListener('click', () => showPage('wiki'));
+      $('dockBtnSettings')?.addEventListener('click', () => showPage('settings'));
+      $('dockBtnNotice')?.addEventListener('click', () => this.showAnnouncementsModal());
+
+      $('dockBtnTask')?.addEventListener('click', () => {
+        showToast('任务系统：日常与周常对局任务同步已就绪');
+      });
+
+      $('dockBtnFriend')?.addEventListener('click', () => {
+        showToast('好友系统：当前为离线工具模式');
+      });
+
+      $('dockBtnBag')?.addEventListener('click', () => {
+        showToast('仓库系统：全部筹码与卡面已收录至对战工具');
+      });
+
+      $('dockBtnMail')?.addEventListener('click', () => {
+        showToast('邮件箱：暂无未读系统邮件');
+      });
+
+      $('dockBtnExit')?.addEventListener('click', () => {
+        if (confirm('是否退出吉星派对工具？')) {
+          post({ type: 'closeWindow' });
+        }
       });
     },
 
@@ -158,67 +227,41 @@
     },
 
     showClearPassModal() {
-      openModal('🎟️ 对局战绩与通行证 · CLEARPASS', `
+      openModal('🎟️ 小红帽通行证 CLEARPASS', `
         <div style="text-align:center;padding:10px">
-          <img src="https://assets.astral.local/UI/UT_BattlePass_202609_EntranceUnfold.webp" style="max-width:100%;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.5)">
-          <h3 style="margin:16px 0 6px;color:#f472b6">对局统计与活跃战绩</h3>
-          <p style="font-size:13.5px;color:#cbd5e1;line-height:1.6">
-            工具已开启本地 LocalLow 缓存自动同步。<br>
-            每一场对战的回合走势、伤害输出与筹码选择均已收录在回放分析库中。
-          </p>
-          <div style="margin-top:16px">
-            <button class="primary-btn" onclick="closeModal();showPage('tools');">进入对局分析</button>
-          </div>
+          <img src="https://assets.astral.local/UI/UT_BattlePass_202609_EntranceUnfold.webp" style="max-width:100%;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.15)">
+          <h3 style="margin:16px 0 6px;color:#e11d48">全新通行证赛季现已开启</h3>
+          <p style="font-size:13.5px;color:#64748b;line-height:1.6">完成每日活跃度对局与升级任务，即可解锁限定「小红帽」主题名片、专属骰子皮肤与丰富星币奖励！</p>
         </div>
       `);
     },
 
     showShopModal() {
-      openModal('🛍️ 本地素材与数据资产库', `
+      openModal('🛍️ 魔女商店 (09.03 - 10.14)', `
         <div style="text-align:center;padding:10px">
-          <img src="https://assets.astral.local/UI/UT_Banner_609030.webp" style="max-width:100%;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.5)">
-          <h3 style="margin:16px 0 6px;color:#38bdf8">122 张官方大立绘已离线就绪</h3>
-          <p style="font-size:13.5px;color:#cbd5e1;line-height:1.6">
-            所有 35 位官方英雄大立绘、地图预览、怪物首领及筹码图标均已内嵌打包为 WebP 资源。<br>
-            可以在系统设置中查看存储路径或重新扫描。
-          </p>
-          <div style="margin-top:16px">
-            <button class="secondary-btn" onclick="closeModal();showPage('settings');">管理素材库设置</button>
-          </div>
+          <img src="https://assets.astral.local/UI/UT_Banner_609030.webp" style="max-width:100%;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.15)">
+          <h3 style="margin:16px 0 6px;color:#0284c7">限时庆典商店开放</h3>
+          <p style="font-size:13.5px;color:#64748b;line-height:1.6">使用对局获得的星辉代币与星晶，可自由兑换高级筹码礼包、专属头像框与角色定制装扮！</p>
         </div>
       `);
     },
 
     showGachaModal() {
-      const portraits = AppState.homeData?.portraits || [];
-      const luckyHero = portraits[Math.floor(Math.random() * portraits.length)];
-      openModal('✨ 星之抽奖 · 幸运看板娘召唤', `
+      openModal('✨ 星之抽奖 UP!', `
         <div style="text-align:center;padding:10px">
           <div style="font-size:48px;margin-bottom:8px">🎲</div>
-          <h3 style="margin:0 0 8px;color:#facc15">今日派对幸运英雄</h3>
-          <p style="font-size:13.5px;color:#cbd5e1;line-height:1.6">
-            ${luckyHero ? `今日为你选中的看板娘是 <b>${luckyHero.heroName}</b>！<br>点击下方按钮立即将其设置为大厅看板娘。` : '点击下方按钮快速随机抽取一位大厅看板娘！'}
-          </p>
-          <div style="margin-top:18px;display:flex;justify-content:center;gap:12px">
-            <button class="primary-btn" onclick="closeModal();HomeModule.pickRandomPortrait();">🎲 召唤看板娘</button>
-            <button class="secondary-btn" onclick="closeModal();showPage('wiki');">查看英雄攻略</button>
-          </div>
+          <h3 style="margin:0 0 8px;color:#7c3aed">本期概率提升角色</h3>
+          <p style="font-size:13.5px;color:#64748b;line-height:1.6">活动限定角色与专属传说筹码抽取概率大幅提升！快投掷幸运骰子开启属于你的派对冒险吧～</p>
         </div>
       `);
     },
 
     showEventTrialModal() {
-      openModal('🔮 魔法少女的魔女审判 · 活动资讯', `
+      openModal('🔮 魔法少女的魔女审判', `
         <div style="text-align:center;padding:10px">
-          <img src="https://assets.astral.local/UI/UT_Activity_202609031_Entrance.webp" style="width:120px;height:120px;border-radius:50%;border:3px solid #38bdf8;box-shadow:0 6px 20px rgba(56,189,248,0.5)">
-          <h3 style="margin:16px 0 6px;color:#38bdf8">【特别活动】魔法少女的魔女审判</h3>
-          <p style="font-size:13.5px;color:#cbd5e1;line-height:1.6">
-            活动周期：09.03 - 10.14<br>
-            活动期间所有限定关卡与首领技能均已在 BWiki 与回放协议库中收录。
-          </p>
-          <div style="margin-top:16px">
-            <button class="primary-btn" onclick="closeModal();showPage('wiki');">查看活动攻略</button>
-          </div>
+          <img src="https://assets.astral.local/UI/UT_Activity_202609031_Entrance.webp" style="width:120px;height:120px;border-radius:50%;border:3px solid #38bdf8;box-shadow:0 6px 20px rgba(56,189,248,0.4)">
+          <h3 style="margin:16px 0 6px;color:#0369a1">【特别活动】魔法少女的魔女审判</h3>
+          <p style="font-size:13.5px;color:#64748b;line-height:1.6">活动时间：09.03 - 10.14<br>参与全新机制棋盘试炼，挑战限定魔女Boss，达成成就赢取独家纪念称号！</p>
         </div>
       `);
     }

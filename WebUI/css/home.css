@@ -1,175 +1,99 @@
-/* Home / Welcome Page Styles */
-.home-page {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  padding: 18px 32px 24px;
-  position: relative;
-  overflow-y: auto;
-}
+/* home.css - Authentic In-Game Lobby Aesthetic for Astral Party */
 
-/* Main Content Area: Left Hero Stage + Right Announcements */
-.home-main-section {
-  flex: 1 1 auto;
-  display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: 28px;
-  min-height: 0;
-  align-items: stretch;
-}
-
-/* Hero Stage */
-.hero-stage {
-  background: var(--panel-bg);
-  border: 1px solid var(--panel-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  overflow: hidden;
-  min-height: 460px;
-}
-
-.hero-ambient-glow {
-  position: absolute;
-  top: 40%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 480px;
-  height: 480px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(138, 126, 248, 0.22) 0%, rgba(108, 92, 231, 0.08) 50%, transparent 70%);
-  pointer-events: none;
-  filter: blur(40px);
-  animation: glow-pulse 6s ease-in-out infinite alternate;
-}
-
-@keyframes glow-pulse {
-  0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.7; }
-  100% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
-}
-
-.hero-portrait-wrapper {
+.in-game-lobby {
   position: relative;
   width: 100%;
-  height: 100%;
+  height: 100vh;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  background: radial-gradient(circle at 35% 45%, #2a203a 0%, #151624 55%, #0a0b12 100%);
+  user-select: none;
+}
+
+/* ==========================================================================
+   1. HERO CHARACTER STAGE ON THE LEFT
+   ========================================================================== */
+.lobby-hero-stage {
+  position: absolute;
+  inset: 0;
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
+  align-items: center;
+  justify-content: flex-start;
   z-index: 2;
   cursor: pointer;
+  overflow: hidden;
 }
 
-.hero-portrait-img {
-  max-width: 90%;
-  max-height: 94%;
+.lobby-stage-glow {
+  position: absolute;
+  left: 20%;
+  top: 48%;
+  transform: translate(-50%, -50%);
+  width: 650px;
+  height: 650px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(244, 63, 94, 0.2) 0%, rgba(168, 85, 247, 0.1) 45%, transparent 70%);
+  filter: blur(55px);
+  pointer-events: none;
+}
+
+.lobby-hero-art {
+  position: absolute;
+  left: 2%;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 98%;
+  max-width: 72%;
   object-fit: contain;
-  filter: drop-shadow(0 14px 28px rgba(35, 45, 80, 0.15));
-  transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-  animation: portrait-float 5s ease-in-out infinite alternate;
+  filter: drop-shadow(0 20px 45px rgba(0, 0, 0, 0.8));
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
+  animation: hero-idle-float-left 6s ease-in-out infinite alternate;
+  pointer-events: none;
 }
 
-.hero-portrait-wrapper:hover .hero-portrait-img {
-  transform: scale(1.03);
+.lobby-hero-stage:hover .lobby-hero-art {
+  transform: translateY(-50%) scale(1.025);
 }
 
-@keyframes portrait-float {
-  0% { transform: translateY(0px); }
-  100% { transform: translateY(-8px); }
+@keyframes hero-idle-float-left {
+  0% { transform: translateY(-50%) scale(1); }
+  100% { transform: translateY(-52%) scale(1.015); }
 }
 
-/* Character Info Tag Overlay */
-.hero-tag-badge {
-  position: absolute;
-  top: 22px;
-  left: 24px;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(12px);
-  padding: 8px 16px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--panel-border);
-  box-shadow: var(--shadow-sm);
-  z-index: 5;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.hero-tag-badge h2 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text-main);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.hero-tag-badge small {
-  font-size: 11px;
-  color: var(--primary);
-  font-weight: 600;
-}
-
-.hero-controls {
-  position: absolute;
-  top: 22px;
-  right: 24px;
-  display: flex;
-  gap: 10px;
-  z-index: 5;
-}
-
-.switch-hero-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--panel-border);
-  border-radius: var(--radius-full);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  box-shadow: var(--shadow-sm);
-  transition: all 0.2s ease;
-}
-
-.switch-hero-btn:hover {
-  background: var(--primary-light);
-  color: var(--primary);
-  border-color: rgba(108, 92, 231, 0.3);
-  transform: translateY(-1px);
-}
-
-/* Character Speech Bubble */
+/* Character Speech Bubble (Attached to Left Character) */
 .hero-dialog-bubble {
   position: absolute;
-  bottom: 26px;
-  left: 24px;
-  right: 24px;
-  max-width: 580px;
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(16px);
-  border-radius: var(--radius-md);
-  padding: 16px 22px;
-  box-shadow: var(--shadow-md);
-  border: 1px solid rgba(138, 126, 248, 0.25);
-  z-index: 10;
+  bottom: 95px;
+  left: 46%;
+  max-width: 380px;
+  background: rgba(18, 24, 42, 0.94);
+  backdrop-filter: blur(14px);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 16px;
+  padding: 14px 20px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.65), 0 0 16px rgba(236, 72, 153, 0.25);
+  z-index: 12;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
+  color: #ffffff;
+}
+
+.hero-dialog-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: 22px;
+  left: -10px;
+  border-width: 8px 10px 8px 0;
+  border-style: solid;
+  border-color: transparent rgba(18, 24, 42, 0.94) transparent transparent;
 }
 
 .hero-dialog-bubble:hover {
-  border-color: var(--primary);
-  box-shadow: 0 8px 26px var(--primary-glow);
-  transform: translateY(-2px);
+  transform: translateY(-3px) scale(1.02);
+  border-color: rgba(236, 72, 153, 0.7);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.75), 0 0 22px rgba(236, 72, 153, 0.45);
 }
 
 .bubble-header {
@@ -180,249 +104,201 @@
 }
 
 .bubble-speaker {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--primary);
-  display: flex;
-  align-items: center;
-  gap: 5px;
+  font-size: 13.5px;
+  font-weight: 900;
+  color: #f472b6;
+  letter-spacing: 0.5px;
 }
 
 .bubble-hint {
   font-size: 11px;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .bubble-text {
   margin: 0;
   font-size: 14px;
   line-height: 1.6;
-  color: var(--text-main);
+  color: #f1f5f9;
   font-weight: 500;
 }
 
-/* Sidebar: Game Announcements */
-.home-sidebar {
-  background: var(--panel-bg);
-  border: 1px solid var(--panel-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-  padding: 22px;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 14px;
-  border-bottom: 1px solid #edf2f9;
-  margin-bottom: 16px;
-}
-
-.sidebar-header h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text-main);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.sidebar-count {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--primary);
-  background: var(--primary-light);
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-}
-
-.announcements-list {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding-right: 2px;
-}
-
-.announcement-card {
-  background: #ffffff;
-  border: 1px solid #e7edf6;
-  border-radius: var(--radius-md);
-  padding: 14px 16px;
-  box-shadow: var(--shadow-sm);
-  cursor: pointer;
-  transition: all 0.22s ease;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  position: relative;
-}
-
-.announcement-card:hover {
-  border-color: rgba(108, 92, 231, 0.35);
-  box-shadow: 0 6px 18px rgba(108, 92, 231, 0.12);
-  transform: translateY(-2px);
-  background: #fbfbfe;
-}
-
-.announcement-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.announcement-date {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-.announcement-card h4 {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-main);
-  line-height: 1.45;
-}
-
-.announcement-snippet {
-  margin: 0;
-  font-size: 12px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* Bottom Navigation Section: The 3 Big Buttons */
-.home-bottom-actions {
-  margin-top: 22px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-}
-
-.nav-launch-card {
-  background: #ffffff;
-  border: 1px solid var(--panel-border);
-  border-radius: var(--radius-lg);
-  padding: 18px 24px;
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.15);
-  position: relative;
-  overflow: hidden;
-}
-
-.nav-launch-card::before {
-  content: "";
+/* ==========================================================================
+   2. RIGHT-SIDE ACTION BUTTONS: 维基 & 工具
+   ========================================================================== */
+.lobby-right-menu {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 4px;
-  height: 100%;
-  background: transparent;
-  transition: background 0.2s ease;
+  top: 45%;
+  right: 54px;
+  transform: translateY(-50%);
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: flex-end;
 }
 
-.nav-launch-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 28px rgba(35, 50, 85, 0.10);
+.lobby-card-btn {
+  width: 240px;
+  height: 84px;
+  border-radius: 20px;
+  border: 3px solid #ffffff;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+  position: relative;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 36px;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Card Variants */
-.nav-launch-card.card-wiki {
-  border-color: rgba(9, 132, 227, 0.18);
-}
-.nav-launch-card.card-wiki:hover {
-  border-color: var(--accent-cyan);
-}
-.nav-launch-card.card-wiki::before { background: var(--accent-cyan); }
-.nav-launch-card.card-wiki .card-icon-box {
-  background: linear-gradient(135deg, #e1f0ff, #cde5fc);
-  color: #0984e3;
+.lobby-card-btn:hover {
+  transform: translateX(-10px) scale(1.06);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.75), inset 0 2px 6px rgba(255, 255, 255, 0.6);
 }
 
-.nav-launch-card.card-tools {
-  border-color: rgba(108, 92, 231, 0.25);
-  background: linear-gradient(135deg, #ffffff, #f9f8ff);
-}
-.nav-launch-card.card-tools:hover {
-  border-color: var(--primary);
-  box-shadow: 0 12px 30px var(--primary-glow);
-}
-.nav-launch-card.card-tools::before { background: var(--primary); }
-.nav-launch-card.card-tools .card-icon-box {
-  background: linear-gradient(135deg, #7c6cf0, #5644d6);
+.card-btn-text {
+  font-size: 32px;
+  font-weight: 900;
   color: #ffffff;
-  box-shadow: 0 4px 14px var(--primary-glow);
+  letter-spacing: 3px;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8), 0 0 3px #000;
+  z-index: 3;
 }
 
-.nav-launch-card.card-settings {
-  border-color: rgba(230, 126, 34, 0.18);
-}
-.nav-launch-card.card-settings:hover {
-  border-color: var(--accent-gold);
-}
-.nav-launch-card.card-settings::before { background: var(--accent-gold); }
-.nav-launch-card.card-settings .card-icon-box {
-  background: linear-gradient(135deg, #fef5ea, #fee4c8);
-  color: #e67e22;
-}
-
-.card-icon-box {
-  width: 52px;
-  height: 52px;
-  border-radius: var(--radius-md);
-  display: grid;
-  place-items: center;
-  font-size: 24px;
-  flex: 0 0 52px;
+.card-btn-chibi {
+  position: absolute;
+  left: -28px;
+  top: -20px;
+  width: 106px;
+  height: 106px;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.55));
   transition: transform 0.25s ease;
+  z-index: 4;
 }
 
-.nav-launch-card:hover .card-icon-box {
-  transform: scale(1.08) rotate(3deg);
+.lobby-card-btn:hover .card-btn-chibi {
+  transform: scale(1.14) rotate(-6deg);
 }
 
-.card-content {
-  flex: 1 1 auto;
+/* Button 1: 维基 (Blue-Green Energy Gradient) */
+.card-wiki {
+  background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+  box-shadow: 0 12px 30px rgba(2, 132, 199, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+}
+.card-wiki:hover {
+  box-shadow: 0 18px 42px rgba(2, 132, 199, 0.75), inset 0 2px 6px rgba(255, 255, 255, 0.6);
 }
 
-.card-content h3 {
-  margin: 0 0 4px;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text-main);
+/* Button 2: 工具 (Neon Pink-Rose Signature Gradient) */
+.card-tools {
+  background: linear-gradient(135deg, #ff1776 0%, #e11d48 100%);
+  box-shadow: 0 12px 30px rgba(225, 29, 72, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+}
+.card-tools:hover {
+  box-shadow: 0 18px 42px rgba(225, 29, 72, 0.75), inset 0 2px 6px rgba(255, 255, 255, 0.6);
+}
+
+/* ==========================================================================
+   3. BOTTOM IN-GAME STATUS DOCK BAR (Clean Status Bar)
+   ========================================================================== */
+.lobby-bottom-dock {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: rgba(10, 14, 23, 0.96);
+  backdrop-filter: blur(16px);
+  border-top: 1.5px solid rgba(255, 255, 255, 0.12);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 0 28px;
+  z-index: 25;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
 }
 
-.card-content p {
-  margin: 0;
+/* Left: System Status Tag */
+.dock-status-widget {
+  display: flex;
+  align-items: center;
+}
+
+.dock-status-tag {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 6px 14px;
+  border-radius: var(--gp-radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.dock-status-tag .status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 10px #34d399;
+}
+
+.dock-status-tag .status-title {
   font-size: 12px;
-  color: var(--text-muted);
-  line-height: 1.4;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 0.5px;
 }
 
-.card-arrow {
-  font-size: 16px;
-  color: var(--text-light);
-  transition: transform 0.2s ease, color 0.2s ease;
+.dock-status-tag .status-desc {
+  font-size: 11.5px;
+  color: var(--gp-text-sub);
 }
 
-.nav-launch-card:hover .card-arrow {
-  transform: translateX(4px);
-  color: var(--primary);
+/* Right: Settings Nav Button */
+.dock-actions-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dock-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #ffffff;
+  padding: 6px 14px;
+  border-radius: var(--gp-radius-full);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+}
+
+.dock-nav-item svg {
+  transition: transform 0.2s ease;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+.dock-nav-item span {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+.dock-nav-item:hover {
+  background: rgba(255, 23, 118, 0.25);
+  border-color: #ff1776;
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 23, 118, 0.4);
+}
+
+.dock-nav-item:hover svg {
+  transform: rotate(45deg);
 }

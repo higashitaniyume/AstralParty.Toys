@@ -1,4 +1,4 @@
-/* wiki.css - Direct BWiki Webpage Styles (In-Game Aesthetic) */
+/* wiki.css - Direct BWiki Webpage Styles (Light Theme) */
 .wiki-page {
   flex: 1 1 auto;
   display: flex;
@@ -8,20 +8,20 @@
   padding: 0;
   margin: 0;
   overflow: hidden;
-  background: var(--gp-bg);
+  background: #f8fafc;
 }
 
 .wiki-top-toolbar {
   flex: 0 0 auto;
-  height: 56px;
+  height: 54px;
   padding: 0 24px;
-  background: rgba(16, 20, 36, 0.96);
-  backdrop-filter: blur(12px);
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--panel-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: var(--gp-shadow-sm);
+  box-shadow: 0 2px 8px rgba(30, 41, 59, 0.04);
   z-index: 10;
 }
 
@@ -39,20 +39,20 @@
 
 .wiki-title-info h2 {
   margin: 0;
-  font-size: 16.5px;
-  font-weight: 800;
-  color: #ffffff;
-  letter-spacing: 0.2px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.2px;
 }
 
 .wiki-url-badge {
   font-size: 11px;
   font-family: 'Fira Code', monospace;
-  padding: 3px 10px;
-  border-radius: var(--gp-radius-full);
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--gp-blue);
-  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #edf2f7;
+  color: var(--text-muted);
+  border: 1px solid #e2e8f0;
 }
 
 .wiki-toolbar-right {
@@ -68,14 +68,14 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 36px;
+  height: 34px;
 }
 
 .wiki-frame-container {
   flex: 1 1 auto;
   position: relative;
   width: 100%;
-  height: calc(100% - 56px);
+  height: calc(100% - 54px);
   min-height: 0;
   background: #ffffff;
   overflow: hidden;

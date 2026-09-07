@@ -229,7 +229,7 @@
                   <small>${esc(p.heroName)} · ID: ${p.id}</small>
                 </div>
               </div>
-              <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(130px, 1fr));gap:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);padding:14px;border-radius:var(--gp-radius-md);margin-bottom:12px">
+              <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(130px, 1fr));gap:10px;background:#f8fafd;padding:14px;border-radius:var(--radius-md);margin-bottom:12px">
                 <div><small style="color:var(--text-muted);font-size:11px">生命</small><div style="font-weight:700">${esc(p.hpText)}</div></div>
                 <div><small style="color:var(--text-muted);font-size:11px">星币</small><div style="font-weight:700;color:var(--accent-gold)">${fmt(p.gold)}</div></div>
                 <div><small style="color:var(--text-muted);font-size:11px">攻击 / 防御</small><div style="font-weight:700">${p.attack} / ${p.defense}</div></div>
@@ -283,11 +283,11 @@
             </h4>
             <div style="display:flex;flex-direction:column;gap:6px">
               ${evList.map(ev => `
-                <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:var(--gp-radius-sm);font-size:13px">
-                  <span style="font-family:monospace;font-size:11px;color:var(--gp-gold);flex:0 0 54px">#${ev.frameIndex}</span>
+                <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f8fafd;border-radius:var(--radius-sm);font-size:13px">
+                  <span style="font-family:monospace;font-size:11px;color:var(--text-muted);flex:0 0 54px">#${ev.frameIndex}</span>
                   <span class="badge badge-notice">${esc(ev.type)}</span>
-                  <strong style="color:#ffffff;flex:0 0 110px">${esc(ev.playerName || '系统')}</strong>
-                  <span style="color:var(--gp-text-sub);flex:1">${esc(ev.description || ev.title)}</span>
+                  <strong style="color:var(--text-main);flex:0 0 110px">${esc(ev.playerName || '系统')}</strong>
+                  <span style="color:var(--text-secondary);flex:1">${esc(ev.description || ev.title)}</span>
                 </div>
               `).join('')}
             </div>
@@ -306,21 +306,8 @@
       root.innerHTML = `
         <div class="data-table-card">
           <div class="table-filter-bar">
-            <div style="display:flex;align-items:center;gap:14px">
-              <span id="relicCountText" style="font-size:13px;color:var(--gp-text-sub);font-weight:700">筹码记录共 ${report.relics.length} 条</span>
-              <input id="relicSearchInput" class="table-search-input" placeholder="筛选筹码、玩家、品质、来源...">
-            </div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <button class="secondary-btn" id="exportRelicsTxtBtn" style="padding:6px 14px;font-size:12px;font-weight:800;border-radius:var(--gp-radius-full);color:var(--gp-gold);border-color:rgba(255,215,0,0.3)">
-                <span>🤖</span> 导出 AI 文本 (TXT)
-              </button>
-              <button class="secondary-btn" id="exportRelicsCsvBtn" style="padding:6px 14px;font-size:12px;font-weight:800;border-radius:var(--gp-radius-full)">
-                <span>📊</span> 导出表格 (CSV)
-              </button>
-              <button class="secondary-btn" id="exportRelicsJsonBtn" style="padding:6px 14px;font-size:12px;font-weight:800;border-radius:var(--gp-radius-full)">
-                <span>{ }</span> 导出 JSON
-              </button>
-            </div>
+            <span id="relicCountText" style="font-size:13px;color:var(--text-secondary)">筹码记录共 ${report.relics.length} 条</span>
+            <input id="relicSearchInput" class="table-search-input" placeholder="筛选筹码、玩家、品质、来源...">
           </div>
           <div class="table-scroll-wrap">
             <table class="light-table">
@@ -328,7 +315,6 @@
                 <tr>
                   <th>回合</th>
                   <th>玩家</th>
-                  <th>角色</th>
                   <th>来源</th>
                   <th>操作</th>
                   <th>筹码名称</th>
@@ -346,7 +332,7 @@
       const update = () => {
         const q = ($('relicSearchInput')?.value || '').trim().toLowerCase();
         const rows = report.relics.filter(x => {
-          return !q || `${x.playerName} ${x.heroName || ''} ${x.relicName} ${x.quality} ${x.source} ${x.kind} ${x.optionsText}`.toLowerCase().includes(q);
+          return !q || `${x.playerName} ${x.relicName} ${x.quality} ${x.source} ${x.kind} ${x.optionsText}`.toLowerCase().includes(q);
         });
 
         $('relicCountText').textContent = `显示 ${rows.length} / ${report.relics.length} 条筹码流转`;
@@ -354,7 +340,6 @@
           <tr>
             <td>${r.round || '—'}</td>
             <td><strong>${esc(r.playerName)}</strong></td>
-            <td><span style="color:var(--gp-text-sub);font-size:12px">${esc(r.heroName || '—')}</span></td>
             <td><span class="badge badge-notice">${esc(r.source)}</span></td>
             <td><span class="badge ${r.kind === '选择' ? 'badge-event' : 'badge-update'}">${esc(r.kind)}</span></td>
             <td><strong>${esc(r.relicName)}</strong></td>
@@ -366,9 +351,6 @@
       };
 
       $('relicSearchInput')?.addEventListener('input', update);
-      $('exportRelicsTxtBtn')?.addEventListener('click', () => post({ type: 'exportRelics', format: 'txt' }));
-      $('exportRelicsCsvBtn')?.addEventListener('click', () => post({ type: 'exportRelics', format: 'csv' }));
-      $('exportRelicsJsonBtn')?.addEventListener('click', () => post({ type: 'exportRelics', format: 'json' }));
       update();
     },
 
@@ -473,8 +455,8 @@
                   <span style="color:var(--text-main);font-weight:600">${esc(x.name)}</span>
                   <span style="color:var(--text-muted)">${fmt(count)} (${pct}%)</span>
                 </div>
-                <div style="height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden">
-                  <div style="height:100%;width:${barWidth}%;background:linear-gradient(90deg, #ff1776, #a855f7);border-radius:4px"></div>
+                <div style="height:6px;background:#eef2fb;border-radius:4px;overflow:hidden">
+                  <div style="height:100%;width:${barWidth}%;background:var(--primary);border-radius:4px"></div>
                 </div>
               </div>
             `;}).join('') || '<p style="color:var(--text-muted);font-size:12px">暂无统计数据</p>'}

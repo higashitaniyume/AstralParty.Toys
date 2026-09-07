@@ -184,50 +184,20 @@ public sealed class HomeDataService
         if (_cachedPortraits is not null) return _cachedPortraits;
 
         var results = new List<PortraitItem>();
-        var seenNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        // 1. 扫描内嵌资源中的立绘 (PackedAssets/Portraits)
+        // 仅保留一张人物立绘 (芬妮 UT_Hero_Card_102_01.webp)
         var packedDir = Path.Combine(_appDirectory, "PackedAssets", "Portraits");
-        if (Directory.Exists(packedDir))
+        var singlePortrait = Path.Combine(packedDir, "UT_Hero_Card_102_01.webp");
+        if (File.Exists(singlePortrait))
         {
-            foreach (var file in Directory.EnumerateFiles(packedDir, "UT_Hero_Card_*.webp"))
-            {
-                var fileName = Path.GetFileName(file);
-                if (!fileName.StartsWith("UT_Hero_Card_", StringComparison.OrdinalIgnoreCase)) continue;
-                if (fileName.Contains("sfw", StringComparison.OrdinalIgnoreCase)) continue;
-
-                var baseName = Path.GetFileNameWithoutExtension(fileName);
-                if (seenNames.Add(baseName))
-                {
-                    results.Add(CreatePortraitItem(baseName, $"https://assets.astral.local/Portraits/{fileName}", true));
-                }
-            }
+            results.Add(CreatePortraitItem("UT_Hero_Card_102_01", "https://assets.astral.local/Portraits/UT_Hero_Card_102_01.webp", true));
+        }
+        else
+        {
+            results.Add(CreatePortraitItem("UT_Hero_Card_102_01", "https://assets.astral.local/Portraits/UT_Hero_Card_102_01.webp", true));
         }
 
-        // 2. 扫描外部素材目录 (C:\PublicFiles\materials\StarEngine\Grouped\人物立绘)
-        const string extDir = @"C:\PublicFiles\materials\StarEngine\Grouped\人物立绘";
-        if (Directory.Exists(extDir))
-        {
-            foreach (var file in Directory.EnumerateFiles(extDir, "UT_Hero_Card_*.*"))
-            {
-                var ext = Path.GetExtension(file);
-                if (!ext.Equals(".png", StringComparison.OrdinalIgnoreCase) &&
-                    !ext.Equals(".webp", StringComparison.OrdinalIgnoreCase)) continue;
-
-                var fileName = Path.GetFileName(file);
-                if (!fileName.StartsWith("UT_Hero_Card_", StringComparison.OrdinalIgnoreCase)) continue;
-                if (fileName.Contains("sfw", StringComparison.OrdinalIgnoreCase)) continue;
-
-                var baseName = Path.GetFileNameWithoutExtension(fileName);
-                if (seenNames.Add(baseName))
-                {
-                    var url = $"https://materials0.astral.local/%E4%BA%BA%E7%89%A9%E7%AB%8B%E7%BB%98/{Uri.EscapeDataString(fileName)}";
-                    results.Add(CreatePortraitItem(baseName, url, false));
-                }
-            }
-        }
-
-        _cachedPortraits = results.OrderBy(x => x.HeroId).ThenBy(x => x.Id).ToList();
+        _cachedPortraits = results;
         return _cachedPortraits;
     }
 

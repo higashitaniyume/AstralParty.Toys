@@ -98,6 +98,7 @@ public sealed class RelicRecord
     public int Round { get; init; }
     public long PlayerId { get; init; }
     public string PlayerName { get; init; } = "未知玩家";
+    public string HeroName { get; init; } = "未知角色";
     public string Kind { get; init; } = "";
     public int Level { get; init; }
     public int RelicId { get; init; }

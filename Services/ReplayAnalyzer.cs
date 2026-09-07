@@ -108,6 +108,7 @@ public sealed class ReplayAnalyzer
         FillMatchSummary(report, initialRoom, finalRoom, finish, snapshots);
         var players = FillPlayers(report, initialRoom, finalRoom);
         var playerNames = players.ToDictionary(x => x.Id, x => x.Nickname);
+        var playerHeroes = players.ToDictionary(x => x.Id, x => x.HeroName);
         report.BossName = FindBossName(finalRoom);
 
         var commandCounts = frames.GroupBy(x => x.CmdId).ToDictionary(x => x.Key, x => x.Count());
@@ -153,7 +154,7 @@ public sealed class ReplayAnalyzer
 
             if (frame.CmdId == 1002)
             {
-                ParseActions(frame, currentRound, playerNames, seenActions, pendingRelicOffers,
+                ParseActions(frame, currentRound, playerNames, playerHeroes, seenActions, pendingRelicOffers,
                     pendingRelicPurchaseCosts, confirmedRelicPurchases, actionCounts, report);
                 continue;
             }
@@ -192,6 +193,7 @@ public sealed class ReplayAnalyzer
                     Round = currentRound,
                     PlayerId = playerId,
                     PlayerName = PlayerName(playerNames, playerId),
+                    HeroName = playerHeroes.GetValueOrDefault(playerId, "未知角色"),
                     Kind = "选择",
                     RelicId = relicId,
                     RelicName = relicName,
@@ -444,6 +446,7 @@ public sealed class ReplayAnalyzer
     }
 
     private void ParseActions(ProtocolFrame frame, int round, IReadOnlyDictionary<long, string> playerNames,
+        IReadOnlyDictionary<long, string> playerHeroes,
         HashSet<long> seenActions, Dictionary<long, PendingRelicOffer> pendingRelicOffers,
         Dictionary<long, int> pendingRelicPurchaseCosts, HashSet<long> confirmedRelicPurchases,
         Dictionary<string, int> actionCounts, ReplayReport report)
@@ -469,30 +472,32 @@ public sealed class ReplayAnalyzer
                     pendingRelicPurchaseCosts[playerId] = ReflectionValue.Int(purchase, "RelicGold");
                 }
                 catch { }
+                continue;
+            }
+
+            if (actionId == 5250)
+            {
+                confirmedRelicPurchases.Add(playerId);
+                continue;
             }
 
             if (actionId == 5211)
             {
-                var nested = ReflectionValue.Bytes(ReflectionValue.Get(action, "Data"));
-                object? offer = null;
-                try { offer = _protocol.Decode("party.protocol.SelectRelicC2S", nested); }
-                catch { }
-                if (offer is not null)
+                try
                 {
+                    var offer = _protocol.Decode("party.protocol.SelectRelicC2S", ReflectionValue.Bytes(ReflectionValue.Get(action, "Data")));
                     var level = ReflectionValue.Int(offer, "Lv");
-                    var supportLevel = ReflectionValue.Int(offer, "SupLv");
-                    var previousOffer = pendingRelicOffers.GetValueOrDefault(playerId);
-                    var isPurchase = confirmedRelicPurchases.Remove(playerId);
-                    var source = previousOffer?.Source ?? (isPurchase ? "筹码地块购买" : supportLevel > 0 ? "升星" : "任务");
-                    var sourceIcon = previousOffer?.SourceIconPath ?? source switch
-                    {
-                        "筹码地块购买" => _assets.Named("UT_Platform_Relic"),
-                        "任务" => _assets.Named("UT_Platform_Event"),
-                        _ => _assets.Named("UT_Buff_StarLight")
-                    };
-                    var refreshCount = previousOffer is null ? 0 : previousOffer.RefreshCount + 1;
-                    var purchaseCost = previousOffer?.PurchaseCost ?? (isPurchase ? pendingRelicPurchaseCosts.GetValueOrDefault(playerId) : 0);
-                    if (isPurchase) pendingRelicPurchaseCosts.Remove(playerId);
+                    var supLv = ReflectionValue.Int(offer, "SupLv");
+                    var purchaseCost = pendingRelicPurchaseCosts.TryGetValue(playerId, out var cost) &&
+                                       confirmedRelicPurchases.Remove(playerId) ? cost : 0;
+                    pendingRelicPurchaseCosts.Remove(playerId);
+                    var source = pendingRelicOffers.TryGetValue(playerId, out var existing) && existing.Level == level
+                        ? existing.Source
+                        : RelicSource(level, supLv, purchaseCost);
+                    var sourceIcon = RelicSourceIcon(source);
+                    var refreshCount = pendingRelicOffers.TryGetValue(playerId, out var previous) && previous.Level == level
+                        ? previous.RefreshCount + 1
+                        : 0;
                     pendingRelicOffers[playerId] = new PendingRelicOffer
                     {
                         Level = level,
@@ -509,6 +514,7 @@ public sealed class ReplayAnalyzer
                         Round = round,
                         PlayerId = playerId,
                         PlayerName = PlayerName(playerNames, playerId),
+                        HeroName = playerHeroes.GetValueOrDefault(playerId, "未知角色"),
                         Kind = refreshCount > 0 ? "刷新候选" : "首次候选",
                         Level = level,
                         OptionsText = options,
@@ -530,6 +536,8 @@ public sealed class ReplayAnalyzer
                     });
                     continue;
                 }
+                catch { }
+                continue;
             }
 
             report.Events.Add(new TimelineEvent
@@ -584,6 +592,24 @@ public sealed class ReplayAnalyzer
             _ => Array.Empty<string>()
         };
         return names.Length > 0 ? _assets.Named(names) : "";
+    }
+
+    private static string RelicSource(int level, int supLv, int purchaseCost)
+    {
+        if (purchaseCost > 0) return "筹码地块购买";
+        if (supLv > 0) return "升星";
+        return "任务";
+    }
+
+    private string RelicSourceIcon(string source)
+    {
+        if (source.Contains("购买") || source.Contains("商店") || source.Contains("地块"))
+            return EventIcon("shop");
+        if (source.Contains("升星"))
+            return EventIcon("attribute");
+        if (source.Contains("任务"))
+            return EventIcon("mission");
+        return EventIcon("relic");
     }
 
     private sealed class PendingRelicOffer
