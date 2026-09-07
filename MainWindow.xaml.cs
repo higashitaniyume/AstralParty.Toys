@@ -22,8 +22,41 @@ public partial class MainWindow : Window
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
+        ShowHome();
         var args = Environment.GetCommandLineArgs();
-        if (args.Length > 1 && File.Exists(args[1])) await LoadReplayAsync(args[1]);
+        if (args.Length > 1 && File.Exists(args[1]))
+        {
+            ShowReplayManager();
+            await LoadReplayAsync(args[1]);
+        }
+    }
+
+    private void ShowHome()
+    {
+        HomePanel.Visibility = Visibility.Visible;
+        ReplayPanel.Visibility = Visibility.Collapsed;
+        ReplayHeaderInfo.Visibility = Visibility.Collapsed;
+        ReplayHeaderActions.Visibility = Visibility.Collapsed;
+        StatusText.Text = "工具箱就绪";
+    }
+
+    private void ShowReplayManager()
+    {
+        HomePanel.Visibility = Visibility.Collapsed;
+        ReplayPanel.Visibility = Visibility.Visible;
+        ReplayHeaderInfo.Visibility = Visibility.Visible;
+        ReplayHeaderActions.Visibility = Visibility.Visible;
+        StatusText.Text = _report is null ? "回放查看与管理 · 请选择或拖入回放文件" : $"回放已加载 · {_report.FrameCount:N0} 帧";
+    }
+
+    private void OpenReplayManagerButton_Click(object sender, RoutedEventArgs e) => ShowReplayManager();
+
+    private void BackHomeButton_Click(object sender, RoutedEventArgs e) => ShowHome();
+
+    private void OpenSpeedhackButton_Click(object sender, RoutedEventArgs e)
+    {
+        var window = new SpeedhackWindow { Owner = this };
+        window.ShowDialog();
     }
 
     private async void OpenReplay_Click(object sender, RoutedEventArgs e)
@@ -37,16 +70,11 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog(this) == true) await LoadReplayAsync(dialog.FileName);
     }
 
-    private void ToolsButton_Click(object sender, RoutedEventArgs e)
-    {
-        var window = new SpeedhackWindow { Owner = this };
-        window.Show();
-    }
-
     private async void Window_Drop(object sender, DragEventArgs e)
     {
         if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
         if (e.Data.GetData(DataFormats.FileDrop) is not string[] files || files.Length == 0) return;
+        ShowReplayManager();
         await LoadReplayAsync(files[0]);
     }
 

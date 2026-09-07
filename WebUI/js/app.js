@@ -5,8 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.ReplayModule.init();
   }
 
-  // Set default page
-  showPage('home');
+  // Set default page without animating the initial DOM bootstrap
+  showPage('home', { immediate: true });
 
   // Notify WebView2 host that WebUI is ready
   post({ type: 'ready' });

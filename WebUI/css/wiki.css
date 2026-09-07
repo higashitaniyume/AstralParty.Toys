@@ -11,6 +11,13 @@
   background: var(--gp-bg);
 }
 
+body:not(.reduce-motion) #wikiView:not(.page-entering) .wiki-top-toolbar {
+  animation: content-rise 350ms var(--motion-ease) both;
+}
+body:not(.reduce-motion) #wikiView:not(.page-entering) .wiki-frame-container {
+  animation: soft-pop 480ms var(--motion-ease) 70ms both;
+}
+
 .wiki-top-toolbar {
   flex: 0 0 auto;
   height: 56px;

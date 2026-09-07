@@ -12,6 +12,39 @@
   user-select: none;
 }
 
+.in-game-lobby::before,
+.in-game-lobby::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.in-game-lobby::before {
+  inset: -18px;
+  background:
+    linear-gradient(rgba(8, 10, 18, 0.42), rgba(8, 10, 18, 0.58)),
+    url("../images/Anni2nd.png") center / cover no-repeat;
+  filter: blur(10px);
+  transform: scale(1.04);
+}
+
+.in-game-lobby::after {
+  width: 420px;
+  height: 140%;
+  top: -20%;
+  left: -520px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.045), transparent);
+  transform: skewX(-18deg);
+  animation: lobby-light-sweep 11s ease-in-out infinite 2s;
+}
+
+@keyframes lobby-light-sweep {
+  0%, 35% { transform: translateX(0) skewX(-18deg); opacity: 0; }
+  45% { opacity: 1; }
+  70%, 100% { transform: translateX(calc(100vw + 1000px)) skewX(-18deg); opacity: 0; }
+}
+
 /* ==========================================================================
    1. HERO CHARACTER STAGE ON THE LEFT
    ========================================================================== */
@@ -37,16 +70,25 @@
   background: radial-gradient(circle, rgba(244, 63, 94, 0.2) 0%, rgba(168, 85, 247, 0.1) 45%, transparent 70%);
   filter: blur(55px);
   pointer-events: none;
+  animation: lobby-glow-pulse 5.5s ease-in-out infinite alternate;
+}
+
+@keyframes lobby-glow-pulse {
+  from { opacity: 0.6; transform: translate(-50%, -50%) scale(0.94); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
 }
 
 .lobby-hero-art {
   position: absolute;
   left: 2%;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 98%;
+  top: auto;
+  bottom: 56px;
+  transform: none;
+  transform-origin: left bottom;
+  height: calc(100% - 64px);
   max-width: 72%;
   object-fit: contain;
+  object-position: left bottom;
   filter: drop-shadow(0 20px 45px rgba(0, 0, 0, 0.8));
   transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
   animation: hero-idle-float-left 6s ease-in-out infinite alternate;
@@ -54,12 +96,17 @@
 }
 
 .lobby-hero-stage:hover .lobby-hero-art {
-  transform: translateY(-50%) scale(1.025);
+  transform: scale(1.025);
 }
 
 @keyframes hero-idle-float-left {
-  0% { transform: translateY(-50%) scale(1); }
-  100% { transform: translateY(-52%) scale(1.015); }
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-1.5%) scale(1.015); }
+}
+
+@keyframes hero-art-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Character Speech Bubble (Attached to Left Character) */
@@ -78,6 +125,12 @@
   cursor: pointer;
   transition: all 0.25s ease;
   color: #ffffff;
+  animation: bubble-breathe 4s ease-in-out infinite;
+}
+
+@keyframes bubble-breathe {
+  0%, 100% { box-shadow: 0 14px 34px rgba(0, 0, 0, 0.65), 0 0 12px rgba(236, 72, 153, 0.18); }
+  50% { box-shadow: 0 17px 38px rgba(0, 0, 0, 0.72), 0 0 23px rgba(236, 72, 153, 0.4); }
 }
 
 .hero-dialog-bubble::after {
@@ -201,6 +254,20 @@
 }
 .card-tools:hover {
   box-shadow: 0 18px 42px rgba(225, 29, 72, 0.75), inset 0 2px 6px rgba(255, 255, 255, 0.6);
+}
+
+body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-hero-art {
+  animation: hero-idle-float-left 6s ease-in-out infinite alternate, hero-art-fade-in 520ms var(--motion-ease);
+}
+body:not(.reduce-motion) #homeView:not(.page-entering) .hero-dialog-bubble {
+  animation: bubble-breathe 4s ease-in-out infinite, content-rise 480ms var(--motion-ease) 130ms;
+}
+body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-card-btn {
+  animation: content-slide-left 440ms var(--motion-ease) both;
+}
+body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-card-btn:nth-child(2) { animation-delay: 90ms; }
+body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-bottom-dock {
+  animation: content-rise 420ms var(--motion-ease) 160ms both;
 }
 
 /* ==========================================================================

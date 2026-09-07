@@ -81,19 +81,69 @@
         </Style>
         <Style TargetType="DataGridColumnHeader">
             <Setter Property="Background" Value="#1A2339" />
-            <Setter Property="Foreground" Value="#AAB4CC" />
+            <Setter Property="Foreground" Value="#E8ECF8" />
             <Setter Property="BorderBrush" Value="#26314E" />
             <Setter Property="Padding" Value="10" />
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
+        <Style TargetType="DataGridRowHeader">
+            <Setter Property="Background" Value="#1A2339" />
+            <Setter Property="Foreground" Value="#E8ECF8" />
+        </Style>
         <Style TargetType="DataGridCell">
+            <Setter Property="Foreground" Value="#E8ECF8" />
+            <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="8,6" />
             <Setter Property="VerticalAlignment" Value="Center" />
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#343D67" />
+                    <Setter Property="Foreground" Value="White" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="DataGridRow">
+            <Setter Property="Foreground" Value="#E8ECF8" />
+            <Setter Property="Background" Value="#11182A" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Style.Triggers>
+                <Trigger Property="AlternationIndex" Value="1">
+                    <Setter Property="Background" Value="#151D31" />
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#343D67" />
+                    <Setter Property="Foreground" Value="White" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#E8ECF8" />
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="#E8ECF8" />
+        </Style>
+        <Style TargetType="ListBox">
+            <Setter Property="Background" Value="#11182A" />
+            <Setter Property="Foreground" Value="#E8ECF8" />
+            <Setter Property="BorderBrush" Value="#2B3655" />
+        </Style>
+        <Style TargetType="ListBoxItem">
+            <Setter Property="Foreground" Value="#E8ECF8" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="8,5" />
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#343D67" />
+                    <Setter Property="Foreground" Value="White" />
+                </Trigger>
+            </Style.Triggers>
         </Style>
         <Style TargetType="TextBox">
             <Setter Property="Background" Value="#11182A" />
             <Setter Property="Foreground" Value="#E8ECF8" />
+            <Setter Property="SelectionBrush" Value="#5967A5" />
+            <Setter Property="SelectionTextBrush" Value="White" />
             <Setter Property="BorderBrush" Value="#2B3655" />
             <Setter Property="Padding" Value="10,8" />
             <Setter Property="CaretBrush" Value="White" />
@@ -133,12 +183,12 @@
                     <TextBlock Text="ASTRAL PARTY TOYS" FontSize="20" FontWeight="Bold" Foreground="White" />
                     <TextBlock Text="吉星派对 · 本地工具箱" Foreground="#8996B2" FontSize="12" />
                 </StackPanel>
-                <StackPanel Grid.Column="1" Margin="32,0" VerticalAlignment="Center">
-                    <TextBlock x:Name="FileNameText" Text="尚未打开回放" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                <StackPanel x:Name="ReplayHeaderInfo" Grid.Column="1" Margin="32,0" VerticalAlignment="Center" Visibility="Collapsed">
+                    <TextBlock x:Name="FileNameText" Text="尚未打开回放" Foreground="#E8ECF8" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                     <TextBlock x:Name="FilePathText" Text="可拖放文件到窗口" Foreground="#75819C" FontSize="11" TextTrimming="CharacterEllipsis" />
                 </StackPanel>
-                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Content="游戏工具" Margin="0,0,10,0" Background="#25304D" Click="ToolsButton_Click" />
+                <StackPanel x:Name="ReplayHeaderActions" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
+                    <Button Content="返回首页" Margin="0,0,10,0" Background="#25304D" Click="BackHomeButton_Click" />
                     <Button x:Name="ExportButton" Content="导出 JSON" Margin="0,0,10,0" Background="#25304D" Click="ExportButton_Click" IsEnabled="False" />
                     <Button Content="打开回放" Click="OpenReplay_Click" />
                 </StackPanel>
@@ -146,7 +196,58 @@
         </Border>
 
         <Grid Grid.Row="1">
-            <Border x:Name="WelcomePanel" Margin="24" Style="{StaticResource PanelCard}">
+            <Border x:Name="HomePanel" Margin="34" Style="{StaticResource PanelCard}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="940">
+                        <Border Width="88" Height="88" CornerRadius="24" Background="#28234C" Margin="0,0,0,20">
+                            <TextBlock Text="✦" FontSize="48" Foreground="#A99FFF" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <TextBlock Text="AstralParty.Toys" Foreground="White" FontSize="30" FontWeight="Bold" HorizontalAlignment="Center" />
+                        <TextBlock Text="选择要使用的本地工具" Foreground="#96A1BA" FontSize="14" HorizontalAlignment="Center" Margin="0,8,0,30" />
+                        <Grid Width="850">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="20" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Click="OpenSpeedhackButton_Click" Padding="0" Background="#201B3D">
+                                <Border Height="230" BorderBrush="#5D4FD0" BorderThickness="1" CornerRadius="14" Padding="28">
+                                    <Grid>
+                                        <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="⚡" FontSize="50" HorizontalAlignment="Center" />
+                                            <TextBlock Text="加速器" Foreground="White" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,14,0,0" />
+                                            <TextBlock Text="安装、卸载和配置游戏自动倍速" Foreground="#B7B0E8" FontSize="13" HorizontalAlignment="Center" Margin="0,8,0,0" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Row="1" Text="打开加速器管理  →" Foreground="#C9C2FF" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                            </Button>
+                            <Button Grid.Column="2" Click="OpenReplayManagerButton_Click" Padding="0" Background="#102C35">
+                                <Border Height="230" BorderBrush="#2E9F9B" BorderThickness="1" CornerRadius="14" Padding="28">
+                                    <Grid>
+                                        <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="▤" Foreground="#62E0D3" FontSize="50" HorizontalAlignment="Center" />
+                                            <TextBlock Text="回放查看与管理" Foreground="White" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,14,0,0" />
+                                            <TextBlock Text="打开、拖放并分析本地对局回放" Foreground="#9BD2CE" FontSize="13" HorizontalAlignment="Center" Margin="0,8,0,0" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Row="1" Text="进入回放板块  →" Foreground="#79DDD3" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                            </Button>
+                        </Grid>
+                    </StackPanel>
+                    <TextBlock Grid.Row="1" Text="本地运行 · 回放数据不会上传 · 加速器仅建议用于单机研究" Foreground="#65718C" FontSize="11" HorizontalAlignment="Center" />
+                </Grid>
+            </Border>
+
+            <Grid x:Name="ReplayPanel" Visibility="Collapsed">
+                <Border x:Name="WelcomePanel" Margin="24" Style="{StaticResource PanelCard}">
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="580">
                     <Border Width="88" Height="88" CornerRadius="24" Background="#28234C" Margin="0,0,0,22">
                         <TextBlock Text="✦" FontSize="48" Foreground="#A99FFF" HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -383,18 +484,19 @@
                 </TabItem>
             </TabControl>
 
-            <Border x:Name="BusyOverlay" Visibility="Collapsed" Background="#D90B1020">
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <ProgressBar IsIndeterminate="True" Width="280" Height="5" Foreground="#8B7CFF" />
-                    <TextBlock x:Name="BusyText" Text="正在读取回放…" HorizontalAlignment="Center" Margin="0,18,0,0" FontSize="15" />
-                </StackPanel>
-            </Border>
+                <Border x:Name="BusyOverlay" Visibility="Collapsed" Background="#D90B1020">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <ProgressBar IsIndeterminate="True" Width="280" Height="5" Foreground="#8B7CFF" />
+                        <TextBlock x:Name="BusyText" Text="正在读取回放…" Foreground="White" HorizontalAlignment="Center" Margin="0,18,0,0" FontSize="15" />
+                    </StackPanel>
+                </Border>
+            </Grid>
         </Grid>
 
         <Border Grid.Row="2" Background="#0E1526" BorderBrush="#202A42" BorderThickness="0,1,0,0">
             <DockPanel Margin="18,0">
-                <TextBlock x:Name="StatusText" Text="就绪" VerticalAlignment="Center" Foreground="#8894AD" />
-                <TextBlock DockPanel.Dock="Right" Text="离线模式 · 大端帧格式 · protobuf" VerticalAlignment="Center" Foreground="#5F6B84" />
+                <TextBlock x:Name="StatusText" Text="工具箱就绪" VerticalAlignment="Center" Foreground="#8894AD" />
+                <TextBlock DockPanel.Dock="Right" Text="AstralParty.Toys · 本地工具箱" VerticalAlignment="Center" Foreground="#5F6B84" />
             </DockPanel>
         </Border>
     </Grid>

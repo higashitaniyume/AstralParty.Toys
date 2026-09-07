@@ -132,7 +132,8 @@ public partial class SpeedhackWindow : Window
 
     private void SyncAutoSpeedEnabled()
     {
-        BaseSpeedBox.IsEnabled = AutoSpeedEnableCheck.IsChecked == true;
+        if (BaseSpeedBox is not null)
+            BaseSpeedBox.IsEnabled = AutoSpeedEnableCheck?.IsChecked == true;
     }
 
     private void SyncStartupEnabled()

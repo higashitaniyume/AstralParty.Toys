@@ -11,6 +11,16 @@
   color: var(--gp-text-main);
 }
 
+body:not(.reduce-motion) #settingsView:not(.page-entering) .settings-header {
+  animation: content-rise 360ms var(--motion-ease) both;
+}
+body:not(.reduce-motion) #settingsView:not(.page-entering) .settings-card {
+  animation: content-rise 430ms var(--motion-ease) both;
+}
+body:not(.reduce-motion) #settingsView:not(.page-entering) .settings-card:nth-child(2) { animation-delay: 65ms; }
+body:not(.reduce-motion) #settingsView:not(.page-entering) .settings-card:nth-child(3) { animation-delay: 130ms; }
+body:not(.reduce-motion) #settingsView:not(.page-entering) .settings-card:nth-child(4) { animation-delay: 195ms; }
+
 .settings-header {
   margin-bottom: 24px;
 }
@@ -44,9 +54,10 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  transition: all 0.2s ease;
+  transition: transform 0.25s var(--motion-ease), border-color 0.2s ease, box-shadow 0.25s ease;
 }
 .settings-card:hover {
+  transform: translateY(-4px);
   border-color: rgba(255, 255, 255, 0.25);
   box-shadow: var(--gp-shadow-lg);
 }

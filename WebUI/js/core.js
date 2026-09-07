@@ -10,7 +10,9 @@ const AppState = {
   activeReplayTab: 'summary',
   activeWikiTab: 'heroes',
   currentPortrait: null,
-  currentGreetingIndex: 0
+  currentGreetingIndex: 0,
+  isPageTransitioning: false,
+  pendingPage: null
 };
 
 // Utilities
@@ -45,46 +47,85 @@ function closeModal() {
   if (modal) modal.classList.remove('open');
 }
 
-// Router: Switch between home, tools, wiki, settings
-function showPage(pageName) {
-  AppState.currentPage = pageName;
+// Router: animate between home, tools, utilities, wiki, settings
+function runPageHook(pageName) {
+  if (pageName === 'home') {
+    if (window.HomeModule && AppState.homeData) window.HomeModule.onShowHome();
+  } else if (pageName === 'tools') {
+    window.ReplayModule?.onShowTools();
+  } else if (pageName === 'wiki') {
+    window.WikiModule?.onShowWiki?.();
+  } else if (pageName === 'settings') {
+    window.SettingsModule?.render();
+  } else if (pageName === 'utilities') {
+    window.UtilitiesModule?.onShowUtilities?.();
+  }
+}
+
+function updateNavigation(pageName) {
   document.body.classList.toggle('page-home-active', pageName === 'home');
-
-  // Update Views visibility
-  document.querySelectorAll('.page-view').forEach(view => {
-    const isTarget = view.id === `${pageName}View`;
-    view.classList.toggle('hidden', !isTarget);
-  });
-
-  // Update Breadcrumb buttons
   document.querySelectorAll('.nav-crumb-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.page === pageName);
   });
+}
 
-  // Page specific hooks
-  if (pageName === 'home') {
-    // If returning to home, refresh/display current hero
-    if (window.HomeModule && AppState.homeData) {
-      window.HomeModule.onShowHome();
+function finishPageTransition(target, pageName) {
+  document.querySelectorAll('.page-view').forEach(view => {
+    if (view !== target) {
+      view.classList.add('hidden');
+      view.classList.remove('page-entering', 'page-leaving');
+      view.removeAttribute('aria-hidden');
     }
-  } else if (pageName === 'tools') {
-    // In tools, ensure replay state is updated
-    if (window.ReplayModule) {
-      window.ReplayModule.onShowTools();
-    }
-  } else if (pageName === 'wiki') {
-    if (window.WikiModule && window.WikiModule.onShowWiki) {
-      window.WikiModule.onShowWiki();
-    }
-  } else if (pageName === 'settings') {
-    if (window.SettingsModule) {
-      window.SettingsModule.render();
-    }
-  } else if (pageName === 'utilities') {
-    if (window.UtilitiesModule && window.UtilitiesModule.onShowUtilities) {
-      window.UtilitiesModule.onShowUtilities();
-    }
+  });
+  target.classList.remove('page-entering', 'page-leaving');
+  document.body.classList.remove('page-transitioning');
+  AppState.currentPage = pageName;
+  AppState.isPageTransitioning = false;
+  runPageHook(pageName);
+
+  const pending = AppState.pendingPage;
+  AppState.pendingPage = null;
+  if (pending && pending !== pageName) showPage(pending);
+}
+
+function showPage(pageName, options = {}) {
+  const target = $(`${pageName}View`);
+  if (!target) return;
+
+  const current = document.querySelector('.page-view:not(.hidden)');
+  const immediate = options.immediate || document.body.classList.contains('reduce-motion');
+  if (AppState.isPageTransitioning) {
+    AppState.pendingPage = pageName;
+    return;
   }
+  if (current === target) {
+    updateNavigation(pageName);
+    runPageHook(pageName);
+    return;
+  }
+
+  updateNavigation(pageName);
+  if (!current || immediate) {
+    target.classList.remove('hidden', 'page-entering', 'page-leaving');
+    finishPageTransition(target, pageName);
+    return;
+  }
+
+  AppState.isPageTransitioning = true;
+  document.body.classList.add('page-transitioning');
+  current.classList.add('page-leaving');
+  current.setAttribute('aria-hidden', 'true');
+
+  window.setTimeout(() => {
+    current.classList.add('hidden');
+    current.classList.remove('page-leaving');
+    target.classList.remove('hidden');
+    target.classList.add('page-entering');
+    target.removeAttribute('aria-hidden');
+    void target.offsetWidth;
+    requestAnimationFrame(() => target.classList.remove('page-entering'));
+    window.setTimeout(() => finishPageTransition(target, pageName), 390);
+  }, 180);
 }
 
 // Setup Global Listeners

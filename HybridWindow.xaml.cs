@@ -48,7 +48,10 @@ public partial class HybridWindow : Window
                 throw new FileNotFoundException("找不到 WebUI/index.html。", Path.Combine(webRoot, "index.html"));
 
             StartupDetail.Text = "初始化 Microsoft Edge WebView2";
-            await WebView.EnsureCoreWebView2Async();
+            var userDataDirectory = Path.Combine(_appDirectory, "AppData", "WebView2");
+            Directory.CreateDirectory(userDataDirectory);
+            var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataDirectory);
+            await WebView.EnsureCoreWebView2Async(environment);
             WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
                 "app.astral.local", webRoot, CoreWebView2HostResourceAccessKind.DenyCors);
             WebView.CoreWebView2.AddWebResourceRequestedFilter(

@@ -57,10 +57,19 @@
         tab.classList.toggle('active', tab.dataset.tab === tabName);
       });
 
-      document.querySelectorAll('.replay-view').forEach(view => {
-        view.classList.add('hidden');
-      });
-      $(`${tabName}View`)?.classList.remove('hidden');
+      const current = document.querySelector('.replay-view:not(.hidden)');
+      const next = $(`${tabName}View`);
+      if (!next || current === next) return;
+      current?.classList.add('replay-view-leaving');
+      window.setTimeout(() => {
+        document.querySelectorAll('.replay-view').forEach(view => {
+          view.classList.add('hidden');
+          view.classList.remove('replay-view-leaving');
+        });
+        next.classList.remove('hidden');
+        next.classList.add('replay-view-entering');
+        requestAnimationFrame(() => next.classList.remove('replay-view-entering'));
+      }, document.body.classList.contains('reduce-motion') ? 0 : 120);
     },
 
     switchTechPane(paneName) {
@@ -383,7 +392,7 @@
               <span id="protoCountText" style="font-size:13px;color:var(--text-secondary)">协议帧共 ${report.frames.length.toLocaleString()} 帧</span>
               <input id="protoSearch" class="table-search-input" placeholder="搜索帧号、CMD、消息名...">
             </div>
-            <div class="table-scroll-wrap" style="height:460px">
+            <div class="table-scroll-wrap">
               <table class="light-table">
                 <thead>
                   <tr>

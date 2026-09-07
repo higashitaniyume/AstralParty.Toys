@@ -25,10 +25,10 @@
       <Link>GameData\%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <None Update="Assets\**\*">
+    <None Update="Assets\**\*.png;Assets\**\*.jpg;Assets\**\*.jpeg;Assets\**\*.webp;Assets\**\*.bmp">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="WebUI\**\*">
+    <None Update="WebUI\index.html;WebUI\css\*.css;WebUI\js\*.js;WebUI\images\*.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="asset-sources.json">
