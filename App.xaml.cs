@@ -1,6 +1,6 @@
 using System.Windows;
 
-namespace AstralParty.ReplayTool;
+namespace AstralParty.Toys;
 
 public partial class App : Application
 {

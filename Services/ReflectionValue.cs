@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Reflection;
 
-namespace AstralParty.ReplayTool.Services;
+namespace AstralParty.Toys.Services;
 
 internal static class ReflectionValue
 {

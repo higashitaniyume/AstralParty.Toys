@@ -1,49 +1,102 @@
-# Astral Replay
+# AstralParty.Toys
 
-基于 WPF / .NET 8 + Microsoft Edge WebView2 的《吉星派对》离线回放分析器。WPF 负责本地文件、游戏 DLL 和 protobuf，HTML/CSS/JavaScript 负责界面渲染；原生 WPF 页面保留为回退入口。
-
-## 运行
-
-```powershell
-dotnet run --project .\replaytool\AstralParty.ReplayTool.csproj
-```
-
-打开程序后选择回放文件，或把游戏缓存中的无扩展名回放文件拖入窗口。
-
-发布版入口：`bin/Release/net8.0-windows/win-x64/publish/AstralParty.ReplayTool.exe`。需要系统安装 .NET 8 Desktop Runtime 和 WebView2 Evergreen Runtime（Windows 10/11 通常已有后者）。
+`AstralParty.Toys` 是面向《吉星派对》（Astral Party）的 Windows 本地工具箱，整合离线回放分析、协议帧查看、筹码复盘、游戏素材展示和变速器管理。界面使用 WPF、.NET 8 与 Microsoft Edge WebView2，数据处理均在本地完成。
 
 ## 功能
 
-- 本地回放库：启动时自动读取 `%USERPROFILE%\AppData\LocalLow\feimo\AstralParty_CN\Temp\Replay`，首页按时间展示最近 100 个回放并可直接打开
-- 浅色玩家界面：对局页只保留常用信息；统计与原始协议统一收纳在“专业信息”
-- 游戏素材化展示：星币、生命、攻击、防御、治疗、移动、卡牌、怪物和筹码地块等优先使用素材库图标
-- 回合时间线：每个回合独占一行，同回合事件横向排列
-- 筹码来源：区分升星、任务、筹码地块购买，并按连续候选记录推算刷新次数
-- 对局摘要：地图、结果、版本、时长、进度、Boss、奖励
-- 玩家表现：角色、末局状态、伤害、承伤、治疗、移动、卡牌、技能、筹码
-- 事件时间线：按回合、玩家和事件筛选
-- 筹码记录：候选包、选择、刷新、名称与品质
-- 原始协议：逐帧查看 protobuf JSON 或未知消息十六进制
-- 统计信息：命令、去重 Action、筹码品质频率
-- JSON 导出：包含完整事件和原始帧 Base64
-- WebView2 消息桥：网页请求打开文件、解析、按需解码帧和导出
-- 原生 WPF 回退：WebView2 不可用时仍可进入旧界面
+### 回放分析
 
-## 图片资源
+- 自动读取 `%USERPROFILE%\AppData\LocalLow\feimo\AstralParty_CN\Temp\Replay`，列出最近 100 个回放
+- 也可手动选择或拖入无扩展名回放文件
+- 展示对局摘要：地图、结果、游戏版本、时间、回合、进度、Boss 与奖励
+- 统计玩家表现：角色、生命、攻防、星币、伤害、承伤、治疗、移动、卡牌、技能与筹码
+- 按回合查看事件时间线并按玩家或事件筛选
+- 记录筹码候选、刷新、选择、品质与来源
+- 逐帧查看 protobuf JSON；未知消息显示十六进制载荷
+- 导出完整回放 JSON、筹码 JSON/CSV，以及适合 AI 复盘的自然语言文本
 
-发布版把应用会用到的角色、地图、怪物、筹码和界面图片转换为保留透明度的无损 WebP，并作为标准 .NET `EmbeddedResource` 编入程序集。WebView2 通过虚拟素材地址直接读取程序集资源流；图片不会释放到用户目录，也不会生成素材缓存文件，因此发布版不依赖解包素材目录。
+### 游戏工具
 
-开发时仍可通过 `asset-sources.json` 的 `materialRoots` 按优先级指定多个游戏解包素材目录。`replaytool-assetpack` 会根据游戏配置和精确文件名生成素材清单，`scripts/pack_webp.py` 负责无损转换及像素级回读校验。
+内置 [speedhack-rs](https://github.com/Hirtol/speedhack-rs) x64 版，并提供图形化管理：
 
-外部素材匹配只使用配置表资源字段、文件名和所在分类，不读取图片像素，也不调用图片识别：
+- 自动检测 Steam 游戏目录或手动选择目录
+- 安装、更新和卸载 `version.dll` 与 `speedhack_config.json`
+- 安装与卸载时使用 SHA-256 校验，避免无意覆盖或删除其它工具的 `version.dll`
+- 配置进入游戏后自动启用的基础倍速，无需按快捷键
+- 管理多个快捷键倍速档位、点按切换/按住生效、启动阶段加速、配置重载热键和挂接延迟
+- DLL 与默认配置模板作为程序集资源嵌入 `AstralParty.Toys.dll`，发布目录不需要额外携带变速器源文件
 
-- 地图：`MapImage` / `MapSceneImage`
-- 角色：`CharacterMap`，其次是 `UT_Hero_ProfilePhoto_<角色ID>`
-- 怪物：`CharacterMap`，其次是 `UT_Monster_Card_<怪物ID>` / `UT_Monster_Bust_<怪物ID>_0`
-- 筹码：`Icon`，其次是 `UT_Relic_<筹码ID>`
+变速器仅建议用于单机研究和观察。安装、卸载前应完全退出游戏；游戏内需关闭垂直同步。请勿在联机对局中使用。
 
-只有精确、唯一的文件名结果才会打包；缺失或仍有歧义的素材保留占位，不会用相似图片猜测。图片缺失不会影响回放解析。
+### 素材与界面
 
-## 格式说明
+- 地图、角色、怪物、筹码与常用 UI 图片以无损 WebP 形式嵌入程序集
+- WebView2 通过本地虚拟地址直接读取资源流，不生成素材缓存
+- WebView2 不可用时可以切换至经典 WPF 回退界面，回放分析与变速器管理均可使用
+- 维基页面可在应用内浏览，也可交给系统默认浏览器打开
 
-回放按大端序读取，帧结构为 `[cmdId:int16][payloadLength:int32][payload]`。工具完全离线运行，不启动或修改游戏。
+## 环境要求
+
+- Windows 10 或 Windows 11（x64）
+- [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)
+- Microsoft Edge WebView2 Evergreen Runtime（Windows 10/11 通常已经安装）
+
+从源码构建还需要 .NET 8 SDK 或更高版本。
+
+## 运行
+
+在工作区根目录执行：
+
+```powershell
+dotnet run --project .\replaytool\AstralParty.Toys.csproj
+```
+
+也可以打开 `replaytool\AstralParty.Toys.slnx` 后从 Visual Studio 启动。
+
+## 构建与发布
+
+构建 Debug 版本：
+
+```powershell
+dotnet build .\replaytool\AstralParty.Toys.csproj
+```
+
+生成 Windows x64 发布目录：
+
+```powershell
+dotnet publish .\replaytool\AstralParty.Toys.csproj `
+  -c Release -r win-x64 --self-contained false
+```
+
+默认发布入口位于：
+
+```text
+replaytool\bin\Release\net8.0-windows\win-x64\publish\AstralParty.Toys.exe
+```
+
+## 数据与配置位置
+
+- 游戏回放：`%USERPROFILE%\AppData\LocalLow\feimo\AstralParty_CN\Temp\Replay`
+- 工具配置：`%APPDATA%\AstralParty.Toys`
+- 变速器主配置：`%APPDATA%\AstralParty.Toys\speedhack\speedhack_config.json`
+- 游戏安装目录中的变速器：`version.dll` 与 `speedhack_config.json`
+
+从旧版 `AstralParty.ReplayTool` 首次启动新版时，工具会尝试把 `%APPDATA%\AstralParty.ReplayTool` 迁移到 `%APPDATA%\AstralParty.Toys`；如果目录正被占用，则继续使用旧目录，避免丢失配置。
+
+## 回放格式
+
+回放帧使用大端序：
+
+```text
+[cmdId:int16][payloadLength:int32][payload]
+```
+
+协议类型来自游戏的 HybridCLR 热更新程序集，主要解析逻辑位于 `Services/ReplayAnalyzer.cs` 与 `Services/GameProtocolContext.cs`。
+
+## 素材开发
+
+开发环境可通过 `asset-sources.json` 的 `materialRoots` 指定游戏解包素材目录。辅助项目和脚本包括：
+
+- `replaytool-assetpack`：按游戏配置和精确文件名生成素材清单
+- `scripts/pack_webp.py`：转换为无损 WebP，并进行像素级回读校验
+- 外部素材只按配置字段、文件名与分类匹配，不使用图片识别；缺失素材不会影响回放解析

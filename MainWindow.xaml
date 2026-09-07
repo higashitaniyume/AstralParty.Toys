@@ -1,7 +1,7 @@
-<Window x:Class="AstralParty.ReplayTool.MainWindow"
+<Window x:Class="AstralParty.Toys.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Astral Replay · 吉星派对回放分析器"
+        Title="AstralParty.Toys · 吉星派对工具箱"
         Width="1440" Height="900" MinWidth="1120" MinHeight="720"
         WindowStartupLocation="CenterScreen"
         Background="#0B1020" Foreground="#E8ECF8"
@@ -130,8 +130,8 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="ASTRAL REPLAY" FontSize="20" FontWeight="Bold" Foreground="White" />
-                    <TextBlock Text="吉星派对 · 离线回放分析器" Foreground="#8996B2" FontSize="12" />
+                    <TextBlock Text="ASTRAL PARTY TOYS" FontSize="20" FontWeight="Bold" Foreground="White" />
+                    <TextBlock Text="吉星派对 · 本地工具箱" Foreground="#8996B2" FontSize="12" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Margin="32,0" VerticalAlignment="Center">
                     <TextBlock x:Name="FileNameText" Text="尚未打开回放" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />

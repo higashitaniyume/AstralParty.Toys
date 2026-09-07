@@ -1,6 +1,6 @@
 using System.Collections.ObjectModel;
 
-namespace AstralParty.ReplayTool;
+namespace AstralParty.Toys;
 
 public sealed class ReplayReport
 {

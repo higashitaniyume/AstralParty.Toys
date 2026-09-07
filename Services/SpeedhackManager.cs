@@ -5,11 +5,11 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Win32;
 
-namespace AstralParty.ReplayTool.Services;
+namespace AstralParty.Toys.Services;
 
 /// <summary>
 /// 游戏变速器（speedhack-rs version.dll 代理）的安装 / 卸载 / 配置管理。
-/// version.dll 与 speedhack_config.json 模板以「内嵌资源」编译进程序集（AstralParty.ReplayTool.SpeedhackTools.*），
+/// version.dll 与 speedhack_config.json 模板以「内嵌资源」编译进程序集（AstralParty.Toys.SpeedhackTools.*），
 /// 安装 = 把资源写为游戏 exe 目录下的 version.dll + speedhack_config.json，
 /// 利用 Windows DLL 搜索顺序让游戏进程加载变速器；卸载前校验 DLL 哈希，避免误删他人文件。
 /// </summary>
@@ -17,7 +17,7 @@ public sealed class SpeedhackManager
 {
     public const string DllName = "version.dll";
     public const string ConfigName = "speedhack_config.json";
-    private const string ResourcePrefix = "AstralParty.ReplayTool.SpeedhackTools.";
+    private const string ResourcePrefix = "AstralParty.Toys.SpeedhackTools.";
 
     private static readonly string[] GameExeNames = ["astralparty.exe", "astralparty_cn.exe"];
 
@@ -43,15 +43,33 @@ public sealed class SpeedhackManager
     public SpeedhackManager(string appDirectory, string? profileDirectory = null)
     {
         _ = appDirectory; // 历史参数保留：所有文件均来自内嵌资源，不再依赖 exe 目录
-        _profileDirectory = profileDirectory ??
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AstralParty.ReplayTool");
+        _profileDirectory = profileDirectory ?? ResolveProfileDirectory();
+    }
+
+    private static string ResolveProfileDirectory()
+    {
+        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        var current = Path.Combine(appData, "AstralParty.Toys");
+        var legacy = Path.Combine(appData, "AstralParty.ReplayTool");
+        if (!Directory.Exists(current) && Directory.Exists(legacy))
+        {
+            try
+            {
+                Directory.Move(legacy, current);
+            }
+            catch
+            {
+                return legacy;
+            }
+        }
+        return current;
     }
 
     public static bool HasEmbeddedResources => EmbeddedDll is not null && EmbeddedConfigTemplate is not null;
     public static bool HasEmbeddedDll => EmbeddedDll is not null;
     public static bool HasEmbeddedConfigTemplate => EmbeddedConfigTemplate is not null;
 
-    /// <summary>可编辑的"主配置"：位于 %AppData%\AstralParty.ReplayTool，模板缺失时也保证可编辑。</summary>
+    /// <summary>可编辑的"主配置"：位于 %AppData%\AstralParty.Toys，模板缺失时也保证可编辑。</summary>
     public string ProfileConfigPath => Path.Combine(_profileDirectory, "speedhack", ConfigName);
 
     private string StateFilePath => Path.Combine(_profileDirectory, "speedhack-state.json");

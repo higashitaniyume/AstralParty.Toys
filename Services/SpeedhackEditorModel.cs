@@ -1,4 +1,4 @@
-namespace AstralParty.ReplayTool.Services;
+namespace AstralParty.Toys.Services;
 
 /// <summary>WebUI 配置编辑器的传输模型（CamelCase 序列化到网页），字段含义见 SpeedhackConfig。</summary>
 public sealed class SpeedhackEditorModel

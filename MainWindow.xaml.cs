@@ -3,9 +3,9 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Data;
 using Microsoft.Win32;
-using AstralParty.ReplayTool.Services;
+using AstralParty.Toys.Services;
 
-namespace AstralParty.ReplayTool;
+namespace AstralParty.Toys;
 
 public partial class MainWindow : Window
 {

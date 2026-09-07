@@ -4,9 +4,9 @@ using System.Text.Json;
 using System.Windows;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
-using AstralParty.ReplayTool.Services;
+using AstralParty.Toys.Services;
 
-namespace AstralParty.ReplayTool;
+namespace AstralParty.Toys;
 
 public partial class HybridWindow : Window
 {

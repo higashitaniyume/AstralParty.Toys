@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.Windows;
-using AstralParty.ReplayTool.Services;
+using AstralParty.Toys.Services;
 using Microsoft.Win32;
 
-namespace AstralParty.ReplayTool;
+namespace AstralParty.Toys;
 
 /// <summary>经典 WPF 界面的变速器管理窗口（与 WebUI「游戏工具」页共用 SpeedhackManager）。</summary>
 public partial class SpeedhackWindow : Window

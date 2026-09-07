@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using System.Security.Cryptography;
 
-namespace AstralParty.ReplayTool.Services;
+namespace AstralParty.Toys.Services;
 
 public sealed class ReplayAnalyzer
 {

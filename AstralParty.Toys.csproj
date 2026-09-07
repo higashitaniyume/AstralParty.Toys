@@ -5,8 +5,8 @@
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AssemblyName>AstralParty.ReplayTool</AssemblyName>
-    <RootNamespace>AstralParty.ReplayTool</RootNamespace>
+    <AssemblyName>AstralParty.Toys</AssemblyName>
+    <RootNamespace>AstralParty.Toys</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="..\version.dll;..\speedhack_config.json">
-      <LogicalName>AstralParty.ReplayTool.SpeedhackTools.%(Filename)%(Extension)</LogicalName>
+      <LogicalName>AstralParty.Toys.SpeedhackTools.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
     <Content Include="..\extracted_dlls\*.dll">
       <Link>Protocol\%(Filename)%(Extension)</Link>

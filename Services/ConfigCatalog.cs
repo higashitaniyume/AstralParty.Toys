@@ -1,4 +1,4 @@
-namespace AstralParty.ReplayTool.Services;
+namespace AstralParty.Toys.Services;
 
 public sealed class ConfigCatalog
 {

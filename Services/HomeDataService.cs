@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace AstralParty.ReplayTool.Services;
+namespace AstralParty.Toys.Services;
 
 public sealed class HomeDataService
 {

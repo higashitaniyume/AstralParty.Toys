@@ -1,7 +1,7 @@
 using System.Reflection;
 using System.Runtime.Loader;
 
-namespace AstralParty.ReplayTool.Services;
+namespace AstralParty.Toys.Services;
 
 public sealed class GameProtocolContext
 {

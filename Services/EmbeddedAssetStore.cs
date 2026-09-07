@@ -1,10 +1,10 @@
 using System.Reflection;
 
-namespace AstralParty.ReplayTool.Services;
+namespace AstralParty.Toys.Services;
 
 public static class EmbeddedAssetStore
 {
-    private const string ResourcePrefix = "AstralParty.ReplayTool.PackedAssets.";
+    private const string ResourcePrefix = "AstralParty.Toys.PackedAssets.";
     private const string AssetPrefix = "embedded://asset/";
     private static readonly Assembly Assembly = typeof(EmbeddedAssetStore).Assembly;
     private static readonly IReadOnlyDictionary<string, string> Resources = BuildResourceIndex();

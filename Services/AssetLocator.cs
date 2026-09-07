@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace AstralParty.ReplayTool.Services;
+namespace AstralParty.Toys.Services;
 
 public static class MaterialSource
 {
