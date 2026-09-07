@@ -48,6 +48,7 @@ function closeModal() {
 // Router: Switch between home, tools, wiki, settings
 function showPage(pageName) {
   AppState.currentPage = pageName;
+  document.body.classList.toggle('page-home-active', pageName === 'home');
 
   // Update Views visibility
   document.querySelectorAll('.page-view').forEach(view => {
@@ -78,6 +79,10 @@ function showPage(pageName) {
   } else if (pageName === 'settings') {
     if (window.SettingsModule) {
       window.SettingsModule.render();
+    }
+  } else if (pageName === 'utilities') {
+    if (window.UtilitiesModule && window.UtilitiesModule.onShowUtilities) {
+      window.UtilitiesModule.onShowUtilities();
     }
   }
 }
@@ -152,6 +157,10 @@ host?.addEventListener('message', event => {
 
     case 'toast':
       toast(msg.message);
+      break;
+
+    case 'speedhackStatus':
+      if (window.UtilitiesModule) window.UtilitiesModule.applyStatus(msg.payload);
       break;
 
     case 'error':

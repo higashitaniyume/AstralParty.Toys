@@ -37,6 +37,12 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog(this) == true) await LoadReplayAsync(dialog.FileName);
     }
 
+    private void ToolsButton_Click(object sender, RoutedEventArgs e)
+    {
+        var window = new SpeedhackWindow { Owner = this };
+        window.Show();
+    }
+
     private async void Window_Drop(object sender, DragEventArgs e)
     {
         if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
@@ -103,7 +109,7 @@ public partial class MainWindow : Window
         if (_relicsView is null) return;
         var query = RelicFilterBox.Text.Trim();
         _relicsView.Filter = item => item is RelicRecord value && Matches(query,
-            value.FrameIndex.ToString(), value.Round.ToString(), value.PlayerName, value.Kind,
+            value.FrameIndex.ToString(), value.Round.ToString(), value.PlayerName, value.HeroName, value.Kind,
             value.RelicId.ToString(), value.RelicName, value.Quality, value.OptionsText);
     }
 

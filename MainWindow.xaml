@@ -138,6 +138,7 @@
                     <TextBlock x:Name="FilePathText" Text="可拖放文件到窗口" Foreground="#75819C" FontSize="11" TextTrimming="CharacterEllipsis" />
                 </StackPanel>
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="游戏工具" Margin="0,0,10,0" Background="#25304D" Click="ToolsButton_Click" />
                     <Button x:Name="ExportButton" Content="导出 JSON" Margin="0,0,10,0" Background="#25304D" Click="ExportButton_Click" IsEnabled="False" />
                     <Button Content="打开回放" Click="OpenReplay_Click" />
                 </StackPanel>
@@ -311,7 +312,8 @@
                                 </DataGridTemplateColumn>
                                 <DataGridTextColumn Header="帧" Binding="{Binding FrameIndex}" Width="70" />
                                 <DataGridTextColumn Header="回合" Binding="{Binding Round}" Width="65" />
-                                <DataGridTextColumn Header="玩家" Binding="{Binding PlayerName}" Width="150" />
+                                <DataGridTextColumn Header="玩家" Binding="{Binding PlayerName}" Width="140" />
+                                <DataGridTextColumn Header="角色" Binding="{Binding HeroName}" Width="120" />
                                 <DataGridTextColumn Header="记录" Binding="{Binding Kind}" Width="70" />
                                 <DataGridTextColumn Header="等级" Binding="{Binding LevelText}" Width="65" />
                                 <DataGridTextColumn Header="筹码" Binding="{Binding RelicName}" Width="180" />
