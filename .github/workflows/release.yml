@@ -1,0 +1,135 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  PROJECT: AstralParty.Toys.csproj
+  APP_NAME: AstralParty.Toys
+  DOTNET_VERSION: 8.0.x
+
+jobs:
+  build:
+    name: Build ${{ matrix.rid }} ${{ matrix.kind }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rid: [win-x86, win-x64]
+        kind: [framework-zip, self-contained-zip, framework-single, self-contained-single]
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Resolve package metadata
+        id: metadata
+        shell: pwsh
+        run: |
+          $version = if ("${{ github.ref_type }}" -eq "tag") {
+            "${{ github.ref_name }}"
+          } else {
+            "manual-${{ github.run_number }}"
+          }
+          $safeVersion = $version -replace '[^0-9A-Za-z._-]', '-'
+          $selfContained = "${{ contains(matrix.kind, 'self-contained') }}".ToLowerInvariant()
+          $singleFile = "${{ contains(matrix.kind, 'single') }}".ToLowerInvariant()
+          $runtimeLabel = if ($selfContained -eq "true") { "self-contained" } else { "framework-dependent" }
+          $formatLabel = if ($singleFile -eq "true") { "single-file" } else { "portable" }
+          $baseName = "${{ env.APP_NAME }}-$safeVersion-${{ matrix.rid }}-$runtimeLabel-$formatLabel"
+          "version=$safeVersion" >> $env:GITHUB_OUTPUT
+          "self_contained=$selfContained" >> $env:GITHUB_OUTPUT
+          "single_file=$singleFile" >> $env:GITHUB_OUTPUT
+          "base_name=$baseName" >> $env:GITHUB_OUTPUT
+
+      - name: Restore
+        shell: pwsh
+        run: dotnet restore $env:PROJECT --runtime "${{ matrix.rid }}"
+
+      - name: Publish
+        shell: pwsh
+        run: |
+          $arguments = @(
+            "publish", $env:PROJECT,
+            "--configuration", "Release",
+            "--runtime", "${{ matrix.rid }}",
+            "--self-contained", "${{ steps.metadata.outputs.self_contained }}",
+            "--no-restore",
+            "--output", "publish",
+            "-p:DebugType=None",
+            "-p:DebugSymbols=false",
+            "-p:PublishSingleFile=${{ steps.metadata.outputs.single_file }}"
+          )
+          if ("${{ steps.metadata.outputs.single_file }}" -eq "true") {
+            $arguments += "-p:IncludeNativeLibrariesForSelfExtract=true"
+            $arguments += "-p:IncludeAllContentForSelfExtract=true"
+            if ("${{ steps.metadata.outputs.self_contained }}" -eq "true") {
+              $arguments += "-p:EnableCompressionInSingleFile=true"
+            }
+          }
+          & dotnet @arguments
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Package release asset
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
+          $baseName = "${{ steps.metadata.outputs.base_name }}"
+          if ("${{ steps.metadata.outputs.single_file }}" -eq "true") {
+            $files = @(Get-ChildItem publish -File)
+            if ($files.Count -ne 1 -or $files[0].Extension -ne ".exe") {
+              throw "Single-file publish must contain exactly one EXE. Found: $($files.Name -join ', ')"
+            }
+            Move-Item $files[0].FullName "artifacts/$baseName.exe"
+          } else {
+            Compress-Archive -Path "publish/*" -DestinationPath "artifacts/$baseName.zip" -CompressionLevel Optimal
+          }
+
+      - name: Upload release asset
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.metadata.outputs.base_name }}
+          path: artifacts/*
+          if-no-files-found: error
+          retention-days: 1
+
+  release:
+    name: Create GitHub release
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download release assets
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Verify release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t assets < <(find artifacts -maxdepth 1 -type f -print | sort)
+          printf '%s\n' "${assets[@]}"
+          test "${#assets[@]}" -eq 8
+          test "$(find artifacts -maxdepth 1 -type f -name '*.zip' | wc -l)" -eq 4
+          test "$(find artifacts -maxdepth 1 -type f -name '*.exe' | wc -l)" -eq 4
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true

@@ -14,15 +14,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="..\version.dll;..\speedhack_config.json">
+    <EmbeddedResource Include="version.dll;speedhack_config.json">
       <LogicalName>AstralParty.Toys.SpeedhackTools.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
-    <Content Include="..\extracted_dlls\*.dll">
-      <Link>Protocol\%(Filename)%(Extension)</Link>
+    <Content Include="Protocol\*.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\config_extract\Character.bin;..\config_extract\STRCharacter.bin;..\config_extract\Map.bin;..\config_extract\STRMap.bin;..\config_extract\Monster.bin;..\config_extract\STRMonster.bin;..\config_extract\Relic.bin;..\config_extract\STRRelic.bin;..\config_extract\Item.bin;..\config_extract\STRItem.bin">
-      <Link>GameData\%(Filename)%(Extension)</Link>
+    <Content Include="GameData\Character.bin;GameData\STRCharacter.bin;GameData\Map.bin;GameData\STRMap.bin;GameData\Monster.bin;GameData\STRMonster.bin;GameData\Relic.bin;GameData\STRRelic.bin;GameData\Item.bin;GameData\STRItem.bin">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <None Update="Assets\**\*.png;Assets\**\*.jpg;Assets\**\*.jpeg;Assets\**\*.webp;Assets\**\*.bmp">
