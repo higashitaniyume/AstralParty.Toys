@@ -42,14 +42,34 @@ public sealed class SpeedhackManager
 
     public SpeedhackManager(string appDirectory, string? profileDirectory = null)
     {
-        _profileDirectory = profileDirectory ?? Path.Combine(appDirectory, "AppData");
+        _ = appDirectory; // 保留兼容调用签名；配置不应依赖应用或单文件解包目录
+        _profileDirectory = profileDirectory ?? ResolveProfileDirectory();
+    }
+
+    private static string ResolveProfileDirectory()
+    {
+        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        var current = Path.Combine(appData, "AstralParty.Toys");
+        var legacy = Path.Combine(appData, "AstralParty.ReplayTool");
+        if (!Directory.Exists(current) && Directory.Exists(legacy))
+        {
+            try
+            {
+                Directory.Move(legacy, current);
+            }
+            catch
+            {
+                return legacy;
+            }
+        }
+        return current;
     }
 
     public static bool HasEmbeddedResources => EmbeddedDll is not null && EmbeddedConfigTemplate is not null;
     public static bool HasEmbeddedDll => EmbeddedDll is not null;
     public static bool HasEmbeddedConfigTemplate => EmbeddedConfigTemplate is not null;
 
-    /// <summary>可编辑的主配置，位于程序目录的 AppData 文件夹。</summary>
+    /// <summary>可编辑的主配置，位于 %AppData%\AstralParty.Toys。</summary>
     public string ProfileConfigPath => Path.Combine(_profileDirectory, "speedhack", ConfigName);
 
     private string StateFilePath => Path.Combine(_profileDirectory, "speedhack-state.json");

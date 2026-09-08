@@ -48,7 +48,9 @@ public partial class HybridWindow : Window
                 throw new FileNotFoundException("找不到 WebUI/index.html。", Path.Combine(webRoot, "index.html"));
 
             StartupDetail.Text = "初始化本地界面";
-            var userDataDirectory = Path.Combine(_appDirectory, "AppData", "WebView2");
+            var userDataDirectory = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "AstralParty.Toys", "WebView2");
             Directory.CreateDirectory(userDataDirectory);
             var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataDirectory);
             await WebView.EnsureCoreWebView2Async(environment);

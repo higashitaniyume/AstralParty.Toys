@@ -72,7 +72,6 @@ jobs:
             "-p:PublishSingleFile=${{ steps.metadata.outputs.single_file }}"
           )
           if ("${{ steps.metadata.outputs.single_file }}" -eq "true") {
-            $arguments += "-p:IncludeNativeLibrariesForSelfExtract=true"
             $arguments += "-p:IncludeAllContentForSelfExtract=true"
             if ("${{ steps.metadata.outputs.self_contained }}" -eq "true") {
               $arguments += "-p:EnableCompressionInSingleFile=true"

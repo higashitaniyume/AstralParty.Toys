@@ -2,6 +2,34 @@
 
 `AstralParty.Toys` 是面向《吉星派对》（Astral Party）的 Windows 本地工具箱，整合离线回放分析、协议帧查看、筹码复盘、游戏素材展示和变速器管理。所有数据处理均在本地完成。
 
+## 下载与版本选择
+
+从 [GitHub Releases](https://github.com/higashitaniyume/AstralParty.Toys/releases/latest) 下载发布版。每个版本提供 2 种架构、2 种运行时模式和 2 种打包方式，共 8 个可执行产物；GitHub 自动生成的 `Source code` 压缩包只是源码，不能直接运行。
+
+文件名格式为：
+
+```text
+AstralParty.Toys-<版本>-<架构>-<运行时模式>-<打包方式>
+```
+
+| 文件名字段 | 可选值 | 如何选择 |
+| --- | --- | --- |
+| 架构 | `win-x64` / `win-x86` | 绝大多数用户选择 `win-x64`；仅 32 位 Windows 选择 `win-x86` |
+| 运行时模式 | `self-contained` | 已包含 .NET 8，文件较大；不确定电脑是否安装 .NET 时选择它 |
+| 运行时模式 | `framework-dependent` | 文件较小，但必须先安装 [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) |
+| 打包方式 | `portable.zip` | **推荐**；解压完整目录后运行，启动直接、便于排查问题，不能只复制其中的 EXE |
+| 打包方式 | `single-file.exe` | 只需下载一个 EXE，但启动时需要把捆绑内容解包到系统临时目录 |
+
+快速选择：
+
+- 一般 64 位 Windows 用户：`win-x64-self-contained-portable.zip`
+- 已安装 .NET 8、希望下载更小：`win-x64-framework-dependent-portable.zip`
+- 必须只携带一个 EXE：选择对应的 `single-file.exe`；是否自带 .NET 仍由 `self-contained` / `framework-dependent` 决定
+
+`single-file.exe` 表示“以单个文件分发”，并不表示运行时完全不落盘。为了把本项目的 WebUI、游戏数据和依赖全部收进一个 EXE，发布任务启用了 .NET 的完整自解压兼容模式，因此单文件版启动时会先把内容解包到 Windows 的 `%TEMP%\.net\` 缓存目录；这是正常机制，不是又安装了一份程序。若不希望产生这类解包缓存，请选择 `portable.zip`。
+
+无论选择哪一种产物，主界面仍需要 Microsoft Edge WebView2 Evergreen Runtime（Windows 10/11 通常已经安装）。
+
 ## 功能
 
 ### 回放分析
@@ -37,8 +65,8 @@
 
 ## 环境要求
 
-- Windows 10 或 Windows 11（x64）
-- [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)
+- Windows 10 或 Windows 11（发布页同时提供 `win-x64` 与 `win-x86`）
+- `framework-dependent` 版本需要 [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)；`self-contained` 版本已自带 .NET 8
 - Microsoft Edge WebView2 Evergreen Runtime（Windows 10/11 通常已经安装）
 
 从源码构建还需要 .NET 8 SDK 或更高版本。
@@ -79,6 +107,7 @@ replaytool\bin\Release\net8.0-windows\win-x64\publish\AstralParty.Toys.exe
 - 游戏回放：`%USERPROFILE%\AppData\LocalLow\feimo\AstralParty_CN\Temp\Replay`
 - 工具配置：`%APPDATA%\AstralParty.Toys`
 - 变速器主配置：`%APPDATA%\AstralParty.Toys\speedhack\speedhack_config.json`
+- WebView2 浏览器数据与缓存：`%LOCALAPPDATA%\AstralParty.Toys\WebView2`
 - 游戏安装目录中的变速器：`version.dll` 与 `speedhack_config.json`
 
 从旧版 `AstralParty.ReplayTool` 首次启动新版时，工具会尝试把 `%APPDATA%\AstralParty.ReplayTool` 迁移到 `%APPDATA%\AstralParty.Toys`；如果目录正被占用，则继续使用旧目录，避免丢失配置。
