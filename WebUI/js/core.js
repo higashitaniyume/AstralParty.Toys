@@ -56,7 +56,7 @@ function runPageHook(pageName) {
   } else if (pageName === 'wiki') {
     window.WikiModule?.onShowWiki?.();
   } else if (pageName === 'settings') {
-    window.SettingsModule?.render();
+    window.SettingsModule?.init();
   } else if (pageName === 'utilities') {
     window.UtilitiesModule?.onShowUtilities?.();
   }
@@ -154,17 +154,11 @@ host?.addEventListener('message', event => {
   if (!msg?.type) return;
 
   switch (msg.type) {
-    case 'hostReady':
-      if ($('runtimeBadgeText')) {
-        $('runtimeBadgeText').textContent = msg.payload?.runtime || '在线 · 本地离线环境';
-      }
-      break;
-
     case 'homeData':
       AppState.homeData = msg.payload;
       if (window.HomeModule) window.HomeModule.init(msg.payload);
       if (window.WikiModule) window.WikiModule.init(msg.payload);
-      if (window.SettingsModule) window.SettingsModule.init(msg.payload);
+      if (window.SettingsModule) window.SettingsModule.init();
       break;
 
     case 'replayLibrary':

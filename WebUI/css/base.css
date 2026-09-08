@@ -195,33 +195,6 @@ body.page-home-active .page-container {
   box-shadow: 0 4px 14px rgba(255, 23, 118, 0.5);
 }
 
-.header-status {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.status-badge {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  background: rgba(16, 185, 129, 0.15);
-  color: #34d399;
-  font-size: 11.5px;
-  font-weight: 700;
-  border-radius: var(--gp-radius-full);
-  border: 1px solid rgba(52, 211, 153, 0.4);
-}
-.status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #34d399;
-  box-shadow: 0 0 8px #34d399;
-  animation: status-breathe 2.4s ease-in-out infinite;
-}
-
 .page-container {
   flex: 1 1 auto;
   height: calc(100% - var(--header-height));
@@ -482,11 +455,6 @@ body.page-transitioning .brand-section {
   background: #ff1776;
   border-color: #ffffff;
   transform: scale(1.1);
-}
-
-@keyframes status-breathe {
-  0%, 100% { opacity: 0.7; transform: scale(0.85); box-shadow: 0 0 6px #34d399; }
-  50% { opacity: 1; transform: scale(1.25); box-shadow: 0 0 13px #34d399; }
 }
 
 @keyframes content-rise {

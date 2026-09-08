@@ -242,7 +242,7 @@
                             </Button>
                         </Grid>
                     </StackPanel>
-                    <TextBlock Grid.Row="1" Text="本地运行 · 回放数据不会上传 · 加速器仅建议用于单机研究" Foreground="#65718C" FontSize="11" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Row="1" Text="本地运行 · 回放数据不会上传" Foreground="#65718C" FontSize="11" HorizontalAlignment="Center" />
                 </Grid>
             </Border>
 

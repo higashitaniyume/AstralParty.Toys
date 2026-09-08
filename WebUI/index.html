@@ -30,61 +30,57 @@
         <button class="nav-crumb-btn" data-page="wiki"><span>📖</span>维基攻略</button>
         <button class="nav-crumb-btn" data-page="settings"><span>⚙️</span>系统设置</button>
       </nav>
-
-      <div class="header-status">
-        <div class="status-badge">
-          <span class="status-dot"></span>
-          <span id="runtimeBadgeText">离线引擎 · 本地解析</span>
-        </div>
-      </div>
     </header>
 
     <!-- Main Views Container -->
     <main class="page-container">
       <!-- 1. HOME VIEW (In-Game Aesthetic Main Lobby) -->
       <section id="homeView" class="page-view home-page in-game-lobby">
+        <img class="lobby-game-logo" src="images/astral-party-logo.png" alt="Astral Party">
+
         <!-- Hero Character Stage on Left -->
         <div class="lobby-hero-stage stage-left" id="heroPortraitWrapper" title="点击角色互动 / 切换台词">
           <div class="lobby-stage-glow"></div>
-          <img id="heroPortraitImg" class="lobby-hero-art" src="https://assets.astral.local/Portraits/UT_Hero_Card_102_01.webp" alt="芬妮">
+          <img id="heroPortraitImg" class="lobby-hero-art" src="https://assets.astral.local/Portraits/UT_Hero_Card_306.png" alt="橘雪莉">
 
-          <!-- Character Speech Bubble -->
-          <div class="hero-dialog-bubble bubble-left" id="heroDialogBubble" title="点击对话框刷新台词">
-            <div class="bubble-header">
-              <span class="bubble-speaker">✦ <span id="bubbleSpeakerName">芬妮</span></span>
-              <span class="bubble-hint">点我互动 💬</span>
+          <!-- Version announcement loaded from data/game-version-announcement.json -->
+          <article class="version-announcement-card" id="versionAnnouncementCard" aria-live="polite">
+            <div class="version-announcement-head">
+              <span class="version-announcement-label">📢 游戏版本公告</span>
+              <time id="versionAnnouncementDate">读取中…</time>
             </div>
-            <p class="bubble-text" id="bubbleSpeechText">只要报酬丰厚……啊不是，古怪神探芬妮随时准备出击！</p>
-          </div>
+            <h2 id="versionAnnouncementTitle">正在读取版本公告…</h2>
+            <p id="versionAnnouncementSummary">请稍候</p>
+            <div class="version-announcement-foot">
+              <span id="versionAnnouncementPeriod"></span>
+              <button type="button" id="versionAnnouncementMoreBtn">查看详情 ›</button>
+            </div>
+          </article>
         </div>
 
-        <!-- Right Side Primary Functional Buttons: 维基 & 工具 -->
+        <!-- Right Side Primary Functional Buttons: 变速器、回放与维基 -->
         <div class="lobby-right-menu">
-          <!-- 1. 维基 (BWiki 攻略) -->
+          <!-- 1. 游戏变速器 -->
+          <button class="lobby-card-btn card-speedhack" id="btnMenuSpeedhack" title="游戏加速与变速器设置">
+            <div class="card-btn-text">变速器</div>
+            <img class="card-btn-chibi" src="https://assets.astral.local/UI/UT_Hero_LevelUp_107_01.webp" alt="变速器">
+          </button>
+
+          <!-- 2. 回放分析 -->
+          <button class="lobby-card-btn card-tools" id="btnMenuTools" title="对局回放分析工具">
+            <div class="card-btn-text">回放</div>
+            <img class="card-btn-chibi" src="https://assets.astral.local/UI/UT_Hero_LevelUp_108_01.webp" alt="回放">
+          </button>
+
+          <!-- 3. 维基 (BWiki 攻略) -->
           <button class="lobby-card-btn card-wiki" id="btnMenuWiki" title="吉星派对 · BWiki 维基攻略">
             <div class="card-btn-text">维基</div>
             <img class="card-btn-chibi" src="https://assets.astral.local/UI/UT_Hero_LevelUp_114_01.webp" alt="维基">
           </button>
-
-          <!-- 2. 工具 (对局回放分析工具) -->
-          <button class="lobby-card-btn card-tools" id="btnMenuTools" title="对局回放分析工具">
-            <div class="card-btn-text">工具</div>
-            <img class="card-btn-chibi" src="https://assets.astral.local/UI/UT_Hero_LevelUp_108_01.webp" alt="工具">
-          </button>
         </div>
 
-        <!-- Bottom In-Game Status Dock Bar -->
+        <!-- Bottom Dock Bar -->
         <footer class="lobby-bottom-dock">
-          <!-- Left: App Status & Engine Info (No player names) -->
-          <div class="dock-status-widget">
-            <div class="dock-status-tag">
-              <span class="status-dot"></span>
-              <span class="status-title">ASTRAL PARTY</span>
-              <span class="status-desc">吉星助手 · 本地解析已就绪</span>
-            </div>
-          </div>
-
-          <!-- Right: Settings Action Button -->
           <nav class="dock-actions-nav">
             <button class="dock-nav-item" id="dockBtnSettings" title="系统设置">
               <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
@@ -121,21 +117,24 @@
         <div class="tools-workspace">
           <!-- Empty State / Recent Replays List -->
           <div class="replay-empty-state" id="replayEmptyBox">
-            <div class="empty-icon-orbit">🎲</div>
-            <h3>把一局对战变成可读的数据</h3>
-            <p>本地高速解析回放中的玩家、回合、动作、筹码流转与底层协议帧。所有数据均在本地安全离线处理。</p>
-            <button class="primary-btn" id="emptySelectReplayBtn" style="padding:12px 32px;font-size:15px">＋ 选择回放文件</button>
+            <section class="replay-picker-panel">
+              <div class="empty-icon-orbit">🎲</div>
+              <h3>选择回放文件</h3>
+              <p>手动打开任意回放文件，本地解析玩家、回合、动作、筹码流转与底层协议帧。</p>
+              <button class="primary-btn" id="emptySelectReplayBtn">＋ 选择回放文件</button>
+              <small class="replay-local-note">所有数据均在本地安全离线处理</small>
+            </section>
 
-            <div class="recent-replays-box">
+            <section class="recent-replays-box">
               <div class="recent-head">
                 <div>
                   <h4>本地回放缓存列表</h4>
                   <small id="libraryDirectoryText">正在检测 LocalLow 回放目录…</small>
                 </div>
-                <button class="secondary-btn" id="refreshLibraryBtn" style="padding:6px 14px;font-size:12px">刷新列表</button>
+                <button class="secondary-btn" id="refreshLibraryBtn">刷新列表</button>
               </div>
               <div class="replay-entry-list" id="recentReplayList"></div>
-            </div>
+            </section>
           </div>
 
           <!-- Active Replay Detail Workspace -->
@@ -162,7 +161,6 @@
           <div class="utilities-title-group">
             <button class="back-btn" id="utilsBackHomeBtn">‹ 返回大厅</button>
             <h2>游戏工具</h2>
-            <span class="utilities-tagline">本地辅助 · 操作前请退出游戏</span>
           </div>
           <div class="utilities-header-actions">
             <button class="secondary-btn" id="utilsEditJsonBtn">✎ 编辑配置 JSON</button>
@@ -215,7 +213,6 @@
                 <ul>
                   <li>原理：把内置 <span class="util-mono">version.dll</span> 放到游戏 exe 旁边，游戏启动时自动加载；请先<strong>完全退出游戏</strong>再安装/卸载。</li>
                   <li>倍速基于修改进程时间函数，需在游戏设置里<strong>关闭垂直同步</strong>才生效；修改配置后<strong>重启游戏</strong>，或在游戏内按重载热键（默认 Ctrl+Shift+R）。</li>
-                  <li>建议仅用于<strong>单机 / 研究观察</strong>，请勿在联机对局中使用。</li>
                   <li>工具来源：<a href="https://github.com/Hirtol/speedhack-rs" target="_blank" rel="noopener" style="color:var(--gp-blue)">github.com/Hirtol/speedhack-rs</a>（构建于 2024-04-13）。</li>
                 </ul>
               </div>
@@ -340,79 +337,47 @@
         </div>
       </section>
 
-      <!-- 4. SETTINGS VIEW -->
+      <!-- 5. SETTINGS VIEW -->
       <section id="settingsView" class="page-view settings-page hidden">
         <div class="settings-header">
-          <h2>系统与设置</h2>
-          <p>管理本地素材库、回放缓存目录与应用外观偏好</p>
+          <h2>系统设置</h2>
+          <p>调整界面偏好并查看应用信息</p>
         </div>
 
         <div class="settings-grid">
           <article class="settings-card">
             <div class="settings-card-head">
-              <h3><span>🎨</span> 立绘与素材资源库</h3>
-              <span class="status-tag-active" id="loadedPortraitsCount">已加载 122 张大立绘</span>
-            </div>
-            <div class="settings-field">
-              <label>立绘素材路径与筛选规则</label>
-              <div class="path-display-box">
-                <span>C:\PublicFiles\materials\StarEngine\Grouped\人物立绘</span>
-                <span class="badge badge-update">UT_Hero_Card_ 大立绘 · 排除 Card2 及 sfw</span>
-              </div>
-              <span class="field-desc">全量 1340×1692 高清大立绘已完成无损 WebP 内嵌打包，离线极速渲染。</span>
-            </div>
-            <div>
-              <button class="secondary-btn" id="reloadPortraitsBtn">重新扫描素材库</button>
-            </div>
-          </article>
-
-          <article class="settings-card">
-            <div class="settings-card-head">
-              <h3><span>📂</span> 游戏回放检索目录</h3>
-              <span class="status-tag-active">自动检测</span>
-            </div>
-            <div class="settings-field">
-              <label>LocalLow 回放缓存路径</label>
-              <div class="path-display-box">
-                <span id="settingsReplayDir">AppData\LocalLow\feimo\AstralParty_CN\Temp\Replay</span>
-              </div>
-              <span class="field-desc">对局结束后回放文件将自动保存至该目录，工具会自动列出最新回放。</span>
-            </div>
-          </article>
-
-          <article class="settings-card">
-            <div class="settings-card-head">
-              <h3><span>✨</span> 界面与动画偏好</h3>
+              <h3><span>✨</span> 动画偏好</h3>
             </div>
             <div class="toggle-switch-row">
               <div class="toggle-info">
-                <h4>立绘呼吸浮动动效</h4>
-                <p>开启看板立绘的悬浮与呼吸光晕微动动画</p>
+                <h4>界面动态效果</h4>
+                <p>开启看板立绘与页面切换动画</p>
               </div>
               <input type="checkbox" class="switch-input" id="animToggle" checked>
             </div>
-            <div class="toggle-switch-row">
-              <div class="toggle-info">
-                <h4>界面视觉风格</h4>
-                <p>沉浸式游戏原声暗黑炫彩电玩界面</p>
-              </div>
-              <span class="badge badge-notice">游戏原版风格</span>
-            </div>
           </article>
 
-          <article class="settings-card">
+          <article class="settings-card settings-about-card">
             <div class="settings-card-head">
-              <h3><span>💻</span> 运行环境与兼容性</h3>
+              <h3><span>✦</span> 关于</h3>
             </div>
-            <div class="settings-field">
-              <label>底层渲染引擎</label>
-              <div class="path-display-box">
-                <span>WPF · .NET 8.0 · Microsoft Edge WebView2</span>
+            <div class="about-app-heading">
+              <img src="images/astral-party-logo.png" alt="Astral Party" class="about-game-logo">
+              <div>
+                <h4>AstralParty.Toys</h4>
+                <p>吉星派对回放与游戏工具箱</p>
               </div>
             </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px">
-              <span style="font-size:12px;color:var(--gp-text-sub)">若遇特殊显卡兼容性问题，可切换至原生界面：</span>
-              <button class="secondary-btn" id="openClassicWpfBtn">切换原生 WPF 界面</button>
+            <p class="about-description">集成回放分析、协议帧查看、维基浏览和游戏变速器管理，数据均在本地处理。</p>
+            <dl class="about-details">
+              <div><dt>应用版本</dt><dd id="aboutVersion">正在读取…</dd></div>
+              <div><dt>运行环境</dt><dd>.NET 8 · Windows · WebView2</dd></div>
+              <div><dt>项目主页</dt><dd>github.com/higashitaniyume/AstralParty.Toys</dd></div>
+            </dl>
+            <div class="about-actions">
+              <button class="secondary-btn" id="aboutRepositoryBtn">↗ 项目主页</button>
+              <button class="secondary-btn" id="aboutSpeedhackBtn">↗ speedhack-rs</button>
             </div>
           </article>
         </div>
@@ -435,7 +400,7 @@
       <div class="loading-card">
         <div style="width:40px;height:40px;border:4px solid rgba(255,255,255,0.1);border-top-color:var(--gp-pink);border-radius:50%;animation:spin 0.8s linear infinite"></div>
         <strong id="loadingText" style="font-size:16px;font-weight:800;letter-spacing:0.5px">正在解析回放…</strong>
-        <span style="font-size:12px;color:var(--gp-text-sub)">全部数据处理均在本地离线安全完成</span>
+        <span style="font-size:12px;color:var(--gp-text-sub)">正在处理，请稍候</span>
       </div>
     </div>
 

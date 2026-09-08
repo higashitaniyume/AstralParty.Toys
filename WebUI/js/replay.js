@@ -435,7 +435,7 @@
           row.addEventListener('click', () => {
             AppState.selectedFrame = Number(row.dataset.frame);
             pane.querySelectorAll('.proto-frame-row').forEach(r => r.classList.toggle('selected', r === row));
-            $('protoFrameDetail').textContent = '正在请求宿主 .NET 进行 Protobuf 解码…';
+            $('protoFrameDetail').textContent = '正在解码 Protobuf 载荷…';
             post({ type: 'getFrame', index: AppState.selectedFrame });
           });
         });

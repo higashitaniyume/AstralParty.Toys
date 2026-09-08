@@ -70,6 +70,7 @@ body:not(.reduce-motion) #utilitiesView:not(.page-entering) .util-form-row:nth-c
 
 .utilities-body {
   flex: 1 1 auto;
+  display: flex;
   min-height: 0;
   overflow-y: auto;
   padding: 20px 24px 32px;
@@ -79,8 +80,9 @@ body:not(.reduce-motion) #utilitiesView:not(.page-entering) .util-form-row:nth-c
   display: grid;
   grid-template-columns: minmax(360px, 5fr) minmax(520px, 7fr);
   gap: 18px;
-  align-items: start;
-  max-width: 1400px;
+  align-items: stretch;
+  width: 100%;
+  min-height: 100%;
 }
 
 @media (max-width: 1080px) {

@@ -47,7 +47,7 @@ public partial class HybridWindow : Window
             if (!File.Exists(Path.Combine(webRoot, "index.html")))
                 throw new FileNotFoundException("找不到 WebUI/index.html。", Path.Combine(webRoot, "index.html"));
 
-            StartupDetail.Text = "初始化 Microsoft Edge WebView2";
+            StartupDetail.Text = "初始化本地界面";
             var userDataDirectory = Path.Combine(_appDirectory, "AppData", "WebView2");
             Directory.CreateDirectory(userDataDirectory);
             var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataDirectory);
@@ -80,7 +80,7 @@ public partial class HybridWindow : Window
         }
         catch (Exception ex)
         {
-            StartupDetail.Text = $"WebView2 启动失败：{ex.Message}";
+            StartupDetail.Text = $"主界面启动失败：{ex.Message}";
             ClassicButton.Visibility = Visibility.Visible;
         }
     }
@@ -89,12 +89,15 @@ public partial class HybridWindow : Window
     {
         var uri = new Uri(e.Request.Uri);
         var stream = EmbeddedAssetStore.OpenWebPath(uri.AbsolutePath);
+        var contentType = Path.GetExtension(uri.AbsolutePath).Equals(".png", StringComparison.OrdinalIgnoreCase)
+            ? "image/png"
+            : "image/webp";
         e.Response = stream is null
             ? WebView.CoreWebView2.Environment.CreateWebResourceResponse(
                 Stream.Null, 404, "Not Found", "Content-Type: text/plain")
             : WebView.CoreWebView2.Environment.CreateWebResourceResponse(
                 stream, 200, "OK",
-                "Content-Type: image/webp\r\nCache-Control: no-store\r\nAccess-Control-Allow-Origin: *");
+                $"Content-Type: {contentType}\r\nCache-Control: no-store\r\nAccess-Control-Allow-Origin: *");
     }
 
     private async void WebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
@@ -110,7 +113,6 @@ public partial class HybridWindow : Window
                 case "ready":
                     _webReady = true;
                     StartupOverlay.Visibility = Visibility.Collapsed;
-                    Post(new { type = "hostReady", payload = new { runtime = "WPF · .NET 8 · WebView2", offline = true } });
                     Post(new { type = "homeData", payload = _homeDataService.GetHomeData() });
                     await SendReplayLibraryAsync();
                     var args = Environment.GetCommandLineArgs();

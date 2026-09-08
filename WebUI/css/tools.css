@@ -33,10 +33,7 @@ body:not(.reduce-motion) #toolsView:not(.page-entering) .replay-subnav:not(.hidd
 body:not(.reduce-motion) #toolsView:not(.page-entering) .replay-empty-state > * {
   animation: content-rise 450ms var(--motion-ease) both;
 }
-body:not(.reduce-motion) #toolsView:not(.page-entering) .replay-empty-state > :nth-child(2) { animation-delay: 50ms; }
-body:not(.reduce-motion) #toolsView:not(.page-entering) .replay-empty-state > :nth-child(3) { animation-delay: 90ms; }
-body:not(.reduce-motion) #toolsView:not(.page-entering) .replay-empty-state > :nth-child(4) { animation-delay: 130ms; }
-body:not(.reduce-motion) #toolsView:not(.page-entering) .recent-replays-box { animation-delay: 180ms; }
+body:not(.reduce-motion) #toolsView:not(.page-entering) .recent-replays-box { animation-delay: 90ms; }
 body:not(.reduce-motion) #toolsView:not(.page-entering) .replay-view:not(.hidden) {
   animation: content-rise 380ms var(--motion-ease) both;
 }
@@ -144,10 +141,27 @@ body:not(.reduce-motion) #toolsView:not(.page-entering) .replay-view:not(.hidden
   min-height: 0;
   overflow: hidden;
   display: grid;
-  grid-template-rows: auto auto auto auto minmax(0, 1fr);
-  justify-items: center;
-  align-content: start;
-  padding: 24px 28px 28px;
+  grid-template-columns: minmax(280px, 0.72fr) minmax(460px, 1.28fr);
+  gap: 24px;
+  padding: 28px;
+}
+
+.replay-picker-panel,
+.recent-replays-box {
+  min-width: 0;
+  min-height: 0;
+  background: var(--gp-bg-panel);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--gp-radius-lg);
+  box-shadow: var(--gp-shadow-md);
+}
+
+.replay-picker-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 32px;
   text-align: center;
 }
 
@@ -162,49 +176,65 @@ body:not(.reduce-motion) #toolsView:not(.page-entering) .replay-view:not(.hidden
   font-size: 42px;
   color: #ffffff;
   box-shadow: 0 12px 30px rgba(255, 23, 118, 0.5);
-  margin-bottom: 20px;
+  margin-bottom: 22px;
   animation: dice-float 3s ease-in-out infinite alternate;
 }
 
-.replay-empty-state h3 {
+.replay-picker-panel h3 {
   font-size: 24px;
   font-weight: 900;
-  margin: 0 0 10px;
+  margin: 0 0 12px;
   color: #ffffff;
   letter-spacing: 1px;
 }
 
-.replay-empty-state p {
+.replay-picker-panel p {
   font-size: 14px;
   color: var(--gp-text-sub);
-  max-width: 540px;
-  margin: 0 0 24px;
-  line-height: 1.6;
+  max-width: 390px;
+  margin: 0 0 26px;
+  line-height: 1.7;
+}
+
+.replay-picker-panel .primary-btn {
+  padding: 12px 32px;
+  font-size: 15px;
+}
+
+.replay-local-note {
+  margin-top: 14px;
+  color: var(--gp-text-muted);
+  font-size: 12px;
 }
 
 /* Recent Replays Panel */
 .recent-replays-box {
-  align-self: stretch;
-  width: 100%;
-  min-height: 0;
-  background: var(--gp-bg-panel);
-  border: 2px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--gp-radius-lg);
-  padding: 18px 22px;
-  box-shadow: var(--gp-shadow-md);
+  padding: 20px 22px;
   text-align: left;
-  margin-top: 14px;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .recent-head {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   margin-bottom: 16px;
   padding-bottom: 12px;
   border-bottom: 1.5px solid rgba(255, 255, 255, 0.1);
+}
+
+.recent-head > div {
+  min-width: 0;
+}
+
+.recent-head .secondary-btn {
+  flex: 0 0 auto;
+  padding: 6px 14px;
+  font-size: 12px;
 }
 
 .recent-head h4 {
@@ -216,10 +246,14 @@ body:not(.reduce-motion) #toolsView:not(.page-entering) .replay-view:not(.hidden
 
 .recent-head small {
   display: block;
-  font-size: 12px;
-  color: var(--gp-gold);
+  max-width: 100%;
   margin-top: 3px;
+  overflow: hidden;
+  color: var(--gp-gold);
   font-family: Consolas, monospace;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .replay-entry-list {
@@ -288,9 +322,23 @@ body:not(.reduce-motion) #toolsView:not(.page-entering) .replay-view:not(.hidden
 }
 
 .entry-date {
+  flex: 0 0 auto;
+  margin-left: 14px;
   font-size: 12px;
   color: var(--gp-text-muted);
   font-family: Consolas, monospace;
+}
+
+@media (max-width: 1180px) {
+  .replay-empty-state {
+    grid-template-columns: minmax(260px, 0.65fr) minmax(400px, 1.35fr);
+    gap: 18px;
+    padding: 22px;
+  }
+
+  .replay-picker-panel {
+    padding: 28px 22px;
+  }
 }
 
 /* Active Replay Views */

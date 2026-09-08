@@ -1,36 +1,31 @@
-// settings.js - Settings & Preferences Page Logic (Light Theme)
+// settings.js - Settings & Preferences Page Logic
 (function () {
   const SettingsModule = {
-    init(data) {
-      this.bindEvents();
-      this.render();
-    },
+    init() {
+      if (this.initialized) return;
+      this.initialized = true;
 
-    bindEvents() {
-      $('reloadPortraitsBtn')?.addEventListener('click', () => {
-        post({ type: 'getHomeData' });
-        toast('正在重新扫描本地立绘素材库…');
-      });
+      const animToggle = $('animToggle');
+      if (!animToggle) return;
 
-      $('openClassicWpfBtn')?.addEventListener('click', () => {
-        post({ type: 'openClassic' });
-      });
+      const appVersion = AppState.homeData?.appVersion;
+      if ($('aboutVersion')) $('aboutVersion').textContent = appVersion ? `v${appVersion}` : '未知';
 
-      $('animToggle')?.addEventListener('change', e => {
+      const motionEnabled = window.localStorage.getItem('motionEnabled') !== 'false';
+      animToggle.checked = motionEnabled;
+      document.body.classList.toggle('reduce-motion', !motionEnabled);
+      animToggle.addEventListener('change', e => {
         document.body.classList.toggle('reduce-motion', !e.target.checked);
+        window.localStorage.setItem('motionEnabled', String(e.target.checked));
         toast(`界面动态效果已${e.target.checked ? '开启' : '关闭'}`);
       });
-    },
 
-    render() {
-      const portraitsCount = AppState.homeData?.portraitsCount || 0;
-      if ($('loadedPortraitsCount')) {
-        $('loadedPortraitsCount').textContent = `已加载 ${portraitsCount} 张角色立绘`;
-      }
-
-      if ($('settingsReplayDir') && AppState.replayLibrary?.directory) {
-        $('settingsReplayDir').textContent = AppState.replayLibrary.directory;
-      }
+      $('aboutRepositoryBtn')?.addEventListener('click', () => {
+        window.open('https://github.com/higashitaniyume/AstralParty.Toys', '_blank', 'noopener');
+      });
+      $('aboutSpeedhackBtn')?.addEventListener('click', () => {
+        window.open('https://github.com/Hirtol/speedhack-rs', '_blank', 'noopener');
+      });
     }
   };
 

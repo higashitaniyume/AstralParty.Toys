@@ -49,7 +49,8 @@ public static class EmbeddedAssetStore
         var resources = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var resourceName in Assembly.GetManifestResourceNames()
                      .Where(name => name.StartsWith(ResourcePrefix, StringComparison.Ordinal) &&
-                                    name.EndsWith(".webp", StringComparison.OrdinalIgnoreCase)))
+                                    (name.EndsWith(".webp", StringComparison.OrdinalIgnoreCase) ||
+                                     name.EndsWith(".png", StringComparison.OrdinalIgnoreCase))))
         {
             var remainder = resourceName[ResourcePrefix.Length..];
             var folderEnd = remainder.IndexOf('.');

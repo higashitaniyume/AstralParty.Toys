@@ -1,226 +1,146 @@
-// home.js - Authentic In-Game Lobby Logic for Astral Party
+// home.js - Astral Party lobby, portraits, and JSON-driven version announcement
 (function () {
+  const ANNOUNCEMENT_URL = 'data/game-version-announcement.json';
+
   const HomeModule = {
+    portraitRotationTimer: null,
+    versionAnnouncement: null,
+    eventsBound: false,
+
     init(data) {
       if (!data) return;
-      this.announcements = data.announcements || [];
-      this.pickDefaultFinnOrRandom();
-      this.setupEventListeners();
+      this.pickInitialPortrait();
+      this.startPortraitRotation();
+      this.bindEvents();
+      this.loadVersionAnnouncement();
     },
 
     onShowHome() {
       if (!AppState.currentPortrait && AppState.homeData?.portraits?.length) {
-        this.pickDefaultFinnOrRandom();
+        this.pickInitialPortrait();
       }
     },
 
-    pickDefaultFinnOrRandom() {
+    bindEvents() {
+      if (this.eventsBound) return;
+      this.eventsBound = true;
+      $('btnMenuSpeedhack')?.addEventListener('click', () => showPage('utilities'));
+      $('btnMenuTools')?.addEventListener('click', () => showPage('tools'));
+      $('btnMenuWiki')?.addEventListener('click', () => showPage('wiki'));
+      $('dockBtnSettings')?.addEventListener('click', () => showPage('settings'));
+      $('versionAnnouncementMoreBtn')?.addEventListener('click', () => this.showVersionAnnouncement());
+    },
+
+    pickInitialPortrait() {
       const portraits = AppState.homeData?.portraits;
-      if (!portraits || !portraits.length) {
-        this.applyPortrait({
-          id: 'UT_Hero_Card_102_01',
-          heroId: 102,
-          heroName: '芬妮',
-          title: '古怪神探',
-          variant: '皮肤 01',
-          url: 'https://assets.astral.local/Portraits/UT_Hero_Card_102_01.webp'
-        });
+      if (!portraits?.length) {
+        const fallbackPortraits = [
+          { id: 'UT_Hero_Card_306', heroId: 306, heroName: '橘雪莉', url: 'https://assets.astral.local/Portraits/UT_Hero_Card_306.png' },
+          { id: 'UT_Hero_Card_305', heroId: 305, heroName: '远野汉娜', url: 'https://assets.astral.local/Portraits/UT_Hero_Card_305.png' }
+        ];
+        const portrait = fallbackPortraits[Math.floor(Math.random() * fallbackPortraits.length)];
+        AppState.currentPortrait = portrait;
+        this.applyPortrait(portrait);
         return;
       }
-
-      // Look for Finn 102_01 as seen in the original screenshot
-      const finn = portraits.find(p => p.id.toLowerCase() === 'ut_hero_card_102_01');
-      if (finn && !AppState.currentPortrait) {
-        AppState.currentPortrait = finn;
-        this.applyPortrait(finn);
-        this.triggerInteraction(false);
-        return;
-      }
-
       this.pickRandomPortrait();
     },
 
-    setupEventListeners() {
-      // 1. Right Button 1: 维基 -> Jump to BWiki page
-      $('btnMenuWiki')?.addEventListener('click', () => {
-        showPage('wiki');
-      });
-
-      // 2. Right Button 2: 工具 -> Jump to Replay Analysis Tool
-      $('btnMenuTools')?.addEventListener('click', () => {
-        showPage('tools');
-      });
-
-      // 3. Left Portrait Click & Speech Bubble Click
-      $('heroPortraitWrapper')?.addEventListener('click', () => {
-        this.triggerInteraction(true);
-      });
-
-      $('heroDialogBubble')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.triggerInteraction(false);
-      });
-
-      // 4. Bottom Dock Bar: Settings button
-      $('dockBtnSettings')?.addEventListener('click', () => {
-        showPage('settings');
-      });
+    startPortraitRotation() {
+      clearInterval(this.portraitRotationTimer);
+      this.portraitRotationTimer = setInterval(() => {
+        if (AppState.currentPage === 'home') this.pickRandomPortrait();
+      }, 15000);
     },
 
     pickRandomPortrait() {
       const portraits = AppState.homeData?.portraits;
-      if (!portraits || !portraits.length) return;
-
-      let candidate = portraits[Math.floor(Math.random() * portraits.length)];
-      if (portraits.length > 1 && AppState.currentPortrait && candidate.id === AppState.currentPortrait.id) {
-        candidate = portraits[Math.floor(Math.random() * portraits.length)];
-      }
-
+      if (!portraits?.length) return;
+      const candidates = AppState.currentPortrait
+        ? portraits.filter(portrait => portrait.id !== AppState.currentPortrait.id)
+        : portraits;
+      const pool = candidates.length ? candidates : portraits;
+      const candidate = pool[Math.floor(Math.random() * pool.length)];
       AppState.currentPortrait = candidate;
       this.applyPortrait(candidate);
-      this.triggerInteraction(false);
     },
 
     applyPortrait(item) {
       const img = $('heroPortraitImg');
-      if (img) {
-        img.style.opacity = '0';
-        setTimeout(() => {
-          img.src = item.url;
-          img.alt = item.heroName;
-          img.onload = () => {
-            img.style.opacity = '1';
-          };
-          img.onerror = () => {
-            img.src = `https://assets.astral.local/Characters/${item.heroId}.webp`;
-            img.style.opacity = '1';
-          };
-        }, 120);
-      }
-
-      if ($('bubbleSpeakerName')) {
-        $('bubbleSpeakerName').textContent = item.heroName;
-      }
+      if (!img) return;
+      img.style.opacity = '0';
+      setTimeout(() => {
+        img.src = item.url;
+        img.alt = item.heroName;
+        img.onload = () => { img.style.opacity = '1'; };
+        img.onerror = () => {
+          img.src = `https://assets.astral.local/Characters/${item.heroId}.webp`;
+          img.style.opacity = '1';
+        };
+      }, 120);
     },
 
-    triggerInteraction(isClick) {
-      const p = AppState.currentPortrait;
-      const data = AppState.homeData;
-      if (!data) return;
-
-      let line = '';
-      if (isClick && data.clickReactions?.length) {
-        line = data.clickReactions[Math.floor(Math.random() * data.clickReactions.length)];
-      } else {
-        const heroLines = p && data.heroGreetings?.[p.heroId];
-        if (heroLines && heroLines.length && Math.random() > 0.35) {
-          line = heroLines[Math.floor(Math.random() * heroLines.length)];
-        } else if (data.greetings?.length) {
-          line = data.greetings[Math.floor(Math.random() * data.greetings.length)];
-        }
-      }
-
-      const bubbleText = $('bubbleSpeechText');
-      if (bubbleText) {
-        bubbleText.style.opacity = '0.3';
-        bubbleText.style.transform = 'translateY(2px)';
-        setTimeout(() => {
-          bubbleText.textContent = line;
-          bubbleText.style.opacity = '1';
-          bubbleText.style.transform = 'translateY(0)';
-        }, 100);
+    async loadVersionAnnouncement() {
+      try {
+        const response = await fetch(ANNOUNCEMENT_URL, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const announcement = await response.json();
+        if (!announcement?.title || !announcement?.summary) throw new Error('公告数据不完整');
+        this.versionAnnouncement = announcement;
+        this.renderVersionAnnouncement(announcement);
+      } catch (error) {
+        console.error('Version announcement load error:', error);
+        $('versionAnnouncementCard')?.classList.add('is-error');
+        if ($('versionAnnouncementDate')) $('versionAnnouncementDate').textContent = '';
+        if ($('versionAnnouncementTitle')) $('versionAnnouncementTitle').textContent = '版本公告读取失败';
+        if ($('versionAnnouncementSummary')) $('versionAnnouncementSummary').textContent = `请检查 ${ANNOUNCEMENT_URL}`;
+        if ($('versionAnnouncementPeriod')) $('versionAnnouncementPeriod').textContent = '';
+        if ($('versionAnnouncementMoreBtn')) $('versionAnnouncementMoreBtn').disabled = true;
       }
     },
 
-    showAnnouncementsModal() {
-      const list = this.announcements;
-      if (!list.length) {
-        showToast('暂无最新公告');
-        return;
+    renderVersionAnnouncement(item) {
+      if ($('versionAnnouncementDate')) {
+        $('versionAnnouncementDate').textContent = item.versionLabel || item.displayDate || '';
       }
-
-      const html = `
-        <div style="display:flex;flex-direction:column;gap:14px;max-height:65vh;overflow-y:auto;padding-right:6px">
-          ${list.map(item => `
-            <article class="announcement-card" style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.04)">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                <span class="badge ${esc(item.tagClass)}">${esc(item.category)}</span>
-                <span style="font-size:12px;color:#94a3b8">${esc(item.date)}</span>
-              </div>
-              <h4 style="margin:0 0 6px;font-size:15px;color:#1e293b">${esc(item.title)}</h4>
-              <p style="margin:0;font-size:13px;line-height:1.6;color:#64748b">${esc(item.summary)}</p>
-            </article>
-          `).join('')}
-        </div>
-      `;
-
-      openModal('📢 游戏官方公告与活动一览', html);
+      if ($('versionAnnouncementTitle')) $('versionAnnouncementTitle').textContent = item.title;
+      if ($('versionAnnouncementSummary')) $('versionAnnouncementSummary').textContent = item.summary;
+      if ($('versionAnnouncementPeriod')) $('versionAnnouncementPeriod').textContent = item.period || '';
+      $('versionAnnouncementCard')?.classList.remove('is-error');
+      if ($('versionAnnouncementMoreBtn')) $('versionAnnouncementMoreBtn').disabled = false;
     },
 
-    showClearPassModal() {
-      openModal('🎟️ 对局战绩与通行证 · CLEARPASS', `
-        <div style="text-align:center;padding:10px">
-          <img src="https://assets.astral.local/UI/UT_BattlePass_202609_EntranceUnfold.webp" style="max-width:100%;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.5)">
-          <h3 style="margin:16px 0 6px;color:#f472b6">对局统计与活跃战绩</h3>
-          <p style="font-size:13.5px;color:#cbd5e1;line-height:1.6">
-            工具已开启本地 LocalLow 缓存自动同步。<br>
-            每一场对战的回合走势、伤害输出与筹码选择均已收录在回放分析库中。
-          </p>
-          <div style="margin-top:16px">
-            <button class="primary-btn" onclick="closeModal();showPage('tools');">进入对局分析</button>
-          </div>
-        </div>
-      `);
+    safeExternalUrl(value) {
+      try {
+        const url = new URL(value);
+        return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : '';
+      } catch {
+        return '';
+      }
     },
 
-    showShopModal() {
-      openModal('🛍️ 本地素材与数据资产库', `
-        <div style="text-align:center;padding:10px">
-          <img src="https://assets.astral.local/UI/UT_Banner_609030.webp" style="max-width:100%;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.5)">
-          <h3 style="margin:16px 0 6px;color:#38bdf8">122 张官方大立绘已离线就绪</h3>
-          <p style="font-size:13.5px;color:#cbd5e1;line-height:1.6">
-            所有 35 位官方英雄大立绘、地图预览、怪物首领及筹码图标均已内嵌打包为 WebP 资源。<br>
-            可以在系统设置中查看存储路径或重新扫描。
-          </p>
-          <div style="margin-top:16px">
-            <button class="secondary-btn" onclick="closeModal();showPage('settings');">管理素材库设置</button>
-          </div>
-        </div>
-      `);
-    },
-
-    showGachaModal() {
-      const portraits = AppState.homeData?.portraits || [];
-      const luckyHero = portraits[Math.floor(Math.random() * portraits.length)];
-      openModal('✨ 星之抽奖 · 幸运看板娘召唤', `
-        <div style="text-align:center;padding:10px">
-          <div style="font-size:48px;margin-bottom:8px">🎲</div>
-          <h3 style="margin:0 0 8px;color:#facc15">今日派对幸运英雄</h3>
-          <p style="font-size:13.5px;color:#cbd5e1;line-height:1.6">
-            ${luckyHero ? `今日为你选中的看板娘是 <b>${luckyHero.heroName}</b>！<br>点击下方按钮立即将其设置为大厅看板娘。` : '点击下方按钮快速随机抽取一位大厅看板娘！'}
-          </p>
-          <div style="margin-top:18px;display:flex;justify-content:center;gap:12px">
-            <button class="primary-btn" onclick="closeModal();HomeModule.pickRandomPortrait();">🎲 召唤看板娘</button>
-            <button class="secondary-btn" onclick="closeModal();showPage('wiki');">查看英雄攻略</button>
-          </div>
-        </div>
-      `);
-    },
-
-    showEventTrialModal() {
-      openModal('🔮 魔法少女的魔女审判 · 活动资讯', `
-        <div style="text-align:center;padding:10px">
-          <img src="https://assets.astral.local/UI/UT_Activity_202609031_Entrance.webp" style="width:120px;height:120px;border-radius:50%;border:3px solid #38bdf8;box-shadow:0 6px 20px rgba(56,189,248,0.5)">
-          <h3 style="margin:16px 0 6px;color:#38bdf8">【特别活动】魔法少女的魔女审判</h3>
-          <p style="font-size:13.5px;color:#cbd5e1;line-height:1.6">
-            活动周期：09.03 - 10.14<br>
-            活动期间所有限定关卡与首领技能均已在 BWiki 与回放协议库中收录。
-          </p>
-          <div style="margin-top:16px">
-            <button class="primary-btn" onclick="closeModal();showPage('wiki');">查看活动攻略</button>
-          </div>
-        </div>
-      `);
+    showVersionAnnouncement() {
+      const item = this.versionAnnouncement;
+      if (!item) return;
+      const highlights = Array.isArray(item.highlights) ? item.highlights : [];
+      const sourceUrl = this.safeExternalUrl(item.source?.url);
+      const highlightHtml = highlights.map(highlight => `
+        <section class="version-detail-item">
+          <h4>${esc(highlight.title)}</h4>
+          <p>${esc(highlight.content)}</p>
+        </section>`).join('');
+      openModal(`📢 ${item.category ? esc(item.category) : '游戏版本公告'}`, `
+        <div class="version-detail">
+          <div class="version-detail-meta"><span>${esc(item.versionLabel || '')}</span><span>${esc(item.period || '')}</span></div>
+          <h3>${esc(item.title)}</h3>
+          <p class="version-detail-summary">${esc(item.summary)}</p>
+          <div class="version-detail-list">${highlightHtml}</div>
+          ${item.source?.note ? `<p class="version-detail-note">${esc(item.source.note)}</p>` : ''}
+          ${sourceUrl ? '<button class="secondary-btn" id="versionAnnouncementSourceBtn">↗ 查看 BWiki 原文</button>' : ''}
+        </div>`);
+      $('versionAnnouncementSourceBtn')?.addEventListener('click', () => {
+        post({ type: 'openBrowser', url: sourceUrl });
+      });
     }
   };
 

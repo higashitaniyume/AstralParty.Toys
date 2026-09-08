@@ -185,16 +185,12 @@ public sealed class HomeDataService
 
         var results = new List<PortraitItem>();
 
-        // 仅保留一张人物立绘 (芬妮 UT_Hero_Card_102_01.webp)
-        var packedDir = Path.Combine(_appDirectory, "PackedAssets", "Portraits");
-        var singlePortrait = Path.Combine(packedDir, "UT_Hero_Card_102_01.webp");
-        if (File.Exists(singlePortrait))
+        foreach (var portraitName in new[] { "UT_Hero_Card_306", "UT_Hero_Card_305" })
         {
-            results.Add(CreatePortraitItem("UT_Hero_Card_102_01", "https://assets.astral.local/Portraits/UT_Hero_Card_102_01.webp", true));
-        }
-        else
-        {
-            results.Add(CreatePortraitItem("UT_Hero_Card_102_01", "https://assets.astral.local/Portraits/UT_Hero_Card_102_01.webp", true));
+            results.Add(CreatePortraitItem(
+                portraitName,
+                $"https://assets.astral.local/Portraits/{portraitName}.png",
+                true));
         }
 
         _cachedPortraits = results;
@@ -247,6 +243,7 @@ public sealed class HomeDataService
 
         return new
         {
+            appVersion = typeof(HomeDataService).Assembly.GetName().Version?.ToString(3) ?? "1.0.0",
             portraitsCount = portraits.Count,
             portraits,
             announcements,

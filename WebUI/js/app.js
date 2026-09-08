@@ -8,6 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Set default page without animating the initial DOM bootstrap
   showPage('home', { immediate: true });
 
-  // Notify WebView2 host that WebUI is ready
+  // Notify the desktop host that the interface is ready
   post({ type: 'ready' });
 });

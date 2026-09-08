@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="version.dll;speedhack_config.json">
+    <EmbeddedResource Include="Resources\SpeedhackTools\version.dll;Resources\SpeedhackTools\speedhack_config.json">
       <LogicalName>AstralParty.Toys.SpeedhackTools.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
     <Content Include="Protocol\*.dll">
@@ -26,12 +26,9 @@
     <None Update="Assets\**\*.png;Assets\**\*.jpg;Assets\**\*.jpeg;Assets\**\*.webp;Assets\**\*.bmp">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="WebUI\index.html;WebUI\css\*.css;WebUI\js\*.js;WebUI\images\*.png">
+    <None Update="WebUI\index.html;WebUI\css\*.css;WebUI\js\*.js;WebUI\images\*.png;WebUI\data\*.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="asset-sources.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <EmbeddedResource Include="PackedAssets\**\*.webp" />
+    <EmbeddedResource Include="PackedAssets\**\*.webp;PackedAssets\**\*.png" />
   </ItemGroup>
 </Project>

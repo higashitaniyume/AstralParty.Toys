@@ -105,7 +105,7 @@
                 </Border>
             </StackPanel>
             <TextBlock DockPanel.Dock="Right" Foreground="{StaticResource MutedBrush}" FontSize="11" VerticalAlignment="Center"
-                       Text="修改游戏进程时间函数 · 请勿用于联机对局" />
+                       Text="修改游戏进程时间函数 · 游戏内关闭垂直同步后生效" />
         </DockPanel>
 
         <!-- 安装区 -->
@@ -147,19 +147,32 @@
         </Border>
 
         <!-- 配置区 -->
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="0,14,0,0">
-            <StackPanel>
-                <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
-                        CornerRadius="12" Padding="16">
-                    <StackPanel>
-                        <DockPanel Margin="0,0,0,8">
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,14,0,0">
+          <Grid MinHeight="{Binding ViewportHeight, RelativeSource={RelativeSource AncestorType=ScrollViewer}}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+                    CornerRadius="12" Padding="16">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                        <DockPanel Grid.Row="0" Margin="0,0,0,8">
                             <TextBlock Style="{StaticResource SectionTitle}" DockPanel.Dock="Left" Text="speedhack_config.json 配置" />
                             <Button DockPanel.Dock="Right" Content="用编辑器打开 JSON" Background="#25304D" Click="EditJsonButton_Click" />
                             <TextBlock x:Name="ConfigPathText" Foreground="{StaticResource MutedBrush}" FontSize="10"
                                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                         </DockPanel>
 
-                        <Grid Margin="0,6,0,0">
+                        <Grid Grid.Row="1" Margin="0,6,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="150" />
                                 <ColumnDefinition Width="*" />
@@ -203,22 +216,26 @@
                             <TextBlock Grid.Row="3" Grid.Column="2" Text="跳过开场动画用（结束后恢复）" Style="{StaticResource FieldHint}" Margin="0,10,0,0" />
                         </Grid>
 
-                        <Separator Margin="0,16,0,6" Opacity="0.3" />
-                        <TextBlock Text="倍速档位（组合按键达到时切换速度）" Style="{StaticResource FieldLabel}" Margin="0,8,0,8" />
-                        <Grid>
+                        <Separator Grid.Row="2" Margin="0,16,0,6" Opacity="0.3" />
+                        <TextBlock Grid.Row="2" Text="倍速档位（组合按键达到时切换速度）" Style="{StaticResource FieldLabel}" Margin="0,34,0,8" />
+                        <Grid Grid.Row="3" Margin="0,8,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="3*" />
                                 <ColumnDefinition Width="2*" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Margin="0,0,16,0">
-                                <ListBox x:Name="StatesList" Height="150" Background="#11182A" Foreground="#E8ECF8" BorderBrush="{StaticResource LineBrush}"
+                            <Grid Margin="0,0,16,0">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <ListBox x:Name="StatesList" MinHeight="150" Background="#11182A" Foreground="#E8ECF8" BorderBrush="{StaticResource LineBrush}"
                                          SelectionChanged="StatesList_SelectionChanged" FontSize="13" />
-                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,8,0,0">
                                     <Button Content="＋ 添加档位" Background="#25304D" Click="AddStateButton_Click" />
                                     <Button Content="删除选中" Background="#7F1D2E" Click="RemoveStateButton_Click" Margin="8,0,0,0" />
                                     <Button x:Name="ApplyStateButton" Content="应用到选中档位" Background="#25304D" Click="ApplyStateButton_Click" Margin="8,0,0,0" IsEnabled="False" />
                                 </StackPanel>
-                            </StackPanel>
+                            </Grid>
                             <Border Grid.Column="1" Background="#0E1424" CornerRadius="10" Padding="12">
                                 <StackPanel>
                                     <TextBlock Text="档位编辑（选择左侧档位后修改）" Style="{StaticResource FieldHint}" Margin="0,0,0,8" />
@@ -234,22 +251,22 @@
                             </Border>
                         </Grid>
 
-                        <Separator Margin="0,14,0,6" Opacity="0.3" />
-                        <DockPanel Margin="0,4,0,0">
+                        <Separator Grid.Row="4" Margin="0,14,0,6" Opacity="0.3" />
+                        <DockPanel Grid.Row="5" Margin="0,4,0,0">
                             <TextBlock DockPanel.Dock="Left" Text="重载配置热键 reload_config_keys" Style="{StaticResource FieldLabel}" />
                             <TextBox x:Name="ReloadKeysBox" Width="300" HorizontalAlignment="Left" Text="VK_CONTROL,VK_SHIFT,VK_R" FontFamily="Consolas" FontSize="12" />
                         </DockPanel>
-                        <TextBlock Text="逗号分隔的 VK 键名；游戏内按此组合立即重新读取配置文件" Style="{StaticResource FieldHint}" Margin="150,4,0,0" />
+                        <TextBlock Grid.Row="5" Text="逗号分隔的 VK 键名；游戏内按此组合立即重新读取配置文件" Style="{StaticResource FieldHint}" Margin="150,36,0,0" />
 
-                        <DockPanel Margin="0,16,0,0">
+                        <DockPanel Grid.Row="6" Margin="0,16,0,0">
                             <Button x:Name="SaveConfigButton" DockPanel.Dock="Right" Content="💾 保存配置" Background="{StaticResource PinkBrush}" Click="SaveConfigButton_Click" />
                             <Button DockPanel.Dock="Right" Content="恢复默认模板" Background="#25304D" Click="RestoreConfigButton_Click" Margin="0,0,10,0" />
                             <TextBlock x:Name="SaveHintText" Foreground="{StaticResource MutedBrush}" FontSize="11" VerticalAlignment="Center" Text="未保存的修改不会生效" />
                         </DockPanel>
-                    </StackPanel>
-                </Border>
-                <TextBlock Text="工具来源 github.com/Hirtol/speedhack-rs · 仅用于单机研究与观察" Foreground="#5F6B84" FontSize="10" Margin="4,8,0,0" />
-            </StackPanel>
+                </Grid>
+            </Border>
+            <TextBlock Grid.Row="1" Text="工具来源 github.com/Hirtol/speedhack-rs · 仅用于单机研究与观察" Foreground="#5F6B84" FontSize="10" Margin="4,8,0,0" />
+          </Grid>
         </ScrollViewer>
     </Grid>
 </Window>

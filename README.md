@@ -1,6 +1,6 @@
 # AstralParty.Toys
 
-`AstralParty.Toys` 是面向《吉星派对》（Astral Party）的 Windows 本地工具箱，整合离线回放分析、协议帧查看、筹码复盘、游戏素材展示和变速器管理。界面使用 WPF、.NET 8 与 Microsoft Edge WebView2，数据处理均在本地完成。
+`AstralParty.Toys` 是面向《吉星派对》（Astral Party）的 Windows 本地工具箱，整合离线回放分析、协议帧查看、筹码复盘、游戏素材展示和变速器管理。所有数据处理均在本地完成。
 
 ## 功能
 
@@ -24,15 +24,15 @@
 - 安装与卸载时使用 SHA-256 校验，避免无意覆盖或删除其它工具的 `version.dll`
 - 配置进入游戏后自动启用的基础倍速，无需按快捷键
 - 管理多个快捷键倍速档位、点按切换/按住生效、启动阶段加速、配置重载热键和挂接延迟
-- DLL 与默认配置模板作为程序集资源嵌入 `AstralParty.Toys.dll`，发布目录不需要额外携带变速器源文件
+- DLL 与默认配置模板保存在 `Resources/SpeedhackTools`，并作为程序集资源嵌入 `AstralParty.Toys.dll`；发布目录不需要额外携带这两个源文件
 
-变速器仅建议用于单机研究和观察。安装、卸载前应完全退出游戏；游戏内需关闭垂直同步。请勿在联机对局中使用。
+安装、卸载前应完全退出游戏；游戏内需关闭垂直同步。
 
 ### 素材与界面
 
 - 地图、角色、怪物、筹码与常用 UI 图片以无损 WebP 形式嵌入程序集
-- WebView2 通过本地虚拟地址直接读取资源流，不生成素材缓存
-- WebView2 不可用时可以切换至经典 WPF 回退界面，回放分析与变速器管理均可使用
+- 应用通过本地虚拟地址直接读取资源流，不生成素材缓存
+- 主界面不可用时可以切换至备用界面，回放分析与变速器管理均可使用
 - 维基页面可在应用内浏览，也可交给系统默认浏览器打开
 
 ## 环境要求
@@ -95,7 +95,7 @@ replaytool\bin\Release\net8.0-windows\win-x64\publish\AstralParty.Toys.exe
 
 ## 素材开发
 
-开发环境可通过 `asset-sources.json` 的 `materialRoots` 指定游戏解包素材目录。辅助项目和脚本包括：
+辅助项目和脚本包括：
 
 - `replaytool-assetpack`：按游戏配置和精确文件名生成素材清单
 - `scripts/pack_webp.py`：转换为无损 WebP，并进行像素级回读校验
