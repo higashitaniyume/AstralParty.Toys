@@ -564,44 +564,43 @@ while (byteBuf.ReadableBytes() >= 6) {
 
 ## 8. 验证与复现
 
-冒烟程序在 `replaytool-smoke\`（独立于工具项目，不进安装包）。`<appDir>` 一律填工具的输出目录
-`replaytool\bin\Debug\net8.0-windows`（它需要 `Protocol\` 与 `GameData\` 在同一个目录里）。
+测试项目在 `tests\AstralParty.Toys.Tests\`（xUnit）。它**不依赖真实录像**：回放数据由
+`Support\ReplayFixture.cs` 用游戏自己的 protobuf 生成类合成（反射设字段 + `ToByteArray()`），
+所以 clone 下来离线就能跑。
 
 ```powershell
-# 先构建
-dotnet build replaytool-smoke\ReplayTool.Smoke.csproj
+# 整套测试（会先把 app 项目构建出来，Protocol\ 与 GameData\ 随之复制进测试输出目录）
+dotnet test tests\AstralParty.Toys.Tests\AstralParty.Toys.Tests.csproj
 
-# 1) 解析单个回放（默认模式）：打印帧/回合/行动/玩家/事件/筹码统计，并自检角色表与素材
-ReplayTool.Smoke.exe <appDir> <replayFile>
-#    可选：追加期望值做回归断言（帧数、回合数）
-ReplayTool.Smoke.exe <appDir> <replayFile> 2862 9
-#    输出形如：PASS frames=2862 rounds=9 turns=44 players=4 events=692 relics=62
-
-# 2) 回放库：归档 / 还原 / 淘汰托管（以真实回放目录为源）
-ReplayTool.Smoke.exe --library-smoke <appDir> <realReplayRoot>
-
-# 3) 配置目录规则：Documents 优先、不可写回退 AppData、旧配置迁移
-ReplayTool.Smoke.exe --config-location-smoke <appDir>
-
-# 4) 变速器安装 / 卸载（需要一个假的游戏目录）
-ReplayTool.Smoke.exe --speedhack-smoke <appDir> <fakeGameDir>
-
-# 5) 变速器诊断
-ReplayTool.Smoke.exe --speedhack-diag <appDir>
+# 只跑某一类
+dotnet test tests\AstralParty.Toys.Tests\AstralParty.Toys.Tests.csproj --filter "FullyQualifiedName~ReplayAnalysisTests"
 ```
 
-也可以 `dotnet run --project replaytool-smoke -- <参数…>`（会自动构建）。
+覆盖范围：
 
-默认模式里内置的断言（可作为"解析口径没跑偏"的回归网）：角色表 ≥ 35 个且 101/102 号名称与称号正确、
-`FrameCount > 0`、`RoundCount > 0`、`TurnCount > 0`、`MapId > 0`、有玩家、`GameVersion != "—"`、
-**末帧 `CmdId == 1016`**、内嵌 webp ≥ 245、所有引用到的素材都能从内嵌资源直接流式打开。
+| 测试类 | 覆盖内容 |
+| --- | --- |
+| `EnvironmentSanityTests` | 测试输出目录里拿得到 `Protocol\` 与 `GameData\` |
+| `ReplayAnalysisTests` | 帧拆分、锚点、回合/轮次、玩家摘要、时间线事件、筹码流转、坏文件拒绝 |
+| `ReplayLibraryTests` | 扫描 / 归档 / 放回 / 自动整理 / 删除 / 不可解析文件的放回拦截 / 「库 = 游戏目录」守卫 |
+| `ConfigLocationTests` | 文档目录优先、不可写回退 AppData、旧配置迁移、配置目录不被当成回放条目 |
+| `SpeedhackTests` | 内嵌资源、安装 / 卸载 / 覆盖保护、配置往返 JSON |
+| `CatalogAndAssetTests` | 角色 / 地图 / 怪物 / 筹码 / 物品配表、内嵌素材、报告引用素材可解析、AI 摘要五个章节 |
+| `SpeedhackDiagnosticsTests` | 只读诊断（内嵌资源、配置位置、Steam / 游戏目录探测）打进测试输出 |
 
-实测样例（4 人局）：`frames=2862 rounds=9 turns=44 players=4 events=692 relics=62`。
+需要真实录像的测试带 `[RealReplayFact]`：没有数据时**报告为跳过**而不是失败。要启用它们，
+把一局回放放进 `%USERPROFILE%\AppData\LocalLow\feimo\AstralParty_CN\Temp\Replay\<id>\<id>`，
+或设置环境变量 `ASTRAL_TEST_REPLAY=<回放文件路径>`。
 
-自检的两条硬口径：
+自检的两条硬口径（两者都有对应断言）：
 
 - 帧流格式正确 ⇒ **`Σ(6 + payloadLength) == 文件长度`** 必须严格相等；
 - 解析口径正确 ⇒ 工具判定"健康"的回放，游戏自己的 `TryParseReplaySettlementOnly` 也必须返回非 null（工具就是直接调它）。
+
+> 合成夹具为什么走游戏的生成类：这套 schema 的数值字段是 **sfixed32 / sfixed64**（不是 varint），
+> 手写字节时 wire type 一错就会被 protobuf **静默跳过**（字段读出来是 0 而不报错），排查代价很高。
+
+实测样例（4 人真实对局，`frames=2862 rounds=9 turns=44 players=4 events=692 relics=62`）。
 
 ---
 
@@ -621,7 +620,7 @@ ReplayTool.Smoke.exe --speedhack-diag <appDir>
 ```
 
 帧的顺序没有强制约束（解析靠"找锚点"而不是"按位置读"），但实测的两条规律很有用：
-**首个 `1003` 是开局、末帧是 `1016` 结算**（冒烟程序就把"末帧 = 1016"当作断言）。
+**首个 `1003` 是开局、末帧是 `1016` 结算**（测试就把"末帧 = 1016"当作断言）。
 
 ### 9.2 常量速查
 

@@ -37,6 +37,7 @@ public sealed class ConfigCatalog
     public IEnumerable<int> MapIds => _maps.Keys.OrderBy(id => id);
     public IEnumerable<int> MonsterIds => _monsters.Keys.OrderBy(id => id);
     public IEnumerable<int> RelicIds => _relics.Keys.OrderBy(id => id);
+    public IEnumerable<int> ItemIds => _items.Keys.OrderBy(id => id);
 
     private void Load()
     {

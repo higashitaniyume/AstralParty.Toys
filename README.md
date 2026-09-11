@@ -76,41 +76,55 @@ AstralParty.Toys-<版本>-<架构>-<运行时模式>-<打包方式>
 在工作区根目录执行：
 
 ```powershell
-dotnet run --project .\replaytool\AstralParty.Toys.csproj
+dotnet run --project .\replaytool\src\AstralParty.Toys\AstralParty.Toys.csproj
 ```
 
-也可以打开 `replaytool\AstralParty.Toys.slnx` 后从 Visual Studio 启动。
+也可以打开 `replaytool\AstralParty.Toys.slnx` 后从 Visual Studio 启动（解决方案里 `src\` 是应用、`tests\` 是测试）。
+
+## 测试
+
+```powershell
+dotnet test .\replaytool\tests\AstralParty.Toys.Tests\AstralParty.Toys.Tests.csproj
+```
+
+测试自带合成回放数据（用游戏自己的 protobuf 生成类构造），**不依赖真实录像，也不需要联网**；
+`Protocol\` 与 `GameData\` 会随项目引用自动复制到测试输出目录。需要真实录像的用例在没有数据时
+报告为「已跳过」，把回放放进游戏回放目录或设置 `ASTRAL_TEST_REPLAY` 指向文件即可启用。
+覆盖范围与合成夹具的说明见 `docs\replay-format.md` 第 8 节。
 
 ## 构建与发布
 
 构建 Debug 版本：
 
 ```powershell
-dotnet build .\replaytool\AstralParty.Toys.csproj
+dotnet build .\replaytool\src\AstralParty.Toys\AstralParty.Toys.csproj
 ```
 
 生成 Windows x64 发布目录：
 
 ```powershell
-dotnet publish .\replaytool\AstralParty.Toys.csproj `
+dotnet publish .\replaytool\src\AstralParty.Toys\AstralParty.Toys.csproj `
   -c Release -r win-x64 --self-contained false
 ```
 
 默认发布入口位于：
 
 ```text
-replaytool\bin\Release\net8.0-windows\win-x64\publish\AstralParty.Toys.exe
+replaytool\src\AstralParty.Toys\bin\Release\net8.0-windows\win-x64\publish\AstralParty.Toys.exe
 ```
 
 ## 数据与配置位置
 
 - 游戏回放：`%USERPROFILE%\AppData\LocalLow\feimo\AstralParty_CN\Temp\Replay`
-- 工具配置：`%APPDATA%\AstralParty.Toys`
-- 变速器主配置：`%APPDATA%\AstralParty.Toys\speedhack\speedhack_config.json`
+- 工具配置（全部集中在这一个文件夹）：`%USERPROFILE%\Documents\AstralPartyReplays`
+  - 变速器主配置：`speedhack\speedhack_config.json`
+  - 游戏目录记忆：`speedhack-state.json`
+  - 回放库设置：`replay-library.json`（回放库目录默认就是同一个文件夹）
 - WebView2 浏览器数据与缓存：`%LOCALAPPDATA%\AstralParty.Toys\WebView2`
 - 游戏安装目录中的变速器：`version.dll` 与 `speedhack_config.json`
 
-从旧版 `AstralParty.ReplayTool` 首次启动新版时，工具会尝试把 `%APPDATA%\AstralParty.ReplayTool` 迁移到 `%APPDATA%\AstralParty.Toys`；如果目录正被占用，则继续使用旧目录，避免丢失配置。
+文档目录不可写时会回退到 `%APPDATA%\AstralParty.Toys`；首次运行会把旧的 `%APPDATA%` 配置迁移到文档目录，
+但**不覆盖**文档目录里已有的设置。
 
 ## 回放格式
 
@@ -120,7 +134,7 @@ replaytool\bin\Release\net8.0-windows\win-x64\publish\AstralParty.Toys.exe
 [cmdId:int16][payloadLength:int32][payload]
 ```
 
-协议类型来自游戏的 HybridCLR 热更新程序集，主要解析逻辑位于 `Services/ReplayAnalyzer.cs` 与 `Services/GameProtocolContext.cs`。
+协议类型来自游戏的 HybridCLR 热更新程序集，主要解析逻辑位于 `src/AstralParty.Toys/Services/ReplayAnalyzer.cs` 与 `src/AstralParty.Toys/Services/GameProtocolContext.cs`。
 
 ## 素材开发
 

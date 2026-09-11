@@ -10,13 +10,33 @@ permissions:
   contents: write
 
 env:
-  PROJECT: AstralParty.Toys.csproj
+  PROJECT: src/AstralParty.Toys/AstralParty.Toys.csproj
+  TEST_PROJECT: tests/AstralParty.Toys.Tests/AstralParty.Toys.Tests.csproj
   APP_NAME: AstralParty.Toys
   DOTNET_VERSION: 8.0.x
 
 jobs:
+  test:
+    name: Test
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      # 测试自带合成回放数据，不需要玩家目录或联网素材
+      - name: Run tests
+        shell: pwsh
+        run: dotnet test $env:TEST_PROJECT --configuration Release --nologo
+
   build:
     name: Build ${{ matrix.rid }} ${{ matrix.kind }}
+    needs: test
     runs-on: windows-latest
     strategy:
       fail-fast: false
