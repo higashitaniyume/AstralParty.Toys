@@ -8,6 +8,8 @@
     <Nullable>enable</Nullable>
     <AssemblyName>AstralParty.Toys</AssemblyName>
     <RootNamespace>AstralParty.Toys</RootNamespace>
+    <StartupObject>AstralParty.Toys.App</StartupObject>
+    <ApplicationIcon>WebUI\images\UT_AccountHeadShot_70902.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,6 +26,7 @@
     <Content Include="GameData\Character.bin;GameData\STRCharacter.bin;GameData\Map.bin;GameData\STRMap.bin;GameData\Monster.bin;GameData\STRMonster.bin;GameData\Relic.bin;GameData\STRRelic.bin;GameData\Item.bin;GameData\STRItem.bin">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="WebUI\images\UT_AccountHeadShot_70902.ico" />
     <None Update="Assets\**\*.png;Assets\**\*.jpg;Assets\**\*.jpeg;Assets\**\*.webp;Assets\**\*.bmp">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
