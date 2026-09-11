@@ -245,3 +245,55 @@ body:not(.reduce-motion) #settingsView:not(.page-entering) .settings-card:nth-ch
   gap: 10px;
   margin-top: auto;
 }
+
+/* ============================== 回放库设置 ============================== */
+
+.settings-card-note {
+  margin: 0 0 16px;
+  font-size: 12.5px;
+  line-height: 1.75;
+  color: var(--gp-text-sub);
+}
+
+.settings-card-note strong { color: var(--gp-gold); }
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.settings-field:last-child { border-bottom: none; }
+
+.settings-field > label {
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.settings-field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.settings-field-row .secondary-btn {
+  padding: 6px 14px;
+  font-size: 12px;
+  flex: 0 0 auto;
+}
+
+.settings-field-row .library-input[type="number"] {
+  width: 80px;
+  flex: 0 0 auto;
+  text-align: center;
+}
+
+/* 说明文字较长时不要把开关压扁（滑块位移是按 48px 宽设计的） */
+.toggle-switch-row .switch-input {
+  flex: 0 0 auto;
+}
+

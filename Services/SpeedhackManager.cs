@@ -38,15 +38,49 @@ public sealed class SpeedhackManager
         return memory.ToArray();
     }
 
-    private readonly string _profileDirectory;
+    /// <summary>配置与回放库共用的数据文件夹名（位于用户「文档」下）。</summary>
+    public const string DataFolderName = "AstralPartyReplays";
 
-    public SpeedhackManager(string appDirectory, string? profileDirectory = null)
+    private readonly string _documentsDirectory;
+    private readonly string _profileDirectory;
+    private readonly string _profileLocationNote;
+
+    /// <param name="appDirectory">工具目录；现在只用于提示信息，配置不再放在 exe 旁边。</param>
+    /// <param name="profileDirectory">显式指定配置根目录（测试用）。</param>
+    /// <param name="appDataDirectory">%AppData% 位置覆盖（测试用）。</param>
+    /// <param name="documentsDirectory">「文档」数据目录覆盖（测试用）。</param>
+    public SpeedhackManager(string appDirectory, string? profileDirectory = null,
+        string? appDataDirectory = null, string? documentsDirectory = null)
     {
-        _ = appDirectory; // 保留兼容调用签名；配置不应依赖应用或单文件解包目录
-        _profileDirectory = profileDirectory ?? ResolveProfileDirectory();
+        _ = appDirectory; // 配置统一放文档目录，不跟 exe 走
+        _documentsDirectory = documentsDirectory ?? ResolveDocumentsDataDirectory();
+
+        if (profileDirectory is { Length: > 0 })
+        {
+            _profileDirectory = profileDirectory;
+            _profileLocationNote = "";
+        }
+        else
+        {
+            var (directory, note) = ChooseProfileDirectory(
+                _documentsDirectory,
+                appDataDirectory ?? ResolveAppDataDirectory());
+            _profileDirectory = directory;
+            _profileLocationNote = note;
+        }
     }
 
-    private static string ResolveProfileDirectory()
+    /// <summary>用户「文档」下的 AstralPartyReplays（回放库默认也用这个文件夹）。</summary>
+    public static string ResolveDocumentsDataDirectory()
+    {
+        var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        if (string.IsNullOrWhiteSpace(documents))
+            documents = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        return Path.Combine(documents, DataFolderName);
+    }
+
+    /// <summary>%AppData%\AstralParty.Toys（含旧名 AstralParty.ReplayTool 的一次性迁移）。</summary>
+    public static string ResolveAppDataDirectory()
     {
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         var current = Path.Combine(appData, "AstralParty.Toys");
@@ -65,12 +99,102 @@ public sealed class SpeedhackManager
         return current;
     }
 
+    /// <summary>
+    /// 配置根目录：统一放在用户「文档」下的 AstralPartyReplays（主配置、游戏目录记忆、回放库设置都在这一个文件夹里）。
+    /// 首次运行会把 %AppData% 里的旧配置复制过去，玩家的设置不会丢；文档目录实在不可写时才回退 %AppData%。
+    /// 两个 override 参数仅供测试注入。
+    /// </summary>
+    public static string ResolveProfileDirectory(string? appDataDirectoryOverride = null, string? documentsDirectoryOverride = null)
+    {
+        var documents = documentsDirectoryOverride ?? ResolveDocumentsDataDirectory();
+        var appData = appDataDirectoryOverride ?? ResolveAppDataDirectory();
+        return ChooseProfileDirectory(documents, appData).Directory;
+    }
+
+    private static (string Directory, string Note) ChooseProfileDirectory(string documentsDirectory, string appDataDirectory)
+    {
+        if (!TryEnsureWritable(documentsDirectory))
+        {
+            return (appDataDirectory,
+                $"文档目录不可写（{documentsDirectory}），配置暂时保存在 {appDataDirectory}。");
+        }
+
+        var migrated = MigrateLegacyConfig(appDataDirectory, documentsDirectory);
+        var note = $"配置保存在「文档\\{DataFolderName}」（和回放库同一个文件夹）：主配置、游戏目录记忆、回放库设置都在这里。";
+        if (migrated.Count > 0)
+            note += $"\n已把 %AppData% 里的旧配置复制过来：{string.Join("、", migrated)}。";
+        return (documentsDirectory, note);
+    }
+
+    /// <summary>把 %AppData% 里已有的配置复制到文档目录（只在目标不存在时复制，不覆盖、不删除源文件）。</summary>
+    private static List<string> MigrateLegacyConfig(string appDataDirectory, string documentsDirectory)
+    {
+        var migrated = new List<string>();
+        if (SamePath(appDataDirectory, documentsDirectory) || !Directory.Exists(appDataDirectory)) return migrated;
+
+        foreach (var relative in new[]
+                 {
+                     Path.Combine("speedhack", ConfigName),
+                     "speedhack-state.json",
+                     "replay-library.json"
+                 })
+        {
+            try
+            {
+                var source = Path.Combine(appDataDirectory, relative);
+                var target = Path.Combine(documentsDirectory, relative);
+                if (!File.Exists(source) || File.Exists(target)) continue;
+                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                File.Copy(source, target);
+                migrated.Add(relative);
+            }
+            catch
+            {
+                // 复制不动就当没有旧配置，工具会生成默认值
+            }
+        }
+        return migrated;
+    }
+
+    /// <summary>真的往目录里写一个临时文件来探测可写性（目录不存在会先创建）。</summary>
+    private static bool TryEnsureWritable(string directory)
+    {
+        try
+        {
+            Directory.CreateDirectory(directory);
+            var probe = Path.Combine(directory, $".astral-write-probe-{Guid.NewGuid():N}.tmp");
+            using var stream = new FileStream(probe, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1,
+                FileOptions.DeleteOnClose);
+            stream.WriteByte(0);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public static bool HasEmbeddedResources => EmbeddedDll is not null && EmbeddedConfigTemplate is not null;
     public static bool HasEmbeddedDll => EmbeddedDll is not null;
     public static bool HasEmbeddedConfigTemplate => EmbeddedConfigTemplate is not null;
 
-    /// <summary>可编辑的主配置，位于 %AppData%\AstralParty.Toys。</summary>
+    /// <summary>可编辑的主配置；默认在工具目录 portable 形态下，或回退到 %AppData%\AstralParty.Toys。</summary>
     public string ProfileConfigPath => Path.Combine(_profileDirectory, "speedhack", ConfigName);
+
+    private static bool SamePath(string left, string right)
+    {
+        try
+        {
+            return string.Equals(
+                Path.GetFullPath(left).TrimEnd('\\'),
+                Path.GetFullPath(right).TrimEnd('\\'),
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
     private string StateFilePath => Path.Combine(_profileDirectory, "speedhack-state.json");
 
@@ -85,6 +209,9 @@ public sealed class SpeedhackManager
             status.TemplateConfigPresent = HasEmbeddedConfigTemplate;
             status.ProfileConfigPath = ProfileConfigPath;
             status.ProfileConfigPresent = File.Exists(ProfileConfigPath);
+            status.ProfileDirectory = _profileDirectory;
+            status.ProfileLocationDocuments = SamePath(_profileDirectory, _documentsDirectory);
+            status.ProfileLocationNote = _profileLocationNote;
 
             var directory = GetStoredGameDirectory();
             if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
@@ -156,6 +283,28 @@ public sealed class SpeedhackManager
 
     // ============================== 安装 / 卸载 ==============================
 
+    /// <summary>
+    /// 游戏正在运行时安装会发生什么。安装本身不拦，玩家自己决定：
+    /// version.dll 由游戏启动时加载，所以本次写入不会立即生效；而正在运行的游戏通常占用着同名文件，覆盖可能直接失败。
+    /// </summary>
+    public static string DescribeRunningInstall() =>
+        "游戏正在运行时也能装：version.dll 是游戏启动时加载的，本次写进去要重启游戏才会生效；" +
+        "而且正在运行的游戏往往占用着 version.dll，覆盖会失败并提示文件被占用——那样就先完全退出游戏再装。";
+
+    /// <summary>游戏正在运行时卸载会发生什么。</summary>
+    public static string DescribeRunningUninstall() =>
+        "游戏正在运行时也能卸：version.dll 已被游戏加载占用，删除通常会失败并提示文件被占用；" +
+        "即使删除成功，当前这局也已经加载了变速器，要重启游戏才会恢复正常速度。";
+
+    /// <summary>游戏正在运行时同步配置会发生什么。</summary>
+    public static string DescribeRunningPushConfig() =>
+        "游戏正在运行时也能同步：配置会写进游戏目录，已加载的变速器需要按重载热键（默认 Ctrl+Shift+R）重新读取，否则重启游戏后生效。";
+
+    /// <summary>安装完成后的提示语（游戏仍在运行时说明本次不会立刻生效）。</summary>
+    public static string DescribeInstalled() => IsGameRunning()
+        ? "变速器文件已写入游戏目录。游戏正在运行，本次不会立刻生效——重启游戏后才会加载变速器。"
+        : "变速器已安装到游戏目录。进入游戏后按配置的快捷键即可变速（需关闭垂直同步）。";
+
     /// <summary>把内嵌文件写入游戏目录。version.dll 目标已存在且不是内置文件时，必须 overwriteDll 才会覆盖。</summary>
     public void Install(string gameDirectory, bool overwriteDll)
     {
@@ -165,8 +314,6 @@ public sealed class SpeedhackManager
             throw new ArgumentException("请先选择游戏目录。");
         if (!Directory.Exists(gameDirectory))
             throw new DirectoryNotFoundException($"游戏目录不存在：{gameDirectory}");
-        if (IsGameRunning())
-            throw new InvalidOperationException("游戏正在运行，请先退出游戏再安装。");
         if (string.IsNullOrEmpty(ContainsGameExe(gameDirectory)))
             throw new InvalidOperationException("所选目录里没有找到 AstralParty.exe / AstralParty_CN.exe，确认这是游戏 exe 所在的目录？");
 
@@ -175,8 +322,18 @@ public sealed class SpeedhackManager
             throw new InvalidOperationException(
                 "游戏目录已存在一个与内置不同的 version.dll（可能是其它工具的）——如确定要覆盖，请勾选「允许覆盖其它 version.dll」。");
 
-        WriteAllBytesProtected(targetDll, EmbeddedDll!);
-        WriteAllBytesProtected(Path.Combine(gameDirectory, ConfigName), EnsureProfileConfigBytes());
+        try
+        {
+            WriteAllBytesProtected(targetDll, EmbeddedDll!);
+            WriteAllBytesProtected(Path.Combine(gameDirectory, ConfigName), EnsureProfileConfigBytes());
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            throw new IOException(
+                $"写入游戏目录失败：{ex.Message}。" +
+                (IsGameRunning() ? "游戏正在运行时 version.dll 会被占用，无法覆盖——请完全退出游戏后再安装。" : ""), ex);
+        }
+
         SaveStoredGameDirectory(gameDirectory);
     }
 
@@ -201,15 +358,37 @@ public sealed class SpeedhackManager
         var result = new UninstallResult();
         if (dllExists)
         {
-            File.Delete(dllPath);
+            try
+            {
+                File.Delete(dllPath);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                throw new IOException(
+                    $"删除 version.dll 失败：{ex.Message}。" +
+                    (IsGameRunning()
+                        ? "游戏正在运行时该文件已被加载占用，请完全退出游戏后再卸载（本次没有改动任何文件）。"
+                        : "请检查文件权限后重试（本次没有改动任何文件）。"), ex);
+            }
             result.RemovedDll = true;
         }
         if (configExists)
         {
-            File.Delete(configPath);
-            result.RemovedConfig = true;
+            try
+            {
+                File.Delete(configPath);
+                result.RemovedConfig = true;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                result.Message = $"version.dll 已删除，但 speedhack_config.json 删除失败：{ex.Message}";
+                return result;
+            }
         }
-        result.Message = "变速器已卸载（游戏恢复正常速度）。";
+
+        result.Message = IsGameRunning()
+            ? "变速器已卸载；当前正在运行的游戏进程仍加载着变速器，重启游戏后恢复正常速度。"
+            : "变速器已卸载（游戏恢复正常速度）。";
         return result;
     }
 
@@ -403,7 +582,7 @@ public sealed class SpeedhackManager
         }
     }
 
-    private static string? ContainsGameExe(string directory)
+    public static string? ContainsGameExe(string directory)
     {
         try
         {
@@ -524,6 +703,24 @@ public sealed class SpeedhackStatus
     public string ConfigPath { get; set; } = "";
     public string BundleHash { get; set; } = "";
     public string Message { get; set; } = "";
+
+    /// <summary>配置根目录（主配置、speedhack-state、回放库设置都在这下面）。</summary>
+    public string ProfileDirectory { get; set; } = "";
+
+    /// <summary>配置是否保存在用户「文档」目录（正常情况都是 true）。</summary>
+    public bool ProfileLocationDocuments { get; set; }
+
+    /// <summary>配置位置的人话说明（便携 / 回退 AppData / 沿用旧位置）。</summary>
+    public string ProfileLocationNote { get; set; } = "";
+
+    /// <summary>游戏正在运行时，安装会发生什么（两个界面共用同一套文案）。</summary>
+    public string RunningInstallHint => SpeedhackManager.DescribeRunningInstall();
+
+    /// <summary>游戏正在运行时，卸载会发生什么。</summary>
+    public string RunningUninstallHint => SpeedhackManager.DescribeRunningUninstall();
+
+    /// <summary>游戏正在运行时，同步配置会发生什么。</summary>
+    public string RunningPushConfigHint => SpeedhackManager.DescribeRunningPushConfig();
 }
 
 public sealed class UninstallResult

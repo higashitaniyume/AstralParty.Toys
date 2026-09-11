@@ -1,6 +1,8 @@
 // replay.js - Full Replay Tool Logic Integrated within Tools Page (Light Theme)
 (function () {
   const ReplayModule = {
+    libraryData: null,
+
     init() {
       this.bindEvents();
     },
@@ -22,6 +24,34 @@
       // Empty state buttons
       $('emptySelectReplayBtn')?.addEventListener('click', () => post({ type: 'openReplay' }));
       $('refreshLibraryBtn')?.addEventListener('click', () => post({ type: 'refreshReplays' }));
+
+      // 回放库：导入 / 打开目录 / 筛选 / 横幅
+      $('libraryImportBtn')?.addEventListener('click', () => post({ type: 'libraryImport' }));
+      $('libraryOpenFolderBtn')?.addEventListener('click', () => post({ type: 'libraryOpenFolder' }));
+      $('librarySearchInput')?.addEventListener('input', () => this.renderLibraryRows());
+      $('libraryFilterSelect')?.addEventListener('change', () => this.renderLibraryRows());
+      $('librarySortSelect')?.addEventListener('change', () => this.renderLibraryRows());
+      $('recentReplayList')?.addEventListener('click', event => this.onLibraryClick(event));
+      $('libraryBannerArchiveBtn')?.addEventListener('click', () => {
+        const data = this.libraryData || {};
+        const overflow = Math.max(0, (data.gameCount || 0) - (data.capacity || 10));
+        post({ type: 'libraryArchiveOldest', count: overflow > 0 ? overflow : 3 });
+      });
+      $('libraryBannerAutoBtn')?.addEventListener('click', () => {
+        const data = this.libraryData || {};
+        post({
+          type: 'librarySaveSettings',
+          libraryRoot: data.libraryRoot || null,
+          autoMaintain: true,
+          keepInGame: data.capacity || 10
+        });
+        toast('已开启自动托管：以后每次打开本工具都会自动把超出席位的旧回放归档进库。');
+      });
+      $('libraryBannerDismissBtn')?.addEventListener('click', () => {
+        const data = this.libraryData || {};
+        window.localStorage.setItem('libraryBannerSignature', `${data.gameCount || 0}/${data.capacity || 10}`);
+        $('libraryBanner')?.classList.add('hidden');
+      });
 
       // Technical sub tabs
       $('techTabStatistics')?.addEventListener('click', () => this.switchTechPane('stats'));
@@ -81,44 +111,241 @@
     },
 
     renderLibrary(library) {
+      this.libraryData = library || null;
+      AppState.replayLibrary = library;
+
       const dirEl = $('libraryDirectoryText');
-      if (dirEl) dirEl.textContent = library.directory || '默认回放目录不可用';
+      if (dirEl) dirEl.textContent = library?.directory || '未检测到游戏回放目录';
 
-      const listContainer = $('recentReplayList');
-      if (!listContainer) return;
+      this.renderLibraryStatus();
+      this.renderLibraryRows();
+    },
 
-      if (!library.available) {
-        listContainer.innerHTML = '<div style="padding:16px;color:var(--text-muted);font-size:13px;text-align:center;">未检测到本地回放缓存目录。请使用上方按钮手动选择回放文件。</div>';
+    renderLibraryStatus() {
+      const data = this.libraryData;
+      if (!data) return;
+
+      const capacity = data.capacity || 10;
+      const gameCount = data.gameCount || 0;
+      const slotsEl = $('libraryGameSlots');
+      if (slotsEl) {
+        slotsEl.textContent = `${gameCount} / ${capacity}`;
+        slotsEl.parentElement?.classList.toggle('full', gameCount >= capacity);
+      }
+      const barEl = $('librarySlotBar');
+      if (barEl) barEl.style.width = `${Math.min(100, Math.round((gameCount / capacity) * 100))}%`;
+
+      const countEl = $('libraryCountText');
+      if (countEl) {
+        countEl.textContent = data.libraryAvailable
+          ? `${fmt(data.libraryCount)} 局 · ${data.librarySizeText}`
+          : '库目录不可用';
+      }
+
+      const runningHint = $('libraryGameRunningHint');
+      if (runningHint) {
+        runningHint.textContent = data.gameRunning
+          ? '游戏正在运行：归档/放回随时可用，但别在游戏里正播着回放时操作'
+          : '';
+      }
+
+      const warnBox = $('libraryWarningBox');
+      if (warnBox) {
+        const warnings = data.warnings || [];
+        warnBox.classList.toggle('hidden', warnings.length === 0);
+        warnBox.innerHTML = warnings.map(w => esc(w)).join('<br>');
+      }
+
+      const banner = $('libraryBanner');
+      if (!banner) return;
+      const signature = `${gameCount}/${capacity}`;
+      const dismissedFor = window.localStorage.getItem('libraryBannerSignature');
+      const isFull = gameCount >= capacity;
+      const isNear = gameCount >= capacity - 1 && !isFull;
+      const show = data.available && !data.sameFolder && (isFull || isNear) && dismissedFor !== signature;
+
+      banner.classList.toggle('hidden', !show);
+      banner.classList.toggle('soft', !isFull);
+      if (show) {
+        const titleEl = $('libraryBannerTitle');
+        const textEl = $('libraryBannerText');
+        if (titleEl) {
+          titleEl.textContent = isFull
+            ? `游戏内回放席位已满（${gameCount}/${capacity}）`
+            : `游戏内回放席位快满了（${gameCount}/${capacity}）`;
+        }
+        if (textEl) {
+          textEl.textContent = isFull
+            ? '再在游戏里点「保存」会提示已达上限。归档最旧的几局就能立刻腾出席位——回放不会丢，它们会进上面的回放库。'
+            : '离上限只差一点。开启自动托管后，每次打开本工具都会自动把超出的旧回放归档进库。';
+        }
+        const archiveBtn = $('libraryBannerArchiveBtn');
+        if (archiveBtn) {
+          const overflow = Math.max(0, gameCount - capacity);
+          const take = overflow > 0 ? overflow : 3;
+          archiveBtn.textContent = `归档最旧的 ${take} 局`;
+        }
+      }
+    },
+
+    renderLibraryRows() {
+      const container = $('recentReplayList');
+      const data = this.libraryData;
+      if (!container || !data) return;
+
+      const query = ($('librarySearchInput')?.value || '').trim().toLowerCase();
+      const filter = $('libraryFilterSelect')?.value || 'all';
+      const sort = $('librarySortSelect')?.value || 'time';
+
+      let items = (data.entries || []).slice();
+      if (filter === 'game') items = items.filter(x => x.inGame);
+      else if (filter === 'library') items = items.filter(x => x.inLibrary);
+      if (query) {
+        items = items.filter(x => [x.replayId, x.mapName, x.playersText, x.heroesText, x.finishText, x.gameVersion]
+          .some(value => String(value ?? '').toLowerCase().includes(query)));
+      }
+      if (sort === 'size') items.sort((a, b) => (b.sizeBytes || 0) - (a.sizeBytes || 0));
+      else if (sort === 'id') items.sort((a, b) => String(b.replayId).localeCompare(String(a.replayId)));
+      else items.sort((a, b) => (b.sortTime || 0) - (a.sortTime || 0));
+
+      const countEl = $('libraryListCount');
+      if (countEl) countEl.textContent = `${items.length} / ${(data.entries || []).length} 条`;
+
+      if (!items.length) {
+        container.innerHTML = `<div class="library-empty">${
+          data.available
+            ? '还没有回放。在游戏里打完一局后，到「战绩」里对那条记录点「保存回放」，再回来刷新即可。'
+            : '未检测到游戏回放目录。你仍然可以用左侧按钮直接打开任意回放文件。'
+        }</div>`;
         return;
       }
 
-      if (!library.items || !library.items.length) {
-        listContainer.innerHTML = '<div style="padding:16px;color:var(--text-muted);font-size:13px;text-align:center;">暂无近期对战回放。在游戏内完成对战后点击刷新即可查看。</div>';
-        return;
-      }
+      container.innerHTML = items.map(item => this.libraryRow(item)).join('');
+    },
 
-      listContainer.innerHTML = library.items.map(item => `
-        <div class="replay-entry-row" data-replay-token="${esc(item.token)}">
+    libraryRow(item) {
+      const badges = [];
+      if (item.inGame) badges.push('<span class="badge badge-game">游戏内</span>');
+      if (item.inLibrary) badges.push('<span class="badge badge-library">回放库</span>');
+      if (!item.healthy) badges.push('<span class="badge badge-warn">无法解析</span>');
+
+      const actions = ['<button data-action="open">查看</button>'];
+      if (item.inGame) actions.push('<button data-action="archive">归档</button>');
+      if (item.inLibrary) actions.push('<button data-action="restore">放回游戏</button>');
+      actions.push('<button class="danger" data-action="delete">删除</button>');
+
+      const title = [item.mapName, item.finishText, item.durationText].filter(v => v && v !== '—').join(' · ');
+      const facts = [
+        `ID ${item.replayId}`,
+        item.sizeText,
+        item.frameCount ? `${fmt(item.frameCount)} 帧` : '',
+        item.roundCount ? `${item.roundCount} 回合` : '',
+        item.gameVersion !== '—' ? `版本 ${item.gameVersion}` : ''
+      ].filter(Boolean).join(' · ');
+
+      return `
+        <div class="replay-entry-row library-row" data-token="${esc(item.token)}" data-replay-id="${esc(item.replayId)}">
           <div class="entry-main">
             <span class="entry-icon">▶</span>
             <div class="entry-meta">
-              <strong>${esc(item.name)}</strong>
-              <small>${esc(item.fileName)} · ${esc(item.sizeText)}</small>
+              <strong>${esc(title || item.replayId)}</strong>
+              <small>${esc(facts)}</small>
+              <div class="entry-badges">${badges.join('')}</div>
             </div>
           </div>
-          <span class="entry-date">${esc(item.modifiedText)}</span>
-        </div>
-      `).join('');
+          <div class="entry-side">
+            <span class="entry-date">${esc(item.playersText && item.playersText !== '—' ? item.playersText : '')}</span>
+            <div class="entry-actions">${actions.join('')}</div>
+          </div>
+        </div>`;
+    },
 
-      listContainer.querySelectorAll('.replay-entry-row').forEach(row => {
-        row.addEventListener('click', () => {
-          const token = row.dataset.replayToken;
-          if (token) {
-            row.style.background = 'var(--primary-light)';
-            post({ type: 'openRecentReplay', token });
-          }
+    onLibraryClick(event) {
+      const row = event.target.closest('.library-row');
+      if (!row) return;
+      const token = row.dataset.token;
+      const replayId = row.dataset.replayId;
+      const button = event.target.closest('button[data-action]');
+
+      if (!button) {
+        if (token) post({ type: 'openRecentReplay', token });
+        return;
+      }
+      event.stopPropagation();
+
+      switch (button.dataset.action) {
+        case 'open':
+          post({ type: 'openRecentReplay', token });
+          break;
+        case 'archive':
+          post({ type: 'libraryArchive', ids: [replayId] });
+          break;
+        case 'restore':
+          post({ type: 'libraryRestore', ids: [replayId] });
+          break;
+        case 'delete':
+          this.confirmDelete(replayId);
+          break;
+      }
+    },
+
+    confirmDelete(replayId) {
+      const entry = (this.libraryData?.entries || []).find(x => x.replayId === replayId) || {};
+      const options = [];
+      if (entry.inLibrary) options.push('<button class="secondary-btn" data-delete-target="library">只删库内副本（游戏里仍能看）</button>');
+      if (entry.inGame) options.push('<button class="secondary-btn" data-delete-target="game">只删游戏内副本（腾出席位）</button>');
+      if (entry.inLibrary && entry.inGame) options.push('<button class="secondary-btn" data-delete-target="both">两边都删</button>');
+      if (!options.length) return;
+
+      openModal(`删除回放 ${replayId}`, `
+        <p style="font-size:13px;color:var(--gp-text-sub);line-height:1.75;margin:0 0 14px">
+          删除会优先放进 Windows 回收站，仍可还原。只删游戏内副本是腾席位的常用做法；库内副本才是长期存档。
+        </p>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start">${options.join('')}</div>
+      `);
+
+      $('modalBody')?.querySelectorAll('button[data-delete-target]').forEach(button => {
+        button.addEventListener('click', () => {
+          post({ type: 'libraryDelete', ids: [replayId], target: button.dataset.deleteTarget });
+          closeModal();
         });
       });
+    },
+
+    renderLibraryResult(payload) {
+      if (!payload) return;
+      toast(payload.summary || (payload.ok ? '操作完成。' : '操作失败。'));
+      const messages = payload.messages || [];
+
+      if (payload.needsConfirmation && (payload.pendingIds || []).length) {
+        const ids = payload.pendingIds;
+        openModal('这些回放解析不出结算帧', `
+          <p style="font-size:13px;color:var(--gp-text-sub);line-height:1.75;margin:0 0 12px">
+            本工具读不出它们的结算帧（工具自带的协议版本可能比游戏旧）。如果游戏也读不出来，
+            <strong style="color:#fca5a5">游戏在「本地回放」列表里遇到这种目录会把它整个删掉</strong>。
+            确认要继续放回，就点下面的按钮；库里的副本无论如何都会保留。
+          </p>
+          <p style="font-size:12px;color:var(--gp-text-muted);margin:0 0 14px;word-break:break-all">${ids.map(id => esc(id)).join('<br>')}</p>
+          <div style="display:flex;gap:10px">
+            <button class="primary-btn" id="libraryForceRestoreBtn">仍要放回（${ids.length} 份）</button>
+            <button class="secondary-btn" id="libraryCancelRestoreBtn">取消</button>
+          </div>
+        `);
+        $('libraryForceRestoreBtn')?.addEventListener('click', () => {
+          post({ type: 'libraryRestore', ids, allowUnparseable: true });
+          closeModal();
+        });
+        $('libraryCancelRestoreBtn')?.addEventListener('click', closeModal);
+        return;
+      }
+
+      if (messages.length > 1) {
+        openModal('回放库操作结果', `
+          <div style="display:flex;flex-direction:column;gap:7px;font-size:12.5px;line-height:1.65">
+            ${messages.map(message => `<div>${esc(message)}</div>`).join('')}
+          </div>
+        `);
+      }
     },
 
     renderReport(report) {

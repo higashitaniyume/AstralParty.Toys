@@ -58,8 +58,14 @@
           </article>
         </div>
 
-        <!-- Right Side Primary Functional Buttons: 变速器、回放与维基 -->
+        <!-- Right Side Primary Functional Buttons: 启动游戏、变速器、回放与维基 -->
         <div class="lobby-right-menu">
+          <!-- 0. 启动游戏（Steam AppID 2622000） -->
+          <button class="lobby-card-btn card-launch" id="btnMenuLaunchGame" title="启动 Astral Party（吉星派对）">
+            <div class="card-btn-text">启动游戏</div>
+            <img class="card-btn-chibi" src="https://assets.astral.local/UI/UT_Hero_LevelUp_102_01.webp" alt="启动游戏">
+          </button>
+
           <!-- 1. 游戏变速器 -->
           <button class="lobby-card-btn card-speedhack" id="btnMenuSpeedhack" title="游戏加速与变速器设置">
             <div class="card-btn-text">变速器</div>
@@ -128,11 +134,58 @@
             <section class="recent-replays-box">
               <div class="recent-head">
                 <div>
-                  <h4>本地回放缓存列表</h4>
-                  <small id="libraryDirectoryText">正在检测 LocalLow 回放目录…</small>
+                  <h4>回放列表</h4>
+                  <small id="libraryDirectoryText">正在检测回放目录…</small>
                 </div>
-                <button class="secondary-btn" id="refreshLibraryBtn">刷新列表</button>
+                <div class="recent-head-actions">
+                  <button class="secondary-btn" id="libraryImportBtn">导入回放</button>
+                  <button class="secondary-btn" id="refreshLibraryBtn">刷新列表</button>
+                </div>
               </div>
+
+              <div class="library-status" id="libraryStatus">
+                <div class="library-status-cell">
+                  <span class="library-status-label">游戏内席位</span>
+                  <strong id="libraryGameSlots">—</strong>
+                  <div class="library-slot-bar"><i id="librarySlotBar"></i></div>
+                  <small class="library-status-hint" id="libraryGameRunningHint"></small>
+                </div>
+                <div class="library-status-cell">
+                  <span class="library-status-label">回放库</span>
+                  <strong id="libraryCountText">—</strong>
+                  <button class="link-btn" id="libraryOpenFolderBtn">打开库目录</button>
+                </div>
+              </div>
+
+              <div class="library-banner hidden" id="libraryBanner">
+                <div class="library-banner-main">
+                  <strong id="libraryBannerTitle">游戏内回放席位已满</strong>
+                  <p id="libraryBannerText"></p>
+                </div>
+                <div class="library-banner-actions">
+                  <button class="primary-btn" id="libraryBannerArchiveBtn">归档最旧的 3 局</button>
+                  <button class="secondary-btn" id="libraryBannerAutoBtn">以后自动保持最近 10 局</button>
+                  <button class="link-btn" id="libraryBannerDismissBtn">稍后再说</button>
+                </div>
+              </div>
+
+              <div class="library-warning hidden" id="libraryWarningBox"></div>
+
+              <div class="library-filter-bar">
+                <input type="search" class="library-input" id="librarySearchInput" placeholder="搜索回放 ID / 地图 / 玩家…">
+                <select class="library-select" id="libraryFilterSelect">
+                  <option value="all">全部来源</option>
+                  <option value="game">仅游戏内</option>
+                  <option value="library">仅回放库</option>
+                </select>
+                <select class="library-select" id="librarySortSelect">
+                  <option value="time">按对局时间</option>
+                  <option value="size">按文件大小</option>
+                  <option value="id">按回放 ID</option>
+                </select>
+                <span class="library-list-count" id="libraryListCount"></span>
+              </div>
+
               <div class="replay-entry-list" id="recentReplayList"></div>
             </section>
           </div>
@@ -211,7 +264,7 @@
               <div class="util-note-box">
                 <span class="util-note-title">⚠️ 使用须知</span>
                 <ul>
-                  <li>原理：把内置 <span class="util-mono">version.dll</span> 放到游戏 exe 旁边，游戏启动时自动加载；请先<strong>完全退出游戏</strong>再安装/卸载。</li>
+                  <li>原理：把内置 <span class="util-mono">version.dll</span> 放到游戏 exe 旁边，游戏启动时自动加载。游戏运行中也允许安装/卸载，只是本次写入要<strong>重启游戏</strong>才生效，而且 DLL 被占用时写入/删除会失败——那种情况先完全退出游戏再操作即可。</li>
                   <li>倍速基于修改进程时间函数，需在游戏设置里<strong>关闭垂直同步</strong>才生效；修改配置后<strong>重启游戏</strong>，或在游戏内按重载热键（默认 Ctrl+Shift+R）。</li>
                   <li>工具来源：<a href="https://github.com/Hirtol/speedhack-rs" target="_blank" rel="noopener" style="color:var(--gp-blue)">github.com/Hirtol/speedhack-rs</a>（构建于 2024-04-13）。</li>
                 </ul>
@@ -355,6 +408,35 @@
                 <p>开启看板立绘与页面切换动画</p>
               </div>
               <input type="checkbox" class="switch-input" id="animToggle" checked>
+            </div>
+          </article>
+
+          <article class="settings-card">
+            <div class="settings-card-head">
+              <h3><span>🗂️</span> 回放库</h3>
+            </div>
+            <p class="settings-card-note">游戏自带的「本地回放」只有 <strong>10 个席位</strong>——这是客户端写死的上限，和服务器无关：超了只是游戏拒绝保存新回放。把回放归档到下面的库目录即可腾出席位，需要时再一键放回游戏。</p>
+            <div class="settings-field">
+              <label for="libraryRootInput">库目录</label>
+              <div class="settings-field-row">
+                <input type="text" class="library-input wide" id="libraryRootInput" spellcheck="false" placeholder="正在读取…">
+                <button class="secondary-btn" id="libraryRootBrowseBtn">浏览…</button>
+                <button class="secondary-btn" id="libraryRootOpenBtn">打开</button>
+              </div>
+            </div>
+            <div class="toggle-switch-row">
+              <div class="toggle-info">
+                <h4>自动保持游戏内最近 10 局</h4>
+                <p>每次打开本工具时，把超出保留名额的旧回放自动归档进库；最新的几局永远不会被动。</p>
+              </div>
+              <input type="checkbox" class="switch-input" id="libraryAutoMaintainToggle">
+            </div>
+            <div class="settings-field">
+              <label for="libraryKeepInput">游戏内保留局数</label>
+              <div class="settings-field-row">
+                <input type="number" class="library-input" id="libraryKeepInput" min="1" max="10" step="1">
+                <button class="secondary-btn" id="libraryMaintainNowBtn">立即整理一次</button>
+              </div>
             </div>
           </article>
 

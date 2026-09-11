@@ -255,6 +255,19 @@ body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-game-logo {
   box-shadow: 0 18px 42px rgba(109, 40, 217, 0.75), inset 0 2px 6px rgba(255, 255, 255, 0.6);
 }
 
+/* 启动游戏 (Emerald Launch Gradient) */
+.card-launch {
+  background: linear-gradient(135deg, #22c55e 0%, #15803d 100%);
+  box-shadow: 0 12px 30px rgba(21, 128, 61, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+}
+.card-launch:hover {
+  box-shadow: 0 18px 42px rgba(21, 128, 61, 0.75), inset 0 2px 6px rgba(255, 255, 255, 0.6);
+}
+.card-launch .card-btn-text {
+  font-size: 28px;
+  letter-spacing: 2px;
+}
+
 body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-hero-art {
   animation: hero-idle-float-left 6s ease-in-out infinite alternate, hero-art-fade-in 520ms var(--motion-ease);
 }
@@ -266,6 +279,7 @@ body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-card-btn {
 }
 body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-card-btn:nth-child(2) { animation-delay: 90ms; }
 body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-card-btn:nth-child(3) { animation-delay: 180ms; }
+body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-card-btn:nth-child(4) { animation-delay: 270ms; }
 body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-bottom-dock {
   animation: content-rise 420ms var(--motion-ease) 160ms both;
 }

@@ -34,19 +34,15 @@ public partial class SpeedhackWindow : Window
         var status = _manager.GetStatus();
 
         GameDirBox.Text = status.GameDirectory;
-        ConfigPathText.Text = status.ProfileConfigPresent
+        ConfigPathText.Text = (status.ProfileConfigPresent
             ? $"主配置：{status.ProfileConfigPath}"
-            : $"主配置（将自动生成）：{status.ProfileConfigPath}";
+            : $"主配置（将自动生成）：{status.ProfileConfigPath}")
+            + (string.IsNullOrEmpty(status.ProfileLocationNote) ? "" : $"\n{status.ProfileLocationNote}");
 
         var installedOk = status.Installed && status.DllMatchesBundle;
-        if (status.GameRunning)
+        if (installedOk)
         {
-            SetBadge("游戏运行中", "#38BDF8", "#0C2A3F");
-            StatusText.Text = "检测到游戏正在运行——安装 / 卸载前请先完全退出游戏。";
-        }
-        else if (installedOk)
-        {
-            SetBadge("已安装", "#A3E635", "#1C3310");
+            SetBadge(status.GameRunning ? "已安装 · 运行中" : "已安装", "#A3E635", "#1C3310");
             StatusText.Text = $"变速器已就位：{status.DllPath}\n配置修改后重启游戏生效，或在游戏内按重载热键（默认 Ctrl+Shift+R）。";
         }
         else if (status.Installed)
@@ -61,17 +57,25 @@ public partial class SpeedhackWindow : Window
         }
         else
         {
-            SetBadge("未安装", "#E4B86C", "#33271B");
+            SetBadge(status.GameRunning ? "未安装 · 运行中" : "未安装", "#E4B86C", "#33271B");
             StatusText.Text = status.Message;
         }
-        if (!status.GameRunning)
+
+        if (status.GameRunning)
+        {
+            StatusText.Text += "\n\n⚠ 检测到游戏正在运行——安装/卸载不会被拦，但要知道会发生什么："
+                + $"\n· 安装：{SpeedhackManager.DescribeRunningInstall()}"
+                + $"\n· 卸载：{SpeedhackManager.DescribeRunningUninstall()}"
+                + $"\n· 同步配置：{SpeedhackManager.DescribeRunningPushConfig()}";
+        }
+        else
         {
             StatusText.Text += status.GameExeFound
-                ? "\n已检测到目录里的 AstralParty 游戏程序，可以安装。"
+                ? "\n已检测到目录里的 AstralParty 游戏程序，安装/卸载会立刻生效。"
                 : "\n未在该目录找到 AstralParty 游戏程序（仍可强行安装，但请确认目录正确）。";
         }
 
-        var ready = !status.GameRunning && status.BundleDllPresent;
+        var ready = status.BundleDllPresent;
         InstallButton.IsEnabled = ready && !string.IsNullOrWhiteSpace(GameDirBox.Text);
         UninstallButton.IsEnabled = ready && status.Installed;
         PushConfigButton.IsEnabled = ready && status.Installed;

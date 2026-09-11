@@ -24,6 +24,7 @@
     bindEvents() {
       if (this.eventsBound) return;
       this.eventsBound = true;
+      $('btnMenuLaunchGame')?.addEventListener('click', () => post({ type: 'launchGame' }));
       $('btnMenuSpeedhack')?.addEventListener('click', () => showPage('utilities'));
       $('btnMenuTools')?.addEventListener('click', () => showPage('tools'));
       $('btnMenuWiki')?.addEventListener('click', () => showPage('wiki'));

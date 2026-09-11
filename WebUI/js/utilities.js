@@ -226,31 +226,34 @@
       const badgeText = $('utilsConfigStateBadge');
 
       const installedOk = status.installed && status.dllMatchesBundle;
+      const running = !!status.gameRunning;
       if (!status.bundleDllPresent || !status.templateConfigPresent) {
         badge.textContent = '缺少内置文件';
         badge.className = 'badge badge-notice';
         title.textContent = '程序缺少变速器文件';
-      } else if (status.gameRunning) {
-        badge.textContent = '游戏运行中';
-        badge.className = 'badge badge-notice';
-        title.textContent = '游戏正在运行';
       } else if (installedOk) {
-        badge.textContent = '已安装';
+        badge.textContent = running ? '已安装 · 游戏运行中' : '已安装';
         badge.className = 'badge badge-update';
-        title.textContent = '变速器已就位';
+        title.textContent = running
+          ? '变速器已就位；游戏正在运行，新写入的文件要重启游戏才加载'
+          : '变速器已就位';
       } else if (status.installed) {
         badge.textContent = '文件不一致';
         badge.className = 'badge badge-notice';
         title.textContent = '目录里是其它 version.dll';
       } else {
-        badge.textContent = '未安装';
+        badge.textContent = running ? '未安装 · 游戏运行中' : '未安装';
         badge.className = 'badge badge-event';
-        title.textContent = '尚未安装到游戏';
+        title.textContent = running
+          ? '尚未安装；游戏正在运行，本次安装重启游戏后才加载'
+          : '尚未安装到游戏';
       }
-      icon.textContent = status.gameRunning ? '⏳' : (installedOk ? '⚡' : status.installed ? '⚠️' : '🔍');
+      icon.textContent = installedOk ? '⚡' : (status.installed ? '⚠️' : (running ? '⏳' : '🔍'));
       text.textContent = status.message || '';
       if ($('utilsConfigPathText')) $('utilsConfigPathText').textContent =
-        status.profileConfigPath ? `主配置：${status.profileConfigPath}` : '';
+        status.profileConfigPath
+          ? `主配置：${status.profileConfigPath}${status.profileLocationDocuments ? '（文档目录）' : '（回退 AppData）'}`
+          : '';
 
       // 游戏目录
       const dirText = $('utilsGameDirText');
@@ -271,9 +274,17 @@
         const lines = [];
         const dot = (cls, t) => `<span class="util-meta-dot ${cls}"></span><span>${t}</span>`;
         if (status.gameRunning) {
-          lines.push(dot('warn', '检测到游戏正在运行——安装 / 卸载前请先完全退出游戏'));
+          lines.push(dot('warn', '检测到游戏正在运行——安装 / 卸载不会被拦，但先看清下面的后果：'));
+          lines.push(dot('warn', `安装：${status.runningInstallHint || '新写入的 version.dll 要重启游戏才会加载，且运行中的游戏可能占用该文件导致覆盖失败。'}`));
+          lines.push(dot('warn', `卸载：${status.runningUninstallHint || 'version.dll 已被游戏占用，删除可能失败；重启游戏后才恢复正常速度。'}`));
+          if (status.installed) {
+            lines.push(dot('warn', `同步配置：${status.runningPushConfigHint || '配置写入后需按重载热键或重启游戏生效。'}`));
+          }
         } else {
-          lines.push(dot('ok', '游戏进程未运行，可以安全安装 / 卸载'));
+          lines.push(dot('ok', '游戏进程未运行，安装 / 卸载会立刻生效'));
+        }
+        if (status.profileLocationNote) {
+          lines.push(dot(status.profileLocationDocuments ? 'ok' : 'warn', status.profileLocationNote));
         }
         if (status.gameExeFound) lines.push(dot('ok', '目录内检测到游戏程序 AstralParty.exe / AstralParty_CN.exe'));
         else if (status.gameDirectory) lines.push(dot('warn', '目录内未找到 AstralParty 游戏程序（仍可安装，但请确认目录正确）'));
@@ -298,10 +309,10 @@
         meta.innerHTML = lines.map(l => `<li>${l}</li>`).join('');
       }
 
-      // 按钮可用性
-      const dirReady = !!status.gameDirectory && !status.gameRunning;
+      // 按钮可用性：游戏在运行只警告，不阻止操作
+      const dirReady = !!status.gameDirectory;
       $('utilsInstallBtn').disabled = !status.bundleDllPresent || !dirReady;
-      $('utilsSyncConfigBtn').disabled = !status.installed || status.gameRunning;
+      $('utilsSyncConfigBtn').disabled = !status.installed;
       $('utilsUninstallBtn').disabled = !dirReady;
       $('utilsEditJsonBtn').disabled = !status.templateConfigPresent;
       if (!status.gameDirectory) $('utilsSyncConfigBtn').disabled = true;

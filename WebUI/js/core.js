@@ -6,6 +6,7 @@ const AppState = {
   homeData: null,
   replayReport: null,
   replayLibrary: null,
+  librarySettings: null,
   selectedFrame: -1,
   activeReplayTab: 'summary',
   activeWikiTab: 'heroes',
@@ -164,6 +165,18 @@ host?.addEventListener('message', event => {
     case 'replayLibrary':
       AppState.replayLibrary = msg.payload;
       if (window.ReplayModule) window.ReplayModule.renderLibrary(msg.payload);
+      break;
+
+    case 'libraryResult':
+      if (window.ReplayModule) window.ReplayModule.renderLibraryResult(msg.payload);
+      break;
+
+    case 'librarySettings':
+      AppState.librarySettings = msg.payload;
+      if (window.SettingsModule) {
+        window.SettingsModule.init();
+        window.SettingsModule.applyLibrarySettings(msg.payload);
+      }
       break;
 
     case 'loading':

@@ -7,6 +7,8 @@ public sealed class GameProtocolContext
 {
     private readonly Assembly _gameAssembly;
     private readonly Dictionary<string, object> _parsers = new(StringComparer.Ordinal);
+    private MethodInfo? _settlementMethod;
+    private bool _settlementProbed;
 
     public static readonly IReadOnlyDictionary<int, string> MessageTypes = new Dictionary<int, string>
     {
@@ -62,6 +64,42 @@ public sealed class GameProtocolContext
         if (!MessageTypes.TryGetValue(cmdId, out var typeName) || payload.Length == 0) return null;
         try { return Decode(typeName, payload); }
         catch { return null; }
+    }
+
+    /// <summary>
+    /// 直接调用游戏自己的 <c>GameLogic.Replay.ReplayLoader.TryParseReplaySettlementOnly</c>。
+    /// 与游戏内「本地回放」列表用的是同一个函数，因此结果天然一致：
+    /// 解析不出来就意味着游戏列到它会把整个目录删掉。
+    /// </summary>
+    public bool TryParseSettlement(byte[] bytes, out object? gameFinish, out object? lastSnapshot)
+    {
+        gameFinish = null;
+        lastSnapshot = null;
+        if (bytes.Length < 6) return false;
+
+        if (!_settlementProbed)
+        {
+            _settlementProbed = true;
+            _settlementMethod = _gameAssembly
+                .GetType("GameLogic.Replay.ReplayLoader", throwOnError: false)
+                ?.GetMethod("TryParseReplaySettlementOnly", BindingFlags.Public | BindingFlags.Static,
+                    binder: null, types: [typeof(byte[])], modifiers: null);
+        }
+        if (_settlementMethod is null) return false;
+
+        try
+        {
+            var tuple = _settlementMethod.Invoke(null, [bytes]);
+            if (tuple is null) return false;
+            var tupleType = tuple.GetType();
+            gameFinish = tupleType.GetField("Item1")?.GetValue(tuple);
+            lastSnapshot = tupleType.GetField("Item2")?.GetValue(tuple);
+            return gameFinish is not null;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     public string MessageName(int cmdId)

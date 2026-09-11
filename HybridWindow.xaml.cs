@@ -20,6 +20,7 @@ public partial class HybridWindow : Window
     private readonly IReadOnlyList<string> _materialDirectories;
     private readonly HomeDataService _homeDataService;
     private readonly SpeedhackManager _speedhackManager;
+    private readonly ReplayLibraryService _libraryService;
     private ReplayAnalyzer? _analyzer;
     private ReplayReport? _report;
     private bool _webReady;
@@ -32,6 +33,7 @@ public partial class HybridWindow : Window
         _materialDirectories = MaterialSource.DiscoverAll(_appDirectory);
         _homeDataService = new HomeDataService(_appDirectory);
         _speedhackManager = new SpeedhackManager(_appDirectory);
+        _libraryService = new ReplayLibraryService(_appDirectory);
     }
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -116,7 +118,8 @@ public partial class HybridWindow : Window
                     _webReady = true;
                     StartupOverlay.Visibility = Visibility.Collapsed;
                     Post(new { type = "homeData", payload = _homeDataService.GetHomeData() });
-                    await SendReplayLibraryAsync();
+                    await SendReplayLibraryAsync(runMaintain: true);
+                    Post(new { type = "librarySettings", payload = BuildLibrarySettingsPayload() });
                     var args = Environment.GetCommandLineArgs();
                     if (args.Length > 1 && File.Exists(args[1])) await LoadReplayAsync(args[1]);
                     break;
@@ -133,7 +136,47 @@ public partial class HybridWindow : Window
                         await LoadReplayAsync(replayPath);
                     break;
                 case "refreshReplays":
-                    await SendReplayLibraryAsync();
+                    await SendReplayLibraryAsync(runMaintain: true);
+                    break;
+                case "libraryArchive":
+                    await RunLibraryOperationAsync(() => _libraryService.Archive(ReadIds(root)));
+                    break;
+                case "libraryArchiveOldest":
+                    var archiveCount = root.TryGetProperty("count", out var countElement) && countElement.TryGetInt32(out var parsedCount)
+                        ? Math.Clamp(parsedCount, 1, ReplayLibraryService.GameSlotCapacity)
+                        : 3;
+                    await RunLibraryOperationAsync(() => ArchiveOldest(archiveCount));
+                    break;
+                case "libraryRestore":
+                    var allowUnparseable = root.TryGetProperty("allowUnparseable", out var allowElement) && allowElement.GetBoolean();
+                    await RunLibraryOperationAsync(() => _libraryService.Restore(ReadIds(root), allowUnparseable));
+                    break;
+                case "libraryDelete":
+                    var deleteTarget = (root.TryGetProperty("target", out var targetElement) ? targetElement.GetString() : null) switch
+                    {
+                        "game" => ReplayDeleteTarget.Game,
+                        "both" => ReplayDeleteTarget.Both,
+                        _ => ReplayDeleteTarget.Library
+                    };
+                    await RunLibraryOperationAsync(() => _libraryService.Delete(ReadIds(root), deleteTarget));
+                    break;
+                case "libraryMaintain":
+                    await RunLibraryOperationAsync(() => _libraryService.Maintain());
+                    break;
+                case "libraryImport":
+                    await HandleLibraryImportAsync();
+                    break;
+                case "libraryOpenFolder":
+                    HandleLibraryOpenFolder();
+                    break;
+                case "libraryBrowseRoot":
+                    HandleLibraryBrowseRoot();
+                    break;
+                case "libraryGetSettings":
+                    Post(new { type = "librarySettings", payload = BuildLibrarySettingsPayload() });
+                    break;
+                case "librarySaveSettings":
+                    HandleLibrarySaveSettings(root);
                     break;
                 case "getFrame":
                     if (root.TryGetProperty("index", out var indexElement)) await SendFrameDetailAsync(indexElement.GetInt32());
@@ -154,6 +197,9 @@ public partial class HybridWindow : Window
                     {
                         TryOpenExternal(targetUrl);
                     }
+                    break;
+                case "launchGame":
+                    HandleLaunchGame();
                     break;
                 case "speedhackStatus":
                     PushSpeedhackStatus();
@@ -220,54 +266,282 @@ public partial class HybridWindow : Window
         catch { }
     }
 
-    private async Task SendReplayLibraryAsync()
-    {
-        var directory = FindReplayDirectory();
-        var files = await Task.Run(() =>
-        {
-            if (!Directory.Exists(directory)) return new List<FileInfo>();
-            try
-            {
-                return Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories)
-                    .Select(path => new FileInfo(path))
-                    .Where(file => file.Length > 0)
-                    .OrderByDescending(file => file.LastWriteTimeUtc)
-                    .Take(100)
-                    .ToList();
-            }
-            catch (IOException) { return []; }
-            catch (UnauthorizedAccessException) { return []; }
-        });
+    // ============================== 回放库 ==============================
 
-        _replayLibrary.Clear();
-        var items = files.Select((file, index) =>
+    /// <summary>重新扫描游戏回放目录与回放库；runMaintain 为真时先跑一次自动托管。</summary>
+    private async Task SendReplayLibraryAsync(bool runMaintain)
+    {
+        LibrarySnapshot snapshot;
+        string? maintainMessage = null;
+        try
         {
-            var token = $"replay-{index}-{file.LastWriteTimeUtc.Ticks}";
-            _replayLibrary[token] = file.FullName;
-            var parentName = file.Directory?.Name;
-            return new
+            snapshot = await Task.Run(() =>
+            {
+                if (runMaintain && _libraryService.Settings.AutoMaintain && !_libraryService.IsSameFolder())
+                {
+                    var maintained = _libraryService.Maintain();
+                    if (maintained.Applied > 0) maintainMessage = maintained.Messages[0];
+                }
+                return _libraryService.Snapshot();
+            });
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "error", message = $"回放列表读取失败：{ex.Message}" });
+            return;
+        }
+
+        Post(new { type = "replayLibrary", payload = BuildLibraryPayload(snapshot) });
+        if (maintainMessage is not null) Post(new { type = "toast", message = maintainMessage });
+    }
+
+    private object BuildLibraryPayload(LibrarySnapshot snapshot)
+    {
+        _replayLibrary.Clear();
+        var entries = new List<object>(snapshot.Entries.Count);
+        for (var index = 0; index < snapshot.Entries.Count; index++)
+        {
+            var entry = snapshot.Entries[index];
+            var token = $"replay-{index}";
+            _replayLibrary[token] = entry.LibraryPath ?? entry.GamePath ?? "";
+            var meta = entry.Meta;
+            entries.Add(new
             {
                 token,
-                name = string.IsNullOrWhiteSpace(parentName) ? file.Name : $"回放 {parentName}",
-                fileName = file.Name,
-                sizeText = FormatLibrarySize(file.Length),
-                modifiedText = file.LastWriteTime.ToString("yyyy-MM-dd HH:mm")
-            };
-        }).ToList();
+                replayId = entry.ReplayId,
+                inGame = entry.InGame,
+                inLibrary = entry.InLibrary,
+                healthy = meta?.Healthy ?? false,
+                error = meta?.Error ?? "",
+                sizeText = FormatLibrarySize(entry.SizeBytes),
+                sizeBytes = entry.SizeBytes,
+                modifiedText = entry.ModifiedUtc == DateTime.UnixEpoch
+                    ? "—" : entry.ModifiedUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm"),
+                sortTime = entry.SortTime,
+                finishText = meta is { FinishTime: > 0 } ? FormatUnixTime(meta.FinishTime) : "—",
+                durationText = meta is { DurationSeconds: > 0 } m2
+                    ? TimeSpan.FromSeconds(m2.DurationSeconds).ToString(@"hh\:mm\:ss") : "—",
+                mapName = meta?.MapName is { Length: > 0 } mapName ? mapName : "未知地图",
+                mapId = meta?.MapId ?? 0,
+                roundCount = meta?.RoundCount ?? 0,
+                frameCount = meta?.FrameCount ?? 0,
+                gameVersion = meta?.GameVersion is { Length: > 0 } version ? version : "—",
+                winnerText = meta is { WinnerName.Length: > 0 } ? meta.WinnerName
+                    : meta is { WinnerId: > 0 } ? $"玩家 {meta.WinnerId}" : "—",
+                playersText = meta is null || meta.Players.Count == 0
+                    ? "—"
+                    : string.Join(" · ", meta.Players.Select(p => p.Nick.Length > 0 ? p.Nick : $"玩家 {p.Id}")),
+                heroesText = meta is null || meta.Players.Count == 0
+                    ? "—"
+                    : string.Join(" · ", meta.Players.Select(p => p.HeroName))
+            });
+        }
 
-        Post(new { type = "replayLibrary", payload = new { directory, available = Directory.Exists(directory), items } });
-    }
-
-    private static string FindReplayDirectory()
-    {
-        var localLow = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "AppData", "LocalLow", "feimo");
-        var candidates = new[]
+        return new
         {
-            Path.Combine(localLow, "AstralParty_CN", "Temp", "Replay"),
-            Path.Combine(localLow, "AstralParty", "_CN", "Temp", "Replay")
+            directory = snapshot.GameDirectory,
+            available = snapshot.GameDirectoryAvailable,
+            libraryRoot = snapshot.LibraryRoot,
+            libraryAvailable = snapshot.LibraryAvailable,
+            libraryCount = snapshot.LibraryCount,
+            librarySizeText = FormatLibrarySize(snapshot.LibraryBytes),
+            gameCount = snapshot.GameCount,
+            capacity = snapshot.GameSlotCapacity,
+            keepInGame = snapshot.KeepInGame,
+            autoMaintain = snapshot.AutoMaintain,
+            gameFull = snapshot.GameFull,
+            gameOverKeep = snapshot.GameOverKeep,
+            gameRunning = snapshot.GameRunning,
+            sameFolder = snapshot.SameFolder,
+            warnings = snapshot.Warnings,
+            entries
         };
-        return candidates.FirstOrDefault(Directory.Exists) ?? candidates[0];
     }
+
+    private static List<string> ReadIds(JsonElement root)
+    {
+        var ids = new List<string>();
+        if (root.TryGetProperty("ids", out var element) && element.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in element.EnumerateArray())
+            {
+                if (item.ValueKind == JsonValueKind.String && item.GetString() is { Length: > 0 } id) ids.Add(id);
+            }
+        }
+        return ids;
+    }
+
+    /// <summary>归档游戏目录里最旧的 count 局（保留名额以内的部分不动）。</summary>
+    private ReplayOperationResult ArchiveOldest(int count)
+    {
+        var snapshot = _libraryService.Snapshot();
+        var gameEntries = snapshot.Entries.Where(x => x.InGame).ToList();
+        var excess = gameEntries.Count - ReplayLibraryService.GameSlotCapacity;
+        var take = Math.Max(excess, 0) > 0 ? Math.Max(excess, 0) : Math.Min(count, gameEntries.Count);
+        var targets = gameEntries.Skip(Math.Max(gameEntries.Count - take, 0)).Select(x => x.ReplayId).ToList();
+        if (targets.Count == 0) return ReplayOperationResult.Fail("游戏目录里没有可归档的回放。");
+
+        var result = _libraryService.Archive(targets);
+        result.Messages.Insert(0, $"已归档 {result.Applied} 局最旧的回放，游戏内席位腾出 {result.Applied} 个。");
+        return result;
+    }
+
+    private async Task RunLibraryOperationAsync(Func<ReplayOperationResult> operation)
+    {
+        ReplayOperationResult result;
+        try
+        {
+            result = await Task.Run(operation);
+        }
+        catch (Exception ex)
+        {
+            result = ReplayOperationResult.Fail($"操作失败：{ex.Message}");
+        }
+
+        Post(new
+        {
+            type = "libraryResult",
+            payload = new
+            {
+                ok = result.Ok,
+                applied = result.Applied,
+                skipped = result.Skipped,
+                failed = result.Failed,
+                needsConfirmation = result.NeedsConfirmation,
+                pendingIds = result.PendingIds,
+                summary = result.Messages.Count > 0 ? result.Messages[0] : (result.Ok ? "操作完成。" : "操作失败。"),
+                messages = result.Messages
+            }
+        });
+        await SendReplayLibraryAsync(runMaintain: false);
+    }
+
+    private async Task HandleLibraryImportAsync()
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "选择要导入回放库的回放文件",
+            Filter = "回放文件|*|所有文件|*.*",
+            CheckFileExists = true
+        };
+        if (dialog.ShowDialog(this) != true) return;
+        var path = dialog.FileName;
+        await RunLibraryOperationAsync(() => _libraryService.Import(path));
+    }
+
+    private void HandleLibraryOpenFolder()
+    {
+        try
+        {
+            _libraryService.EnsureLibrary();
+            SpeedhackManager.OpenInExplorer(_libraryService.LibraryRoot);
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = $"打开库目录失败：{ex.Message}" });
+        }
+    }
+
+    private void HandleLibraryBrowseRoot()
+    {
+        var dialog = new OpenFolderDialog
+        {
+            Title = "选择回放库目录（不要和游戏的 Temp\\Replay 选成同一个）",
+            InitialDirectory = Directory.Exists(_libraryService.LibraryRoot) ? _libraryService.LibraryRoot : null
+        };
+        if (dialog.ShowDialog(this) != true || dialog.FolderName is not { Length: > 0 } folder) return;
+        _libraryService.SaveSettings(new ReplayLibrarySettings
+        {
+            LibraryRoot = folder,
+            AutoMaintain = _libraryService.Settings.AutoMaintain,
+            KeepInGame = _libraryService.Settings.KeepInGame
+        });
+        Post(new { type = "toast", message = $"回放库已切换到：{folder}" });
+        Post(new { type = "librarySettings", payload = BuildLibrarySettingsPayload() });
+    }
+
+    private void HandleLibrarySaveSettings(JsonElement root)
+    {
+        var root_ = root.TryGetProperty("libraryRoot", out var rootElement) ? rootElement.GetString() : null;
+        var autoMaintain = root.TryGetProperty("autoMaintain", out var autoElement) && autoElement.GetBoolean();
+        var keepInGame = root.TryGetProperty("keepInGame", out var keepElement) && keepElement.TryGetInt32(out var parsedKeep)
+            ? parsedKeep
+            : ReplayLibraryService.GameSlotCapacity;
+
+        _libraryService.SaveSettings(new ReplayLibrarySettings
+        {
+            LibraryRoot = string.IsNullOrWhiteSpace(root_) ? null : root_,
+            AutoMaintain = autoMaintain,
+            KeepInGame = Math.Clamp(keepInGame, 1, ReplayLibraryService.GameSlotCapacity)
+        });
+        Post(new { type = "librarySettings", payload = BuildLibrarySettingsPayload() });
+        Post(new { type = "toast", message = "回放库设置已保存。" });
+    }
+
+    private object BuildLibrarySettingsPayload() => new
+    {
+        libraryRoot = _libraryService.LibraryRoot,
+        defaultLibraryRoot = ReplayLibraryService.DefaultLibraryRoot(),
+        autoMaintain = _libraryService.Settings.AutoMaintain,
+        keepInGame = _libraryService.Settings.KeepInGame,
+        capacity = ReplayLibraryService.GameSlotCapacity
+    };
+
+    // ============================== 启动游戏 ==============================
+
+    /// <summary>Steam AppID 2622000（Astral Party / 吉星派对）。</summary>
+    private const string SteamLaunchUrl = "steam://rungameid/2622000";
+
+    /// <summary>
+    /// 优先交给 Steam 启动（能带上 Steam 的 DRM / 云存档 / 更新检查）。
+    /// Steam 没装或 steam:// 协议没注册时，退回直接启动探测到的游戏主程序。
+    /// </summary>
+    private void HandleLaunchGame()
+    {
+        if (SpeedhackManager.IsGameRunning())
+        {
+            Post(new { type = "toast", message = "游戏已经在运行了。" });
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(SteamLaunchUrl) { UseShellExecute = true });
+            Post(new { type = "toast", message = "已交给 Steam 启动 Astral Party，稍等一下。" });
+            return;
+        }
+        catch (Exception steamError)
+        {
+            var gameDirectory = _speedhackManager.ResolveGameDirectory();
+            var gameExe = string.IsNullOrEmpty(gameDirectory) ? null : SpeedhackManager.ContainsGameExe(gameDirectory);
+            if (gameExe is null)
+            {
+                Post(new
+                {
+                    type = "toast",
+                    message = $"没能启动游戏：{steamError.Message}。请确认已安装 Steam；也可以在「变速器」页手动选择游戏目录后再试。"
+                });
+                return;
+            }
+
+            try
+            {
+                Process.Start(new ProcessStartInfo(gameExe)
+                {
+                    UseShellExecute = true,
+                    WorkingDirectory = gameDirectory!
+                });
+                Post(new { type = "toast", message = "Steam 不可用，已直接启动游戏主程序。" });
+            }
+            catch (Exception ex)
+            {
+                Post(new { type = "toast", message = $"启动游戏失败：{ex.Message}" });
+            }
+        }
+    }
+
+    private static string FormatUnixTime(long seconds)
+        => DateTimeOffset.FromUnixTimeSeconds(seconds).ToLocalTime().ToString("yyyy-MM-dd HH:mm");
 
     private static string FormatLibrarySize(long length) => length switch
     {
@@ -716,7 +990,7 @@ public partial class HybridWindow : Window
     private void HandleSpeedhackInstall(bool overwriteDll)
     {
         _speedhackManager.Install(RequireGameDirectory(), overwriteDll);
-        Post(new { type = "toast", message = "变速器已安装到游戏目录。进入游戏后按配置的快捷键即可变速（需关闭垂直同步）。" });
+        Post(new { type = "toast", message = SpeedhackManager.DescribeInstalled() });
         PushSpeedhackStatus();
     }
 
@@ -739,7 +1013,7 @@ public partial class HybridWindow : Window
         if (string.Equals(afterSave, "install", StringComparison.Ordinal))
         {
             _speedhackManager.Install(RequireGameDirectory(), overwriteDll);
-            Post(new { type = "toast", message = $"变速器已安装；每次进入游戏将自动使用 {model.BaseSpeed:0.##} 倍速。" });
+            Post(new { type = "toast", message = $"变速器已安装，每次进入游戏将自动使用 {model.BaseSpeed:0.##} 倍速。" + (SpeedhackManager.IsGameRunning() ? "游戏正在运行：本次写入要重启游戏后才会加载。" : "") });
             PushSpeedhackStatus();
             return;
         }
