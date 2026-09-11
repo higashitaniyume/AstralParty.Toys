@@ -207,7 +207,14 @@ body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-game-logo {
   font-weight: 900;
   color: #ffffff;
   letter-spacing: 3px;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8), 0 0 3px #000;
+  /* 白字 + 粗黑描边：paint-order 让描边画在字身外侧（WebView2 是 Chromium，支持）；
+     再加一圈八向硬阴影兜底，即使 paint-order 不生效也是粗黑边而不是细描边 */
+  -webkit-text-stroke: 4px #000000;
+  paint-order: stroke fill;
+  text-shadow:
+    2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000,
+    2px 2px 0 #000, -2px 2px 0 #000, 2px -2px 0 #000, -2px -2px 0 #000,
+    0 4px 9px rgba(0, 0, 0, 0.55);
   z-index: 3;
 }
 
@@ -226,6 +233,24 @@ body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-game-logo {
 
 .lobby-card-btn:hover .card-btn-chibi {
   transform: scale(1.14) rotate(-6deg);
+}
+
+/* 启动游戏那颗用的是宽幅游戏 logo（16:9），按自身比例摆放，别塞进方形立绘框里 */
+.card-btn-logo {
+  position: absolute;
+  left: -34px;
+  top: -30px;
+  width: 104px;
+  height: auto;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.6));
+  transition: transform 0.25s ease;
+  z-index: 4;
+}
+
+.lobby-card-btn:hover .card-btn-logo {
+  transform: scale(1.08);
 }
 
 /* 维基 (Blue-Green Energy Gradient) */
