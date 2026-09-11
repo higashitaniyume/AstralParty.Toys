@@ -368,6 +368,7 @@
       try { this.renderPlayers(report); } catch (e) { console.error('Players render error:', e); }
       try { this.renderTimeline(report); } catch (e) { console.error('Timeline render error:', e); }
       try { this.renderRelics(report); } catch (e) { console.error('Relics render error:', e); }
+      try { this.renderShops(report); } catch (e) { console.error('Shops render error:', e); }
       try { this.renderProtocol(report); } catch (e) { console.error('Protocol render error:', e); }
       try { this.renderStatistics(report); } catch (e) { console.error('Statistics render error:', e); }
 
@@ -605,6 +606,75 @@
       $('exportRelicsTxtBtn')?.addEventListener('click', () => post({ type: 'exportRelics', format: 'txt' }));
       $('exportRelicsCsvBtn')?.addEventListener('click', () => post({ type: 'exportRelics', format: 'csv' }));
       $('exportRelicsJsonBtn')?.addEventListener('click', () => post({ type: 'exportRelics', format: 'json' }));
+      update();
+    },
+
+    renderShops(report) {
+      const root = $('shopsView');
+      if (!root) return;
+
+      const total = report.shops?.length || 0;
+      const bought = report.shops?.filter(s => s.hasPurchase).length || 0;
+
+      root.innerHTML = `
+        <div class="data-table-card">
+          <div class="table-filter-bar">
+            <div style="display:flex;align-items:center;gap:14px">
+              <span id="shopCountText" style="font-size:13px;color:var(--gp-text-sub);font-weight:700">商店进店共 ${total} 次（其中 ${bought} 次有购买）</span>
+              <input id="shopSearchInput" class="table-search-input" placeholder="筛选商店类型、玩家、卡牌、购买结果...">
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button class="secondary-btn" id="exportShopsCsvBtn" style="padding:6px 14px;font-size:12px;font-weight:800;border-radius:var(--gp-radius-full)">
+                <span>📊</span> 导出表格 (CSV)
+              </button>
+            </div>
+          </div>
+          <div class="table-scroll-wrap">
+            <table class="light-table">
+              <thead>
+                <tr>
+                  <th>回合</th>
+                  <th>玩家</th>
+                  <th>角色</th>
+                  <th>商店</th>
+                  <th>候选卡牌</th>
+                  <th>售价</th>
+                  <th>购买结果</th>
+                  <th>已售出</th>
+                </tr>
+              </thead>
+              <tbody id="shopTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      const update = () => {
+        const q = ($('shopSearchInput')?.value || '').trim().toLowerCase();
+        const rows = report.shops.filter(s => {
+          return !q || `${s.playerName} ${s.heroName || ''} ${s.shopType} ${s.optionsText} ${s.boughtText || ''} ${s.purchaseText}`.toLowerCase().includes(q);
+        });
+
+        $('shopCountText').textContent = `显示 ${rows.length} / ${total} 次商店进店`;
+        $('shopTableBody').innerHTML = rows.map(s => {
+          const soldOut = s.soldOutText ? `<span class="badge badge-muted">${esc(s.soldOutText)}</span>` : '';
+          return `
+            <tr>
+              <td>${s.round || '—'}</td>
+              <td><strong>${esc(s.playerName)}</strong></td>
+              <td><span style="color:var(--gp-text-sub);font-size:12px">${esc(s.heroName || '—')}</span></td>
+              <td><span class="badge ${s.shopType === 'PVE商店' ? 'badge-event' : 'badge-update'}">${esc(s.shopType)}</span></td>
+              <td style="color:var(--text-muted);font-size:12px;max-width:340px">${esc(s.optionsText || '—')}</td>
+              <td>${esc(s.priceText || '—')}</td>
+              <td><span class="badge ${s.hasPurchase ? 'badge-event' : 'badge-muted'}">${esc(s.purchaseText || '—')}</span></td>
+              <td>${soldOut}</td>
+            </tr>
+          `;
+        }).join('') || '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted)">本局没有商店进店记录</td></tr>';
+      };
+
+      $('shopSearchInput')?.addEventListener('input', update);
+      $('exportShopsCsvBtn')?.addEventListener('click', () => post({ type: 'exportShops', format: 'csv' }));
       update();
     },
 

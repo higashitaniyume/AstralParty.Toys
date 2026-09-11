@@ -6,6 +6,8 @@
 
 从 [GitHub Releases](https://github.com/higashitaniyume/AstralParty.Toys/releases/latest) 下载发布版。每个版本提供 2 种架构、2 种运行时模式和 2 种打包方式，共 8 个可执行产物；GitHub 自动生成的 `Source code` 压缩包只是源码，不能直接运行。
 
+各版本变更记录见 [CHANGELOG.md](CHANGELOG.md)。
+
 文件名格式为：
 
 ```text

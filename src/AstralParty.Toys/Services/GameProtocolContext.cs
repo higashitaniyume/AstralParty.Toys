@@ -21,10 +21,12 @@ public sealed class GameProtocolContext
         [1112] = "party.protocol.SyncRelicsS2C",
         [1113] = "party.protocol.ReplaySnapshotS2C",
         [1115] = "party.protocol.ReplayDieS2C",
+        [5030] = "party.protocol.ShopBuyS2C",
         [5212] = "party.protocol.SelectRelicS2C",
         [5214] = "party.protocol.MonsterPursuitS2C",
         [5216] = "party.protocol.PVEShopBuyS2C",
-        [5250] = "party.protocol.BuyRelicS2C"
+        [5250] = "party.protocol.BuyRelicS2C",
+        [5324] = "party.protocol.VendorBuyCardS2C"
     };
 
     public GameProtocolContext(string protocolDirectory)

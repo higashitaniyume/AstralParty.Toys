@@ -9,6 +9,10 @@
     <AssemblyName>AstralParty.Toys</AssemblyName>
     <RootNamespace>AstralParty.Toys</RootNamespace>
     <StartupObject>AstralParty.Toys.App</StartupObject>
+    <!-- 与发布 tag 同步递增：v0.1.0 → v0.2.0（商店候选/购买回放时间线） -->
+    <Version>0.2.0</Version>
+    <AssemblyVersion>0.2.0.0</AssemblyVersion>
+    <FileVersion>0.2.0.0</FileVersion>
     <ApplicationIcon>WebUI\images\UT_AccountHeadShot_70902.ico</ApplicationIcon>
   </PropertyGroup>
 
@@ -23,7 +27,7 @@
     <Content Include="Protocol\*.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="GameData\Character.bin;GameData\STRCharacter.bin;GameData\Map.bin;GameData\STRMap.bin;GameData\Monster.bin;GameData\STRMonster.bin;GameData\Relic.bin;GameData\STRRelic.bin;GameData\Item.bin;GameData\STRItem.bin">
+    <Content Include="GameData\Character.bin;GameData\STRCharacter.bin;GameData\Map.bin;GameData\STRMap.bin;GameData\Monster.bin;GameData\STRMonster.bin;GameData\Relic.bin;GameData\STRRelic.bin;GameData\Item.bin;GameData\STRItem.bin;GameData\Card.bin;GameData\STRCard.bin">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="WebUI\images\UT_AccountHeadShot_70902.ico" />

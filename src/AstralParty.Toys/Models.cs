@@ -35,6 +35,7 @@ public sealed class ReplayReport
     public ObservableCollection<PlayerSummary> Players { get; } = [];
     public ObservableCollection<TimelineEvent> Events { get; } = [];
     public ObservableCollection<RelicRecord> Relics { get; } = [];
+    public ObservableCollection<ShopRecord> Shops { get; } = [];
     public ObservableCollection<ProtocolFrame> Frames { get; } = [];
     public ObservableCollection<StatItem> CommandStats { get; } = [];
     public ObservableCollection<StatItem> ActionStats { get; } = [];
@@ -112,6 +113,38 @@ public sealed class RelicRecord
     public bool IsRefresh { get; init; }
     public string LevelText => Level > 0 ? $"第 {Level} 档" : "—";
     public string RefreshText => IsRefresh ? $"第 {Math.Max(1, RefreshNumber)} 次刷新" : RefreshNumber > 0 ? $"刷新 {RefreshNumber} 次后选择" : "未刷新";
+}
+
+/// <summary>
+/// 一次商店进店记录：候选卡牌（<see cref="Cards"/>）+ 该次购买结果（<see cref="BoughtText"/>）。
+/// 同一候选组会被服务器重复广播，按 Action.Sn 与候选内容去重后合并为一条。
+/// </summary>
+public sealed class ShopRecord
+{
+    public int FrameIndex { get; init; }
+    public int Round { get; init; }
+    public long PlayerId { get; init; }
+    public string PlayerName { get; init; } = "未知玩家";
+    public string HeroName { get; init; } = "未知角色";
+    /// <summary>PVE商店 / PVP商店</summary>
+    public string ShopType { get; init; } = "商店";
+    public int[] Cards { get; init; } = [];
+    public string OptionsText { get; init; } = "";
+    public int Price { get; init; }
+    public int Discount { get; init; }
+    public int FreeCard { get; init; }
+    public int FreeCardNum { get; init; }
+    /// <summary>逐槽位售出标记：某张卡被买走后对应位置为 true（服务器 Alreadys）。</summary>
+    public bool[] Alreadys { get; init; } = [];
+    public int[] BuyIndices { get; init; } = [];
+    public string BoughtText { get; init; } = "";
+    public bool IsClosed { get; init; }
+    public bool HasPurchase => BuyIndices.Length > 0;
+    public string PriceText => Discount > 0 ? $"{Price}（折后 {Math.Max(0, Price - Discount)}）" : Price > 0 ? $"{Price}" : "—";
+    public string SoldOutText => Alreadys.Length > 0 && Alreadys.Any(x => x)
+        ? string.Join("、", Alreadys.Select((sold, index) => sold ? $"第{index + 1}格已售出" : "").Where(s => s.Length > 0))
+        : "";
+    public string PurchaseText => HasPurchase ? BoughtText : IsClosed ? "未购买，关闭商店" : "—";
 }
 
 public sealed class ProtocolFrame

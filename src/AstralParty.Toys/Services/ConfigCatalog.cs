@@ -9,6 +9,7 @@ public sealed class ConfigCatalog
     private readonly Dictionary<int, string> _maps = [];
     private readonly Dictionary<int, string> _monsters = [];
     private readonly Dictionary<int, string> _items = [];
+    private readonly Dictionary<int, string> _cards = [];
     private readonly Dictionary<int, (string Name, string Quality)> _relics = [];
     private readonly Dictionary<int, string[]> _characterAssets = [];
     private readonly Dictionary<int, string[]> _mapAssets = [];
@@ -27,6 +28,7 @@ public sealed class ConfigCatalog
     public string Map(int id) => _maps.GetValueOrDefault(id, id == 0 ? "未知地图" : $"地图 {id}");
     public string Monster(int id) => _monsters.GetValueOrDefault(id, id == 0 ? "未知怪物" : $"怪物 {id}");
     public string Item(int id) => _items.GetValueOrDefault(id, $"物品 {id}");
+    public string Card(int id) => _cards.TryGetValue(id, out var name) && name.Length > 0 ? name : $"卡牌 {id}";
     public string Relic(int id) => _relics.TryGetValue(id, out var value) ? value.Name : $"筹码 {id}";
     public string RelicQuality(int id) => _relics.TryGetValue(id, out var value) ? TranslateQuality(value.Quality) : "未知";
     public string[] CharacterAssets(int id) => _characterAssets.GetValueOrDefault(id) ?? [];
@@ -38,6 +40,7 @@ public sealed class ConfigCatalog
     public IEnumerable<int> MonsterIds => _monsters.Keys.OrderBy(id => id);
     public IEnumerable<int> RelicIds => _relics.Keys.OrderBy(id => id);
     public IEnumerable<int> ItemIds => _items.Keys.OrderBy(id => id);
+    public IEnumerable<int> CardIds => _cards.Keys.OrderBy(id => id);
 
     private void Load()
     {
@@ -46,6 +49,7 @@ public sealed class ConfigCatalog
         LoadNamed("MapConfigure", "Map.bin", "STRMapConfigure", "STRMap.bin", "MapName", _maps);
         LoadNamed("MonsterConfigure", "Monster.bin", "STRMonsterConfigure", "STRMonster.bin", "NameID", _monsters);
         LoadNamed("ItemConfigure", "Item.bin", "STRItemConfigure", "STRItem.bin", "NameID", _items);
+        LoadNamed("CardConfigure", "Card.bin", "STRCardConfigure", "STRCard.bin", "NameID", _cards);
 
         LoadAssets("CharacterConfigure", "Character.bin", _characterAssets, "CharacterMap");
         LoadAssets("MapConfigure", "Map.bin", _mapAssets, "MapImage", "MapSceneImage");

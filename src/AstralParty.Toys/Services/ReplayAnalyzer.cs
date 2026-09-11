@@ -122,6 +122,7 @@ public sealed class ReplayAnalyzer
         var pendingRelicOffers = new Dictionary<long, PendingRelicOffer>();
         var pendingRelicPurchaseCosts = new Dictionary<long, int>();
         var confirmedRelicPurchases = new HashSet<long>();
+        var pendingShopVisits = new Dictionary<long, PendingShopVisit>();
         var currentRound = 0;
         var currentPlayer = 0L;
         var lastSnapshotFrame = snapshots.Count > 0 ? snapshots[^1].Frame.Index : -1;
@@ -155,7 +156,7 @@ public sealed class ReplayAnalyzer
             if (frame.CmdId == 1002)
             {
                 ParseActions(frame, currentRound, playerNames, playerHeroes, seenActions, pendingRelicOffers,
-                    pendingRelicPurchaseCosts, confirmedRelicPurchases, actionCounts, report);
+                    pendingRelicPurchaseCosts, confirmedRelicPurchases, pendingShopVisits, actionCounts, report);
                 continue;
             }
 
@@ -273,14 +274,74 @@ public sealed class ReplayAnalyzer
                 continue;
             }
 
-            if (frame.CmdId is 5214 or 5216)
+            if (frame.CmdId is 5030 or 5216)
             {
-                var (title, key) = frame.CmdId switch
+                var message = _protocol.TryDecode(frame.CmdId, frame.Payload);
+                if (message is null) continue;
+                var playerId = ReflectionValue.Long(message, "PlayerId");
+                var buyIndices = ReflectionValue.Items(ReflectionValue.Get(message, "BuyCards"))
+                    .Select(x => Convert.ToInt32(x)).ToArray();
+                // PVE 回执带 IsClose；PVP 回执（5030）没有该字段，无购买即视为本次进店结束
+                var isClose = frame.CmdId == 5216
+                    ? ReflectionValue.Bool(message, "IsClose")
+                    : buyIndices.Length == 0;
+
+                if (pendingShopVisits.TryGetValue(playerId, out var visit))
                 {
-                    5214 => ("怪物追击结算", "monster"),
-                    5216 => ("PVE 商店购买", "shop"),
-                    _ => ("商店结算", "shop")
-                };
+                    foreach (var index in buyIndices)
+                    {
+                        if (index >= 0 && !visit.BuyIndices.Contains(index)) visit.BuyIndices.Add(index);
+                    }
+                    if (isClose) visit.IsClosed = true;
+                }
+                else
+                {
+                    // 没有对应进店记录（如回执先于 Action 或数据不全）：仍记一条购买事件
+                    if (buyIndices.Length > 0)
+                    {
+                        report.Events.Add(new TimelineEvent
+                        {
+                            FrameIndex = frame.Index,
+                            Round = currentRound,
+                            PlayerId = playerId,
+                            PlayerName = PlayerName(playerNames, playerId),
+                            Type = "商店",
+                            Title = frame.CmdId == 5216 ? "PVE 商店购买" : "PVP 商店购买",
+                            Description = $"购买了 {buyIndices.Length} 张卡牌（缺少候选上下文）",
+                            IconPath = EventIcon("shop")
+                        });
+                    }
+                }
+                continue;
+            }
+
+            if (frame.CmdId == 5324)
+            {
+                var message = _protocol.TryDecode(5324, frame.Payload);
+                if (message is null) continue;
+                var playerId = ReflectionValue.Long(message, "PlayerId");
+                var isBuy = ReflectionValue.Bool(message, "IsBuy");
+                if (pendingShopVisits.TryGetValue(playerId, out var visit))
+                {
+                    visit.IsClosed = true;
+                    if (isBuy && visit.BuyIndices.Count == 0 && visit.Cards.Length > 0) visit.BuyIndices.Add(0);
+                }
+                report.Events.Add(new TimelineEvent
+                {
+                    FrameIndex = frame.Index,
+                    Round = currentRound,
+                    PlayerId = playerId,
+                    PlayerName = PlayerName(playerNames, playerId),
+                    Type = "商店",
+                    Title = isBuy ? "商人买卡" : "商人未买卡",
+                    Description = $"{PlayerName(playerNames, playerId)}{(isBuy ? "从商人处购买了一张卡牌" : "没有从商人处买卡")}",
+                    IconPath = EventIcon("shop")
+                });
+                continue;
+            }
+
+            if (frame.CmdId == 5214)
+            {
                 report.Events.Add(new TimelineEvent
                 {
                     FrameIndex = frame.Index,
@@ -288,9 +349,9 @@ public sealed class ReplayAnalyzer
                     PlayerId = currentPlayer,
                     PlayerName = PlayerName(playerNames, currentPlayer),
                     Type = "系统",
-                    Title = title,
+                    Title = "怪物追击结算",
                     Description = _protocol.MessageName(frame.CmdId),
-                    IconPath = EventIcon(key)
+                    IconPath = EventIcon("monster")
                 });
             }
         }
@@ -313,6 +374,12 @@ public sealed class ReplayAnalyzer
             if (!selectedByPlayer.TryGetValue(player.Id, out var ids)) continue;
             player.SelectedRelicCount = ids.Count;
             player.SelectedRelicsText = string.Join("、", ids.Select(_config.Relic));
+        }
+
+        // 收尾：把未关闭的商店进店记录也落进报告（重复广播已合并）
+        foreach (var visit in pendingShopVisits.Values)
+        {
+            report.Shops.Add(BuildShopRecord(visit, playerNames, playerHeroes));
         }
 
         FillStats(actionCounts, Math.Max(1, actionCounts.Values.Sum()), report.ActionStats);
@@ -449,6 +516,7 @@ public sealed class ReplayAnalyzer
         IReadOnlyDictionary<long, string> playerHeroes,
         HashSet<long> seenActions, Dictionary<long, PendingRelicOffer> pendingRelicOffers,
         Dictionary<long, int> pendingRelicPurchaseCosts, HashSet<long> confirmedRelicPurchases,
+        Dictionary<long, PendingShopVisit> pendingShopVisits,
         Dictionary<string, int> actionCounts, ReplayReport report)
     {
         var predict = _protocol.TryDecode(1002, frame.Payload);
@@ -478,6 +546,18 @@ public sealed class ReplayAnalyzer
             if (actionId == 5250)
             {
                 confirmedRelicPurchases.Add(playerId);
+                continue;
+            }
+
+            if (actionId is 5029 or 5215)
+            {
+                HandleShopAction(frame.Index, action, actionId, round, playerNames, playerHeroes, pendingShopVisits, report);
+                continue;
+            }
+
+            if (actionId == 5323)
+            {
+                HandleVendorAction(frame.Index, action, round, playerNames, playerHeroes, report);
                 continue;
             }
 
@@ -554,6 +634,135 @@ public sealed class ReplayAnalyzer
         }
     }
 
+    /// <summary>处理卡牌商店 Action（5029 PVP / 5215 PVE）：进店候选。</summary>
+    private void HandleShopAction(int frameIndex, object action, int actionId, int round,
+        IReadOnlyDictionary<long, string> playerNames,
+        IReadOnlyDictionary<long, string> playerHeroes, Dictionary<long, PendingShopVisit> pendingShopVisits,
+        ReplayReport report)
+    {
+        var playerId = ReflectionValue.Long(action, "PlayerId");
+        var typeName = actionId == 5029 ? "party.protocol.ShopBuyC2S" : "party.protocol.PVEShopBuyC2S";
+        object message;
+        try { message = _protocol.Decode(typeName, ReflectionValue.Bytes(ReflectionValue.Get(action, "Data"))); }
+        catch { return; }
+
+        var cards = ReflectionValue.Items(ReflectionValue.Get(message, "Cards")).Select(x => Convert.ToInt32(x)).ToArray();
+        var alreadys = ReflectionValue.Items(ReflectionValue.Get(message, "Alreadys")).Select(x => Convert.ToBoolean(x)).ToArray();
+        var gold = ReflectionValue.Int(message, "Gold");
+        var discount = ReflectionValue.Int(message, "DisCountGold");
+        var freeCard = ReflectionValue.Int(message, "FreeCard");
+        var freeCardNum = ReflectionValue.Int(message, "FreeCardNum");
+        var shopType = actionId == 5029 ? "PVP商店" : "PVE商店";
+
+        // 同一候选组重复广播（同 Sn 已去重；这里再按候选内容去重合并为一次进店）
+        if (pendingShopVisits.TryGetValue(playerId, out var existing))
+        {
+            if (existing.Cards.SequenceEqual(cards))
+            {
+                // 同一次进店的后续广播：只更新售罄标记，不新增记录
+                if (alreadys.Length > 0) existing.Alreadys = alreadys;
+                return;
+            }
+
+            // 上一次进店结束（候选变了）：把旧访问落进报告（含购买结果）
+            report.Shops.Add(BuildShopRecord(existing, playerNames, playerHeroes));
+        }
+
+        var visit = new PendingShopVisit
+        {
+            FrameIndex = frameIndex,
+            Round = round,
+            PlayerId = playerId,
+            ShopType = shopType,
+            Cards = cards,
+            Price = gold,
+            Discount = discount,
+            FreeCard = freeCard,
+            FreeCardNum = freeCardNum,
+            Alreadys = alreadys
+        };
+        pendingShopVisits[playerId] = visit;
+
+        report.Events.Add(new TimelineEvent
+        {
+            FrameIndex = frameIndex,
+            Round = round,
+            PlayerId = playerId,
+            PlayerName = PlayerName(playerNames, playerId),
+            Type = "商店",
+            Title = $"进入{shopType}",
+            Description = $"{PlayerName(playerNames, playerId)}走进商店，货架上有：{string.Join("、", cards.Select(_config.Card))}" +
+                          (gold > 0 ? $"（每张 {gold} 星币{(discount > 0 ? $"，折后 {Math.Max(0, gold - discount)}" : "")}）" : ""),
+            IconPath = EventIcon("shop")
+        });
+    }
+
+    /// <summary>处理商人买卡 Action（5323）。</summary>
+    private void HandleVendorAction(int frameIndex, object action, int round, IReadOnlyDictionary<long, string> playerNames,
+        IReadOnlyDictionary<long, string> playerHeroes, ReplayReport report)
+    {
+        var playerId = ReflectionValue.Long(action, "PlayerId");
+        object message;
+        try { message = _protocol.Decode("party.protocol.VendorBuyCardC2S", ReflectionValue.Bytes(ReflectionValue.Get(action, "Data"))); }
+        catch { return; }
+
+        var cardId = ReflectionValue.Int(message, "CardId");
+        var gold = ReflectionValue.Int(message, "Gold");
+        var isBuy = ReflectionValue.Bool(message, "IsBuy");
+        var visit = new PendingShopVisit
+        {
+            FrameIndex = frameIndex,
+            Round = round,
+            PlayerId = playerId,
+            ShopType = "商人买卡",
+            Cards = cardId > 0 ? [cardId] : [],
+            Price = gold,
+            IsClosed = true
+        };
+        if (isBuy && cardId > 0) visit.BuyIndices.Add(0);
+        report.Shops.Add(BuildShopRecord(visit, playerNames, playerHeroes));
+        report.Events.Add(new TimelineEvent
+        {
+            FrameIndex = frameIndex,
+            Round = round,
+            PlayerId = playerId,
+            PlayerName = PlayerName(playerNames, playerId),
+            Type = "商店",
+            Title = isBuy ? "商人买卡" : "商人未买卡",
+            Description = $"{PlayerName(playerNames, playerId)}在商人处{(isBuy ? $"买下了「{_config.Card(cardId)}」" : "没有买卡")}",
+            IconPath = EventIcon("shop")
+        });
+    }
+
+    private ShopRecord BuildShopRecord(PendingShopVisit visit, IReadOnlyDictionary<long, string> playerNames,
+        IReadOnlyDictionary<long, string> playerHeroes)
+    {
+        var bought = visit.BuyIndices
+            .Where(index => index >= 0 && index < visit.Cards.Length)
+            .Select(index => $"第{index + 1}个 {_config.Card(visit.Cards[index])}")
+            .ToList();
+        var boughtText = bought.Count > 0 ? string.Join("、", bought) : "";
+        return new ShopRecord
+        {
+            FrameIndex = visit.FrameIndex,
+            Round = visit.Round,
+            PlayerId = visit.PlayerId,
+            PlayerName = PlayerName(playerNames, visit.PlayerId),
+            HeroName = playerHeroes.GetValueOrDefault(visit.PlayerId, "未知角色"),
+            ShopType = visit.ShopType,
+            Cards = visit.Cards,
+            OptionsText = string.Join("、", visit.Cards.Select(_config.Card)),
+            Price = visit.Price,
+            Discount = visit.Discount,
+            FreeCard = visit.FreeCard,
+            FreeCardNum = visit.FreeCardNum,
+            Alreadys = visit.Alreadys,
+            BuyIndices = visit.BuyIndices.ToArray(),
+            BoughtText = boughtText,
+            IsClosed = visit.IsClosed
+        };
+    }
+
     private void FillUiAssets(ReplayReport report)
     {
         var assets = new Dictionary<string, string>
@@ -619,6 +828,23 @@ public sealed class ReplayAnalyzer
         public string SourceIconPath { get; init; } = "";
         public int RefreshCount { get; set; }
         public int PurchaseCost { get; init; }
+    }
+
+    /// <summary>进行中的一次商店进店（等待购买回执 / 关闭回执后落盘）。</summary>
+    private sealed class PendingShopVisit
+    {
+        public int FrameIndex { get; init; }
+        public int Round { get; init; }
+        public long PlayerId { get; init; }
+        public string ShopType { get; init; } = "商店";
+        public int[] Cards { get; init; } = [];
+        public int Price { get; init; }
+        public int Discount { get; init; }
+        public int FreeCard { get; init; }
+        public int FreeCardNum { get; init; }
+        public bool[] Alreadys { get; set; } = [];
+        public List<int> BuyIndices { get; } = [];
+        public bool IsClosed { get; set; }
     }
 
     private string FindBossName(object? room)

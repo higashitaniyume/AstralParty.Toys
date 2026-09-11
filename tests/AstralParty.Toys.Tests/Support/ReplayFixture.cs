@@ -20,6 +20,7 @@ internal sealed record ReplayFixtureOptions
     public int MonsterId { get; init; }
     public int ItemId { get; init; }
     public int[] RelicIds { get; init; } = [];
+    public int[] CardIds { get; init; } = [];
     public string GameVersion { get; init; } = "0.0.0-test";
     public int RoundCount { get; init; } = 3;
     public int GameProgress { get; init; } = 3;
@@ -47,6 +48,9 @@ internal static class ReplayFixture
     private const int CmdReplaySnapshot = 1113;
     private const int CmdReplayDie = 1115;
     private const int CmdSelectRelic = 5212;
+    private const int CmdPredictAction = 1002;
+    private const int CmdPVEShopBuy = 5216;
+    private const int CmdShopBuy = 5030;
 
     private const int RoomStateRunning = 25;   // Room.Types.State.Running
     private const int MonsterTypeBoss = 2;     // Hero.Types.MonsterType.Boss
@@ -88,6 +92,8 @@ internal static class ReplayFixture
             Game.Value.SetNumber(relic, "RelicId", relicId);
             Game.Value.SetFlag(relic, "IsReroll", round == 2);                 // 中间那一回合走「请求刷新」分支
             frames.Add((CmdSelectRelic, Game.Value.Serialize(relic)));
+
+            AddShopFrames(frames, options, playerId, round);
         }
 
         var finish = Game.Value.New("party.protocol.GameFinishS2C");
@@ -101,6 +107,70 @@ internal static class ReplayFixture
         frames.Add((CmdGameFinish, Game.Value.Serialize(finish)));
 
         return FrameStream(frames);
+    }
+
+    /// <summary>
+    /// 造商店帧：进店 Action（1002 内嵌 5215 PVE / 5029 PVP）+ 购买回执（5216 / 5030）。
+    /// 第一回合：PVE 商店，买了第 2 张卡；之后回合：PVP 商店，未购买直接关闭。
+    /// 同一进店候选重复广播一次（同 Sn），验证去重合并。
+    /// </summary>
+    private static void AddShopFrames(List<(int CmdId, byte[] Payload)> frames, ReplayFixtureOptions options, long playerId, int round)
+    {
+        var game = Game.Value;
+        var cards = options.CardIds.Length >= 3 ? options.CardIds : [.. options.CardIds];
+        if (cards.Length == 0) return;
+
+        var isPve = round == 1;
+        var actionId = isPve ? 5215 : 5029;
+        var sn = 10_000L + round;
+
+        var message = game.New(isPve ? "party.protocol.PVEShopBuyC2S" : "party.protocol.ShopBuyC2S");
+        var info = game.New("party.model.ActionInfo");
+        game.SetNumber(info, "Sn", sn);
+        game.SetMessage(message, "Info", info);
+        foreach (var card in cards) game.Add(message, "Cards", card);
+        game.SetNumber(message, "Gold", 3);
+        if (isPve) game.SetNumber(message, "DisCountGold", round == 1 ? 1 : 0);
+        foreach (var _ in cards) game.Add(message, "Alreadys", false);
+        frames.Add((CmdPredictAction, BuildActionFrame(actionId, sn, playerId, message)));
+
+        if (isPve)
+        {
+            // 买第 2 张（下标 1）
+            var receipt = game.New("party.protocol.PVEShopBuyS2C");
+            game.SetNumber(receipt, "PlayerId", playerId);
+            game.Add(receipt, "BuyCards", 1);
+            game.SetFlag(receipt, "IsClose", false);
+            frames.Add((CmdPVEShopBuy, game.Serialize(receipt)));
+            frames.Add((CmdPVEShopBuy, game.Serialize(CloseReceipt(receipt))));
+        }
+        else
+        {
+            var receipt = game.New("party.protocol.ShopBuyS2C");
+            game.SetNumber(receipt, "PlayerId", playerId);
+            frames.Add((CmdShopBuy, game.Serialize(receipt)));
+        }
+    }
+
+    private static object CloseReceipt(object receipt)
+    {
+        var game = Game.Value;
+        game.SetFlag(receipt, "IsClose", true);
+        return receipt;
+    }
+
+    /// <summary>包一个 1002 帧：Actions 里塞一条带 Data 的 Action。</summary>
+    private static byte[] BuildActionFrame(int actionId, long sn, long playerId, object data)
+    {
+        var game = Game.Value;
+        var predict = game.New("party.protocol.PredictActionS2C");
+        var action = game.New("party.model.Action");
+        game.SetNumber(action, "Id", actionId);
+        game.SetNumber(action, "Sn", sn);
+        game.SetNumber(action, "PlayerId", playerId);
+        game.SetBytes(action, "Data", game.Serialize(data));
+        game.Add(predict, "Actions", action);
+        return game.Serialize(predict);
     }
 
     /// <summary>把帧列表拼成文件：int16 大端 cmdId + int32 大端长度 + 载荷。</summary>
@@ -132,6 +202,7 @@ internal static class ReplayFixture
             MonsterId = options.MonsterId != 0 ? options.MonsterId : config.MonsterIds.First(),
             ItemId = options.ItemId != 0 ? options.ItemId : config.ItemIds.First(),
             RelicIds = options.RelicIds.Length > 0 ? options.RelicIds : [.. config.RelicIds.Take(3)],
+            CardIds = options.CardIds.Length > 0 ? options.CardIds : [.. config.CardIds.Take(3)],
             HeroIds = options.HeroIds.Length > 0 ? options.HeroIds : [.. config.CharacterIds.Take(4)]
         };
     }
@@ -225,6 +296,15 @@ internal sealed class GameProtocolTypes
     public void SetText(object target, string name, string value) => SetValue(target, name, value);
 
     public void SetMessage(object target, string name, object value) => SetValue(target, name, value);
+
+    /// <summary>给 bytes 字段（ByteString）赋值。</summary>
+    public void SetBytes(object target, string name, byte[] value)
+    {
+        var property = Property(target, name);
+        var byteString = property.PropertyType.Assembly.GetType("Google.Protobuf.ByteString")!;
+        var fromArray = byteString.GetMethod("CopyFrom", [typeof(byte[])])!;
+        SetValue(target, name, fromArray.Invoke(null, [value])!);
+    }
 
     /// <summary>map&lt;int,int&gt; 的一条记录。</summary>
     public void SetEntry(object target, string name, int key, int value)

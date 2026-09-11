@@ -249,6 +249,9 @@ public partial class HybridWindow : Window
                     var relicFormat = root.TryGetProperty("format", out var formatElement) ? formatElement.GetString() : "csv";
                     await ExportRelicsAsync(relicFormat);
                     break;
+                case "exportShops":
+                    await ExportShopsAsync("csv");
+                    break;
                 case "openClassic":
                     OpenClassicWindow();
                     break;
@@ -764,6 +767,58 @@ public partial class HybridWindow : Window
         }
     }
 
+    private async Task ExportShopsAsync(string format)
+    {
+        if (_report is null) return;
+
+        var baseName = Path.GetFileNameWithoutExtension(_report.FileName);
+        var dialog = new SaveFileDialog
+        {
+            Title = "导出商店时间线表格 (CSV)",
+            Filter = "CSV 逗号分隔表格 (*.csv)|*.csv|所有文件 (*.*)|*.*",
+            FileName = $"{baseName}.shops.csv"
+        };
+        if (dialog.ShowDialog(this) != true) return;
+
+        Post(new { type = "loading", active = true, message = "正在导出商店时间线…" });
+        try
+        {
+            var sb = new StringBuilder();
+            // UTF-8 BOM 避免 Excel 打开中文乱码
+            sb.AppendLine("帧号,回合,玩家ID,玩家名称,玩家角色,商店类型,候选卡牌,售价,折扣,免费卡,购买结果,已售出槽位,是否关闭");
+            foreach (var s in _report.Shops)
+            {
+                string EscapeCsv(string val) => $"\"{val.Replace("\"", "\"\"")}\"";
+                sb.AppendLine(string.Join(",",
+                    s.FrameIndex,
+                    s.Round,
+                    s.PlayerId,
+                    EscapeCsv(s.PlayerName),
+                    EscapeCsv(s.HeroName),
+                    EscapeCsv(s.ShopType),
+                    EscapeCsv(s.OptionsText),
+                    s.Price,
+                    s.Discount,
+                    s.FreeCard > 0 ? $"{s.FreeCard} x{s.FreeCardNum}" : "",
+                    EscapeCsv(s.PurchaseText),
+                    EscapeCsv(s.SoldOutText),
+                    s.IsClosed
+                ));
+            }
+            var utf8Bom = new UTF8Encoding(true);
+            await File.WriteAllTextAsync(dialog.FileName, sb.ToString(), utf8Bom);
+            Post(new { type = "toast", message = $"已成功导出商店记录到 {Path.GetFileName(dialog.FileName)}" });
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "error", message = $"导出失败: {ex.Message}" });
+        }
+        finally
+        {
+            Post(new { type = "loading", active = false, message = "" });
+        }
+    }
+
     public static string BuildRelicsAiSummary(ReplayReport report)
     {
         var sb = new StringBuilder();
@@ -934,6 +989,13 @@ public partial class HybridWindow : Window
             x.RelicId, x.RelicName, x.Quality, x.OptionsText, x.Source, x.RefreshNumber, x.IsRefresh,
             x.RefreshText, image = AssetUrl(x.ImagePath), sourceIcon = AssetUrl(x.SourceIconPath)
         }),
+        shops = report.Shops.Select(x => new
+        {
+            x.FrameIndex, x.Round, x.PlayerId, x.PlayerName, x.HeroName, x.ShopType,
+            x.OptionsText, x.Price, x.Discount, x.PriceText, x.FreeCard, x.FreeCardNum,
+            x.Alreadys, x.BuyIndices, x.BoughtText, x.PurchaseText,
+            x.IsClosed, x.HasPurchase, x.SoldOutText
+        }),
         frames = report.Frames.Select(x => new { x.Index, x.Offset, x.OffsetText, x.CmdId, x.MessageName, x.PayloadLength }),
         statistics = new
         {
@@ -960,6 +1022,7 @@ public partial class HybridWindow : Window
         players = report.Players,
         timeline = report.Events,
         relics = report.Relics,
+        shops = report.Shops,
         statistics = new { commands = report.CommandStats, actions = report.ActionStats, relicQualities = report.RelicQualityStats },
         frames = report.Frames.Select(frame => new
         {

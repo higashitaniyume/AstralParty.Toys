@@ -13,6 +13,7 @@ public partial class MainWindow : Window
     private ReplayReport? _report;
     private ICollectionView? _eventsView;
     private ICollectionView? _relicsView;
+    private ICollectionView? _shopsView;
     private ICollectionView? _framesView;
 
     public MainWindow()
@@ -106,9 +107,11 @@ public partial class MainWindow : Window
 
             _eventsView = CollectionViewSource.GetDefaultView(_report.Events);
             _relicsView = CollectionViewSource.GetDefaultView(_report.Relics);
+            _shopsView = CollectionViewSource.GetDefaultView(_report.Shops);
             _framesView = CollectionViewSource.GetDefaultView(_report.Frames);
             EventsGrid.ItemsSource = _eventsView;
             RelicsGrid.ItemsSource = _relicsView;
+            ShopsGrid.ItemsSource = _shopsView;
             FramesGrid.ItemsSource = _framesView;
             RawDetailText.Text = "选择一条协议帧查看内容。";
             StatusText.Text = $"解析完成 · {_report.FrameCount:N0} 帧 · {_report.Events.Count:N0} 个时间线事件";
@@ -139,6 +142,15 @@ public partial class MainWindow : Window
         _relicsView.Filter = item => item is RelicRecord value && Matches(query,
             value.FrameIndex.ToString(), value.Round.ToString(), value.PlayerName, value.HeroName, value.Kind,
             value.RelicId.ToString(), value.RelicName, value.Quality, value.OptionsText);
+    }
+
+    private void ShopFilterBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    {
+        if (_shopsView is null) return;
+        var query = ShopFilterBox.Text.Trim();
+        _shopsView.Filter = item => item is ShopRecord value && Matches(query,
+            value.FrameIndex.ToString(), value.Round.ToString(), value.PlayerName, value.HeroName, value.ShopType,
+            value.OptionsText, value.PurchaseText, value.SoldOutText);
     }
 
     private void FrameFilterBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
@@ -196,6 +208,7 @@ public partial class MainWindow : Window
                 players = _report.Players,
                 timeline = _report.Events,
                 relics = _report.Relics,
+                shops = _report.Shops,
                 statistics = new
                 {
                     commands = _report.CommandStats,

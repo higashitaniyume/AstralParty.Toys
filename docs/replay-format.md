@@ -187,10 +187,20 @@ while (byteBuf.ReadableBytes() > 0) {
 | 1112 | `SyncRelicsS2C` | 筹码同步（工具只登记，不据此统计） |
 | 1113 | `ReplaySnapshotS2C` | **每次行动前的全量快照**（`PlayerId` + `Room`），回合/行动节点的唯一依据 |
 | 1115 | `ReplayDieS2C` | 单位死亡（`PlayerId` / `HeroId` / `KillerId`） |
+| 5030 | `ShopBuyS2C` | **PVP 卡牌商店购买回执**：`BuyCards[]`（购买槽位下标）+ `Cards[]` + `Alreadys[]` |
 | 5212 | `SelectRelicS2C` | 筹码三选一的结果（`RelicId` / `IsReroll`） |
 | 5214 | `MonsterPursuitS2C` | 怪物追击结算（工具只记一条系统事件） |
-| 5216 | `PVEShopBuyS2C` | PVE 商店购买（工具只记一条系统事件） |
+| 5216 | `PVEShopBuyS2C` | **PVE 卡牌商店购买回执**：`BuyCards[]`（下标）+ `Cards[]` + `IsClose` + `AssistPlayer`（ATM 转账关联标识） |
 | 5250 | `BuyRelicS2C` | 筹码地块购买结果 |
+| 5324 | `VendorBuyCardS2C` | 商人买卡回执（`PlayerId` / `IsBuy`） |
+
+> 商店候选 Action（进店时服务器广播的**在售卡牌清单**）不在上表，因为它们是 1002 内嵌的二次解码消息：
+> - 5029 → `ShopBuyC2S`（PVP 卡牌商店）：`Cards[]`=在售卡牌、`Gold`=单价、`Alreadys[]`=已售罄、`FreeCard/FreeCardNum`=免费位
+> - 5215 → `PVEShopBuyC2S`（PVE 卡牌商店）：`Cards[]`=在售卡牌、`Gold`=单价、`DisCountGold`=折扣、`TalentSkillFreeCard[]`=天赋免费格、`AssistGold`=ATM 转账金额（实测恒为 5）、`AssistPlayer`=转账关联标识、`IsClose`、`IsBot`
+> - 5323 → `VendorBuyCardC2S`（商人买卡）：`CardId` / `Gold` / `IsBuy`
+> 回执里的 `BuyCards[]` 是**槽位下标**，翻译成卡牌要结合同一次进店的 `Cards[]`（2026 实测 10 局 PVE 全部可恢复）。
+> 注：`AssistGold/AssistPlayer` 不是「队友代付买牌」——PVE 商店唯一的转账入口是 ATM（一次转账 5 星币，
+> `TryOpenATM` 在 `AssistPlayer != 0` 时禁用）；商店 UI 的购买请求 `assistPlayer` 恒传 0。
 
 > 其余命令号未登记：工具不猜类型，只把**前 4096 字节**打成十六进制给用户看。
 > 回放是"整局 S2C 消息流"的落盘，工具只登记了解析所需的那一小部分协议，因此**解析器必须能跳过未知帧**。
@@ -496,6 +506,9 @@ while (byteBuf.ReadableBytes() >= 6) {
 | 动作 ID | 二次解码 | 用途 |
 | --- | --- | --- |
 | 5211 | `SelectRelicC2S` → `Lv` / `SupLv` / `Relics` | 三个候选筹码出现（含刷新次数、来源、买价） |
+| 5029 | `ShopBuyC2S` → `Cards` / `Gold` / `Alreadys` | **PVP 卡牌商店在售候选**（`Cards[]` 每格一张） |
+| 5215 | `PVEShopBuyC2S` → `Cards` / `Gold` / `DisCountGold` / `Alreadys` | **PVE 卡牌商店在售候选** |
+| 5323 | `VendorBuyCardC2S` → `CardId` / `Gold` / `IsBuy` | 商人买卡请求 |
 | 5249 | `BuyRelicC2S` → `RelicGold` | 记录筹码地块的购买价 |
 | 5250 | — | 标记"已确认购买"（与 5211 的上下文配对得出"来源 = 筹码地块购买"） |
 

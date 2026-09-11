@@ -355,6 +355,7 @@ body:not(.reduce-motion) #toolsView:not(.page-entering) .replay-view:not(.hidden
 
 #timelineView,
 #relicsView,
+#shopsView,
 #technicalView {
   display: flex;
   flex-direction: column;
@@ -363,7 +364,8 @@ body:not(.reduce-motion) #toolsView:not(.page-entering) .replay-view:not(.hidden
 }
 
 #timelineView > .data-table-card,
-#relicsView > .data-table-card {
+#relicsView > .data-table-card,
+#shopsView > .data-table-card {
   width: 100%;
   min-height: 0;
   flex: 1 1 auto;
@@ -373,7 +375,8 @@ body:not(.reduce-motion) #toolsView:not(.page-entering) .replay-view:not(.hidden
 }
 
 #timelineView .table-scroll-wrap,
-#relicsView .table-scroll-wrap {
+#relicsView .table-scroll-wrap,
+#shopsView .table-scroll-wrap {
   flex: 1 1 auto;
   min-height: 0;
   max-height: none;

@@ -425,6 +425,29 @@
                     </Grid>
                 </TabItem>
 
+                <TabItem Header="商店记录">
+                    <Grid Margin="6,14,6,18">
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                        <DockPanel Margin="0,0,0,10">
+                            <TextBlock Text="进店候选按 Action.Sn 与候选内容去重；购买来自服务器回执（槽位下标转卡牌）。" Foreground="#8995AE" />
+                            <TextBox x:Name="ShopFilterBox" DockPanel.Dock="Right" Width="280" TextChanged="ShopFilterBox_TextChanged" />
+                        </DockPanel>
+                        <DataGrid x:Name="ShopsGrid" Grid.Row="1" AlternationCount="2">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="帧" Binding="{Binding FrameIndex}" Width="70" />
+                                <DataGridTextColumn Header="回合" Binding="{Binding Round}" Width="65" />
+                                <DataGridTextColumn Header="玩家" Binding="{Binding PlayerName}" Width="140" />
+                                <DataGridTextColumn Header="角色" Binding="{Binding HeroName}" Width="120" />
+                                <DataGridTextColumn Header="商店" Binding="{Binding ShopType}" Width="90" />
+                                <DataGridTextColumn Header="候选卡牌" Binding="{Binding OptionsText}" Width="*" />
+                                <DataGridTextColumn Header="售价" Binding="{Binding PriceText}" Width="100" />
+                                <DataGridTextColumn Header="购买结果" Binding="{Binding PurchaseText}" Width="220" />
+                                <DataGridTextColumn Header="已售出" Binding="{Binding SoldOutText}" Width="160" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </TabItem>
+
                 <TabItem Header="原始协议">
                     <Grid Margin="6,14,6,18">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="1.1*"/><ColumnDefinition Width="0.9*"/></Grid.ColumnDefinitions>

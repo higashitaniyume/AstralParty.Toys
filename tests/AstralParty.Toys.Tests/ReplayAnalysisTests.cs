@@ -34,10 +34,10 @@ public sealed class ReplayAnalysisTests
         });
 
         // 帧结构与协议分布
-        Assert.Equal(1 + options.RoundCount * 3 + 1, report.FrameCount);
+        Assert.Equal(1 + options.RoundCount * 3 + 1 + 7, report.FrameCount);   // +7 = 商店进店/回执帧（3 回合共 3+2+2）
         Assert.Equal(1003, report.Frames[0].CmdId);
         Assert.Equal(1016, report.Frames[^1].CmdId);
-        Assert.Equal(5, report.CommandTypeCount);
+        Assert.Equal(8, report.CommandTypeCount);
         Assert.Equal(64, report.Sha256.Length);
         Assert.Equal(ReplayId, report.FileName);
         Assert.NotEqual("—", report.FileSizeText);
@@ -144,6 +144,51 @@ public sealed class ReplayAnalysisTests
     }
 
     [Fact]
+    public void Analyze_BuildsShopTimeline()
+    {
+        using var sandbox = new TestSandbox("ap-analysis-shops");
+        var (analyzer, options, report) = ReportFactory.Create(sandbox, new ReplayFixtureOptions
+        {
+            ReplayId = ReplayId,
+            RoundCount = 3
+        });
+
+        // 三回合每回合一次进店（同候选重复广播被合并为一条）
+        Assert.Equal(options.RoundCount, report.Shops.Count);
+
+        // 第 1 回合 PVE 商店，买了第 2 张卡（下标 1），有折扣
+        var pve = report.Shops[0];
+        Assert.Equal("PVE商店", pve.ShopType);
+        Assert.Equal(1, pve.Round);
+        Assert.Equal(options.PlayerIds[0], pve.PlayerId);
+        Assert.Equal(options.CardIds.Length, pve.Cards.Length);
+        Assert.True(pve.HasPurchase);
+        Assert.Equal([1], pve.BuyIndices);
+        Assert.Contains(analyzer.Config.Card(options.CardIds[1]), pve.BoughtText);
+        Assert.Equal(3, pve.Price);
+        Assert.Equal(1, pve.Discount);
+        Assert.True(pve.IsClosed);
+
+        // 第 2 回合 PVP 商店，未购买直接关闭
+        var pvp = report.Shops[1];
+        Assert.Equal("PVP商店", pvp.ShopType);
+        Assert.Equal(2, pvp.Round);
+        Assert.False(pvp.HasPurchase);
+        Assert.True(pvp.IsClosed);
+        Assert.Contains("未购买", pvp.PurchaseText);
+
+        // 第 3 回合 PVP 商店也合并为一条
+        Assert.Equal(3, report.Shops[2].Round);
+        Assert.Equal("PVP商店", report.Shops[2].ShopType);
+
+        // 进店事件写进了时间线（每回合一条）
+        var enters = report.Events.Where(item => item.Title == "进入PVE商店" || item.Title == "进入PVP商店").ToList();
+        Assert.Equal(options.RoundCount, enters.Count);
+        Assert.All(enters, item => Assert.Equal("商店", item.Type));
+        Assert.Contains(options.CardIds.Select(analyzer.Config.Card).First(), enters[0].Description);
+    }
+
+    [Fact]
     public void Analyze_RejectsCorruptedFiles()
     {
         using var sandbox = new TestSandbox("ap-analysis-corrupt");
@@ -172,7 +217,8 @@ public sealed class ReplayAnalysisTests
         var report = analyzer.Analyze(path);
 
         Assert.True(report.FrameCount > 0);
-        Assert.Equal(1003, report.Frames[0].CmdId);
+        // 有的录像会在 1003 开局锚点前带若干 1040 属性帧，锚点由解析器按 cmd 定位，这里按同样口径校验
+        Assert.Contains(report.Frames, frame => frame.CmdId == 1003);
         Assert.Equal(1016, report.Frames[^1].CmdId);
         Assert.True(report.RoundCount > 0, $"{path} 解析不出回合数");
         Assert.True(report.TurnCount > 0, $"{path} 解析不出行动轮次");
@@ -181,8 +227,10 @@ public sealed class ReplayAnalysisTests
         Assert.NotEqual("—", report.GameVersion);
         Assert.NotEmpty(report.Players);
         Assert.Equal(64, report.Sha256.Length);
-        Assert.All(report.Relics, record => Assert.True(record.RelicId > 0, "筹码记录缺少 ID"));
-    }
+        // 候选记录（首次/刷新）不带单张 ID，只有「选择」记录一定带
+        Assert.All(report.Relics.Where(record => record.Kind == "选择"),
+            record => Assert.True(record.RelicId > 0, "筹码「选择」记录缺少 ID"));
+        Assert.Contains(report.Shops, shop => shop.Cards.Length > 0 && shop.OptionsText.Length > 0);    }
 
     [RealReplayFact]
     public void Analyze_RealReplay_IsAcceptedByGameSettlementParser()
