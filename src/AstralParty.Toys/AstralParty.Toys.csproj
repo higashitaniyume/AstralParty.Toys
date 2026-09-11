@@ -27,9 +27,17 @@
     <None Update="Assets\**\*.png;Assets\**\*.jpg;Assets\**\*.jpeg;Assets\**\*.webp;Assets\**\*.bmp">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="WebUI\index.html;WebUI\css\*.css;WebUI\js\*.js;WebUI\images\*.png;WebUI\data\*.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <!-- 前端页面内嵌进 exe：发布目录不再带 WebUI 文件夹，运行时由 EmbeddedWebStore 直接提供。
+         LogicalName 保留原始相对路径（默认命名会把 css/base.css 压成 css.base.css，无法还原）。
+         开发时若 exe 同目录存在 WebUI\index.html，则优先走磁盘映射，改完刷新即可见效。 -->
+    <EmbeddedResource Include="WebUI\**\*">
+      <LogicalName>AstralParty.Toys.WebUI/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="PackedAssets\**\*.webp;PackedAssets\**\*.png" />
+  </ItemGroup>
+
+  <!-- 让测试项目能直接驱动 internal 的实现细节（例如交给 WebView2 的响应流包装） -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="AstralParty.Toys.Tests" />
   </ItemGroup>
 </Project>

@@ -20,4 +20,9 @@
     <ProjectReference Include="..\..\src\AstralParty.Toys\AstralParty.Toys.csproj" />
   </ItemGroup>
 
+  <!-- 前端页面现在内嵌进 exe，输出目录里不再有 WebUI\，所以测试要按源码目录核对是否"一个不漏地"内嵌 -->
+  <ItemGroup>
+    <AssemblyMetadata Include="AppSourceDirectory" Value="$(MSBuildThisFileDirectory)..\..\src\AstralParty.Toys" />
+  </ItemGroup>
+
 </Project>

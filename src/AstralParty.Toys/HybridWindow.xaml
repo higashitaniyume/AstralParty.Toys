@@ -12,8 +12,8 @@
         <Border x:Name="StartupOverlay" Background="#F3F6FB">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                 <TextBlock Text="✦" Foreground="#7766D7" FontSize="54" HorizontalAlignment="Center" />
-                <TextBlock Text="正在启动回放工具…" Foreground="#263248" FontSize="18" Margin="0,18,0,0" />
-                <TextBlock x:Name="StartupDetail" Text="准备本地界面" Foreground="#75839A" Margin="0,8,0,0" />
+                <TextBlock Text="加载中..." HorizontalAlignment="Center" Foreground="#263248" FontSize="18" Margin="0,18,0,0" />
+                <TextBlock x:Name="StartupDetail" Text="AstralParty Toys" HorizontalAlignment="Center" Foreground="#75839A" Margin="0,8,0,0" />
                 <ProgressBar IsIndeterminate="True" Width="280" Height="4" Margin="0,24,0,0" Foreground="#7766D7" />
                 <Button x:Name="ClassicButton" Content="使用备用界面" Visibility="Collapsed" Margin="0,24,0,0"
                         Padding="18,9" Click="ClassicButton_Click" />
