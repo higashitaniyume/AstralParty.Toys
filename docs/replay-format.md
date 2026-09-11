@@ -586,6 +586,8 @@ dotnet test tests\AstralParty.Toys.Tests\AstralParty.Toys.Tests.csproj --filter 
 | `ConfigLocationTests` | 文档目录优先、不可写回退 AppData、旧配置迁移、配置目录不被当成回放条目 |
 | `SpeedhackTests` | 内嵌资源、安装 / 卸载 / 覆盖保护、配置往返 JSON |
 | `CatalogAndAssetTests` | 角色 / 地图 / 怪物 / 筹码 / 物品配表、内嵌素材、报告引用素材可解析、AI 摘要五个章节 |
+| `EmbeddedWebUiTests` | 前端页面整包内嵌（源码 `WebUI\**` 一个不漏）、Content-Type、404、页面/JS/CSS 里的本地引用都能取到 |
+| `WebResourceStreamTests` | 交给 WebView2 的响应流包装：内容原样读出、读完自行释放内层流、之后再读返回 0 |
 | `SpeedhackDiagnosticsTests` | 只读诊断（内嵌资源、配置位置、Steam / 游戏目录探测）打进测试输出 |
 
 需要真实录像的测试带 `[RealReplayFact]`：没有数据时**报告为跳过**而不是失败。要启用它们，

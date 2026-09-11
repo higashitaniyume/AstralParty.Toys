@@ -16,6 +16,19 @@ public partial class HybridWindow : Window
     };
 
     private readonly string _appDirectory = AppContext.BaseDirectory;
+
+    /// <summary>
+    /// 是否允许"开发回退"（exe 同目录放了 WebUI\ 时优先走磁盘页面）：只有 Debug 构建允许。
+    /// Release 永远用内嵌资源——否则用户把新版 exe 覆盖到旧安装目录时，会静默地继续用那份旧页面。
+    /// 改前端想免重编译，请用 Debug 构建（VS 默认/F5）。
+    /// </summary>
+    private static readonly bool AllowDiskWebRoot =
+#if DEBUG
+        true;
+#else
+        false;
+#endif
+
     private readonly string _assetDirectory;
     private readonly IReadOnlyList<string> _materialDirectories;
     private readonly HomeDataService _homeDataService;
@@ -24,6 +37,7 @@ public partial class HybridWindow : Window
     private ReplayAnalyzer? _analyzer;
     private ReplayReport? _report;
     private bool _webReady;
+    private bool _webRootIsEmbedded;
     private readonly Dictionary<string, string> _replayLibrary = new(StringComparer.Ordinal);
 
     public HybridWindow()
@@ -45,9 +59,13 @@ public partial class HybridWindow : Window
     {
         try
         {
-            var webRoot = Path.Combine(_appDirectory, "WebUI");
-            if (!File.Exists(Path.Combine(webRoot, "index.html")))
-                throw new FileNotFoundException("找不到 WebUI/index.html。", Path.Combine(webRoot, "index.html"));
+            var webRoot = Path.Combine(_appDirectory, EmbeddedWebStore.DirectoryName);
+            // 开发回退：Debug 构建下 exe 同目录手动放一份 WebUI\ 就优先走磁盘（改完刷新即可见），
+            // 否则用内嵌资源。Release 永远用内嵌资源，见 AllowDiskWebRoot 的说明。
+            var useDiskWebRoot = AllowDiskWebRoot && File.Exists(Path.Combine(webRoot, "index.html"));
+            if (!useDiskWebRoot && !EmbeddedWebStore.HasIndex)
+                throw new FileNotFoundException(
+                    "找不到 WebUI/index.html（内嵌资源里也没有）。", Path.Combine(webRoot, "index.html"));
 
             StartupDetail.Text = "初始化本地界面";
             var userDataDirectory = Path.Combine(
@@ -56,11 +74,28 @@ public partial class HybridWindow : Window
             Directory.CreateDirectory(userDataDirectory);
             var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataDirectory);
             await WebView.EnsureCoreWebView2Async(environment);
-            WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
-                "app.astral.local", webRoot, CoreWebView2HostResourceAccessKind.DenyCors);
+            if (useDiskWebRoot)
+            {
+                // 注意：被 SetVirtualHostNameToFolderMapping 映射过的域名不会触发 WebResourceRequested，
+                // 所以磁盘映射与内嵌拦截这两条路是互斥的，按上面判定二选一。
+                WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                    "app.astral.local", webRoot, CoreWebView2HostResourceAccessKind.DenyCors);
+            }
+            else
+            {
+                _webRootIsEmbedded = true;
+                WebView.CoreWebView2.AddWebResourceRequestedFilter(
+                    "https://app.astral.local/*", CoreWebView2WebResourceContext.All);
+            }
+
+            // 内嵌素材（PackedAssets）始终走拦截。
+            // 关键：WebResourceRequested 是**单一事件**，AddWebResourceRequestedFilter 只决定"哪些请求会触发"；
+            // 请求一旦触发，所有订阅者都会被调用，且共用同一个 Response 槽。所以页面和素材只能由同一个
+            // 处理器按 host 分派——分成两个处理器的话，后一个会把前一个的响应覆盖成 404（实测：主文档被覆盖成 404，
+            // 导航直接失败并落到 Chromium 错误页）。
             WebView.CoreWebView2.AddWebResourceRequestedFilter(
                 "https://assets.astral.local/*", CoreWebView2WebResourceContext.Image);
-            WebView.CoreWebView2.WebResourceRequested += EmbeddedAssetRequested;
+            WebView.CoreWebView2.WebResourceRequested += EmbeddedRequested;
             for (var index = 0; index < _materialDirectories.Count; index++)
                 WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
                     $"materials{index}.astral.local", _materialDirectories[index], CoreWebView2HostResourceAccessKind.Allow);
@@ -89,18 +124,44 @@ public partial class HybridWindow : Window
         }
     }
 
-    private void EmbeddedAssetRequested(object? sender, CoreWebView2WebResourceRequestedEventArgs e)
+    /// <summary>
+    /// 内嵌资源的唯一入口。必须保持"只有一个处理器"——见 <see cref="InitializeWebViewAsync"/> 里的说明：
+    /// 多个 filter 共用一个事件，处理器要自己按 host 判断该不该接管，否则会互相覆盖响应。
+    /// </summary>
+    private void EmbeddedRequested(object? sender, CoreWebView2WebResourceRequestedEventArgs e)
     {
         var uri = new Uri(e.Request.Uri);
+        if (_webRootIsEmbedded && uri.Host.Equals("app.astral.local", StringComparison.OrdinalIgnoreCase))
+            e.Response = CreatePageResponse(uri);
+        else if (uri.Host.Equals("assets.astral.local", StringComparison.OrdinalIgnoreCase))
+            e.Response = CreateAssetResponse(uri);
+    }
+
+    /// <summary>提供页面本体（Document、CSS、JS、图片、fetch 的 JSON）——全部来自程序集资源。</summary>
+    private CoreWebView2WebResourceResponse CreatePageResponse(Uri uri)
+    {
+        var relativePath = uri.AbsolutePath.TrimStart('/');
+        var stream = EmbeddedWebStore.Open(relativePath);
+        return stream is null
+            ? WebView.CoreWebView2.Environment.CreateWebResourceResponse(
+                null, 404, "Not Found", "Content-Type: text/plain")
+            : WebView.CoreWebView2.Environment.CreateWebResourceResponse(
+                new WebResourceStream(stream), 200, "OK",
+                $"Content-Type: {EmbeddedWebStore.ContentType(relativePath)}\r\nCache-Control: no-store\r\nAccess-Control-Allow-Origin: *");
+    }
+
+    /// <summary>提供内嵌素材（PackedAssets）。</summary>
+    private CoreWebView2WebResourceResponse CreateAssetResponse(Uri uri)
+    {
         var stream = EmbeddedAssetStore.OpenWebPath(uri.AbsolutePath);
         var contentType = Path.GetExtension(uri.AbsolutePath).Equals(".png", StringComparison.OrdinalIgnoreCase)
             ? "image/png"
             : "image/webp";
-        e.Response = stream is null
+        return stream is null
             ? WebView.CoreWebView2.Environment.CreateWebResourceResponse(
                 Stream.Null, 404, "Not Found", "Content-Type: text/plain")
             : WebView.CoreWebView2.Environment.CreateWebResourceResponse(
-                stream, 200, "OK",
+                new WebResourceStream(stream), 200, "OK",
                 $"Content-Type: {contentType}\r\nCache-Control: no-store\r\nAccess-Control-Allow-Origin: *");
     }
 
