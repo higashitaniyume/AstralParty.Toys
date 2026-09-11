@@ -133,8 +133,8 @@ body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-game-logo {
 
 /* JSON-driven game version announcement */
 .version-announcement-card {
-  position: absolute; left: 45%; bottom: 92px; z-index: 14;
-  box-sizing: border-box; width: clamp(370px, 35vw, 520px); padding: 18px 20px 16px;
+  position: absolute; left: 32%; bottom: 92px; z-index: 14;
+  box-sizing: border-box; width: clamp(320px, 30vw, 460px); padding: 18px 20px 16px;
   overflow: hidden; color: #fff; cursor: default;
   background: linear-gradient(145deg, rgba(24, 30, 54, 0.97), rgba(12, 16, 31, 0.97));
   border: 2px solid rgba(255, 255, 255, 0.24); border-radius: 18px;
@@ -167,7 +167,7 @@ body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-game-logo {
 .version-detail-note { padding-left: 10px; border-left: 3px solid #a855f7; color: #94a3b8; font-size: 11px; }
 
 /* ==========================================================================
-   2. RIGHT-SIDE ACTION BUTTONS: 维基、回放与变速器
+   2. RIGHT-SIDE ACTION BUTTONS: 变速器、回放与维基（右下角另有启动游戏）
    ========================================================================== */
 .lobby-right-menu {
   position: absolute;
@@ -255,17 +255,49 @@ body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-game-logo {
   box-shadow: 0 18px 42px rgba(109, 40, 217, 0.75), inset 0 2px 6px rgba(255, 255, 255, 0.6);
 }
 
-/* 启动游戏 (Emerald Launch Gradient) */
+/* 启动游戏 (Signature Magenta #FF308B) */
 .card-launch {
-  background: linear-gradient(135deg, #22c55e 0%, #15803d 100%);
-  box-shadow: 0 12px 30px rgba(21, 128, 61, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+  background: linear-gradient(135deg, #ff308b 0%, #c2166a 100%);
+  box-shadow: 0 12px 30px rgba(255, 48, 139, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.4);
 }
 .card-launch:hover {
-  box-shadow: 0 18px 42px rgba(21, 128, 61, 0.75), inset 0 2px 6px rgba(255, 255, 255, 0.6);
+  box-shadow: 0 18px 42px rgba(255, 48, 139, 0.78), inset 0 2px 6px rgba(255, 255, 255, 0.6);
 }
-.card-launch .card-btn-text {
-  font-size: 28px;
-  letter-spacing: 2px;
+
+/* ==========================================================================
+   2b. BOTTOM-RIGHT CORNER: 启动游戏（比其他入口大一圈）
+   ========================================================================== */
+.lobby-corner-launch {
+  position: absolute;
+  right: 52px;
+  bottom: 78px;
+  z-index: 16;
+  display: flex;
+  align-items: flex-end;
+}
+
+.lobby-corner-launch .lobby-card-btn {
+  width: 296px;
+  height: 102px;
+  padding-right: 40px;
+  border-width: 4px;
+  border-radius: 24px;
+}
+
+.lobby-corner-launch .lobby-card-btn:hover {
+  transform: translateX(-14px) scale(1.05);
+}
+
+.lobby-corner-launch .lobby-card-btn .card-btn-text {
+  font-size: 38px;
+  letter-spacing: 3px;
+}
+
+.lobby-corner-launch .lobby-card-btn .card-btn-chibi {
+  left: -36px;
+  top: -26px;
+  width: 130px;
+  height: 130px;
 }
 
 body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-hero-art {
@@ -279,7 +311,9 @@ body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-card-btn {
 }
 body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-card-btn:nth-child(2) { animation-delay: 90ms; }
 body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-card-btn:nth-child(3) { animation-delay: 180ms; }
-body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-card-btn:nth-child(4) { animation-delay: 270ms; }
+body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-corner-launch .lobby-card-btn {
+  animation: content-rise 460ms var(--motion-ease) 240ms both;
+}
 body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-bottom-dock {
   animation: content-rise 420ms var(--motion-ease) 160ms both;
 }
