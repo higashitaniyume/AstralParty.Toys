@@ -48,7 +48,7 @@ function closeModal() {
   if (modal) modal.classList.remove('open');
 }
 
-// Router: animate between home, tools, utilities, wiki, settings
+// Router: animate between home, tools, utilities, mods, wiki, settings
 function runPageHook(pageName) {
   if (pageName === 'home') {
     if (window.HomeModule && AppState.homeData) window.HomeModule.onShowHome();
@@ -60,6 +60,8 @@ function runPageHook(pageName) {
     window.SettingsModule?.init();
   } else if (pageName === 'utilities') {
     window.UtilitiesModule?.onShowUtilities?.();
+  } else if (pageName === 'mods') {
+    window.ModsModule?.onShowMods?.();
   }
 }
 
@@ -209,6 +211,10 @@ host?.addEventListener('message', event => {
 
     case 'speedhackStatus':
       if (window.UtilitiesModule) window.UtilitiesModule.applyStatus(msg.payload);
+      break;
+
+    case 'modStatus':
+      if (window.ModsModule) window.ModsModule.applyModStatus(msg.payload);
       break;
 
     case 'error':

@@ -53,6 +53,37 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
+      # 内嵌 Mod 加载器始终取自 CesiumLoader 最新 Release（github.com/higashitaniyume/CesiumLoader）
+      # 下载 cesium-loader.zip → 解压 → 覆盖 Resources\ModLoader\ 后构建，无需手动同步。
+      - name: Fetch latest CesiumLoader package
+        shell: pwsh
+        run: |
+          $zipUrl = "https://github.com/higashitaniyume/CesiumLoader/releases/latest/download/cesium-loader.zip"
+          $zipPath = "$env:TEMP/cesium-loader-latest.zip"
+          Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing
+          $extract = "$env:TEMP/cesium-loader-latest"
+          if (Test-Path $extract) { Remove-Item $extract -Recurse -Force }
+          Expand-Archive -Path $zipPath -DestinationPath $extract -Force
+          $targets = @(
+            @{ From = "$extract/winmm.dll"; To = "src/AstralParty.Toys/Resources/ModLoader/winmm.dll" },
+            @{ From = "$extract/AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll"; To = "src/AstralParty.Toys/Resources/ModLoader/CesiumLoader.SDK.dll" },
+            @{ From = "$extract/AstralParty_ModLoader/mods/ActivityLogMod.dll"; To = "src/AstralParty.Toys/Resources/ModLoader/ActivityLogMod.dll" }
+          )
+          foreach ($t in $targets) {
+            if (-not (Test-Path $t.From)) { throw "解压包缺少文件: $($t.From)" }
+            Copy-Item $t.From $t.To -Force
+          }
+          # 记录内嵌加载器版本（ModManager 读取显示/更新对比）
+          if (Test-Path "$extract/cesium-loader.json") {
+            $manifest = Get-Content "$extract/cesium-loader.json" -Raw | ConvertFrom-Json
+            $version = if ($manifest.version) { $manifest.version } else { "unknown" }
+          } else {
+            $version = "unknown"
+          }
+          Set-Content -Path "src/AstralParty.Toys/Resources/ModLoader/loader-version.json" -Value ($version | ConvertTo-Json) -Encoding UTF8
+          Write-Host "内嵌加载器版本: $version"
+          Get-ChildItem "src/AstralParty.Toys/Resources/ModLoader" | Select-Object Name, Length
+
       - name: Resolve package metadata
         id: metadata
         shell: pwsh

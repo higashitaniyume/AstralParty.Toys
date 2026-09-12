@@ -27,6 +27,7 @@
         <button class="nav-crumb-btn active" data-page="home"><span>🏠</span>游戏大厅</button>
         <button class="nav-crumb-btn" data-page="tools"><span>🎲</span>对局回放</button>
         <button class="nav-crumb-btn" data-page="utilities"><span>🔧</span>游戏工具</button>
+        <button class="nav-crumb-btn" data-page="mods"><span>🧩</span>模组</button>
         <button class="nav-crumb-btn" data-page="wiki"><span>📖</span>维基攻略</button>
         <button class="nav-crumb-btn" data-page="settings"><span>⚙️</span>系统设置</button>
       </nav>
@@ -72,7 +73,13 @@
             <img class="card-btn-chibi" src="https://assets.astral.local/UI/UT_Hero_LevelUp_108_01.webp" alt="回放">
           </button>
 
-          <!-- 3. 维基 (BWiki 攻略) -->
+          <!-- 3. 模组管理 -->
+          <button class="lobby-card-btn card-mods" id="btnMenuMods" title="Mod 加载器与模组管理">
+            <div class="card-btn-text">模组</div>
+            <img class="card-btn-chibi" src="https://assets.astral.local/UI/UT_Hero_LevelUp_102_01.webp" alt="模组">
+          </button>
+
+          <!-- 4. 维基 (BWiki 攻略) -->
           <button class="lobby-card-btn card-wiki" id="btnMenuWiki" title="吉星派对 · BWiki 维基攻略">
             <div class="card-btn-text">维基</div>
             <img class="card-btn-chibi" src="https://assets.astral.local/UI/UT_Hero_LevelUp_114_01.webp" alt="维基">
@@ -363,7 +370,106 @@
         </div>
       </section>
 
-      <!-- 4. WIKI VIEW (Direct BWiki Webpage) -->
+      <!-- 4. MODS VIEW (Mod Loader & Mod Management) -->
+      <section id="modsView" class="page-view mods-page hidden">
+        <div class="utilities-header">
+          <div class="utilities-title-group">
+            <button class="back-btn" id="modsBackHomeBtn">‹ 返回大厅</button>
+            <h2>模组管理</h2>
+          </div>
+        </div>
+
+        <div class="utilities-body">
+          <div class="util-grid">
+            <!-- Mod 加载器管理 -->
+            <article class="util-card util-card-wide" id="modManagerCard">
+              <div class="util-card-head">
+                <h3><span>🧩</span> Mod 加载器与模组管理</h3>
+                <span class="badge badge-notice" id="modStatusBadge">未检测</span>
+              </div>
+
+              <div class="util-status-line">
+                <span class="status-icon" id="modStatusIcon">🔍</span>
+                <div class="util-status-texts">
+                  <strong id="modStatusTitle">正在检测安装状态…</strong>
+                  <p id="modStatusText">请稍候</p>
+                </div>
+              </div>
+
+              <div class="util-update-row" id="modUpdateRow">
+                <div class="util-update-info">
+                  <span class="util-update-label">内嵌版本</span>
+                  <strong id="modEmbeddedVersion">—</strong>
+                  <span class="util-update-sep">·</span>
+                  <span class="util-update-label">已装版本</span>
+                  <strong id="modInstalledVersion">—</strong>
+                  <span class="util-update-sep">·</span>
+                  <span class="util-update-label">最新</span>
+                  <strong id="modLatestVersion">—</strong>
+                </div>
+                <div class="util-update-actions">
+                  <button class="secondary-btn" id="modCheckUpdateBtn" style="padding:6px 14px;font-size:12px">↻ 检查更新</button>
+                  <button class="primary-btn" id="modDownloadUpdateBtn" style="padding:6px 14px;font-size:12px;white-space:nowrap">⬇ 从 GitHub 更新</button>
+                </div>
+              </div>
+              <div class="util-check-row">
+                <input type="checkbox" id="modUpdateOverwriteCheck">
+                <label for="modUpdateOverwriteCheck">更新时允许覆盖游戏目录里其它 winmm.dll</label>
+              </div>
+
+              <span class="util-section-label">游戏目录（winmm.dll 加载器的安装位置）</span>
+              <div class="util-path-box">
+                <span class="path-value placeholder" id="modGameDirText">尚未选择游戏目录</span>
+                <button class="secondary-btn" id="modDetectDirBtn" style="padding:5px 12px;font-size:12px">自动检测</button>
+                <button class="secondary-btn" id="modBrowseDirBtn" style="padding:5px 12px;font-size:12px">选择…</button>
+                <button class="primary-btn" id="modInstallBtn" style="padding:5px 13px;font-size:12px;white-space:nowrap">🧩 安装加载器</button>
+              </div>
+
+              <div class="util-check-row">
+                <input type="checkbox" id="modOverwriteCheck">
+                <label for="modOverwriteCheck">允许覆盖游戏目录里其它 winmm.dll（用于强行更新安装）</label>
+              </div>
+              <div class="util-check-row">
+                <input type="checkbox" id="modIncludeSampleCheck" checked>
+                <label for="modIncludeSampleCheck">同时安装内置 SDK 与示例 mod（ActivityLogMod，行为日志）</label>
+              </div>
+              <div class="util-check-row">
+                <input type="checkbox" id="modForceUninstallCheck">
+                <label for="modForceUninstallCheck">强制卸载（winmm.dll 与内置不一致时也删除）</label>
+              </div>
+
+              <div class="util-btn-row">
+                <button class="secondary-btn" id="modOpenModsBtn">📂 打开 mods 目录</button>
+                <button class="secondary-btn" id="modOpenSdkBtn">📂 打开 sdk 目录</button>
+                <button class="secondary-btn" id="modOpenLogsBtn">📂 打开 logs 目录</button>
+                <button class="secondary-btn" id="modImportBtn">＋ 导入 mod DLL</button>
+                <button class="danger-btn" id="modUninstallBtn">🗑 卸载加载器</button>
+              </div>
+
+              <div class="util-note-box">
+                <span class="util-note-title">📖 说明</span>
+                <ul>
+                  <li>原理：把内置 <span class="util-mono">winmm.dll</span> 放到游戏 exe 旁边，游戏启动时由 UnityPlayer 自动加载（DLL 劫持），随后加载 <span class="util-mono">AstralParty_ModLoader\mods\</span> 下所有 mod，并在控制台窗口显示日志。不会修改游戏文件，也不影响 <span class="util-mono">version.dll</span>（变速器）。</li>
+                  <li>mod 是引用 CesiumLoader.SDK 开发的 .NET DLL（事件订阅 + 数据读取），编译后放进 <span class="util-mono">mods\</span> 目录即被自动加载。下方列表显示当前 mods\ 与 sdk\ 目录内容。</li>
+                  <li>游戏运行中也能安装/卸载，但 winmm.dll 被占用时写入/删除会失败——那种情况先完全退出游戏再操作。</li>
+                </ul>
+              </div>
+
+              <div class="mod-list-section">
+                <span class="util-section-label">已安装的 mod（mods\ 目录）</span>
+                <div class="mod-list" id="modListContainer"><span class="path-value placeholder">尚未安装加载器 / 目录为空</span></div>
+              </div>
+
+              <div class="mod-list-section">
+                <span class="util-section-label">SDK 依赖（sdk\ 目录）</span>
+                <div class="mod-list" id="modSdkContainer"><span class="path-value placeholder">尚未安装加载器 / 目录为空</span></div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. WIKI VIEW (Direct BWiki Webpage) -->
       <section id="wikiView" class="page-view wiki-page hidden">
         <div class="wiki-top-toolbar">
           <div class="wiki-toolbar-left">
@@ -505,6 +611,7 @@
   <script src="js/wiki.js"></script>
   <script src="js/settings.js"></script>
   <script src="js/utilities.js"></script>
+  <script src="js/mods.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

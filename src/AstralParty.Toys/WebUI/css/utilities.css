@@ -40,6 +40,49 @@ body:not(.reduce-motion) #utilitiesView:not(.page-entering) .util-form-row:nth-c
 body:not(.reduce-motion) #utilitiesView:not(.page-entering) .util-form-row:nth-child(4) { animation-delay: 70ms; }
 body:not(.reduce-motion) #utilitiesView:not(.page-entering) .util-form-row:nth-child(n + 5) { animation-delay: 105ms; }
 
+/* mods 页复用 utilities 布局, 补一份同款进入动画 */
+body:not(.reduce-motion) #modsView:not(.page-entering) .utilities-header {
+  animation: content-rise 360ms var(--motion-ease) both;
+}
+body:not(.reduce-motion) #modsView:not(.page-entering) .util-card {
+  animation: content-rise 440ms var(--motion-ease) both;
+}
+
+/* 模组页: 联网更新区域 */
+.util-update-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 10px 0 4px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--gp-border);
+  border-radius: 10px;
+}
+.util-update-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--gp-text-sub);
+}
+.util-update-info strong { color: var(--gp-text-main); font-weight: 700; }
+.util-update-sep { color: rgba(255, 255, 255, 0.25); }
+.util-update-actions { display: flex; gap: 8px; }
+
+/* 模组列表: manifest 描述 */
+.mod-list-item { flex-wrap: wrap; }
+.mod-desc {
+  flex-basis: 100%;
+  font-size: 11px;
+  color: var(--gp-text-sub);
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
 .utilities-title-group {
   display: flex;
   align-items: center;
@@ -507,3 +550,71 @@ input[type="number"].util-input::-webkit-inner-spin-button { -webkit-appearance:
 }
 
 .util-config-path { font-size: 11px; color: var(--gp-text-muted); word-break: break-all; }
+
+/* ============ Mod 加载器管理 ============ */
+
+.util-card-wide {
+  grid-column: 1 / -1;
+}
+
+.mod-list-section {
+  margin-top: 4px;
+}
+
+.mod-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-md);
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.mod-list-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: var(--gp-radius-sm);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.mod-list-item:hover { background: rgba(255, 255, 255, 0.09); }
+
+.mod-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gp-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+
+.mod-meta {
+  font-size: 11px;
+  color: var(--gp-text-muted);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.mod-del-btn {
+  background: transparent;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  color: var(--gp-text-muted);
+  font-size: 12px;
+  padding: 3px 7px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 160ms ease;
+}
+
+.mod-del-btn:hover {
+  border-color: var(--gp-danger, #ff5c5c);
+  color: var(--gp-danger, #ff5c5c);
+  background: rgba(255, 92, 92, 0.12);
+}

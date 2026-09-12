@@ -519,6 +519,13 @@
     return Number.isFinite(number) && number > 0 ? number : fallback;
   }
 
+  function fmtBytes(bytes) {
+    const value = Number(bytes ?? 0);
+    if (value >= 1024 * 1024) return (value / 1024 / 1024).toFixed(2) + ' MB';
+    if (value >= 1024) return (value / 1024).toFixed(1) + ' KB';
+    return value + ' B';
+  }
+
   // 页面标记存在即完成事件绑定（index.html 脚本位于 DOM 末尾）
   if (document.getElementById('utilitiesView')) {
     UtilitiesModule.init();

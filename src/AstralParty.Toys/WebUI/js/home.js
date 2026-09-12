@@ -27,6 +27,7 @@
       $('btnMenuLaunchGame')?.addEventListener('click', () => post({ type: 'launchGame' }));
       $('btnMenuSpeedhack')?.addEventListener('click', () => showPage('utilities'));
       $('btnMenuTools')?.addEventListener('click', () => showPage('tools'));
+      $('btnMenuMods')?.addEventListener('click', () => showPage('mods'));
       $('btnMenuWiki')?.addEventListener('click', () => showPage('wiki'));
       $('dockBtnSettings')?.addEventListener('click', () => showPage('settings'));
       $('versionAnnouncementMoreBtn')?.addEventListener('click', () => this.showVersionAnnouncement());

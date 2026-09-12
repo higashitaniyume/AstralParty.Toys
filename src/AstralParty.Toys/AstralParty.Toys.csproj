@@ -24,6 +24,9 @@
     <EmbeddedResource Include="Resources\SpeedhackTools\version.dll;Resources\SpeedhackTools\speedhack_config.json">
       <LogicalName>AstralParty.Toys.SpeedhackTools.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="Resources\ModLoader\winmm.dll;Resources\ModLoader\CesiumLoader.SDK.dll;Resources\ModLoader\ActivityLogMod.dll;Resources\ModLoader\loader-version.json">
+      <LogicalName>AstralParty.Toys.ModLoader.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
     <Content Include="Protocol\*.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

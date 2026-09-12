@@ -33,6 +33,7 @@ public partial class HybridWindow : Window
     private readonly IReadOnlyList<string> _materialDirectories;
     private readonly HomeDataService _homeDataService;
     private readonly SpeedhackManager _speedhackManager;
+    private readonly ModManager _modManager;
     private readonly ReplayLibraryService _libraryService;
     private ReplayAnalyzer? _analyzer;
     private ReplayReport? _report;
@@ -47,6 +48,7 @@ public partial class HybridWindow : Window
         _materialDirectories = MaterialSource.DiscoverAll(_appDirectory);
         _homeDataService = new HomeDataService(_appDirectory);
         _speedhackManager = new SpeedhackManager(_appDirectory);
+        _modManager = new ModManager(_appDirectory);
         _libraryService = new ReplayLibraryService(_appDirectory);
     }
 
@@ -304,6 +306,60 @@ public partial class HybridWindow : Window
                     break;
                 case "speedhackOpenGameDir":
                     HandleSpeedhackOpenGameDir();
+                    break;
+                case "modStatus":
+                    PushModStatus();
+                    break;
+                case "modInstall":
+                    var modOverwrite = root.TryGetProperty("overwriteDll", out var modOverwriteElement) &&
+                                       modOverwriteElement.GetBoolean();
+                    var includeSample = root.TryGetProperty("includeSample", out var includeSampleElement) &&
+                                        includeSampleElement.GetBoolean();
+                    HandleModInstall(modOverwrite, includeSample);
+                    break;
+                case "modUninstall":
+                    var modForce = root.TryGetProperty("force", out var modForceElement) && modForceElement.GetBoolean();
+                    HandleModUninstall(modForce);
+                    break;
+                case "modDetect":
+                    HandleModDetect();
+                    break;
+                case "modBrowse":
+                    HandleModBrowse();
+                    break;
+                case "modOpenModsFolder":
+                    HandleModOpenFolder(ModManager.ModsFolderName);
+                    break;
+                case "modOpenSdkFolder":
+                    HandleModOpenFolder(ModManager.SdkFolderName);
+                    break;
+                case "modOpenLogsFolder":
+                    HandleModOpenFolder(ModManager.LogsFolderName);
+                    break;
+                case "modImport":
+                    if (root.TryGetProperty("path", out var modPathElement) &&
+                        modPathElement.GetString() is { Length: > 0 } modPath)
+                    {
+                        HandleModImport(modPath);
+                    }
+                    break;
+                case "modPickImport":
+                    HandleModPickImport();
+                    break;
+                case "modDelete":
+                    if (root.TryGetProperty("fileName", out var modDeleteElement) &&
+                        modDeleteElement.GetString() is { Length: > 0 } modFileName)
+                    {
+                        HandleModDelete(modFileName);
+                    }
+                    break;
+                case "modCheckUpdate":
+                    _ = HandleModCheckUpdateAsync();
+                    break;
+                case "modDownloadUpdate":
+                    var updateOverwrite = root.TryGetProperty("overwriteDll", out var updateOverwriteElement) &&
+                                          updateOverwriteElement.GetBoolean();
+                    _ = HandleModDownloadUpdateAsync(updateOverwrite);
                     break;
                 case "closeWindow":
                     Close();
@@ -1187,6 +1243,180 @@ public partial class HybridWindow : Window
     {
         var directory = RequireGameDirectory();
         SpeedhackManager.OpenInExplorer(directory);
+    }
+
+    // ============================== Mod 加载器（游戏工具） ==============================
+
+    private void PushModStatus()
+    {
+        var status = _modManager.GetStatus();
+        Post(new { type = "modStatus", payload = new { status } });
+    }
+
+    private string RequireModGameDirectory()
+    {
+        var directory = _modManager.GetStatus().GameDirectory;
+        if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+            throw new InvalidOperationException("尚未选择有效的游戏目录，请先自动检测或手动选择。");
+        return directory;
+    }
+
+    private void HandleModDetect()
+    {
+        var directory = SpeedhackManager.DetectGameDirectory();
+        if (directory is null)
+        {
+            Post(new { type = "toast", message = "自动检测未找到游戏目录，请点「选择…」手动指定。" });
+        }
+        else
+        {
+            _modManager.SaveStoredGameDirectory(directory);
+            Post(new { type = "toast", message = $"已自动定位游戏目录：{directory}" });
+        }
+        PushModStatus();
+    }
+
+    private void HandleModBrowse()
+    {
+        var current = _modManager.ResolveGameDirectory();
+        var dialog = new OpenFolderDialog
+        {
+            Title = "选择吉星派对游戏目录（AstralParty exe 所在文件夹）",
+            InitialDirectory = current is { Length: > 0 } && Directory.Exists(current) ? current : null
+        };
+        if (dialog.ShowDialog(this) == true && dialog.FolderName is { Length: > 0 })
+        {
+            _modManager.SaveStoredGameDirectory(dialog.FolderName);
+            Post(new { type = "toast", message = $"已选择游戏目录：{dialog.FolderName}" });
+            PushModStatus();
+        }
+    }
+
+    private void HandleModInstall(bool overwriteDll, bool includeSample)
+    {
+        _modManager.Install(RequireModGameDirectory(), overwriteDll, includeSample);
+        Post(new { type = "toast", message = ModManager.DescribeInstalled() });
+        PushModStatus();
+    }
+
+    private void HandleModUninstall(bool force)
+    {
+        var result = _modManager.Uninstall(RequireModGameDirectory(), force);
+        Post(new { type = "toast", message = result.Message });
+        PushModStatus();
+    }
+
+    private void HandleModOpenFolder(string folderName)
+    {
+        var directory = RequireModGameDirectory();
+        var folder = Path.Combine(directory, ModManager.LoaderFolderName, folderName);
+        Directory.CreateDirectory(folder);
+        ModManager.OpenInExplorer(folder);
+    }
+
+    private void HandleModImport(string path)
+    {
+        var entry = _modManager.ImportMod(RequireModGameDirectory(), path);
+        Post(new { type = "toast", message = $"已导入 mod：{entry.FileName}（{FormatBytes(entry.SizeBytes)}）" });
+        PushModStatus();
+    }
+
+    private void HandleModPickImport()
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "选择要导入的 mod DLL",
+            Filter = "Mod DLL|*.dll|所有文件|*.*",
+            CheckFileExists = true,
+            Multiselect = true
+        };
+        if (dialog.ShowDialog(this) != true || dialog.FileNames.Length == 0) return;
+        var imported = 0;
+        foreach (var file in dialog.FileNames)
+        {
+            try
+            {
+                _modManager.ImportMod(RequireModGameDirectory(), file);
+                imported++;
+            }
+            catch (Exception ex)
+            {
+                Post(new { type = "toast", message = $"导入 {Path.GetFileName(file)} 失败：{ex.Message}" });
+            }
+        }
+        if (imported > 0)
+            Post(new { type = "toast", message = $"已导入 {imported} 个 mod，重启游戏后生效。" });
+        PushModStatus();
+    }
+
+    private void HandleModDelete(string fileName)
+    {
+        var entry = _modManager.DeleteMod(RequireModGameDirectory(), fileName);
+        if (entry is null)
+        {
+            Post(new { type = "toast", message = $"未找到 mod：{fileName}" });
+        }
+        else
+        {
+            Post(new { type = "toast", message = $"已删除 mod：{entry.FileName}" });
+        }
+        PushModStatus();
+    }
+
+    // ============================== Mod 加载器：联网更新 ==============================
+
+    private async Task HandleModCheckUpdateAsync()
+    {
+        Post(new { type = "toast", message = "正在检查 CesiumLoader 最新版本…" });
+        try
+        {
+            var bytes = await _modManager.DownloadLatestPackageAsync().ConfigureAwait(true);
+            var manifest = ModManager.ParsePackageManifest(bytes);
+            var latest = manifest?.Version ?? "";
+            var installed = _modManager.GetStatus().InstalledVersion;
+
+            var message = string.IsNullOrEmpty(latest)
+                ? "已连接到 GitHub，但发布包没有版本信息。"
+                : string.IsNullOrEmpty(installed)
+                    ? $"最新版本：{latest}（游戏目录里未记录已装版本，可直接更新）。"
+                    : string.Equals(installed, latest, StringComparison.OrdinalIgnoreCase)
+                        ? $"已是最新版本：{latest}。"
+                        : $"发现新版本：{installed} → {latest}。";
+
+            Post(new { type = "toast", message });
+            PushModStatus();
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = $"检查更新失败：{ex.Message}" });
+        }
+    }
+
+    private async Task HandleModDownloadUpdateAsync(bool overwriteDll)
+    {
+        Post(new { type = "toast", message = "正在下载最新 CesiumLoader 并安装…" });
+        try
+        {
+            var directory = RequireModGameDirectory();
+            var bytes = await _modManager.DownloadLatestPackageAsync().ConfigureAwait(true);
+            var manifest = ModManager.ParsePackageManifest(bytes);
+            _modManager.InstallPackage(directory, bytes, overwriteDll);
+
+            var versionText = string.IsNullOrEmpty(manifest?.Version) ? "" : $"（{manifest.Version}）";
+            Post(new { type = "toast", message = $"加载器已更新{versionText}。" + (SpeedhackManager.IsGameRunning() ? "游戏正在运行，重启游戏后生效。" : "") });
+            PushModStatus();
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = $"更新失败：{ex.Message}" });
+        }
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes >= 1024 * 1024) return $"{bytes / 1024.0 / 1024.0:0.##} MB";
+        if (bytes >= 1024) return $"{bytes / 1024.0:0.#} KB";
+        return $"{bytes} B";
     }
 
     private static readonly JsonSerializerOptions WebReadOptions = new() { PropertyNameCaseInsensitive = true };
