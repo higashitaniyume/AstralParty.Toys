@@ -222,6 +222,10 @@ host?.addEventListener('message', event => {
       if (window.ModsModule) window.ModsModule.renderLoaderSettings(msg.payload?.config);
       break;
 
+    case 'modSpeedhackSync':
+      if (window.ModsModule) window.ModsModule.syncSpeedhackBar(msg.payload?.config);
+      break;
+
     case 'modPermissions':
       if (window.ModsModule) window.ModsModule.renderPermissions(msg.payload);
       break;

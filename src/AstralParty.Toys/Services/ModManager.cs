@@ -278,8 +278,10 @@ public sealed class ModManager
             Directory.CreateDirectory(Path.Combine(loaderRoot, LogsFolderName));
 
             // doorstop_config.json（加载器配置：enabled / 变速基础倍率 / SDK 版本等）
-            if (HasEmbeddedConfig)
-                WriteAllBytesProtected(Path.Combine(loaderRoot, ConfigFileName), EmbeddedConfig!);
+            // 已存在则保留用户配置(不覆盖, 避免重置变速/开关设置); 不存在才写模板。
+            var configPath = Path.Combine(loaderRoot, ConfigFileName);
+            if (!File.Exists(configPath) && HasEmbeddedConfig)
+                WriteAllBytesProtected(configPath, EmbeddedConfig!);
 
             // 内置 SDK
             if (HasEmbeddedSdk)
@@ -504,8 +506,10 @@ public sealed class ModManager
             // version.dll → 游戏 exe 目录（Doorstop 代理）
             ExtractEntryToFile(archive, "version.dll", targetDll);
             // doorstop_config.json → AstralParty_ModLoader\
-            ExtractEntryToFile(archive, "AstralParty_ModLoader/doorstop_config.json",
-                Path.Combine(loaderRoot, ConfigFileName));
+            // 已存在则保留用户配置(变速/开关等), 不覆盖; 不存在才从包提取。
+            var configPath = Path.Combine(loaderRoot, ConfigFileName);
+            if (!File.Exists(configPath))
+                ExtractEntryToFile(archive, "AstralParty_ModLoader/doorstop_config.json", configPath);
             // SDK
             ExtractEntryToFile(archive, "AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll",
                 Path.Combine(loaderRoot, SdkFolderName, SdkDllName));

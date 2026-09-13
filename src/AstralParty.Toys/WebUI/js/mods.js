@@ -12,8 +12,8 @@
 
     onShowMods() {
       this.refreshModStatus();
-      // 拉取加载器配置以填充变速栏（失败无妨，状态更新时会重试）
-      post({ type: 'modReadLoaderConfig' });
+      // 只同步变速栏状态(不弹设置窗口; 弹窗仅在点「⚙ 加载器设置」时出现)
+      post({ type: 'modSyncSpeedhack' });
     },
 
     bindEvents() {
