@@ -212,6 +212,101 @@ public sealed class ModManagerTests
         Assert.Equal("", entry.DisplayName); // sidecar 损坏按无 sidecar 处理
     }
 
+    // ============================== 启用/禁用 + 配置 + 互斥 ==============================
+
+    [Fact]
+    public void ToggleMod_DisablesAndEnablesViaSidecar()
+    {
+        using var harness = new ModHarness("ap-mod-toggle");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+
+        // 放一个 mod + sidecar
+        var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
+        harness.Sandbox.WriteFile(Path.Combine(modsDir, "MyMod.dll"), new byte[] { 0x4D, 0x5A });
+        var sidecarPath = Path.Combine(modsDir, "MyMod.json");
+        File.WriteAllText(sidecarPath, "{\"id\":\"MyMod\",\"name\":\"我的Mod\",\"version\":\"1.0.0\"}");
+
+        Assert.True(harness.Manager.GetStatus().Mods[0].Enabled, "初始 enabled=true");
+
+        harness.Manager.ToggleMod(harness.GameDirectory, "MyMod.dll", enabled: false);
+        Assert.False(harness.Manager.GetStatus().Mods[0].Enabled, "禁用后 enabled=false");
+        Assert.Contains("\"enabled\": false", File.ReadAllText(sidecarPath));
+
+        harness.Manager.ToggleMod(harness.GameDirectory, "MyMod.dll", enabled: true);
+        Assert.True(harness.Manager.GetStatus().Mods[0].Enabled, "重新启用后 enabled=true");
+    }
+
+    [Fact]
+    public void ToggleMod_WithoutSidecar_CreatesOne()
+    {
+        using var harness = new ModHarness("ap-mod-toggle-nosidecar");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+
+        var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
+        harness.Sandbox.WriteFile(Path.Combine(modsDir, "Legacy.dll"), new byte[] { 0x4D, 0x5A });
+
+        harness.Manager.ToggleMod(harness.GameDirectory, "Legacy.dll", enabled: false);
+
+        var sidecarPath = Path.Combine(modsDir, "Legacy.json");
+        Assert.True(File.Exists(sidecarPath), "无 sidecar 的 mod 禁用时应自动生成 sidecar");
+        var json = File.ReadAllText(sidecarPath);
+        Assert.Contains("\"id\":\"Legacy\"", json);
+        Assert.Contains("\"enabled\": false", json);
+        Assert.False(harness.Manager.GetStatus().Mods[0].Enabled);
+    }
+
+    [Fact]
+    public void ModConfig_OpenCreatesFileAndReturnsPath()
+    {
+        using var harness = new ModHarness("ap-mod-config");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
+        harness.Sandbox.WriteFile(Path.Combine(modsDir, "CfgMod.dll"), new byte[] { 0x4D, 0x5A });
+
+        // 无配置 → Open 创建并返回路径
+        var path = harness.Manager.OpenModConfig(harness.GameDirectory, "CfgMod.dll");
+        Assert.True(File.Exists(path), "OpenModConfig 应创建配置文件");
+        Assert.EndsWith(Path.Combine("configs", "CfgMod.json"), path);
+
+        // 写内容后 Read 能读回
+        File.WriteAllText(path, "{\"LogUi\": true}");
+        Assert.Equal("{\"LogUi\": true}", harness.Manager.ReadModConfig(harness.GameDirectory, "CfgMod.dll"));
+    }
+
+    [Fact]
+    public void Install_DetectsSpeedhackConflict()
+    {
+        using var harness = new ModHarness("ap-mod-conflict");
+        harness.Manager.SaveStoredGameDirectory(harness.GameDirectory);
+        // 模拟已安装独立变速器: version.dll + speedhack_config.json
+        File.WriteAllBytes(Path.Combine(harness.GameDirectory, "version.dll"), [1, 2, 3]);
+        File.WriteAllText(Path.Combine(harness.GameDirectory, "speedhack_config.json"), "{}");
+
+        Assert.True(ModManager.HasSpeedhackInstalled(harness.GameDirectory), "应检测到变速器");
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: true));
+        Assert.Contains("变速器", ex.Message);
+        Assert.Contains("speedhackBaseSpeed", ex.Message);
+    }
+
+    [Fact]
+    public void SpeedhackInstall_DetectsModLoaderConflict()
+    {
+        using var harness = new ModHarness("ap-mod-conflict2");
+        harness.Manager.SaveStoredGameDirectory(harness.GameDirectory);
+        // 模拟已安装 Mod 加载器: version.dll + AstralParty_ModLoader\doorstop_config.json
+        File.WriteAllBytes(Path.Combine(harness.GameDirectory, "version.dll"), [1, 2, 3]);
+        Directory.CreateDirectory(Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName));
+        File.WriteAllText(Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ConfigFileName), "{}");
+
+        var speedhack = new SpeedhackManager(TestPaths.AppDirectory, harness.Sandbox.EnsureDirectory("profile2"));
+        Assert.True(SpeedhackManager.HasModLoaderInstalled(harness.GameDirectory), "应检测到加载器");
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => speedhack.Install(harness.GameDirectory, overwriteDll: true));
+        Assert.Contains("加载器", ex.Message);
+        Assert.Contains("speedhackBaseSpeed", ex.Message);
+    }
+
     // ============================== 联网更新：包解析 / 校验 / 安装 ==============================
 
     /// <summary>构造一个符合发布布局的内存 zip（version.dll Doorstop 式，含清单，可带/不带哈希校验）。</summary>

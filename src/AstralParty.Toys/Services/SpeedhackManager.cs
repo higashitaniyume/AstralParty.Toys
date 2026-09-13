@@ -320,7 +320,15 @@ public sealed class SpeedhackManager
         var targetDll = Path.Combine(gameDirectory, DllName);
         if (File.Exists(targetDll) && !MatchesEmbeddedDll(targetDll) && !overwriteDll)
             throw new InvalidOperationException(
-                "游戏目录已存在一个与内置不同的 version.dll（可能是其它工具的）——如确定要覆盖，请勾选「允许覆盖其它 version.dll」。");
+                "游戏目录已存在一个与内置不同的 version.dll（可能是其它工具的，如 CesiumLoader Mod 加载器）——如确定要覆盖，请勾选「允许覆盖其它 version.dll」。");
+
+        // 互斥检测: 已安装 CesiumLoader Mod 加载器? 两者的 version.dll 同名, 会互相覆盖。
+        if (HasModLoaderInstalled(gameDirectory))
+            throw new InvalidOperationException(
+                "检测到已安装 CesiumLoader Mod 加载器（AstralParty_ModLoader\\doorstop_config.json 存在）。" +
+                "加载器与变速器共用 version.dll，不能同时安装：装变速器会覆盖加载器，所有 mod 将失效。" +
+                "提示：CesiumLoader 已内置变速引擎——请勿安装本变速器，直接改加载器的 " +
+                "AstralParty_ModLoader\\doorstop_config.json 里的 speedhackBaseSpeed 即可变速。");
 
         try
         {
@@ -335,6 +343,20 @@ public sealed class SpeedhackManager
         }
 
         SaveStoredGameDirectory(gameDirectory);
+    }
+
+    /// <summary>互斥检测: 游戏目录是否已安装 CesiumLoader Mod 加载器(以 AstralParty_ModLoader\doorstop_config.json 为标志)。</summary>
+    public static bool HasModLoaderInstalled(string gameDirectory)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(gameDirectory) || !Directory.Exists(gameDirectory)) return false;
+            return File.Exists(Path.Combine(gameDirectory, ModManager.LoaderFolderName, ModManager.ConfigFileName));
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     /// <summary>从游戏目录删除 version.dll 与 speedhack_config.json。DLL 与内置不一致时默认拒绝，force 才删除。</summary>

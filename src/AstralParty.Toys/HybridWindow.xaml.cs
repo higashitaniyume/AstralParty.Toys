@@ -353,6 +353,21 @@ public partial class HybridWindow : Window
                         HandleModDelete(modFileName);
                     }
                     break;
+                case "modToggle":
+                    if (root.TryGetProperty("fileName", out var modToggleElement) &&
+                        modToggleElement.GetString() is { Length: > 0 } modToggleName &&
+                        root.TryGetProperty("enabled", out var modToggleEnabled))
+                    {
+                        HandleModToggle(modToggleName, modToggleEnabled.GetBoolean());
+                    }
+                    break;
+                case "modOpenConfig":
+                    if (root.TryGetProperty("fileName", out var modConfigElement) &&
+                        modConfigElement.GetString() is { Length: > 0 } modConfigName)
+                    {
+                        HandleModOpenConfig(modConfigName);
+                    }
+                    break;
                 case "modCheckUpdate":
                     _ = HandleModCheckUpdateAsync();
                     break;
@@ -1361,6 +1376,35 @@ public partial class HybridWindow : Window
             Post(new { type = "toast", message = $"已删除 mod：{entry.FileName}" });
         }
         PushModStatus();
+    }
+
+    private void HandleModToggle(string fileName, bool enabled)
+    {
+        try
+        {
+            _modManager.ToggleMod(RequireModGameDirectory(), fileName, enabled);
+            Post(new { type = "toast", message = enabled
+                ? $"已启用 mod：{fileName}（重启游戏后生效）"
+                : $"已禁用 mod：{fileName}（重启游戏后生效）" });
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = $"切换 mod 状态失败：{ex.Message}" });
+        }
+        PushModStatus();
+    }
+
+    private void HandleModOpenConfig(string fileName)
+    {
+        try
+        {
+            var path = _modManager.OpenModConfig(RequireModGameDirectory(), fileName);
+            Post(new { type = "toast", message = $"已用默认编辑器打开配置：{path}" });
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = $"打开配置失败：{ex.Message}" });
+        }
     }
 
     // ============================== Mod 加载器：联网更新 ==============================

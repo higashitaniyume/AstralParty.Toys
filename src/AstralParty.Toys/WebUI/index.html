@@ -452,6 +452,7 @@
                   <li>原理：把内置 <span class="util-mono">version.dll</span>（CesiumLoader Doorstop 式代理）放到游戏 exe 旁边，游戏启动时由 UnityPlayer 自动加载，随后读取 <span class="util-mono">AstralParty_ModLoader\doorstop_config.json</span>、加载 <span class="util-mono">sdk\</span> 与 <span class="util-mono">mods\</span> 下所有 mod，并在控制台窗口显示日志。不会修改游戏文件。</li>
                   <li>加载器按 mod 旁的 sidecar（<span class="util-mono">*.json</span>）做依赖拓扑排序与 API 版本协商；敏感能力（游戏操作 / 变速）默认关闭，需 mod 在 sidecar 声明权限（可用 <span class="util-mono">*.permissions.json</span> 覆盖）。</li>
                   <li>mod 是引用 CesiumLoader.SDK 开发的 .NET DLL（事件订阅 + 数据读取），编译后连同 sidecar 放进 <span class="util-mono">mods\</span> 目录即被自动加载。下方列表显示当前 mods\ 与 sdk\ 目录内容。</li>
+                  <li>每个 mod 可用右侧开关<span class="util-mono">启用 / 禁用</span>（改 sidecar 的 enabled 字段，重启游戏生效），点 <span class="util-mono">⚙</span> 用默认编辑器修改它的配置（<span class="util-mono">configs\{mod}.json</span>，由 SDK 的 SdkConfig 读写）。</li>
                   <li>游戏运行中也能安装/卸载，但 version.dll 被占用时写入/删除会失败——那种情况先完全退出游戏再操作。</li>
                 </ul>
               </div>

@@ -53,6 +53,20 @@
           if (fileName && confirm(`确定删除 mod「${fileName}」？`)) {
             post({ type: 'modDelete', fileName });
           }
+          return;
+        }
+        const cfg = e.target.closest('.mod-config-btn');
+        if (cfg) {
+          const fileName = cfg.dataset.configFile;
+          if (fileName) post({ type: 'modOpenConfig', fileName });
+        }
+      });
+      // mod 启用/禁用开关（change 事件）
+      $('modListContainer')?.addEventListener('change', e => {
+        const toggle = e.target.closest('.mod-toggle input[data-toggle-file]');
+        if (toggle) {
+          const fileName = toggle.dataset.toggleFile;
+          if (fileName) post({ type: 'modToggle', fileName, enabled: toggle.checked });
         }
       });
     },
@@ -147,10 +161,20 @@
         const deps = kind === 'mod' && entry.dependencies && entry.dependencies.length
           ? ` · 依赖 ${entry.dependencies.map(d => esc(d.id) + (d.minVersion ? '≥' + esc(d.minVersion) : '')).join(', ')}` : '';
         const desc = entry.description ? `<span class="mod-desc">${esc(entry.description)}</span>` : '';
-        return `<div class="mod-list-item">
+        // 启用/禁用开关 + 配置按钮(仅 mod)
+        const controls = kind === 'mod' ? `
+          <span class="mod-controls">
+            <label class="mod-toggle" title="启用/禁用（重启游戏后生效）">
+              <input type="checkbox" data-toggle-file="${esc(entry.fileName)}" ${entry.enabled !== false ? 'checked' : ''}>
+              <span>${entry.enabled !== false ? '启用' : '禁用'}</span>
+            </label>
+            <button class="mod-config-btn" data-config-file="${esc(entry.fileName)}" title="修改 mod 配置（configs\\${esc(entry.name)}.json）">⚙</button>
+          </span>` : '';
+        return `<div class="mod-list-item${entry.enabled === false ? ' mod-disabled' : ''}">
           <span class="mod-name" title="${esc(entry.fileName)}">${esc(title)}${ver}${author}${sdk}${perms}${deps}</span>
           <span class="mod-meta">${size}${time ? ' · ' + esc(time) : ''}</span>
           ${desc}
+          ${controls}
           ${delBtn}
         </div>`;
       });

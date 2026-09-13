@@ -1,1 +1,1 @@
-{"id":"ActivityLogMod","name":"实时行为日志","version":"2.0.0","author":"CesiumLoader","description":"把对局内的行为(用牌/骰子/移动/战斗等)实时输出到加载器控制台","permissions":1,"sdkVersion":"2.0.0","dependencies":[]}
+{"id":"ActivityLogMod","name":"实时行为日志","version":"2.0.0","author":"CesiumLoader","description":"把对局内的行为(用牌/骰子/移动/战斗等)实时输出到加载器控制台","permissions":1,"enabled":true,"sdkVersion":"2.0.0","dependencies":[]}

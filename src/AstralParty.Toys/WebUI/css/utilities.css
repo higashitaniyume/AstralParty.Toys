@@ -618,3 +618,54 @@ input[type="number"].util-input::-webkit-inner-spin-button { -webkit-appearance:
   color: var(--gp-danger, #ff5c5c);
   background: rgba(255, 92, 92, 0.12);
 }
+
+/* 启用/禁用开关 + 配置按钮 */
+.mod-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+
+.mod-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--gp-text-muted);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.mod-toggle input {
+  accent-color: var(--gp-accent, #4da3ff);
+  cursor: pointer;
+}
+
+.mod-config-btn {
+  background: transparent;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  color: var(--gp-text-muted);
+  font-size: 12px;
+  padding: 2px 6px;
+  cursor: pointer;
+  line-height: 1.3;
+  transition: all 160ms ease;
+}
+
+.mod-config-btn:hover {
+  border-color: var(--gp-accent, #4da3ff);
+  color: var(--gp-accent, #4da3ff);
+  background: rgba(77, 163, 255, 0.12);
+}
+
+.mod-list-item.mod-disabled {
+  opacity: 0.55;
+}
+
+.mod-list-item.mod-disabled .mod-name {
+  text-decoration: line-through;
+}

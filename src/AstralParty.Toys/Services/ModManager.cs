@@ -204,6 +204,7 @@ public sealed class ModManager
                         entry.Author = root.TryGetProperty("author", out var a) ? a.GetString() ?? "" : "";
                         entry.Description = root.TryGetProperty("description", out var d) ? d.GetString() ?? "" : "";
                         entry.SdkVersion = root.TryGetProperty("sdkVersion", out var s) ? s.GetString() ?? "" : "";
+                        entry.Enabled = !root.TryGetProperty("enabled", out var en) || en.ValueKind != JsonValueKind.False;
                         entry.Permissions = root.TryGetProperty("permissions", out var p) && p.ValueKind == JsonValueKind.Number
                             ? p.GetInt32() : 0;
                         if (root.TryGetProperty("dependencies", out var deps) && deps.ValueKind == JsonValueKind.Array)
@@ -262,6 +263,14 @@ public sealed class ModManager
         if (File.Exists(targetDll) && !MatchesEmbeddedLoader(targetDll) && !overwriteDll)
             throw new InvalidOperationException(
                 "游戏目录已存在一个与内置不同的 version.dll（可能是其它工具的，如旧版独立变速器）——如确定要覆盖，请勾选「允许覆盖其它 version.dll」。");
+
+        // 互斥检测: 已安装旧版独立变速器(speedhack-rs)? 两者都写 version.dll, 会互相覆盖。
+        if (HasSpeedhackInstalled(gameDirectory))
+            throw new InvalidOperationException(
+                "检测到已安装独立变速器（游戏目录存在 speedhack_config.json）。" +
+                "加载器与变速器共用 version.dll，不能同时安装：装加载器会覆盖变速器，变速热键配置将失效。" +
+                "提示：CesiumLoader 已内置变速引擎——装加载器后改 AstralParty_ModLoader\\doorstop_config.json " +
+                "里的 speedhackBaseSpeed 即可变速（无需独立变速器）。");
 
         try
         {
@@ -485,6 +494,14 @@ public sealed class ModManager
             throw new InvalidOperationException(
                 "游戏目录已存在一个与内置不同的 version.dll（可能是其它工具的，如旧版独立变速器）——如确定要覆盖，请勾选「允许覆盖其它 version.dll」。");
 
+        // 互斥检测: 已安装旧版独立变速器
+        if (HasSpeedhackInstalled(gameDirectory))
+            throw new InvalidOperationException(
+                "检测到已安装独立变速器（游戏目录存在 speedhack_config.json）。" +
+                "加载器与变速器共用 version.dll，不能同时安装：装加载器会覆盖变速器，变速热键配置将失效。" +
+                "提示：CesiumLoader 已内置变速引擎——装加载器后改 AstralParty_ModLoader\\doorstop_config.json " +
+                "里的 speedhackBaseSpeed 即可变速（无需独立变速器）。");
+
         try
         {
             using var stream = new MemoryStream(zipBytes);
@@ -543,6 +560,105 @@ public sealed class ModManager
     }
 
     // ============================== mod 管理 ==============================
+
+    /// <summary>互斥检测: 游戏目录是否已安装旧版独立变速器(以 speedhack_config.json 为标志)。</summary>
+    public static bool HasSpeedhackInstalled(string gameDirectory)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(gameDirectory) || !Directory.Exists(gameDirectory)) return false;
+            return File.Exists(Path.Combine(gameDirectory, SpeedhackManager.ConfigName));
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>切换 mod 启用/禁用: 改写 sidecar(mods\{name}.json) 的 enabled 字段。
+    /// 加载器读取 sidecar 的 enabled=false 时跳过该 mod。无 sidecar 的 mod 自动补一个。</summary>
+    public bool ToggleMod(string gameDirectory, string fileName, bool enabled)
+    {
+        if (string.IsNullOrWhiteSpace(gameDirectory) || string.IsNullOrWhiteSpace(fileName))
+            throw new ArgumentException("游戏目录或 mod 文件名无效。");
+        var modsDir = Path.Combine(gameDirectory, LoaderFolderName, ModsFolderName);
+        var dllPath = Path.Combine(modsDir, fileName);
+        if (!File.Exists(dllPath)) throw new FileNotFoundException($"mod 不存在：{fileName}");
+
+        var sidecarPath = Path.Combine(modsDir, Path.GetFileNameWithoutExtension(fileName) + ".json");
+        string json;
+        if (File.Exists(sidecarPath))
+        {
+            json = File.ReadAllText(sidecarPath);
+        }
+        else
+        {
+            // 无 sidecar: 生成最小结构(id 用程序集名, 保持加载器兼容)
+            json = "{\"id\":\"" + Path.GetFileNameWithoutExtension(fileName) + "\",\"name\":\"" +
+                   Path.GetFileNameWithoutExtension(fileName) + "\",\"version\":\"0.0.0\"}";
+        }
+
+        var updated = SetJsonBool(json, "enabled", enabled);
+        WriteAllBytesProtected(sidecarPath, System.Text.Encoding.UTF8.GetBytes(updated));
+        return enabled;
+    }
+
+    /// <summary>mod 配置文件路径(configs\{modName}.json, SdkConfig 约定; 不存在时返回 null)。</summary>
+    public string? ModConfigPath(string gameDirectory, string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(gameDirectory) || string.IsNullOrWhiteSpace(fileName)) return null;
+        var loaderRoot = Path.Combine(gameDirectory, LoaderFolderName);
+        var configsDir = Path.Combine(loaderRoot, "configs");
+        var path = Path.Combine(configsDir, Path.GetFileNameWithoutExtension(fileName) + ".json");
+        return File.Exists(path) ? path : null;
+    }
+
+    /// <summary>读取 mod 配置内容(configs\{modName}.json); 不存在返回空串。</summary>
+    public string ReadModConfig(string gameDirectory, string fileName)
+    {
+        var path = ModConfigPath(gameDirectory, fileName);
+        if (path is null) return "";
+        try { return File.ReadAllText(path); } catch { return ""; }
+    }
+
+    /// <summary>用系统默认编辑器打开 mod 配置文件; 不存在则创建空的。</summary>
+    public string OpenModConfig(string gameDirectory, string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(gameDirectory) || string.IsNullOrWhiteSpace(fileName))
+            throw new ArgumentException("游戏目录或 mod 文件名无效。");
+        var loaderRoot = Path.Combine(gameDirectory, LoaderFolderName);
+        var configsDir = Path.Combine(loaderRoot, "configs");
+        Directory.CreateDirectory(configsDir);
+        var path = Path.Combine(configsDir, Path.GetFileNameWithoutExtension(fileName) + ".json");
+        if (!File.Exists(path))
+            File.WriteAllText(path, "{\n  // 配置说明见对应 mod 文档; 公开字段(public field)才会被读取\n}\n");
+        OpenInExplorer(path);
+        return path;
+    }
+
+    /// <summary>在 JSON 文本里设置一个布尔字段(保留其它字段与格式; 无该字段则追加)。极简实现, 不做完整 JSON 解析。</summary>
+    private static string SetJsonBool(string json, string key, bool value)
+    {
+        var needle = "\"" + key + "\"";
+        var colon = json.IndexOf(needle, StringComparison.Ordinal);
+        if (colon >= 0)
+        {
+            // 找到字段, 替换其值(直到 , 或 })
+            var valueStart = json.IndexOf(':', colon) + 1;
+            var i = valueStart;
+            while (i < json.Length && (json[i] == ' ' || json[i] == '\t' || json[i] == '\r' || json[i] == '\n')) i++;
+            var j = i;
+            while (j < json.Length && json[j] != ',' && json[j] != '}') j++;
+            return json[..i] + (value ? "true" : "false") + json[j..];
+        }
+        // 追加: 插到最后一个 } 前
+        var insert = json.LastIndexOf('}');
+        if (insert < 0) return json;
+        var suffix = json[insert..];
+        var prefix = json[..insert].TrimEnd();
+        var separator = prefix.EndsWith("{", StringComparison.Ordinal) ? "" : ",";
+        return prefix + separator + "\n  \"" + key + "\": " + (value ? "true" : "false") + "\n" + suffix;
+    }
 
     /// <summary>把 mod DLL 复制进游戏 mods 目录。</summary>
     public ModEntryInfo ImportMod(string gameDirectory, string sourcePath)
@@ -700,6 +816,9 @@ public sealed class ModEntryInfo
 
     /// <summary>需要的 SDK 最低版本（API 版本协商用）。</summary>
     public string SdkVersion { get; set; } = "";
+
+    /// <summary>mod 是否启用（sidecar enabled 字段, 缺省 true; false = 加载器跳过）。</summary>
+    public bool Enabled { get; set; } = true;
 
     /// <summary>权限位掩码（与 C# ModPermission 枚举一致: 1=ReadGameState 2=GameActions 4=SpeedHack 8=FileWrite）。</summary>
     public int Permissions { get; set; }
