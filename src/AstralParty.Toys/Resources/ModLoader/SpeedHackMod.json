@@ -1,1 +1,0 @@
-{"id":"SpeedHackMod","name":"游戏变速","version":"1.0.0","author":"CesiumLoader","description":"内置变速: 启用即按配置 BaseSpeed 变速(默认 2x), 热键可临时调整","permissions":4,"enabled":true,"sdkVersion":"2.0.0","dependencies":[]}

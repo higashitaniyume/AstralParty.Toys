@@ -18,7 +18,6 @@ public sealed class ModManagerTests
         Assert.True(ModManager.HasEmbeddedConfig, "内置 doorstop_config.json 资源缺失");
         Assert.True(ModManager.HasEmbeddedSdk, "内置 SDK 资源缺失");
         Assert.True(ModManager.HasEmbeddedSampleMod, "内置示例 mod 资源缺失");
-        Assert.True(ModManager.HasEmbeddedSpeedHackMod, "内置变速示例 mod 资源缺失");
     }
 
     [Fact]
@@ -50,7 +49,7 @@ public sealed class ModManagerTests
 
         // 状态里的列表
         Assert.Single(status.Sdk);
-        Assert.Equal(2, status.Mods.Count); // ActivityLogMod + SpeedHackMod
+        Assert.Single(status.Mods); // ActivityLogMod(变速已是加载器内置功能, 不再是 mod)
         Assert.Contains(status.Mods, m => m.FileName == ModManager.SampleModDllName);
     }
 
@@ -136,12 +135,12 @@ public sealed class ModManagerTests
     {
         using var harness = new ModHarness("ap-mod-delete");
         harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: true);
-        Assert.Equal(2, harness.Manager.GetStatus().Mods.Count);
+        Assert.Single(harness.Manager.GetStatus().Mods);
 
         var removed = harness.Manager.DeleteMod(harness.GameDirectory, ModManager.SampleModDllName);
         Assert.NotNull(removed);
         Assert.Equal(ModManager.SampleModDllName, removed.FileName);
-        Assert.Single(harness.Manager.GetStatus().Mods);
+        Assert.Empty(harness.Manager.GetStatus().Mods);
     }
 
     [Fact]
@@ -305,6 +304,28 @@ public sealed class ModManagerTests
             () => speedhack.Install(harness.GameDirectory, overwriteDll: true));
         Assert.Contains("加载器", ex.Message);
         Assert.Contains("speedhackBaseSpeed", ex.Message);
+    }
+
+    [Fact]
+    public void SetSpeedhack_EnablesAndDisablesViaConfig()
+    {
+        using var harness = new ModHarness("ap-mod-speedhack");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+
+        // 默认 1.0 = 未启用
+        Assert.Equal(1.0, harness.Manager.ReadLoaderConfig(harness.GameDirectory).SpeedhackBaseSpeed);
+
+        // 启用: 2.0
+        harness.Manager.SetSpeedhack(harness.GameDirectory, 2.0);
+        Assert.Equal(2.0, harness.Manager.ReadLoaderConfig(harness.GameDirectory).SpeedhackBaseSpeed);
+
+        // 禁用: 1.0
+        harness.Manager.SetSpeedhack(harness.GameDirectory, 1.0);
+        Assert.Equal(1.0, harness.Manager.ReadLoaderConfig(harness.GameDirectory).SpeedhackBaseSpeed);
+
+        // 非法值拒绝
+        Assert.Throws<InvalidOperationException>(() => harness.Manager.SetSpeedhack(harness.GameDirectory, 0));
+        Assert.Throws<InvalidOperationException>(() => harness.Manager.SetSpeedhack(harness.GameDirectory, 101));
     }
 
     // ============================== 加载器配置 / 权限 / 配置表单 ==============================

@@ -403,6 +403,22 @@ public partial class HybridWindow : Window
                 case "modReadLoaderConfig":
                     Post(new { type = "modLoaderConfig", payload = new { config = _modManager.ReadLoaderConfig(RequireModGameDirectory()) } });
                     break;
+                case "modSaveSpeedhack":
+                    if (root.TryGetProperty("speedhackBaseSpeed", out var modSpeedhackElement))
+                    {
+                        try
+                        {
+                            _modManager.SetSpeedhack(RequireModGameDirectory(), modSpeedhackElement.GetDouble());
+                            Post(new { type = "toast", message = modSpeedhackElement.GetDouble() > 1.0
+                                ? $"已启用变速：{modSpeedhackElement.GetDouble():F1}x（重启游戏生效）"
+                                : "已禁用变速（恢复 1.0 正常速度，重启游戏生效）" });
+                        }
+                        catch (Exception ex)
+                        {
+                            Post(new { type = "toast", message = $"设置变速失败：{ex.Message}" });
+                        }
+                    }
+                    break;
                 case "modSaveLoaderConfig":
                     if (root.TryGetProperty("config", out var modLoaderCfgElement))
                     {
