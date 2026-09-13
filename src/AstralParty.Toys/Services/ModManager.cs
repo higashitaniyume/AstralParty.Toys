@@ -9,21 +9,26 @@ using Microsoft.Win32;
 namespace AstralParty.Toys.Services;
 
 /// <summary>
-/// 游戏 Mod 加载器（winmm.dll DLL 劫持）与 mod 的安装 / 卸载 / 列表管理。
-/// 加载器本体 winmm.dll 与内置 SDK（CesiumLoader.SDK.dll）、示例 mod（ActivityLogMod.dll）
-/// 以「内嵌资源」编译进程序集（AstralParty.Toys.ModLoader.*），
-/// 安装 = 把 winmm.dll 写为游戏 exe 目录下的 winmm.dll（UnityPlayer 启动时加载），
-/// 并创建 AstralParty_ModLoader\{sdk,mods,logs} 目录结构；卸载前校验 DLL 哈希，避免误删他人文件。
+/// 游戏 Mod 加载器（CesiumLoader version.dll Doorstop 式代理）与 mod 的安装 / 卸载 / 列表管理。
+/// 加载器本体 version.dll（Doorstop 式代理，UnityPlayer 导入 version.dll 时被优先加载）与
+/// 内置 SDK（CesiumLoader.SDK.dll）、示例 mod（ActivityLogMod.dll / SpeedHackMod.dll）、
+/// 各 mod 的 sidecar 元数据（*.json）以及 doorstop_config.json 以「内嵌资源」编译进程序集
+/// （AstralParty.Toys.ModLoader.*）。
+/// 安装 = 把 version.dll 写为游戏 exe 目录下的 version.dll，并创建
+/// AstralParty_ModLoader\{sdk,mods,logs} 目录结构 + 写入 doorstop_config.json；
+/// 卸载前校验 DLL 哈希，避免误删他人文件。
 /// </summary>
 public sealed class ModManager
 {
-    public const string LoaderDllName = "winmm.dll";
+    public const string LoaderDllName = "version.dll";
     public const string LoaderFolderName = "AstralParty_ModLoader";
     public const string ModsFolderName = "mods";
     public const string SdkFolderName = "sdk";
     public const string LogsFolderName = "logs";
+    public const string ConfigFileName = "doorstop_config.json";
     public const string SdkDllName = "CesiumLoader.SDK.dll";
     public const string SampleModDllName = "ActivityLogMod.dll";
+    public const string SpeedHackModDllName = "SpeedHackMod.dll";
 
     private const string ResourcePrefix = "AstralParty.Toys.ModLoader.";
 
@@ -51,8 +56,12 @@ public sealed class ModManager
     private static readonly Assembly Assembly = typeof(ModManager).Assembly;
 
     private static readonly byte[]? EmbeddedLoaderDll = ReadEmbeddedResource(LoaderDllName);
+    private static readonly byte[]? EmbeddedConfig = ReadEmbeddedResource(ConfigFileName);
     private static readonly byte[]? EmbeddedSdkDll = ReadEmbeddedResource(SdkDllName);
     private static readonly byte[]? EmbeddedSampleModDll = ReadEmbeddedResource(SampleModDllName);
+    private static readonly byte[]? EmbeddedSpeedHackModDll = ReadEmbeddedResource(SpeedHackModDllName);
+    private static readonly byte[]? EmbeddedSampleSidecar = ReadEmbeddedResource(SampleModDllName.Replace(".dll", ".json"));
+    private static readonly byte[]? EmbeddedSpeedHackSidecar = ReadEmbeddedResource(SpeedHackModDllName.Replace(".dll", ".json"));
     private static readonly string? EmbeddedLoaderHash = EmbeddedLoaderDll is null
         ? null
         : Convert.ToHexString(SHA256.HashData(EmbeddedLoaderDll));
@@ -77,8 +86,10 @@ public sealed class ModManager
     }
 
     public static bool HasEmbeddedLoader => EmbeddedLoaderDll is not null;
+    public static bool HasEmbeddedConfig => EmbeddedConfig is not null;
     public static bool HasEmbeddedSdk => EmbeddedSdkDll is not null;
     public static bool HasEmbeddedSampleMod => EmbeddedSampleModDll is not null;
+    public static bool HasEmbeddedSpeedHackMod => EmbeddedSpeedHackModDll is not null;
 
     private string StateFilePath => Path.Combine(_profileDirectory, "modloader-state.json");
 
@@ -90,8 +101,10 @@ public sealed class ModManager
         try
         {
             status.BundleLoaderPresent = HasEmbeddedLoader;
+            status.BundleConfigPresent = HasEmbeddedConfig;
             status.BundleSdkPresent = HasEmbeddedSdk;
             status.BundleSampleModPresent = HasEmbeddedSampleMod;
+            status.BundleSpeedHackModPresent = HasEmbeddedSpeedHackMod;
 
             var directory = GetStoredGameDirectory();
             if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
@@ -146,7 +159,7 @@ public sealed class ModManager
     private string BuildStatusMessage(ModStatus status)
     {
         if (!HasEmbeddedLoader)
-            return "程序集缺少内置加载器资源（ModLoader.winmm.dll），请重新编译发布版本。";
+            return "程序集缺少内置加载器资源（ModLoader.version.dll），请重新编译发布版本。";
         if (string.IsNullOrEmpty(status.GameDirectory))
             return "尚未找到游戏目录：可点击「选择游戏目录」手动指定安装位置。";
         if (!Directory.Exists(status.GameDirectory))
@@ -156,7 +169,7 @@ public sealed class ModManager
         if (status.Installed)
             return status.LoaderMatchesBundle
                 ? $"已安装（{status.GameDirectory}），mod 目录 {ModsFolderName}\\ 中有 {status.Mods.Count} 个 mod。"
-                : "游戏目录存在其它 winmm.dll（与内置文件不同）——覆盖或卸载前请先确认来源。";
+                : "游戏目录存在其它 version.dll（与内置文件不同）——覆盖或卸载前请先确认来源。";
         return "尚未安装：点击「安装加载器」把文件复制到游戏目录。";
     }
 
@@ -176,7 +189,8 @@ public sealed class ModManager
                     SizeBytes = info.Length,
                     ModifiedUtc = info.LastWriteTimeUtc
                 };
-                // 同名 .json manifest(由 SDK SdkManifest.ExportSidecar 写出): {name,version,author,description}
+                // 同名 sidecar(由 SDK SdkManifest.ExportSidecar / 脚手架 cesium new 写出):
+                // {id,name,version,author,description,permissions,sdkVersion,dependencies}
                 var sidecar = Path.ChangeExtension(file, ".json");
                 if (File.Exists(sidecar))
                 {
@@ -184,14 +198,28 @@ public sealed class ModManager
                     {
                         using var doc = JsonDocument.Parse(File.ReadAllText(sidecar));
                         var root = doc.RootElement;
+                        entry.Id = root.TryGetProperty("id", out var i) ? i.GetString() ?? "" : "";
                         entry.DisplayName = root.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
                         entry.Version = root.TryGetProperty("version", out var v) ? v.GetString() ?? "" : "";
                         entry.Author = root.TryGetProperty("author", out var a) ? a.GetString() ?? "" : "";
                         entry.Description = root.TryGetProperty("description", out var d) ? d.GetString() ?? "" : "";
+                        entry.SdkVersion = root.TryGetProperty("sdkVersion", out var s) ? s.GetString() ?? "" : "";
+                        entry.Permissions = root.TryGetProperty("permissions", out var p) && p.ValueKind == JsonValueKind.Number
+                            ? p.GetInt32() : 0;
+                        if (root.TryGetProperty("dependencies", out var deps) && deps.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var dep in deps.EnumerateArray())
+                            {
+                                var id = dep.TryGetProperty("id", out var dId) ? dId.GetString() ?? "" : "";
+                                var minV = dep.TryGetProperty("minVersion", out var dMin) ? dMin.GetString() ?? "" : "";
+                                if (!string.IsNullOrEmpty(id))
+                                    entry.Dependencies.Add(new ModDependencyInfo { Id = id, MinVersion = minV });
+                            }
+                        }
                     }
                     catch
                     {
-                        // manifest 损坏按无 manifest 处理
+                        // sidecar 损坏按无 sidecar 处理
                     }
                 }
                 list.Add(entry);
@@ -207,22 +235,22 @@ public sealed class ModManager
     // ============================== 安装 / 卸载 ==============================
 
     public static string DescribeRunningInstall() =>
-        "游戏正在运行时也能装：winmm.dll 由游戏启动时加载，本次写进去要重启游戏才会生效；" +
-        "而且正在运行的游戏往往占用着 winmm.dll，覆盖会失败并提示文件被占用——那样就先完全退出游戏再装。";
+        "游戏正在运行时也能装：version.dll 由游戏启动时加载，本次写进去要重启游戏才会生效；" +
+        "而且正在运行的游戏往往占用着 version.dll，覆盖会失败并提示文件被占用——那样就先完全退出游戏再装。";
 
     public static string DescribeRunningUninstall() =>
-        "游戏正在运行时也能卸：winmm.dll 已被游戏加载占用，删除通常会失败并提示文件被占用；" +
+        "游戏正在运行时也能卸：version.dll 已被游戏加载占用，删除通常会失败并提示文件被占用；" +
         "即使删除成功，当前这局也已经加载了加载器，要重启游戏才会恢复正常。";
 
     public static string DescribeInstalled() => SpeedhackManager.IsGameRunning()
         ? "加载器文件已写入游戏目录。游戏正在运行，本次不会立刻生效——重启游戏后才会加载 mod。"
         : "加载器已安装到游戏目录。启动游戏后会自动加载 mods\\ 目录下的所有 mod，并在控制台窗口显示日志。";
 
-    /// <summary>把内嵌文件写入游戏目录 + 创建目录结构。winmm.dll 目标已存在且不是内置文件时，必须 overwriteDll 才会覆盖。</summary>
+    /// <summary>把内嵌文件写入游戏目录 + 创建目录结构。version.dll 目标已存在且不是内置文件时，必须 overwriteDll 才会覆盖。</summary>
     public void Install(string gameDirectory, bool overwriteDll, bool includeSampleMod)
     {
         if (!HasEmbeddedLoader)
-            throw new InvalidOperationException("程序集缺少内置加载器资源（winmm.dll），无法安装。");
+            throw new InvalidOperationException("程序集缺少内置加载器资源（version.dll），无法安装。");
         if (string.IsNullOrWhiteSpace(gameDirectory))
             throw new ArgumentException("请先选择游戏目录。");
         if (!Directory.Exists(gameDirectory))
@@ -233,7 +261,7 @@ public sealed class ModManager
         var targetDll = Path.Combine(gameDirectory, LoaderDllName);
         if (File.Exists(targetDll) && !MatchesEmbeddedLoader(targetDll) && !overwriteDll)
             throw new InvalidOperationException(
-                "游戏目录已存在一个与内置不同的 winmm.dll（可能是其它工具的）——如确定要覆盖，请勾选「允许覆盖其它 winmm.dll」。");
+                "游戏目录已存在一个与内置不同的 version.dll（可能是其它工具的，如旧版独立变速器）——如确定要覆盖，请勾选「允许覆盖其它 version.dll」。");
 
         try
         {
@@ -245,25 +273,39 @@ public sealed class ModManager
             Directory.CreateDirectory(Path.Combine(loaderRoot, SdkFolderName));
             Directory.CreateDirectory(Path.Combine(loaderRoot, LogsFolderName));
 
+            // doorstop_config.json（加载器配置：enabled / 变速基础倍率 / SDK 版本等）
+            if (HasEmbeddedConfig)
+                WriteAllBytesProtected(Path.Combine(loaderRoot, ConfigFileName), EmbeddedConfig!);
+
             // 内置 SDK
             if (HasEmbeddedSdk)
                 WriteAllBytesProtected(Path.Combine(loaderRoot, SdkFolderName, SdkDllName), EmbeddedSdkDll!);
 
-            // 示例 mod（可选）
+            // 示例 mod（可选）：DLL + sidecar 元数据（依赖解析/权限/版本协商需要 sidecar）
             if (includeSampleMod && HasEmbeddedSampleMod)
+            {
                 WriteAllBytesProtected(Path.Combine(loaderRoot, ModsFolderName, SampleModDllName), EmbeddedSampleModDll!);
+                if (EmbeddedSampleSidecar is not null)
+                    WriteAllBytesProtected(Path.Combine(loaderRoot, ModsFolderName, SampleModDllName.Replace(".dll", ".json")), EmbeddedSampleSidecar);
+                if (HasEmbeddedSpeedHackMod)
+                {
+                    WriteAllBytesProtected(Path.Combine(loaderRoot, ModsFolderName, SpeedHackModDllName), EmbeddedSpeedHackModDll!);
+                    if (EmbeddedSpeedHackSidecar is not null)
+                        WriteAllBytesProtected(Path.Combine(loaderRoot, ModsFolderName, SpeedHackModDllName.Replace(".dll", ".json")), EmbeddedSpeedHackSidecar);
+                }
+            }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             throw new IOException(
                 $"写入游戏目录失败：{ex.Message}。" +
-                (SpeedhackManager.IsGameRunning() ? "游戏正在运行时 winmm.dll 会被占用，无法覆盖——请完全退出游戏后再安装。" : ""), ex);
+                (SpeedhackManager.IsGameRunning() ? "游戏正在运行时 version.dll 会被占用，无法覆盖——请完全退出游戏后再安装。" : ""), ex);
         }
 
         SaveStoredGameDirectory(gameDirectory);
     }
 
-    /// <summary>从游戏目录删除 winmm.dll 与 AstralParty_ModLoader 目录。DLL 与内置不一致时默认拒绝，force 才删除。</summary>
+    /// <summary>从游戏目录删除 version.dll 与 AstralParty_ModLoader 目录。DLL 与内置不一致时默认拒绝，force 才删除。</summary>
     public UninstallResult Uninstall(string gameDirectory, bool force)
     {
         if (string.IsNullOrWhiteSpace(gameDirectory) || !Directory.Exists(gameDirectory))
@@ -279,7 +321,7 @@ public sealed class ModManager
 
         if (dllExists && !MatchesEmbeddedLoader(dllPath) && !force)
             throw new InvalidOperationException(
-                "该 winmm.dll 与内置文件不同，可能不是本工具安装的——未删除任何文件。如确认要删除请勾选「强制卸载」。");
+                "该 version.dll 与内置文件不同，可能不是本工具安装的——未删除任何文件。如确认要删除请勾选「强制卸载」。");
 
         var result = new UninstallResult();
         if (dllExists)
@@ -291,7 +333,7 @@ public sealed class ModManager
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 throw new IOException(
-                    $"删除 winmm.dll 失败：{ex.Message}。" +
+                    $"删除 version.dll 失败：{ex.Message}。" +
                     (SpeedhackManager.IsGameRunning()
                         ? "游戏正在运行时该文件已被加载占用，请完全退出游戏后再卸载（本次没有改动任何文件）。"
                         : "请检查文件权限后重试（本次没有改动任何文件）。"), ex);
@@ -307,7 +349,7 @@ public sealed class ModManager
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                result.Message = $"winmm.dll 已删除，但 {LoaderFolderName} 目录删除失败：{ex.Message}（可能仍有文件被占用）。";
+                result.Message = $"version.dll 已删除，但 {LoaderFolderName} 目录删除失败：{ex.Message}（可能仍有文件被占用）。";
                 return result;
             }
         }
@@ -402,9 +444,11 @@ public sealed class ModManager
 
         var requiredRelative = new[]
         {
-            "winmm.dll",
+            "version.dll",
+            "AstralParty_ModLoader/doorstop_config.json",
             "AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll",
-            "AstralParty_ModLoader/mods/ActivityLogMod.dll"
+            "AstralParty_ModLoader/mods/ActivityLogMod.dll",
+            "AstralParty_ModLoader/mods/ActivityLogMod.json"
         };
 
         foreach (var relative in requiredRelative)
@@ -422,7 +466,7 @@ public sealed class ModManager
         }
     }
 
-    /// <summary>把发布包内容写入游戏目录（winmm.dll + sdk + 示例 mod + 清单）。游戏运行中覆盖 winmm.dll 会因占用失败。</summary>
+    /// <summary>把发布包内容写入游戏目录（version.dll + doorstop_config + sdk + mods + sidecar + 清单）。游戏运行中覆盖 version.dll 会因占用失败。</summary>
     public void InstallPackage(string gameDirectory, byte[] zipBytes, bool overwriteDll)
     {
         if (string.IsNullOrWhiteSpace(gameDirectory))
@@ -439,7 +483,7 @@ public sealed class ModManager
         var targetDll = Path.Combine(gameDirectory, LoaderDllName);
         if (File.Exists(targetDll) && !MatchesEmbeddedLoader(targetDll) && !overwriteDll)
             throw new InvalidOperationException(
-                "游戏目录已存在一个与内置不同的 winmm.dll（可能是其它工具的）——如确定要覆盖，请勾选「允许覆盖其它 winmm.dll」。");
+                "游戏目录已存在一个与内置不同的 version.dll（可能是其它工具的，如旧版独立变速器）——如确定要覆盖，请勾选「允许覆盖其它 version.dll」。");
 
         try
         {
@@ -451,11 +495,19 @@ public sealed class ModManager
             Directory.CreateDirectory(Path.Combine(loaderRoot, SdkFolderName));
             Directory.CreateDirectory(Path.Combine(loaderRoot, LogsFolderName));
 
-            ExtractEntryToFile(archive, "winmm.dll", targetDll);
+            // version.dll → 游戏 exe 目录（Doorstop 代理）
+            ExtractEntryToFile(archive, "version.dll", targetDll);
+            // doorstop_config.json → AstralParty_ModLoader\
+            ExtractEntryToFile(archive, "AstralParty_ModLoader/doorstop_config.json",
+                Path.Combine(loaderRoot, ConfigFileName));
+            // SDK
             ExtractEntryToFile(archive, "AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll",
                 Path.Combine(loaderRoot, SdkFolderName, SdkDllName));
+            // 示例 mod: DLL + sidecar
             ExtractEntryToFile(archive, "AstralParty_ModLoader/mods/ActivityLogMod.dll",
                 Path.Combine(loaderRoot, ModsFolderName, SampleModDllName));
+            ExtractEntryToFile(archive, "AstralParty_ModLoader/mods/ActivityLogMod.json",
+                Path.Combine(loaderRoot, ModsFolderName, SampleModDllName.Replace(".dll", ".json")));
 
             // 写入安装清单（记录版本，供 GetStatus 显示/对比）
             var manifestEntry = archive.GetEntry(InstalledManifestFileName);
@@ -469,7 +521,7 @@ public sealed class ModManager
         {
             throw new IOException(
                 $"写入游戏目录失败：{ex.Message}。" +
-                (SpeedhackManager.IsGameRunning() ? "游戏正在运行时 winmm.dll 会被占用，无法覆盖——请完全退出游戏后再更新。" : ""), ex);
+                (SpeedhackManager.IsGameRunning() ? "游戏正在运行时 version.dll 会被占用，无法覆盖——请完全退出游戏后再更新。" : ""), ex);
         }
 
         SaveStoredGameDirectory(gameDirectory);
@@ -602,8 +654,10 @@ public sealed class ModManager
 public sealed class ModStatus
 {
     public bool BundleLoaderPresent { get; set; }
+    public bool BundleConfigPresent { get; set; }
     public bool BundleSdkPresent { get; set; }
     public bool BundleSampleModPresent { get; set; }
+    public bool BundleSpeedHackModPresent { get; set; }
     public string GameDirectory { get; set; } = "";
     public string AutoDetectedDirectory { get; set; } = "";
     public bool GameExeFound { get; set; }
@@ -635,11 +689,30 @@ public sealed class ModEntryInfo
     public long SizeBytes { get; set; }
     public DateTime ModifiedUtc { get; set; }
 
-    /// <summary>manifest 声明的显示名(mod DLL 旁同名 .json 的 name 字段, 由 SDK 的 SdkManifest.ExportSidecar 写出)。</summary>
+    /// <summary>sidecar 的 id（= 程序集名，依赖解析的 key）。</summary>
+    public string Id { get; set; } = "";
+
+    /// <summary>sidecar 声明的显示名(mod DLL 旁同名 .json 的 name 字段, 由 SDK 的 SdkManifest.ExportSidecar / cesium CLI 写出)。</summary>
     public string DisplayName { get; set; } = "";
     public string Version { get; set; } = "";
     public string Author { get; set; } = "";
     public string Description { get; set; } = "";
+
+    /// <summary>需要的 SDK 最低版本（API 版本协商用）。</summary>
+    public string SdkVersion { get; set; } = "";
+
+    /// <summary>权限位掩码（与 C# ModPermission 枚举一致: 1=ReadGameState 2=GameActions 4=SpeedHack 8=FileWrite）。</summary>
+    public int Permissions { get; set; }
+
+    /// <summary>依赖的其他 mod（id + 可选最低版本）。</summary>
+    public List<ModDependencyInfo> Dependencies { get; set; } = new();
+}
+
+/// <summary>sidecar 里声明的依赖项。</summary>
+public sealed class ModDependencyInfo
+{
+    public string Id { get; set; } = "";
+    public string MinVersion { get; set; } = "";
 }
 
 /// <summary>CesiumLoader 发布包清单（cesium-loader.json）。</summary>

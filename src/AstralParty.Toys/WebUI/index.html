@@ -414,10 +414,10 @@
               </div>
               <div class="util-check-row">
                 <input type="checkbox" id="modUpdateOverwriteCheck">
-                <label for="modUpdateOverwriteCheck">更新时允许覆盖游戏目录里其它 winmm.dll</label>
+                <label for="modUpdateOverwriteCheck">更新时允许覆盖游戏目录里其它 version.dll</label>
               </div>
 
-              <span class="util-section-label">游戏目录（winmm.dll 加载器的安装位置）</span>
+              <span class="util-section-label">游戏目录（version.dll 加载器的安装位置）</span>
               <div class="util-path-box">
                 <span class="path-value placeholder" id="modGameDirText">尚未选择游戏目录</span>
                 <button class="secondary-btn" id="modDetectDirBtn" style="padding:5px 12px;font-size:12px">自动检测</button>
@@ -427,15 +427,15 @@
 
               <div class="util-check-row">
                 <input type="checkbox" id="modOverwriteCheck">
-                <label for="modOverwriteCheck">允许覆盖游戏目录里其它 winmm.dll（用于强行更新安装）</label>
+                <label for="modOverwriteCheck">允许覆盖游戏目录里其它 version.dll（用于强行更新安装）</label>
               </div>
               <div class="util-check-row">
                 <input type="checkbox" id="modIncludeSampleCheck" checked>
-                <label for="modIncludeSampleCheck">同时安装内置 SDK 与示例 mod（ActivityLogMod，行为日志）</label>
+                <label for="modIncludeSampleCheck">同时安装内置 SDK 与示例 mod（行为日志 / 游戏变速，含 sidecar 元数据）</label>
               </div>
               <div class="util-check-row">
                 <input type="checkbox" id="modForceUninstallCheck">
-                <label for="modForceUninstallCheck">强制卸载（winmm.dll 与内置不一致时也删除）</label>
+                <label for="modForceUninstallCheck">强制卸载（version.dll 与内置不一致时也删除）</label>
               </div>
 
               <div class="util-btn-row">
@@ -449,9 +449,10 @@
               <div class="util-note-box">
                 <span class="util-note-title">📖 说明</span>
                 <ul>
-                  <li>原理：把内置 <span class="util-mono">winmm.dll</span> 放到游戏 exe 旁边，游戏启动时由 UnityPlayer 自动加载（DLL 劫持），随后加载 <span class="util-mono">AstralParty_ModLoader\mods\</span> 下所有 mod，并在控制台窗口显示日志。不会修改游戏文件，也不影响 <span class="util-mono">version.dll</span>（变速器）。</li>
-                  <li>mod 是引用 CesiumLoader.SDK 开发的 .NET DLL（事件订阅 + 数据读取），编译后放进 <span class="util-mono">mods\</span> 目录即被自动加载。下方列表显示当前 mods\ 与 sdk\ 目录内容。</li>
-                  <li>游戏运行中也能安装/卸载，但 winmm.dll 被占用时写入/删除会失败——那种情况先完全退出游戏再操作。</li>
+                  <li>原理：把内置 <span class="util-mono">version.dll</span>（CesiumLoader Doorstop 式代理）放到游戏 exe 旁边，游戏启动时由 UnityPlayer 自动加载，随后读取 <span class="util-mono">AstralParty_ModLoader\doorstop_config.json</span>、加载 <span class="util-mono">sdk\</span> 与 <span class="util-mono">mods\</span> 下所有 mod，并在控制台窗口显示日志。不会修改游戏文件。</li>
+                  <li>加载器按 mod 旁的 sidecar（<span class="util-mono">*.json</span>）做依赖拓扑排序与 API 版本协商；敏感能力（游戏操作 / 变速）默认关闭，需 mod 在 sidecar 声明权限（可用 <span class="util-mono">*.permissions.json</span> 覆盖）。</li>
+                  <li>mod 是引用 CesiumLoader.SDK 开发的 .NET DLL（事件订阅 + 数据读取），编译后连同 sidecar 放进 <span class="util-mono">mods\</span> 目录即被自动加载。下方列表显示当前 mods\ 与 sdk\ 目录内容。</li>
+                  <li>游戏运行中也能安装/卸载，但 version.dll 被占用时写入/删除会失败——那种情况先完全退出游戏再操作。</li>
                 </ul>
               </div>
 

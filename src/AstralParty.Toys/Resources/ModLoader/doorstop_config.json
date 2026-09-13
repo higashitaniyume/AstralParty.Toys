@@ -1,0 +1,23 @@
+{
+  // Doorstop 式配置 —— 加载器(version.dll)启动时读取
+  // 所有字段可选, 缺失/损坏时使用默认值, 不会阻止游戏启动
+  "enabled": true,
+  // 编排层: false=原生加载 sdk/mods(默认,可靠); true=托管 Bootstrap 编排(实验,
+  // HybridCLR 会裁剪部分反射 API 如 Assembly.GetType, 托管编排可能不可用)
+  "useManagedBootstrap": false,
+  "bootstrapAssembly": "CesiumLoader.Bootstrap.dll",
+  "bootstrapType": "CesiumLoader.Bootstrap.Bootstrap",
+  "bootstrapMethod": "Main",
+  "gameAssemblyTimeoutSec": 60,
+  "domainTimeoutSec": 30,
+  "hybridclrTimeoutSec": 60,
+  "consoleEnabled": true,
+  "consoleTopmost": true,
+  "forwardActivityLog": true,
+  // 变速引擎基础倍率: 游戏启动即应用, 全程保持。1.0=正常(默认), 2.0=全程2倍速。
+  // 范围 (0,100]; 设 1.0 或省略 = 不启用(可用 SpeedHackMod 热键临时变速)。
+  "speedhackBaseSpeed": 1.0,
+  // 当前分发的 SDK 版本(SemVer): 加载器用它校验 mod 声明的 SdkVersion,
+  // 不兼容时拒绝加载该 mod。升级 SDK 时同步更新此字段。
+  "sdkVersion": "2.0.0"
+}

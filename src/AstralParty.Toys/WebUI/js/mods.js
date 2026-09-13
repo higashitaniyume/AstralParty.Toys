@@ -81,7 +81,7 @@
       if (!status.bundleLoaderPresent) {
         badge.textContent = '缺少内置文件';
         badge.className = 'badge badge-notice';
-        title.textContent = '程序缺少加载器文件（winmm.dll）';
+        title.textContent = '程序缺少加载器文件（version.dll）';
       } else if (installedOk) {
         badge.textContent = running ? '已安装 · 游戏运行中' : '已安装';
         badge.className = 'badge badge-update';
@@ -91,7 +91,7 @@
       } else if (status.installed) {
         badge.textContent = '文件不一致';
         badge.className = 'badge badge-notice';
-        title.textContent = '目录里是其它 winmm.dll';
+        title.textContent = '目录里是其它 version.dll';
       } else {
         badge.textContent = running ? '未安装 · 游戏运行中' : '未安装';
         badge.className = 'badge badge-event';
@@ -142,9 +142,13 @@
         const title = entry.displayName || entry.name;
         const ver = entry.version ? ` v${esc(entry.version)}` : '';
         const author = entry.author ? ` · ${esc(entry.author)}` : '';
+        const sdk = entry.sdkVersion ? ` · SDK ${esc(entry.sdkVersion)}` : '';
+        const perms = kind === 'mod' && entry.permissions ? ` · 权限 ${permLabel(entry.permissions)}` : '';
+        const deps = kind === 'mod' && entry.dependencies && entry.dependencies.length
+          ? ` · 依赖 ${entry.dependencies.map(d => esc(d.id) + (d.minVersion ? '≥' + esc(d.minVersion) : '')).join(', ')}` : '';
         const desc = entry.description ? `<span class="mod-desc">${esc(entry.description)}</span>` : '';
         return `<div class="mod-list-item">
-          <span class="mod-name" title="${esc(entry.fileName)}">${esc(title)}${ver}${author}</span>
+          <span class="mod-name" title="${esc(entry.fileName)}">${esc(title)}${ver}${author}${sdk}${perms}${deps}</span>
           <span class="mod-meta">${size}${time ? ' · ' + esc(time) : ''}</span>
           ${desc}
           ${delBtn}
@@ -153,6 +157,16 @@
       container.innerHTML = nodes.join('');
     }
   };
+
+  // 权限位掩码 → 可读名（与 C# ModPermission 枚举一致: 1=ReadGameState 2=GameActions 4=SpeedHack 8=FileWrite）
+  function permLabel(mask) {
+    const names = [];
+    const map = [[1, '读对局'], [2, '操作'], [4, '变速'], [8, '写文件']];
+    for (const [bit, label] of map) {
+      if ((mask & bit) === bit) names.push(label);
+    }
+    return names.length ? names.join('|') : String(mask);
+  }
 
   function fmtBytes(bytes) {
     const value = Number(bytes ?? 0);
