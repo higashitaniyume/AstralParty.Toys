@@ -403,6 +403,17 @@ public partial class HybridWindow : Window
                 case "modReadLoaderConfig":
                     Post(new { type = "modLoaderConfig", payload = new { config = _modManager.ReadLoaderConfig(RequireModGameDirectory()) } });
                     break;
+                case "modSyncSpeedhack":
+                    // 进入 mod 页时同步变速栏状态(不弹窗口)
+                    try
+                    {
+                        Post(new { type = "modSpeedhackSync", payload = new { config = _modManager.ReadLoaderConfig(RequireModGameDirectory()) } });
+                    }
+                    catch
+                    {
+                        // 未选游戏目录等: 忽略, 变速栏保持默认
+                    }
+                    break;
                 case "modSaveSpeedhack":
                     if (root.TryGetProperty("speedhackBaseSpeed", out var modSpeedhackElement))
                     {

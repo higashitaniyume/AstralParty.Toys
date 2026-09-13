@@ -328,6 +328,36 @@ public sealed class ModManagerTests
         Assert.Throws<InvalidOperationException>(() => harness.Manager.SetSpeedhack(harness.GameDirectory, 101));
     }
 
+    [Fact]
+    public void Install_PreservesExistingUserConfig()
+    {
+        using var harness = new ModHarness("ap-mod-preserve-cfg");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+
+        // 用户设置变速 2.0
+        harness.Manager.SetSpeedhack(harness.GameDirectory, 2.0);
+        Assert.Equal(2.0, harness.Manager.ReadLoaderConfig(harness.GameDirectory).SpeedhackBaseSpeed);
+
+        // 重新安装加载器 → doorstop_config 必须保留(不重置用户设置)
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: true);
+        Assert.Equal(2.0, harness.Manager.ReadLoaderConfig(harness.GameDirectory).SpeedhackBaseSpeed);
+    }
+
+    [Fact]
+    public void InstallPackage_PreservesExistingUserConfig()
+    {
+        using var harness = new ModHarness("ap-mod-pkg-preserve");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+
+        // 用户设置变速 2.0
+        harness.Manager.SetSpeedhack(harness.GameDirectory, 2.0);
+
+        // 从发布包更新(包内 doorstop 模板是 1.0) → 必须保留用户的 2.0
+        var bytes = BuildFakePackage("5.0.0");
+        harness.Manager.InstallPackage(harness.GameDirectory, bytes, overwriteDll: true);
+        Assert.Equal(2.0, harness.Manager.ReadLoaderConfig(harness.GameDirectory).SpeedhackBaseSpeed);
+    }
+
     // ============================== 加载器配置 / 权限 / 配置表单 ==============================
 
     [Fact]
