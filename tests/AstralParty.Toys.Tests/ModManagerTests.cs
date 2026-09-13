@@ -401,6 +401,40 @@ public sealed class ModManagerTests
     }
 
     [Fact]
+    public void LoaderConfig_DeserializesFromCamelCaseWebMessage()
+    {
+        // 模拟 Web 前端发的 camelCase JSON（HybridWindow 用 WebReadOptions 反序列化）
+        // 关键: 大小写不敏感映射, 否则 consoleTopmost=false 无法映射到 ConsoleTopmost
+        var json = "{\"enabled\":true,\"consoleTopmost\":false,\"speedhackBaseSpeed\":2.5,\"gameAssemblyTimeoutSec\":90}";
+        var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var config = System.Text.Json.JsonSerializer.Deserialize<LoaderConfig>(json, options)!;
+
+        Assert.True(config.Enabled);
+        Assert.False(config.ConsoleTopmost);
+        Assert.Equal(2.5, config.SpeedhackBaseSpeed);
+        Assert.Equal(90, config.GameAssemblyTimeoutSec);
+
+        // 无该选项时 camelCase 无法映射(回归保护)
+        var strict = System.Text.Json.JsonSerializer.Deserialize<LoaderConfig>(json)!;
+        Assert.True(strict.ConsoleTopmost, "大小写敏感时 consoleTopmost 应保持默认 true(证明测试有效)");
+    }
+
+    [Fact]
+    public void ModConfigFields_DeserializesFromCamelCaseWebMessage()
+    {
+        var json = "[{\"name\":\"Enabled\",\"kind\":\"bool\",\"boolValue\":false},{\"name\":\"BaseSpeed\",\"kind\":\"number\",\"numberValue\":1.5}]";
+        var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var fields = System.Text.Json.JsonSerializer.Deserialize<List<ModConfigField>>(json, options)!;
+
+        Assert.Equal(2, fields.Count);
+        Assert.Equal("Enabled", fields[0].Name);
+        Assert.Equal("bool", fields[0].Kind);
+        Assert.False(fields[0].BoolValue);
+        Assert.Equal("BaseSpeed", fields[1].Name);
+        Assert.Equal(1.5, fields[1].NumberValue);
+    }
+
+    [Fact]
     public void PermissionsOverride_GrantDenyAndReadBack()
     {
         using var harness = new ModHarness("ap-mod-perms");

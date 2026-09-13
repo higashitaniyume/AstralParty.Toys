@@ -390,7 +390,7 @@ public partial class HybridWindow : Window
                     {
                         try
                         {
-                            var fields = modCfgSaveFields.Deserialize<List<ModConfigField>>() ?? new();
+                            var fields = modCfgSaveFields.Deserialize<List<ModConfigField>>(WebReadOptions) ?? new();
                             _modManager.SaveModConfigFields(RequireModGameDirectory(), modCfgSaveName, fields);
                             Post(new { type = "toast", message = $"已保存配置：{modCfgSaveName}" });
                         }
@@ -435,7 +435,7 @@ public partial class HybridWindow : Window
                     {
                         try
                         {
-                            var config = modLoaderCfgElement.Deserialize<LoaderConfig>() ?? new LoaderConfig();
+                            var config = modLoaderCfgElement.Deserialize<LoaderConfig>(WebReadOptions) ?? new LoaderConfig();
                             _modManager.SaveLoaderConfig(RequireModGameDirectory(), config);
                             Post(new { type = "toast", message = "已保存加载器设置（重启游戏生效）" });
                         }
