@@ -445,42 +445,6 @@ public partial class HybridWindow : Window
                         }
                     }
                     break;
-                case "modReadPermissions":
-                    if (root.TryGetProperty("fileName", out var modPermElement) &&
-                        modPermElement.GetString() is { Length: > 0 } modPermName)
-                    {
-                        var dir = RequireModGameDirectory();
-                        Post(new
-                        {
-                            type = "modPermissions",
-                            payload = new
-                            {
-                                fileName = modPermName,
-                                declared = _modManager.GetStatus().Mods.FirstOrDefault(m => m.FileName == modPermName)?.Permissions ?? 0,
-                                overridden = _modManager.ReadPermissionsOverride(dir, modPermName)
-                            }
-                        });
-                    }
-                    break;
-                case "modSavePermissions":
-                    if (root.TryGetProperty("fileName", out var modPermSaveElement) &&
-                        modPermSaveElement.GetString() is { Length: > 0 } modPermSaveName &&
-                        root.TryGetProperty("granted", out var modPermGranted) &&
-                        root.TryGetProperty("denied", out var modPermDenied))
-                    {
-                        try
-                        {
-                            _modManager.SavePermissionsOverride(
-                                RequireModGameDirectory(), modPermSaveName,
-                                modPermGranted.GetInt32(), modPermDenied.GetInt32());
-                            Post(new { type = "toast", message = $"已保存权限设置：{modPermSaveName}（重启游戏生效）" });
-                        }
-                        catch (Exception ex)
-                        {
-                            Post(new { type = "toast", message = $"保存权限失败：{ex.Message}" });
-                        }
-                    }
-                    break;
                 case "modCheckUpdate":
                     _ = HandleModCheckUpdateAsync();
                     break;

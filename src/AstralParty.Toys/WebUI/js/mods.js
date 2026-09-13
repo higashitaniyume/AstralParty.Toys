@@ -73,11 +73,6 @@
           if (fileName) this.openModConfig(fileName);
           return;
         }
-        const perm = e.target.closest('.mod-perm-btn');
-        if (perm) {
-          const fileName = perm.dataset.permFile;
-          if (fileName) this.openPermissions(fileName);
-        }
       });
       // mod 启用/禁用开关（change 事件）
       $('modListContainer')?.addEventListener('change', e => {
@@ -171,22 +166,23 @@
         const ver = entry.version ? ` v${esc(entry.version)}` : '';
         const author = entry.author ? ` · ${esc(entry.author)}` : '';
         const sdk = entry.sdkVersion ? ` · SDK ${esc(entry.sdkVersion)}` : '';
-        const perms = kind === 'mod' && entry.permissions ? ` · 权限 ${permLabel(entry.permissions)}` : '';
+        // 警告: 声明了"操作游戏"(GameActions=2)能力的 mod —— 仅提示, 不阻止(权限机制已取消)
+        const warning = kind === 'mod' && (entry.permissions & 2)
+          ? `<span class="mod-warning" title="此 mod 声明可操作游戏（模拟出牌/掷骰/移动等）。权限机制已取消，仅提示：请确认 mod 来源可信">⚠️ 可操作游戏</span>` : '';
         const deps = kind === 'mod' && entry.dependencies && entry.dependencies.length
           ? ` · 依赖 ${entry.dependencies.map(d => esc(d.id) + (d.minVersion ? '≥' + esc(d.minVersion) : '')).join(', ')}` : '';
         const desc = entry.description ? `<span class="mod-desc">${esc(entry.description)}</span>` : '';
-        // 启用/禁用开关 + 配置/权限按钮(仅 mod)
+        // 启用/禁用开关 + 配置按钮(仅 mod)
         const controls = kind === 'mod' ? `
           <span class="mod-controls">
             <label class="mod-toggle" title="启用/禁用（重启游戏后生效）">
               <input type="checkbox" data-toggle-file="${esc(entry.fileName)}" ${entry.enabled !== false ? 'checked' : ''}>
               <span>${entry.enabled !== false ? '启用' : '禁用'}</span>
             </label>
-            <button class="mod-perm-btn" data-perm-file="${esc(entry.fileName)}" title="设置权限（敏感能力开关）">🔑</button>
             <button class="mod-config-btn" data-config-file="${esc(entry.fileName)}" title="修改 mod 配置">⚙</button>
           </span>` : '';
         return `<div class="mod-list-item${entry.enabled === false ? ' mod-disabled' : ''}">
-          <span class="mod-name" title="${esc(entry.fileName)}">${esc(title)}${ver}${author}${sdk}${perms}${deps}</span>
+          <span class="mod-name" title="${esc(entry.fileName)}">${esc(title)}${ver}${author}${sdk}${warning}${deps}</span>
           <span class="mod-meta">${size}${time ? ' · ' + esc(time) : ''}</span>
           ${desc}
           ${controls}
@@ -322,52 +318,6 @@
       };
     },
 
-    // ---------- mod 权限弹窗（*.permissions.json 可视化编辑） ----------
-
-    openPermissions(fileName) {
-      post({ type: 'modReadPermissions', fileName });
-    },
-
-    renderPermissions(data) {
-      if (!data) return;
-      const bits = [
-        [1, '读对局', '读取对局状态、玩家数据、事件流（只读，默认可用）'],
-        [2, '操作', '模拟操作（出牌/掷骰/移动等，敏感，默认拒绝）'],
-        [4, '变速', '加载器内置功能：用模组页「游戏变速」开关控制，无需权限（此处可强制拒绝）'],
-        [8, '写文件', '写入游戏目录外的文件（如日志、存档，默认可用）']
-      ];
-      const declared = data.declared || 0;
-      const overridden = data.overridden || 0;
-      const hasOverride = overridden !== 0;
-      const html = `
-        <div class="cfg-form">
-          <div class="cfg-hint">mod 声明：<b>${permLabel(declared)}</b>（${esc(data.fileName)} 的 sidecar）。只有「操作」默认拒绝；「变速」为内置能力默认可用。勾选「强制授予/强制拒绝」可逐项覆盖。</div>
-          ${bits.map(([bit, name, desc]) => `
-            <div class="perm-row" data-bit="${bit}">
-              <span class="perm-name">${name}</span>
-              <span class="perm-desc">${desc}</span>
-              <span class="perm-controls">
-                <label class="mod-toggle"><input type="checkbox" data-perm-grant="${bit}" ${(overridden & bit) ? 'checked' : ''}> <span>强制授予</span></label>
-                <label class="mod-toggle"><input type="checkbox" data-perm-deny="${bit}" ${hasOverride && !(overridden & bit) ? 'checked' : ''}> <span>强制拒绝</span></label>
-              </span>
-            </div>`).join('')}
-          <div class="cfg-actions">
-            <button class="secondary-btn" data-perm-cancel>取消</button>
-            <button class="primary-btn" data-perm-save>保存权限</button>
-          </div>
-          <div class="cfg-hint">未勾选「强制授予」的非敏感权限按声明/默认策略判断；「强制拒绝」优先级最高。</div>
-        </div>`;
-      openModal(`🔑 权限设置 · ${esc(data.fileName)}`, html);
-      const modal = $('globalModal');
-      modal?.querySelector('[data-perm-cancel]')?.addEventListener('click', closeModal);
-      modal?.querySelector('[data-perm-save]')?.addEventListener('click', () => {
-        let granted = 0, denied = 0;
-        modal.querySelectorAll('[data-perm-grant]:checked').forEach(el => granted |= Number(el.dataset.permGrant));
-        modal.querySelectorAll('[data-perm-deny]:checked').forEach(el => denied |= Number(el.dataset.permDeny));
-        post({ type: 'modSavePermissions', fileName: data.fileName, granted, denied });
-      });
-    },
-
     // ---------- mod 配置弹窗（configs\{mod}.json 键值表单编辑） ----------
 
     openModConfig(fileName) {
@@ -422,16 +372,6 @@
       });
     }
   };
-
-  // 权限位掩码 → 可读名（与 C# ModPermission 枚举一致: 1=ReadGameState 2=GameActions 4=SpeedHack 8=FileWrite）
-  function permLabel(mask) {
-    const names = [];
-    const map = [[1, '读对局'], [2, '操作'], [4, '变速'], [8, '写文件']];
-    for (const [bit, label] of map) {
-      if ((mask & bit) === bit) names.push(label);
-    }
-    return names.length ? names.join('|') : String(mask);
-  }
 
   function fmtBytes(bytes) {
     const value = Number(bytes ?? 0);
