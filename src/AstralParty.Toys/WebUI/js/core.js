@@ -214,7 +214,8 @@ host?.addEventListener('message', event => {
       break;
 
     case 'modStatus':
-      if (window.ModsModule) window.ModsModule.renderModStatus(msg.payload);
+      // PushModStatus 发的是 payload={status:{...}}, 解包后交给渲染
+      if (window.ModsModule) window.ModsModule.renderModStatus(msg.payload?.status ?? msg.payload);
       break;
 
     case 'modLoaderConfig':
