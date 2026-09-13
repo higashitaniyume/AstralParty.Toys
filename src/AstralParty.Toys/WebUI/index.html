@@ -454,7 +454,7 @@
                   <li>加载器按 mod 旁的 sidecar（<span class="util-mono">*.json</span>）做依赖拓扑排序与 API 版本协商；敏感能力（游戏操作 / 变速）默认关闭，需 mod 在 sidecar 声明权限（可用 <span class="util-mono">*.permissions.json</span> 覆盖）。</li>
                   <li>mod 是引用 CesiumLoader.SDK 开发的 .NET DLL（事件订阅 + 数据读取），编译后连同 sidecar 放进 <span class="util-mono">mods\</span> 目录即被自动加载。下方列表显示当前 mods\ 与 sdk\ 目录内容。</li>
                   <li>每个 mod 可用右侧开关<span class="util-mono">启用 / 禁用</span>（改 sidecar 的 enabled 字段，重启游戏生效）。</li>
-                  <li>点 <span class="util-mono">🔑</span> 设置 mod 权限（敏感能力：操作 / 变速 默认关闭，勾选「强制授予」开启；「强制拒绝」优先级最高）。点 <span class="util-mono">⚙</span> 在表单里改 mod 配置（开关/数字/文字，保存到 <span class="util-mono">configs\{mod}.json</span>）。</li>
+                  <li>点 <span class="util-mono">🔑</span> 设置 mod 权限：只有「操作」默认拒绝（模拟操作，敏感）；<span class="util-mono">变速</span> 是内置能力——启用变速 mod 即生效，无需授权。点 <span class="util-mono">⚙</span> 在表单里改 mod 配置（开关/数字/文字，保存到 <span class="util-mono">configs\{mod}.json</span>）。</li>
                   <li><span class="util-mono">⚙ 加载器设置</span> 可视化编辑 <span class="util-mono">doorstop_config.json</span>（含变速基础倍速、控制台开关、超时时间等）。所有配置均可在界面里改，无需手改 JSON。</li>
                   <li>游戏运行中也能安装/卸载，但 version.dll 被占用时写入/删除会失败——那种情况先完全退出游戏再操作。</li>
                 </ul>

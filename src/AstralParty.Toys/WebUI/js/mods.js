@@ -281,17 +281,17 @@
     renderPermissions(data) {
       if (!data) return;
       const bits = [
-        [1, '读对局', '读取对局状态、玩家数据、事件流（只读，安全）'],
-        [2, '操作', '模拟操作（出牌/掷骰/移动等，敏感）'],
-        [4, '变速', '修改游戏时间流速（敏感）'],
-        [8, '写文件', '写入游戏目录外的文件（如日志、存档）']
+        [1, '读对局', '读取对局状态、玩家数据、事件流（只读，默认可用）'],
+        [2, '操作', '模拟操作（出牌/掷骰/移动等，敏感，默认拒绝）'],
+        [4, '变速', '内置能力：启用变速 mod 即可用，无需授权（此处可强制拒绝）'],
+        [8, '写文件', '写入游戏目录外的文件（如日志、存档，默认可用）']
       ];
       const declared = data.declared || 0;
       const overridden = data.overridden || 0;
       const hasOverride = overridden !== 0;
       const html = `
         <div class="cfg-form">
-          <div class="cfg-hint">mod 声明：<b>${permLabel(declared)}</b>（${esc(data.fileName)} 的 sidecar）。敏感权限默认拒绝；勾选「强制授予」立即生效（重启游戏）。</div>
+          <div class="cfg-hint">mod 声明：<b>${permLabel(declared)}</b>（${esc(data.fileName)} 的 sidecar）。只有「操作」默认拒绝；「变速」为内置能力默认可用。勾选「强制授予/强制拒绝」可逐项覆盖。</div>
           ${bits.map(([bit, name, desc]) => `
             <div class="perm-row" data-bit="${bit}">
               <span class="perm-name">${name}</span>
@@ -305,7 +305,7 @@
             <button class="secondary-btn" data-perm-cancel>取消</button>
             <button class="primary-btn" data-perm-save>保存权限</button>
           </div>
-          <div class="cfg-hint">未勾选「强制授予」的敏感权限按声明/默认策略判断；「强制拒绝」优先级最高。</div>
+          <div class="cfg-hint">未勾选「强制授予」的非敏感权限按声明/默认策略判断；「强制拒绝」优先级最高。</div>
         </div>`;
       openModal(`🔑 权限设置 · ${esc(data.fileName)}`, html);
       const modal = $('globalModal');
