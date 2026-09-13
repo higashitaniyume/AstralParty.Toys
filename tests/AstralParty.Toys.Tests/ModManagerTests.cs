@@ -435,42 +435,43 @@ public sealed class ModManagerTests
     }
 
     [Fact]
-    public void PermissionsOverride_GrantDenyAndReadBack()
+    public void ModEntryInfo_ExposesPermissionsForWarning()
     {
-        using var harness = new ModHarness("ap-mod-perms");
+        using var harness = new ModHarness("ap-mod-perm-warn");
         harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
-
         var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
-        harness.Sandbox.WriteFile(Path.Combine(modsDir, "PermMod.dll"), new byte[] { 0x4D, 0x5A });
 
-        // 初始无覆盖
-        Assert.Equal(0, harness.Manager.ReadPermissionsOverride(harness.GameDirectory, "PermMod.dll"));
+        // 声明「操作游戏」(GameActions=2) 的 mod
+        harness.Sandbox.WriteFile(Path.Combine(modsDir, "ActionMod.dll"), new byte[] { 0x4D, 0x5A });
+        harness.Sandbox.WriteFile(Path.Combine(modsDir, "ActionMod.json"),
+            "{\"id\":\"ActionMod\",\"name\":\"操作器\",\"version\":\"1.0.0\",\"permissions\":2,\"enabled\":true}");
 
-        // 强制授予 SpeedHack(4), 强制拒绝 FileWrite(8)
-        harness.Manager.SavePermissionsOverride(harness.GameDirectory, "PermMod.dll", grantedBits: 4, deniedBits: 8);
-        var granted = harness.Manager.ReadPermissionsOverride(harness.GameDirectory, "PermMod.dll");
-        Assert.Equal(4, granted);
+        // 声明只读(ReadGameState=1) 的 mod
+        harness.Sandbox.WriteFile(Path.Combine(modsDir, "ReadMod.dll"), new byte[] { 0x4D, 0x5A });
+        harness.Sandbox.WriteFile(Path.Combine(modsDir, "ReadMod.json"),
+            "{\"id\":\"ReadMod\",\"name\":\"观察器\",\"version\":\"1.0.0\",\"permissions\":1,\"enabled\":true}");
 
-        // 覆盖文件内容正确
-        var path = harness.Manager.PermissionsOverridePath(harness.GameDirectory, "PermMod.dll");
-        var json = File.ReadAllText(path);
-        Assert.Contains("\"SpeedHack\": true", json);
-        Assert.Contains("\"FileWrite\": false", json);
-        // 未设置的位不出现
-        Assert.DoesNotContain("\"GameActions\"", json);
+        var mods = harness.Manager.GetStatus().Mods;
+        var action = mods.Single(m => m.FileName == "ActionMod.dll");
+        var read = mods.Single(m => m.FileName == "ReadMod.dll");
+
+        // 权限位暴露给前端, 用于「⚠️ 可操作游戏」警告(仅提示, 不阻止加载)
+        Assert.Equal(2, action.Permissions);
+        Assert.Equal(1, read.Permissions);
     }
 
     [Fact]
-    public void PermissionsOverride_MergesAcrossMods()
+    public void ModEntryInfo_DefaultPermissionsZero_WhenSidecarMissing()
     {
-        using var harness = new ModHarness("ap-mod-perms-merge");
+        using var harness = new ModHarness("ap-mod-perm-zero");
         harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
 
-        harness.Manager.SavePermissionsOverride(harness.GameDirectory, "A.dll", grantedBits: 1, deniedBits: 0);
-        harness.Manager.SavePermissionsOverride(harness.GameDirectory, "B.dll", grantedBits: 2, deniedBits: 0);
+        // 无 sidecar 的 mod → permissions 为 0(无声明, 不警告)
+        harness.Sandbox.WriteFile(Path.Combine(modsDir, "NoMeta.dll"), new byte[] { 0x4D, 0x5A });
 
-        Assert.Equal(1, harness.Manager.ReadPermissionsOverride(harness.GameDirectory, "A.dll"));
-        Assert.Equal(2, harness.Manager.ReadPermissionsOverride(harness.GameDirectory, "B.dll"));
+        var mod = harness.Manager.GetStatus().Mods.Single(m => m.FileName == "NoMeta.dll");
+        Assert.Equal(0, mod.Permissions);
     }
 
     [Fact]

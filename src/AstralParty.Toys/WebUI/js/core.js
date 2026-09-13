@@ -226,10 +226,6 @@ host?.addEventListener('message', event => {
       if (window.ModsModule) window.ModsModule.syncSpeedhackBar(msg.payload?.config);
       break;
 
-    case 'modPermissions':
-      if (window.ModsModule) window.ModsModule.renderPermissions(msg.payload);
-      break;
-
     case 'modConfigFields':
       if (window.ModsModule) window.ModsModule.renderConfigFields(msg.payload);
       break;
