@@ -65,7 +65,7 @@ jobs:
           if (Test-Path $extract) { Remove-Item $extract -Recurse -Force }
           Expand-Archive -Path $zipPath -DestinationPath $extract -Force
           $targets = @(
-            @{ From = "$extract/winmm.dll"; To = "src/AstralParty.Toys/Resources/ModLoader/winmm.dll" },
+            @{ From = "$extract/version.dll"; To = "src/AstralParty.Toys/Resources/ModLoader/version.dll" },
             @{ From = "$extract/AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll"; To = "src/AstralParty.Toys/Resources/ModLoader/CesiumLoader.SDK.dll" },
             @{ From = "$extract/AstralParty_ModLoader/mods/ActivityLogMod.dll"; To = "src/AstralParty.Toys/Resources/ModLoader/ActivityLogMod.dll" }
           )
