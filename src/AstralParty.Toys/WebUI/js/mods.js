@@ -1,5 +1,5 @@
-// mods.js - 模组管理页（Mod 加载器安装/卸载 + mods\ sdk\ 目录管理）
-// 原为 utilities 页的一部分, 独立成页后逻辑随页面迁移到这里。
+// mods.js - 模组管理页（Mod 加载器安装/卸载 + mods\ sdk\ 目录管理 + 配置/权限编辑）
+// 设计前提：用户不会手改 JSON —— 所有可配置项都在 UI 内可视化编辑。
 (function () {
   const ModsModule = {
     modStatus: null,
@@ -41,11 +41,12 @@
           overwriteDll: $('modUpdateOverwriteCheck')?.checked === true
         });
       });
+      $('modLoaderSettingsBtn')?.addEventListener('click', () => this.openLoaderSettings());
       $('modGameDirText')?.addEventListener('dblclick', () => {
         const dir = this.modStatus?.gameDirectory;
         if (dir) post({ type: 'speedhackOpenGameDir' });
       });
-      // mod 列表删除按钮（事件委托）
+      // mod 列表删除/配置/权限按钮（事件委托）
       $('modListContainer')?.addEventListener('click', e => {
         const del = e.target.closest('.mod-del-btn');
         if (del) {
@@ -58,7 +59,13 @@
         const cfg = e.target.closest('.mod-config-btn');
         if (cfg) {
           const fileName = cfg.dataset.configFile;
-          if (fileName) post({ type: 'modOpenConfig', fileName });
+          if (fileName) this.openModConfig(fileName);
+          return;
+        }
+        const perm = e.target.closest('.mod-perm-btn');
+        if (perm) {
+          const fileName = perm.dataset.permFile;
+          if (fileName) this.openPermissions(fileName);
         }
       });
       // mod 启用/禁用开关（change 事件）
@@ -71,50 +78,46 @@
       });
     },
 
-    // ---------- 状态刷新 ----------
+    // ---------- 状态 ----------
 
     refreshModStatus() {
       post({ type: 'modStatus' });
     },
 
-    applyModStatus(payload) {
-      this.modStatus = payload.status || payload;
-      this.renderModStatus();
-    },
-
-    renderModStatus() {
-      const status = this.modStatus;
+    renderModStatus(status) {
       if (!status) return;
+      this.modStatus = status;
       const badge = $('modStatusBadge');
       const title = $('modStatusTitle');
-      const icon = $('modStatusIcon');
       const text = $('modStatusText');
-
+      const icon = $('modStatusIcon');
+      const running = status.gameRunning === true;
       const installedOk = status.installed && status.loaderMatchesBundle;
-      const running = !!status.gameRunning;
-      if (!status.bundleLoaderPresent) {
-        badge.textContent = '缺少内置文件';
-        badge.className = 'badge badge-notice';
-        title.textContent = '程序缺少加载器文件（version.dll）';
-      } else if (installedOk) {
-        badge.textContent = running ? '已安装 · 游戏运行中' : '已安装';
-        badge.className = 'badge badge-update';
-        title.textContent = running
-          ? '加载器已就位；游戏正在运行，本次写入要重启游戏才加载'
-          : '加载器已就位';
-      } else if (status.installed) {
-        badge.textContent = '文件不一致';
-        badge.className = 'badge badge-notice';
-        title.textContent = '目录里是其它 version.dll';
-      } else {
-        badge.textContent = running ? '未安装 · 游戏运行中' : '未安装';
-        badge.className = 'badge badge-event';
-        title.textContent = running
-          ? '尚未安装；游戏正在运行，本次安装重启游戏后才加载'
-          : '尚未安装到游戏';
+      if (badge) {
+        if (!status.bundleLoaderPresent) {
+          badge.textContent = '缺少内置文件';
+          badge.className = 'badge badge-notice';
+          title.textContent = '程序缺少加载器文件（version.dll）';
+        } else if (installedOk) {
+          badge.textContent = running ? '已安装 · 游戏运行中' : '已安装';
+          badge.className = 'badge badge-update';
+          title.textContent = running
+            ? '加载器已就位；游戏正在运行，本次写入要重启游戏才加载'
+            : '加载器已就位';
+        } else if (status.installed) {
+          badge.textContent = '文件不一致';
+          badge.className = 'badge badge-notice';
+          title.textContent = '目录里是其它 version.dll';
+        } else {
+          badge.textContent = running ? '未安装 · 游戏运行中' : '未安装';
+          badge.className = 'badge badge-event';
+          title.textContent = running
+            ? '尚未安装；游戏正在运行，本次安装重启游戏后才加载'
+            : '尚未安装到游戏';
+        }
+        icon.textContent = installedOk ? '🧩' : (status.installed ? '⚠️' : (running ? '⏳' : '🔍'));
+        text.textContent = status.message || '';
       }
-      icon.textContent = installedOk ? '🧩' : (status.installed ? '⚠️' : (running ? '⏳' : '🔍'));
-      text.textContent = status.message || '';
 
       // 游戏目录
       const dirText = $('modGameDirText');
@@ -161,14 +164,15 @@
         const deps = kind === 'mod' && entry.dependencies && entry.dependencies.length
           ? ` · 依赖 ${entry.dependencies.map(d => esc(d.id) + (d.minVersion ? '≥' + esc(d.minVersion) : '')).join(', ')}` : '';
         const desc = entry.description ? `<span class="mod-desc">${esc(entry.description)}</span>` : '';
-        // 启用/禁用开关 + 配置按钮(仅 mod)
+        // 启用/禁用开关 + 配置/权限按钮(仅 mod)
         const controls = kind === 'mod' ? `
           <span class="mod-controls">
             <label class="mod-toggle" title="启用/禁用（重启游戏后生效）">
               <input type="checkbox" data-toggle-file="${esc(entry.fileName)}" ${entry.enabled !== false ? 'checked' : ''}>
               <span>${entry.enabled !== false ? '启用' : '禁用'}</span>
             </label>
-            <button class="mod-config-btn" data-config-file="${esc(entry.fileName)}" title="修改 mod 配置（configs\\${esc(entry.name)}.json）">⚙</button>
+            <button class="mod-perm-btn" data-perm-file="${esc(entry.fileName)}" title="设置权限（敏感能力开关）">🔑</button>
+            <button class="mod-config-btn" data-config-file="${esc(entry.fileName)}" title="修改 mod 配置">⚙</button>
           </span>` : '';
         return `<div class="mod-list-item${entry.enabled === false ? ' mod-disabled' : ''}">
           <span class="mod-name" title="${esc(entry.fileName)}">${esc(title)}${ver}${author}${sdk}${perms}${deps}</span>
@@ -179,6 +183,193 @@
         </div>`;
       });
       container.innerHTML = nodes.join('');
+    },
+
+    // ---------- 加载器设置弹窗（doorstop_config.json 可视化编辑） ----------
+
+    openLoaderSettings() {
+      post({ type: 'modReadLoaderConfig' });
+    },
+
+    renderLoaderSettings(config) {
+      if (!config) return;
+      const rows = [
+        ['enabled', '启用加载器', 'bool', config.enabled],
+        ['speedhackBaseSpeed', '启动时基础倍速（1.0 = 正常；2.0 = 全程 2 倍速；可留 1.0 后由 mod 热键变速）', 'number', config.speedhackBaseSpeed, { min: 0.1, max: 100, step: 0.1 }],
+        ['consoleEnabled', '显示控制台窗口（mod 日志）', 'bool', config.consoleEnabled],
+        ['consoleTopmost', '控制台窗口置顶', 'bool', config.consoleTopmost],
+        ['forwardActivityLog', '把 mod 日志转发到控制台', 'bool', config.forwardActivityLog],
+        ['useManagedBootstrap', '使用托管引导（实验性，一般保持关闭）', 'bool', config.useManagedBootstrap],
+        ['gameAssemblyTimeoutSec', '等待 GameAssembly.dll 秒数', 'number', config.gameAssemblyTimeoutSec, { min: 1, max: 600 }],
+        ['domainTimeoutSec', '等待托管域初始化秒数', 'number', config.domainTimeoutSec, { min: 1, max: 600 }],
+        ['hybridclrTimeoutSec', '等待 HybridCLR 热更秒数', 'number', config.hybridclrTimeoutSec, { min: 1, max: 600 }],
+        ['bootstrapAssembly', '托管引导程序集', 'text', config.bootstrapAssembly],
+        ['bootstrapType', '引导类型', 'text', config.bootstrapType],
+        ['bootstrapMethod', '引导方法', 'text', config.bootstrapMethod],
+        ['sdkVersion', 'SDK 版本（只读，随包更新）', 'readonly', config.sdkVersion]
+      ];
+      const html = `
+        <div class="cfg-form">
+          ${rows.map(r => this.cfgRow(...r)).join('')}
+          <div class="cfg-actions">
+            <button class="secondary-btn" data-cfg-cancel>取消</button>
+            <button class="primary-btn" data-cfg-save>保存设置</button>
+          </div>
+          <div class="cfg-hint">保存后重启游戏生效。一般只需改「启动时基础倍速」。</div>
+        </div>`;
+      openModal('⚙ 加载器设置', html);
+      $('globalModal')?.querySelector('[data-cfg-cancel]')?.addEventListener('click', closeModal);
+      $('globalModal')?.querySelector('[data-cfg-save]')?.addEventListener('click', () => {
+        const cfg = this.collectLoaderConfig();
+        if (cfg) post({ type: 'modSaveLoaderConfig', config: cfg });
+      });
+    },
+
+    cfgRow(id, label, kind, value, attrs) {
+      const a = attrs || {};
+      const attrStr = Object.entries(a).map(([k, v]) => `${k}="${esc(String(v))}"`).join(' ');
+      switch (kind) {
+        case 'bool':
+          return `<label class="cfg-row cfg-check"><input type="checkbox" data-cfg="${id}" ${value ? 'checked' : ''}> <span>${esc(label)}</span></label>`;
+        case 'number':
+          return `<label class="cfg-row"><span class="cfg-label">${esc(label)}</span><input type="number" data-cfg="${id}" value="${esc(String(value))}" ${attrStr}></label>`;
+        case 'readonly':
+          return `<label class="cfg-row"><span class="cfg-label">${esc(label)}</span><input type="text" data-cfg="${id}" value="${esc(String(value))}" readonly></label>`;
+        default:
+          return `<label class="cfg-row"><span class="cfg-label">${esc(label)}</span><input type="text" data-cfg="${id}" value="${esc(String(value))}"></label>`;
+      }
+    },
+
+    collectLoaderConfig() {
+      const modal = $('globalModal');
+      if (!modal) return null;
+      const get = id => modal.querySelector(`[data-cfg="${id}"]`);
+      const bool = id => get(id)?.checked === true;
+      const num = id => {
+        const el = get(id);
+        return el ? Number(el.value) : 0;
+      };
+      const text = id => get(id)?.value ?? '';
+      const speed = num('speedhackBaseSpeed');
+      if (!(speed > 0 && speed <= 100)) {
+        toast('启动时基础倍速必须在 0.1 ~ 100 之间');
+        return null;
+      }
+      return {
+        enabled: bool('enabled'),
+        useManagedBootstrap: bool('useManagedBootstrap'),
+        bootstrapAssembly: text('bootstrapAssembly'),
+        bootstrapType: text('bootstrapType'),
+        bootstrapMethod: text('bootstrapMethod'),
+        gameAssemblyTimeoutSec: num('gameAssemblyTimeoutSec'),
+        domainTimeoutSec: num('domainTimeoutSec'),
+        hybridclrTimeoutSec: num('hybridclrTimeoutSec'),
+        consoleEnabled: bool('consoleEnabled'),
+        consoleTopmost: bool('consoleTopmost'),
+        forwardActivityLog: bool('forwardActivityLog'),
+        speedhackBaseSpeed: speed,
+        sdkVersion: text('sdkVersion')
+      };
+    },
+
+    // ---------- mod 权限弹窗（*.permissions.json 可视化编辑） ----------
+
+    openPermissions(fileName) {
+      post({ type: 'modReadPermissions', fileName });
+    },
+
+    renderPermissions(data) {
+      if (!data) return;
+      const bits = [
+        [1, '读对局', '读取对局状态、玩家数据、事件流（只读，安全）'],
+        [2, '操作', '模拟操作（出牌/掷骰/移动等，敏感）'],
+        [4, '变速', '修改游戏时间流速（敏感）'],
+        [8, '写文件', '写入游戏目录外的文件（如日志、存档）']
+      ];
+      const declared = data.declared || 0;
+      const overridden = data.overridden || 0;
+      const hasOverride = overridden !== 0;
+      const html = `
+        <div class="cfg-form">
+          <div class="cfg-hint">mod 声明：<b>${permLabel(declared)}</b>（${esc(data.fileName)} 的 sidecar）。敏感权限默认拒绝；勾选「强制授予」立即生效（重启游戏）。</div>
+          ${bits.map(([bit, name, desc]) => `
+            <div class="perm-row" data-bit="${bit}">
+              <span class="perm-name">${name}</span>
+              <span class="perm-desc">${desc}</span>
+              <span class="perm-controls">
+                <label class="mod-toggle"><input type="checkbox" data-perm-grant="${bit}" ${(overridden & bit) ? 'checked' : ''}> <span>强制授予</span></label>
+                <label class="mod-toggle"><input type="checkbox" data-perm-deny="${bit}" ${hasOverride && !(overridden & bit) ? 'checked' : ''}> <span>强制拒绝</span></label>
+              </span>
+            </div>`).join('')}
+          <div class="cfg-actions">
+            <button class="secondary-btn" data-perm-cancel>取消</button>
+            <button class="primary-btn" data-perm-save>保存权限</button>
+          </div>
+          <div class="cfg-hint">未勾选「强制授予」的敏感权限按声明/默认策略判断；「强制拒绝」优先级最高。</div>
+        </div>`;
+      openModal(`🔑 权限设置 · ${esc(data.fileName)}`, html);
+      const modal = $('globalModal');
+      modal?.querySelector('[data-perm-cancel]')?.addEventListener('click', closeModal);
+      modal?.querySelector('[data-perm-save]')?.addEventListener('click', () => {
+        let granted = 0, denied = 0;
+        modal.querySelectorAll('[data-perm-grant]:checked').forEach(el => granted |= Number(el.dataset.permGrant));
+        modal.querySelectorAll('[data-perm-deny]:checked').forEach(el => denied |= Number(el.dataset.permDeny));
+        post({ type: 'modSavePermissions', fileName: data.fileName, granted, denied });
+      });
+    },
+
+    // ---------- mod 配置弹窗（configs\{mod}.json 键值表单编辑） ----------
+
+    openModConfig(fileName) {
+      post({ type: 'modReadConfigFields', fileName });
+    },
+
+    renderConfigFields(data) {
+      if (!data || !data.fields) return;
+      const fileName = data.fileName;
+      const fields = data.fields;
+      const rows = fields.length === 0
+        ? '<div class="cfg-hint">还没有配置文件（configs\\' + esc(fileName.replace(/\.dll$/i, '')) + '.json）。保存后将创建。</div>'
+        : fields.map((f, idx) => {
+            const id = `cfgfield-${idx}`;
+            if (f.kind === 'bool') {
+              return `<label class="cfg-row cfg-check"><input type="checkbox" data-field="${id}" data-kind="bool" ${f.boolValue ? 'checked' : ''}> <span class="cfg-label">${esc(f.name)}</span></label>`;
+            }
+            if (f.kind === 'number') {
+              return `<label class="cfg-row"><span class="cfg-label">${esc(f.name)}</span><input type="number" step="any" data-field="${id}" data-kind="number" value="${esc(String(f.numberValue))}"></label>`;
+            }
+            if (f.kind === 'other') {
+              return `<label class="cfg-row"><span class="cfg-label">${esc(f.name)}（JSON）</span><input type="text" data-field="${id}" data-kind="other" value="${esc(f.stringValue)}"></label>`;
+            }
+            return `<label class="cfg-row"><span class="cfg-label">${esc(f.name)}</span><input type="text" data-field="${id}" data-kind="string" value="${esc(f.stringValue)}"></label>`;
+          }).join('');
+      const html = `
+        <div class="cfg-form">
+          <div class="cfg-hint">配置保存在 <b>configs\\${esc(fileName.replace(/\.dll$/i, ''))}.json</b>，由 mod 的 SdkConfig 读取。勾选框 = 开关，数字框 = 数值，文本框 = 文字。</div>
+          ${rows}
+          <div class="cfg-actions">
+            <button class="secondary-btn" data-cfg-field-cancel>取消</button>
+            <button class="secondary-btn" data-cfg-field-raw title="高级：用系统默认编辑器直接改 JSON">高级编辑…</button>
+            <button class="primary-btn" data-cfg-field-save>保存配置</button>
+          </div>
+        </div>`;
+      openModal(`⚙ 配置 · ${esc(fileName)}`, html);
+      const modal = $('globalModal');
+      modal?.querySelector('[data-cfg-field-cancel]')?.addEventListener('click', closeModal);
+      modal?.querySelector('[data-cfg-field-raw]')?.addEventListener('click', () => {
+        closeModal();
+        post({ type: 'modOpenConfigRaw', fileName });
+      });
+      modal?.querySelector('[data-cfg-field-save]')?.addEventListener('click', () => {
+        const out = fields.map((f, idx) => {
+          const el = modal.querySelector(`[data-field="cfgfield-${idx}"]`);
+          const kind = el?.dataset.kind || f.kind;
+          if (kind === 'bool') return { name: f.name, kind: 'bool', boolValue: el?.checked === true };
+          if (kind === 'number') return { name: f.name, kind: 'number', numberValue: Number(el?.value ?? f.numberValue) };
+          return { name: f.name, kind: 'string', stringValue: el?.value ?? f.stringValue };
+        });
+        post({ type: 'modSaveConfigFields', fileName, fields: out });
+      });
     }
   };
 

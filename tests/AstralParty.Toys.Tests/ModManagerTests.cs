@@ -307,6 +307,122 @@ public sealed class ModManagerTests
         Assert.Contains("speedhackBaseSpeed", ex.Message);
     }
 
+    // ============================== 加载器配置 / 权限 / 配置表单 ==============================
+
+    [Fact]
+    public void ReadLoaderConfig_ParsesCommentedFile()
+    {
+        using var harness = new ModHarness("ap-mod-cfg-read");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+
+        // 写一份带注释的 doorstop_config.json（加载器真实格式）
+        var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
+        File.WriteAllText(path,
+            "{\n  // 这是注释\n  \"enabled\": true,\n  \"speedhackBaseSpeed\": 2.5,\n" +
+            "  /* 块注释 */\n  \"consoleEnabled\": false,\n  \"sdkVersion\": \"2.0.0\"\n}\n");
+
+        var config = harness.Manager.ReadLoaderConfig(harness.GameDirectory);
+        Assert.True(config.Enabled);
+        Assert.Equal(2.5, config.SpeedhackBaseSpeed);
+        Assert.False(config.ConsoleEnabled);
+        Assert.Equal("2.0.0", config.SdkVersion);
+        Assert.Equal(60, config.GameAssemblyTimeoutSec); // 缺省值保留
+    }
+
+    [Fact]
+    public void SaveLoaderConfig_RoundTripsAndValidatesSpeed()
+    {
+        using var harness = new ModHarness("ap-mod-cfg-save");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+
+        var config = new LoaderConfig { SpeedhackBaseSpeed = 3.0, ConsoleTopmost = false };
+        harness.Manager.SaveLoaderConfig(harness.GameDirectory, config);
+
+        var read = harness.Manager.ReadLoaderConfig(harness.GameDirectory);
+        Assert.Equal(3.0, read.SpeedhackBaseSpeed);
+        Assert.False(read.ConsoleTopmost);
+
+        // 非法倍速拒绝
+        config.SpeedhackBaseSpeed = 0;
+        Assert.Throws<InvalidOperationException>(() => harness.Manager.SaveLoaderConfig(harness.GameDirectory, config));
+        config.SpeedhackBaseSpeed = 101;
+        Assert.Throws<InvalidOperationException>(() => harness.Manager.SaveLoaderConfig(harness.GameDirectory, config));
+    }
+
+    [Fact]
+    public void PermissionsOverride_GrantDenyAndReadBack()
+    {
+        using var harness = new ModHarness("ap-mod-perms");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+
+        var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
+        harness.Sandbox.WriteFile(Path.Combine(modsDir, "PermMod.dll"), new byte[] { 0x4D, 0x5A });
+
+        // 初始无覆盖
+        Assert.Equal(0, harness.Manager.ReadPermissionsOverride(harness.GameDirectory, "PermMod.dll"));
+
+        // 强制授予 SpeedHack(4), 强制拒绝 FileWrite(8)
+        harness.Manager.SavePermissionsOverride(harness.GameDirectory, "PermMod.dll", grantedBits: 4, deniedBits: 8);
+        var granted = harness.Manager.ReadPermissionsOverride(harness.GameDirectory, "PermMod.dll");
+        Assert.Equal(4, granted);
+
+        // 覆盖文件内容正确
+        var path = harness.Manager.PermissionsOverridePath(harness.GameDirectory, "PermMod.dll");
+        var json = File.ReadAllText(path);
+        Assert.Contains("\"SpeedHack\": true", json);
+        Assert.Contains("\"FileWrite\": false", json);
+        // 未设置的位不出现
+        Assert.DoesNotContain("\"GameActions\"", json);
+    }
+
+    [Fact]
+    public void PermissionsOverride_MergesAcrossMods()
+    {
+        using var harness = new ModHarness("ap-mod-perms-merge");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+
+        harness.Manager.SavePermissionsOverride(harness.GameDirectory, "A.dll", grantedBits: 1, deniedBits: 0);
+        harness.Manager.SavePermissionsOverride(harness.GameDirectory, "B.dll", grantedBits: 2, deniedBits: 0);
+
+        Assert.Equal(1, harness.Manager.ReadPermissionsOverride(harness.GameDirectory, "A.dll"));
+        Assert.Equal(2, harness.Manager.ReadPermissionsOverride(harness.GameDirectory, "B.dll"));
+    }
+
+    [Fact]
+    public void ModConfigFields_RoundTripByKind()
+    {
+        using var harness = new ModHarness("ap-mod-fields");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
+        harness.Sandbox.WriteFile(Path.Combine(modsDir, "FieldMod.dll"), new byte[] { 0x4D, 0x5A });
+
+        // 初始无配置 → 空字段
+        Assert.Empty(harness.Manager.ReadModConfigFields(harness.GameDirectory, "FieldMod.dll"));
+
+        // 保存混合类型字段
+        harness.Manager.SaveModConfigFields(harness.GameDirectory, "FieldMod.dll", new List<ModConfigField>
+        {
+            new() { Name = "Enabled", Kind = "bool", BoolValue = true },
+            new() { Name = "BaseSpeed", Kind = "number", NumberValue = 1.5 },
+            new() { Name = "SpeedUpKey", Kind = "string", StringValue = "F1" }
+        });
+
+        var fields = harness.Manager.ReadModConfigFields(harness.GameDirectory, "FieldMod.dll");
+        Assert.Equal(3, fields.Count);
+        Assert.Contains(fields, f => f.Name == "Enabled" && f.Kind == "bool" && f.BoolValue);
+        Assert.Contains(fields, f => f.Name == "BaseSpeed" && f.Kind == "number" && f.NumberValue == 1.5);
+        Assert.Contains(fields, f => f.Name == "SpeedUpKey" && f.Kind == "string" && f.StringValue == "F1");
+
+        // 改布尔值后回读
+        harness.Manager.SaveModConfigFields(harness.GameDirectory, "FieldMod.dll", new List<ModConfigField>
+        {
+            new() { Name = "Enabled", Kind = "bool", BoolValue = false }
+        });
+        var readBack = harness.Manager.ReadModConfigFields(harness.GameDirectory, "FieldMod.dll");
+        var enabled = Assert.Single(readBack);
+        Assert.False(enabled.BoolValue);
+    }
+
     // ============================== 联网更新：包解析 / 校验 / 安装 ==============================
 
     /// <summary>构造一个符合发布布局的内存 zip（version.dll Doorstop 式，含清单，可带/不带哈希校验）。</summary>

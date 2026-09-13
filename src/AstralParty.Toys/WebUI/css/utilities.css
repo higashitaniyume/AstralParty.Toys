@@ -669,3 +669,122 @@ input[type="number"].util-input::-webkit-inner-spin-button { -webkit-appearance:
 .mod-list-item.mod-disabled .mod-name {
   text-decoration: line-through;
 }
+
+/* 权限按钮 */
+.mod-perm-btn {
+  background: transparent;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  color: var(--gp-text-muted);
+  font-size: 12px;
+  padding: 2px 6px;
+  cursor: pointer;
+  line-height: 1.3;
+  transition: all 160ms ease;
+}
+
+.mod-perm-btn:hover {
+  border-color: #ffb84d;
+  color: #ffb84d;
+  background: rgba(255, 184, 77, 0.12);
+}
+
+/* ---------- 配置/权限弹窗表单 ---------- */
+.cfg-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 380px;
+  max-width: 520px;
+  max-height: 62vh;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.cfg-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--gp-text);
+}
+
+.cfg-row.cfg-check {
+  gap: 8px;
+}
+
+.cfg-row input[type="checkbox"] {
+  accent-color: var(--gp-accent, #4da3ff);
+  cursor: pointer;
+}
+
+.cfg-row input[type="number"],
+.cfg-row input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--gp-text);
+  font-size: 13px;
+}
+
+.cfg-row input:read-only {
+  opacity: 0.6;
+}
+
+.cfg-label {
+  flex: 1;
+  min-width: 0;
+  white-space: normal;
+  line-height: 1.35;
+}
+
+.cfg-hint {
+  font-size: 12px;
+  color: var(--gp-text-muted);
+  line-height: 1.5;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  padding: 6px 8px;
+}
+
+.cfg-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+/* 权限行 */
+.perm-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  background: rgba(0, 0, 0, 0.18);
+  font-size: 13px;
+}
+
+.perm-name {
+  font-weight: 700;
+  white-space: nowrap;
+  min-width: 44px;
+}
+
+.perm-desc {
+  flex: 1;
+  color: var(--gp-text-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.perm-controls {
+  display: inline-flex;
+  gap: 8px;
+  white-space: nowrap;
+}

@@ -575,6 +575,255 @@ public sealed class ModManager
         }
     }
 
+    // ============================== 加载器配置 (doorstop_config.json) ==============================
+
+    /// <summary>加载器配置完整路径。</summary>
+    public string LoaderConfigPath(string gameDirectory)
+        => Path.Combine(gameDirectory, LoaderFolderName, ConfigFileName);
+
+    /// <summary>读取加载器配置; 文件缺失时用内置模板的默认值。</summary>
+    public LoaderConfig ReadLoaderConfig(string gameDirectory)
+    {
+        var path = LoaderConfigPath(gameDirectory);
+        var defaults = new LoaderConfig();
+        try
+        {
+            if (!File.Exists(path)) return defaults;
+            var json = StripJsonComments(File.ReadAllText(path));
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            if (root.TryGetProperty("enabled", out var e) && e.ValueKind == JsonValueKind.True) defaults.Enabled = true;
+            if (root.TryGetProperty("enabled", out e) && e.ValueKind == JsonValueKind.False) defaults.Enabled = false;
+            if (root.TryGetProperty("useManagedBootstrap", out var m) && m.ValueKind == JsonValueKind.True) defaults.UseManagedBootstrap = true;
+            if (root.TryGetProperty("useManagedBootstrap", out m) && m.ValueKind == JsonValueKind.False) defaults.UseManagedBootstrap = false;
+            if (root.TryGetProperty("bootstrapAssembly", out var ba) && ba.ValueKind == JsonValueKind.String) defaults.BootstrapAssembly = ba.GetString()!;
+            if (root.TryGetProperty("bootstrapType", out var bt) && bt.ValueKind == JsonValueKind.String) defaults.BootstrapType = bt.GetString()!;
+            if (root.TryGetProperty("bootstrapMethod", out var bm) && bm.ValueKind == JsonValueKind.String) defaults.BootstrapMethod = bm.GetString()!;
+            if (root.TryGetProperty("gameAssemblyTimeoutSec", out var gt) && gt.ValueKind == JsonValueKind.Number) defaults.GameAssemblyTimeoutSec = gt.GetInt32();
+            if (root.TryGetProperty("domainTimeoutSec", out var dt) && dt.ValueKind == JsonValueKind.Number) defaults.DomainTimeoutSec = dt.GetInt32();
+            if (root.TryGetProperty("hybridclrTimeoutSec", out var ht) && ht.ValueKind == JsonValueKind.Number) defaults.HybridclrTimeoutSec = ht.GetInt32();
+            if (root.TryGetProperty("consoleEnabled", out var ce) && ce.ValueKind == JsonValueKind.True) defaults.ConsoleEnabled = true;
+            if (root.TryGetProperty("consoleEnabled", out ce) && ce.ValueKind == JsonValueKind.False) defaults.ConsoleEnabled = false;
+            if (root.TryGetProperty("consoleTopmost", out var ct) && ct.ValueKind == JsonValueKind.True) defaults.ConsoleTopmost = true;
+            if (root.TryGetProperty("consoleTopmost", out ct) && ct.ValueKind == JsonValueKind.False) defaults.ConsoleTopmost = false;
+            if (root.TryGetProperty("forwardActivityLog", out var fa) && fa.ValueKind == JsonValueKind.True) defaults.ForwardActivityLog = true;
+            if (root.TryGetProperty("forwardActivityLog", out fa) && fa.ValueKind == JsonValueKind.False) defaults.ForwardActivityLog = false;
+            if (root.TryGetProperty("speedhackBaseSpeed", out var sp) && sp.ValueKind == JsonValueKind.Number) defaults.SpeedhackBaseSpeed = sp.GetDouble();
+            if (root.TryGetProperty("sdkVersion", out var sv) && sv.ValueKind == JsonValueKind.String) defaults.SdkVersion = sv.GetString()!;
+        }
+        catch
+        {
+            // 损坏配置按默认值返回(加载器同样容错)
+        }
+        return defaults;
+    }
+
+    /// <summary>保存加载器配置(写回 doorstop_config.json, 无注释)。speedhackBaseSpeed 限制在 (0,100]。</summary>
+    public void SaveLoaderConfig(string gameDirectory, LoaderConfig config)
+    {
+        if (string.IsNullOrWhiteSpace(gameDirectory))
+            throw new ArgumentException("请先选择游戏目录。");
+        if (config.SpeedhackBaseSpeed <= 0 || config.SpeedhackBaseSpeed > 100)
+            throw new InvalidOperationException("变速基础倍率必须在 (0,100] 之间（1.0 = 正常速度）。");
+
+        var json = JsonSerializer.Serialize(new Dictionary<string, object?>
+        {
+            ["enabled"] = config.Enabled,
+            ["useManagedBootstrap"] = config.UseManagedBootstrap,
+            ["bootstrapAssembly"] = config.BootstrapAssembly,
+            ["bootstrapType"] = config.BootstrapType,
+            ["bootstrapMethod"] = config.BootstrapMethod,
+            ["gameAssemblyTimeoutSec"] = config.GameAssemblyTimeoutSec,
+            ["domainTimeoutSec"] = config.DomainTimeoutSec,
+            ["hybridclrTimeoutSec"] = config.HybridclrTimeoutSec,
+            ["consoleEnabled"] = config.ConsoleEnabled,
+            ["consoleTopmost"] = config.ConsoleTopmost,
+            ["forwardActivityLog"] = config.ForwardActivityLog,
+            ["speedhackBaseSpeed"] = config.SpeedhackBaseSpeed,
+            ["sdkVersion"] = config.SdkVersion
+        }, new JsonSerializerOptions { WriteIndented = true });
+        WriteAllBytesProtected(LoaderConfigPath(gameDirectory), System.Text.Encoding.UTF8.GetBytes(json));
+    }
+
+    // ============================== mod 权限 (*.permissions.json) ==============================
+
+    /// <summary>mod 权限覆盖文件路径(mods\{modName}.permissions.json)。</summary>
+    public string PermissionsOverridePath(string gameDirectory, string fileName)
+        => Path.Combine(gameDirectory, LoaderFolderName, ModsFolderName,
+            Path.GetFileNameWithoutExtension(fileName) + ".permissions.json");
+
+    /// <summary>读取某 mod 的权限覆盖(文件里该 mod 的条目); 无覆盖返回 0。</summary>
+    public int ReadPermissionsOverride(string gameDirectory, string fileName)
+    {
+        try
+        {
+            var path = PermissionsOverridePath(gameDirectory, fileName);
+            if (!File.Exists(path)) return 0;
+            using var doc = JsonDocument.Parse(File.ReadAllText(path));
+            var root = doc.RootElement;
+            if (!root.TryGetProperty(Path.GetFileNameWithoutExtension(fileName), out var entry)) return 0;
+            var bits = 0;
+            foreach (var kv in Enum.GetValues<ModPermission>())
+            {
+                if (kv == ModPermission.None) continue;
+                if (entry.TryGetProperty(kv.ToString(), out var v) && v.ValueKind == JsonValueKind.True)
+                    bits |= (int)kv;
+            }
+            return bits;
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    /// <summary>保存某 mod 的权限覆盖(逐位 true=强制开, false=强制关, 未列=交给声明/默认策略)。
+    /// 返回新覆盖位掩码。</summary>
+    public int SavePermissionsOverride(string gameDirectory, string fileName, int grantedBits, int deniedBits)
+    {
+        if (string.IsNullOrWhiteSpace(gameDirectory) || string.IsNullOrWhiteSpace(fileName))
+            throw new ArgumentException("游戏目录或 mod 文件名无效。");
+        var path = PermissionsOverridePath(gameDirectory, fileName);
+        var modName = Path.GetFileNameWithoutExtension(fileName);
+
+        Dictionary<string, Dictionary<string, bool>> all;
+        if (File.Exists(path))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(path));
+                all = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, bool>>>(doc.RootElement.GetRawText()) ?? new();
+            }
+            catch
+            {
+                all = new();
+            }
+        }
+        else
+        {
+            all = new();
+        }
+
+        var entry = new Dictionary<string, bool>();
+        foreach (var kv in Enum.GetValues<ModPermission>())
+        {
+            if (kv == ModPermission.None) continue;
+            var name = kv.ToString();
+            var granted = ((grantedBits & (int)kv) != 0);
+            var denied = ((deniedBits & (int)kv) != 0);
+            if (granted) entry[name] = true;
+            else if (denied) entry[name] = false;
+            // 既没开也没关 → 不写(交给声明/默认)
+        }
+        all[modName] = entry;
+
+        var json = JsonSerializer.Serialize(all, new JsonSerializerOptions { WriteIndented = true });
+        WriteAllBytesProtected(path, System.Text.Encoding.UTF8.GetBytes(json));
+        return grantedBits;
+    }
+
+    // ============================== mod 配置表单 (configs\{mod}.json 键值编辑) ==============================
+
+    /// <summary>读取 mod 配置为表单字段列表(按 JSON 值类型分类); 文件不存在返回空列表。
+    /// 每个字段带 name + kind(bool/number/string) + 当前值。</summary>
+    public List<ModConfigField> ReadModConfigFields(string gameDirectory, string fileName)
+    {
+        var list = new List<ModConfigField>();
+        var text = ReadModConfig(gameDirectory, fileName);
+        if (string.IsNullOrWhiteSpace(text)) return list;
+        try
+        {
+            using var doc = JsonDocument.Parse(text);
+            if (doc.RootElement.ValueKind != JsonValueKind.Object) return list;
+            foreach (var prop in doc.RootElement.EnumerateObject())
+            {
+                var field = new ModConfigField { Name = prop.Name };
+                switch (prop.Value.ValueKind)
+                {
+                    case JsonValueKind.True:
+                        field.Kind = "bool"; field.BoolValue = true; break;
+                    case JsonValueKind.False:
+                        field.Kind = "bool"; field.BoolValue = false; break;
+                    case JsonValueKind.Number:
+                        field.Kind = "number";
+                        field.NumberValue = prop.Value.TryGetInt64(out var l) ? l : prop.Value.GetDouble();
+                        break;
+                    case JsonValueKind.String:
+                        field.Kind = "string"; field.StringValue = prop.Value.GetString() ?? ""; break;
+                    default:
+                        field.Kind = "other"; field.StringValue = prop.Value.GetRawText(); break;
+                }
+                list.Add(field);
+            }
+        }
+        catch
+        {
+            // 损坏配置按空处理(用户可重新编辑)
+        }
+        return list;
+    }
+
+    /// <summary>按表单字段保存 mod 配置(序列化回 JSON; 类型由字段 Kind 决定)。</summary>
+    public void SaveModConfigFields(string gameDirectory, string fileName, List<ModConfigField> fields)
+    {
+        if (string.IsNullOrWhiteSpace(gameDirectory) || string.IsNullOrWhiteSpace(fileName))
+            throw new ArgumentException("游戏目录或 mod 文件名无效。");
+        var loaderRoot = Path.Combine(gameDirectory, LoaderFolderName);
+        var configsDir = Path.Combine(loaderRoot, "configs");
+        Directory.CreateDirectory(configsDir);
+        var path = Path.Combine(configsDir, Path.GetFileNameWithoutExtension(fileName) + ".json");
+
+        var dict = new Dictionary<string, object?>();
+        foreach (var field in fields)
+        {
+            switch (field.Kind)
+            {
+                case "bool": dict[field.Name] = field.BoolValue; break;
+                case "number": dict[field.Name] = field.NumberValue; break;
+                default: dict[field.Name] = field.StringValue; break;
+            }
+        }
+        var json = JsonSerializer.Serialize(dict, new JsonSerializerOptions { WriteIndented = true });
+        WriteAllBytesProtected(path, System.Text.Encoding.UTF8.GetBytes(json));
+    }
+
+    /// <summary>剥掉 JSON 里的 // 与 /* */ 注释(加载器配置文件带注释, System.Text.Json 不认)。</summary>
+    private static string StripJsonComments(string json)
+    {
+        if (string.IsNullOrEmpty(json)) return json;
+        var sb = new System.Text.StringBuilder(json.Length);
+        var inString = false;
+        var i = 0;
+        while (i < json.Length)
+        {
+            var c = json[i];
+            if (inString)
+            {
+                sb.Append(c);
+                if (c == '\\' && i + 1 < json.Length) { sb.Append(json[i + 1]); i += 2; continue; }
+                if (c == '"') inString = false;
+                i++;
+                continue;
+            }
+            if (c == '"') { inString = true; sb.Append(c); i++; continue; }
+            if (c == '/' && i + 1 < json.Length && json[i + 1] == '/')
+            {
+                while (i < json.Length && json[i] != '\n') i++;
+                continue;
+            }
+            if (c == '/' && i + 1 < json.Length && json[i + 1] == '*')
+            {
+                i += 2;
+                while (i + 1 < json.Length && !(json[i] == '*' && json[i + 1] == '/')) i++;
+                i += 2;
+                continue;
+            }
+            sb.Append(c);
+            i++;
+        }
+        return sb.ToString();
+    }
+
     /// <summary>切换 mod 启用/禁用: 改写 sidecar(mods\{name}.json) 的 enabled 字段。
     /// 加载器读取 sidecar 的 enabled=false 时跳过该 mod。无 sidecar 的 mod 自动补一个。</summary>
     public bool ToggleMod(string gameDirectory, string fileName, bool enabled)
@@ -839,4 +1088,44 @@ public sealed class LoaderPackageInfo
 {
     public string Version { get; set; } = "";
     public Dictionary<string, string> Files { get; set; } = new();
+}
+
+/// <summary>mod 权限位（与 SDK 的 ModPermission 枚举一致）。</summary>
+[Flags]
+public enum ModPermission
+{
+    None = 0,
+    ReadGameState = 1 << 0,
+    GameActions = 1 << 1,
+    SpeedHack = 1 << 2,
+    FileWrite = 1 << 3,
+}
+
+/// <summary>加载器配置（doorstop_config.json）的可编辑字段。</summary>
+public sealed class LoaderConfig
+{
+    public bool Enabled { get; set; } = true;
+    public bool UseManagedBootstrap { get; set; }
+    public string BootstrapAssembly { get; set; } = "CesiumLoader.Bootstrap.dll";
+    public string BootstrapType { get; set; } = "CesiumLoader.Bootstrap.Bootstrap";
+    public string BootstrapMethod { get; set; } = "Main";
+    public int GameAssemblyTimeoutSec { get; set; } = 60;
+    public int DomainTimeoutSec { get; set; } = 30;
+    public int HybridclrTimeoutSec { get; set; } = 60;
+    public bool ConsoleEnabled { get; set; } = true;
+    public bool ConsoleTopmost { get; set; } = true;
+    public bool ForwardActivityLog { get; set; } = true;
+    public double SpeedhackBaseSpeed { get; set; } = 1.0;
+    public string SdkVersion { get; set; } = "2.0.0";
+}
+
+/// <summary>mod 配置表单字段（configs\{mod}.json 键值编辑）。</summary>
+public sealed class ModConfigField
+{
+    public string Name { get; set; } = "";
+    /// <summary>bool / number / string / other（other 原样保留原始 JSON 文本）。</summary>
+    public string Kind { get; set; } = "string";
+    public bool BoolValue { get; set; }
+    public double NumberValue { get; set; }
+    public string StringValue { get; set; } = "";
 }

@@ -368,6 +368,92 @@ public partial class HybridWindow : Window
                         HandleModOpenConfig(modConfigName);
                     }
                     break;
+                case "modOpenConfigRaw":
+                    if (root.TryGetProperty("fileName", out var modConfigRawElement) &&
+                        modConfigRawElement.GetString() is { Length: > 0 } modConfigRawName)
+                    {
+                        HandleModOpenConfigRaw(modConfigRawName);
+                    }
+                    break;
+                case "modReadConfigFields":
+                    if (root.TryGetProperty("fileName", out var modCfgFieldsElement) &&
+                        modCfgFieldsElement.GetString() is { Length: > 0 } modCfgFieldsName)
+                    {
+                        Post(new { type = "modConfigFields", payload = new { fileName = modCfgFieldsName, fields = _modManager.ReadModConfigFields(RequireModGameDirectory(), modCfgFieldsName) } });
+                    }
+                    break;
+                case "modSaveConfigFields":
+                    if (root.TryGetProperty("fileName", out var modCfgSaveElement) &&
+                        modCfgSaveElement.GetString() is { Length: > 0 } modCfgSaveName &&
+                        root.TryGetProperty("fields", out var modCfgSaveFields) &&
+                        modCfgSaveFields.ValueKind == System.Text.Json.JsonValueKind.Array)
+                    {
+                        try
+                        {
+                            var fields = modCfgSaveFields.Deserialize<List<ModConfigField>>() ?? new();
+                            _modManager.SaveModConfigFields(RequireModGameDirectory(), modCfgSaveName, fields);
+                            Post(new { type = "toast", message = $"已保存配置：{modCfgSaveName}" });
+                        }
+                        catch (Exception ex)
+                        {
+                            Post(new { type = "toast", message = $"保存配置失败：{ex.Message}" });
+                        }
+                    }
+                    break;
+                case "modReadLoaderConfig":
+                    Post(new { type = "modLoaderConfig", payload = new { config = _modManager.ReadLoaderConfig(RequireModGameDirectory()) } });
+                    break;
+                case "modSaveLoaderConfig":
+                    if (root.TryGetProperty("config", out var modLoaderCfgElement))
+                    {
+                        try
+                        {
+                            var config = modLoaderCfgElement.Deserialize<LoaderConfig>() ?? new LoaderConfig();
+                            _modManager.SaveLoaderConfig(RequireModGameDirectory(), config);
+                            Post(new { type = "toast", message = "已保存加载器设置（重启游戏生效）" });
+                        }
+                        catch (Exception ex)
+                        {
+                            Post(new { type = "toast", message = $"保存加载器设置失败：{ex.Message}" });
+                        }
+                    }
+                    break;
+                case "modReadPermissions":
+                    if (root.TryGetProperty("fileName", out var modPermElement) &&
+                        modPermElement.GetString() is { Length: > 0 } modPermName)
+                    {
+                        var dir = RequireModGameDirectory();
+                        Post(new
+                        {
+                            type = "modPermissions",
+                            payload = new
+                            {
+                                fileName = modPermName,
+                                declared = _modManager.GetStatus().Mods.FirstOrDefault(m => m.FileName == modPermName)?.Permissions ?? 0,
+                                overridden = _modManager.ReadPermissionsOverride(dir, modPermName)
+                            }
+                        });
+                    }
+                    break;
+                case "modSavePermissions":
+                    if (root.TryGetProperty("fileName", out var modPermSaveElement) &&
+                        modPermSaveElement.GetString() is { Length: > 0 } modPermSaveName &&
+                        root.TryGetProperty("granted", out var modPermGranted) &&
+                        root.TryGetProperty("denied", out var modPermDenied))
+                    {
+                        try
+                        {
+                            _modManager.SavePermissionsOverride(
+                                RequireModGameDirectory(), modPermSaveName,
+                                modPermGranted.GetInt32(), modPermDenied.GetInt32());
+                            Post(new { type = "toast", message = $"已保存权限设置：{modPermSaveName}（重启游戏生效）" });
+                        }
+                        catch (Exception ex)
+                        {
+                            Post(new { type = "toast", message = $"保存权限失败：{ex.Message}" });
+                        }
+                    }
+                    break;
                 case "modCheckUpdate":
                     _ = HandleModCheckUpdateAsync();
                     break;
@@ -1400,6 +1486,19 @@ public partial class HybridWindow : Window
         {
             var path = _modManager.OpenModConfig(RequireModGameDirectory(), fileName);
             Post(new { type = "toast", message = $"已用默认编辑器打开配置：{path}" });
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = $"打开配置失败：{ex.Message}" });
+        }
+    }
+
+    private void HandleModOpenConfigRaw(string fileName)
+    {
+        try
+        {
+            var path = _modManager.OpenModConfig(RequireModGameDirectory(), fileName);
+            Post(new { type = "toast", message = $"已用默认编辑器打开：{path}" });
         }
         catch (Exception ex)
         {

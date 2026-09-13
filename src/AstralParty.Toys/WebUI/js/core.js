@@ -214,7 +214,19 @@ host?.addEventListener('message', event => {
       break;
 
     case 'modStatus':
-      if (window.ModsModule) window.ModsModule.applyModStatus(msg.payload);
+      if (window.ModsModule) window.ModsModule.renderModStatus(msg.payload);
+      break;
+
+    case 'modLoaderConfig':
+      if (window.ModsModule) window.ModsModule.renderLoaderSettings(msg.payload?.config);
+      break;
+
+    case 'modPermissions':
+      if (window.ModsModule) window.ModsModule.renderPermissions(msg.payload);
+      break;
+
+    case 'modConfigFields':
+      if (window.ModsModule) window.ModsModule.renderConfigFields(msg.payload);
       break;
 
     case 'error':
