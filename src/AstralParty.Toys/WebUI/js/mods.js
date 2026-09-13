@@ -12,6 +12,8 @@
 
     onShowMods() {
       this.refreshModStatus();
+      // 拉取加载器配置以填充变速栏（失败无妨，状态更新时会重试）
+      post({ type: 'modReadLoaderConfig' });
     },
 
     bindEvents() {
@@ -42,6 +44,15 @@
         });
       });
       $('modLoaderSettingsBtn')?.addEventListener('click', () => this.openLoaderSettings());
+      // 游戏变速栏（加载器内置功能）
+      $('modSpeedhackEnable')?.addEventListener('change', () => {
+        const enabled = $('modSpeedhackEnable').checked;
+        const label = $('modSpeedhackEnableLabel');
+        if (label) label.textContent = enabled ? '变速已启用' : '变速已禁用';
+        $('modSpeedhackSpeed').disabled = !enabled;
+      });
+      $('modSpeedhackSaveBtn')?.addEventListener('click', () => this.saveSpeedhack());
+      // 从加载器设置页也可进入变速栏
       $('modGameDirText')?.addEventListener('dblclick', () => {
         const dir = this.modStatus?.gameDirectory;
         if (dir) post({ type: 'speedhackOpenGameDir' });
@@ -185,6 +196,43 @@
       container.innerHTML = nodes.join('');
     },
 
+    // ---------- 游戏变速栏（加载器内置功能，非 mod） ----------
+
+    // 用加载器配置填充变速栏状态（开关 + 倍速）
+    syncSpeedhackBar(config) {
+      if (!config) return;
+      const speed = Number(config.speedhackBaseSpeed ?? 1.0);
+      const enabled = speed > 0 && Math.abs(speed - 1.0) > 0.001;
+      const enableEl = $('modSpeedhackEnable');
+      const speedEl = $('modSpeedhackSpeed');
+      const labelEl = $('modSpeedhackEnableLabel');
+      const hintEl = $('modSpeedhackHint');
+      if (enableEl) {
+        enableEl.checked = enabled;
+        enableEl.disabled = false;
+      }
+      if (speedEl) {
+        speedEl.value = enabled ? speed : (speed === 1.0 ? '2.0' : String(speed));
+        speedEl.disabled = !enabled;
+      }
+      if (labelEl) labelEl.textContent = enabled ? '变速已启用' : '变速已禁用';
+      if (hintEl) hintEl.textContent = enabled ? `当前 ${speed}x（重启游戏生效）` : '1.0 = 正常速度';
+    },
+
+    saveSpeedhack() {
+      const enabled = $('modSpeedhackEnable')?.checked === true;
+      const speed = Number($('modSpeedhackSpeed')?.value ?? 2.0);
+      if (!(speed > 0 && speed <= 100)) {
+        toast('倍速必须在 0.1 ~ 100 之间');
+        return;
+      }
+      const baseSpeed = enabled ? speed : 1.0;
+      post({
+        type: 'modSaveSpeedhack',
+        speedhackBaseSpeed: baseSpeed
+      });
+    },
+
     // ---------- 加载器设置弹窗（doorstop_config.json 可视化编辑） ----------
 
     openLoaderSettings() {
@@ -193,6 +241,8 @@
 
     renderLoaderSettings(config) {
       if (!config) return;
+      // 同步变速栏（加载器设置里的基础倍速与页面变速开关一致）
+      this.syncSpeedhackBar(config);
       const rows = [
         ['enabled', '启用加载器', 'bool', config.enabled],
         ['speedhackBaseSpeed', '启动时基础倍速（1.0 = 正常；2.0 = 全程 2 倍速；可留 1.0 后由 mod 热键变速）', 'number', config.speedhackBaseSpeed, { min: 0.1, max: 100, step: 0.1 }],
@@ -283,7 +333,7 @@
       const bits = [
         [1, '读对局', '读取对局状态、玩家数据、事件流（只读，默认可用）'],
         [2, '操作', '模拟操作（出牌/掷骰/移动等，敏感，默认拒绝）'],
-        [4, '变速', '内置能力：启用变速 mod 即可用，无需授权（此处可强制拒绝）'],
+        [4, '变速', '加载器内置功能：用模组页「游戏变速」开关控制，无需权限（此处可强制拒绝）'],
         [8, '写文件', '写入游戏目录外的文件（如日志、存档，默认可用）']
       ];
       const declared = data.declared || 0;

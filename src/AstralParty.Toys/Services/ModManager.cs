@@ -11,7 +11,7 @@ namespace AstralParty.Toys.Services;
 /// <summary>
 /// 游戏 Mod 加载器（CesiumLoader version.dll Doorstop 式代理）与 mod 的安装 / 卸载 / 列表管理。
 /// 加载器本体 version.dll（Doorstop 式代理，UnityPlayer 导入 version.dll 时被优先加载）与
-/// 内置 SDK（CesiumLoader.SDK.dll）、示例 mod（ActivityLogMod.dll / SpeedHackMod.dll）、
+/// 内置 SDK（CesiumLoader.SDK.dll）、示例 mod（ActivityLogMod.dll）、
 /// 各 mod 的 sidecar 元数据（*.json）以及 doorstop_config.json 以「内嵌资源」编译进程序集
 /// （AstralParty.Toys.ModLoader.*）。
 /// 安装 = 把 version.dll 写为游戏 exe 目录下的 version.dll，并创建
@@ -28,7 +28,6 @@ public sealed class ModManager
     public const string ConfigFileName = "doorstop_config.json";
     public const string SdkDllName = "CesiumLoader.SDK.dll";
     public const string SampleModDllName = "ActivityLogMod.dll";
-    public const string SpeedHackModDllName = "SpeedHackMod.dll";
 
     private const string ResourcePrefix = "AstralParty.Toys.ModLoader.";
 
@@ -59,9 +58,7 @@ public sealed class ModManager
     private static readonly byte[]? EmbeddedConfig = ReadEmbeddedResource(ConfigFileName);
     private static readonly byte[]? EmbeddedSdkDll = ReadEmbeddedResource(SdkDllName);
     private static readonly byte[]? EmbeddedSampleModDll = ReadEmbeddedResource(SampleModDllName);
-    private static readonly byte[]? EmbeddedSpeedHackModDll = ReadEmbeddedResource(SpeedHackModDllName);
     private static readonly byte[]? EmbeddedSampleSidecar = ReadEmbeddedResource(SampleModDllName.Replace(".dll", ".json"));
-    private static readonly byte[]? EmbeddedSpeedHackSidecar = ReadEmbeddedResource(SpeedHackModDllName.Replace(".dll", ".json"));
     private static readonly string? EmbeddedLoaderHash = EmbeddedLoaderDll is null
         ? null
         : Convert.ToHexString(SHA256.HashData(EmbeddedLoaderDll));
@@ -89,7 +86,6 @@ public sealed class ModManager
     public static bool HasEmbeddedConfig => EmbeddedConfig is not null;
     public static bool HasEmbeddedSdk => EmbeddedSdkDll is not null;
     public static bool HasEmbeddedSampleMod => EmbeddedSampleModDll is not null;
-    public static bool HasEmbeddedSpeedHackMod => EmbeddedSpeedHackModDll is not null;
 
     private string StateFilePath => Path.Combine(_profileDirectory, "modloader-state.json");
 
@@ -104,7 +100,6 @@ public sealed class ModManager
             status.BundleConfigPresent = HasEmbeddedConfig;
             status.BundleSdkPresent = HasEmbeddedSdk;
             status.BundleSampleModPresent = HasEmbeddedSampleMod;
-            status.BundleSpeedHackModPresent = HasEmbeddedSpeedHackMod;
 
             var directory = GetStoredGameDirectory();
             if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
@@ -296,12 +291,6 @@ public sealed class ModManager
                 WriteAllBytesProtected(Path.Combine(loaderRoot, ModsFolderName, SampleModDllName), EmbeddedSampleModDll!);
                 if (EmbeddedSampleSidecar is not null)
                     WriteAllBytesProtected(Path.Combine(loaderRoot, ModsFolderName, SampleModDllName.Replace(".dll", ".json")), EmbeddedSampleSidecar);
-                if (HasEmbeddedSpeedHackMod)
-                {
-                    WriteAllBytesProtected(Path.Combine(loaderRoot, ModsFolderName, SpeedHackModDllName), EmbeddedSpeedHackModDll!);
-                    if (EmbeddedSpeedHackSidecar is not null)
-                        WriteAllBytesProtected(Path.Combine(loaderRoot, ModsFolderName, SpeedHackModDllName.Replace(".dll", ".json")), EmbeddedSpeedHackSidecar);
-                }
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -557,6 +546,22 @@ public sealed class ModManager
         using var memory = new MemoryStream();
         stream.CopyTo(memory);
         return memory.ToArray();
+    }
+
+    // ============================== 游戏变速（加载器内置功能） ==============================
+
+    /// <summary>设置加载器内置变速的基础倍率: 写 doorstop_config.json 的 speedhackBaseSpeed。
+    /// 1.0 = 正常(禁用变速); 其他值(如 2.0) = 启动游戏即变速, 全程保持。重启游戏生效。</summary>
+    public void SetSpeedhack(string gameDirectory, double baseSpeed)
+    {
+        if (string.IsNullOrWhiteSpace(gameDirectory))
+            throw new ArgumentException("请先选择游戏目录。");
+        if (baseSpeed <= 0 || baseSpeed > 100)
+            throw new InvalidOperationException("倍速必须在 (0,100] 之间（1.0 = 正常速度）。");
+
+        var config = ReadLoaderConfig(gameDirectory);
+        config.SpeedhackBaseSpeed = baseSpeed;
+        SaveLoaderConfig(gameDirectory, config);
     }
 
     // ============================== mod 管理 ==============================
@@ -1022,7 +1027,6 @@ public sealed class ModStatus
     public bool BundleConfigPresent { get; set; }
     public bool BundleSdkPresent { get; set; }
     public bool BundleSampleModPresent { get; set; }
-    public bool BundleSpeedHackModPresent { get; set; }
     public string GameDirectory { get; set; } = "";
     public string AutoDetectedDirectory { get; set; } = "";
     public bool GameExeFound { get; set; }

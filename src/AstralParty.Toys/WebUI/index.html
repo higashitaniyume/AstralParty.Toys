@@ -418,6 +418,23 @@
                 <label for="modUpdateOverwriteCheck">更新时允许覆盖游戏目录里其它 version.dll</label>
               </div>
 
+              <div class="util-speedhack-bar" id="modSpeedhackBar">
+                <span class="util-section-label">游戏变速（加载器内置功能）</span>
+                <div class="util-speedhack-controls">
+                  <label class="mod-toggle speedhack-toggle">
+                    <input type="checkbox" id="modSpeedhackEnable">
+                    <span id="modSpeedhackEnableLabel">启用变速</span>
+                  </label>
+                  <label class="speedhack-speed-row">
+                    <span>倍速</span>
+                    <input type="number" id="modSpeedhackSpeed" min="0.1" max="100" step="0.1" value="2.0">
+                  </label>
+                  <button class="primary-btn" id="modSpeedhackSaveBtn" style="padding:5px 13px;font-size:12px;white-space:nowrap">✔ 应用变速</button>
+                  <span class="speedhack-hint" id="modSpeedhackHint">1.0 = 正常速度</span>
+                </div>
+                <div class="speedhack-note">写入 doorstop_config.json 的 speedhackBaseSpeed：启用 = 启动游戏即按该倍速变速（全程保持）；禁用 = 恢复 1.0 正常速度。重启游戏生效。</div>
+              </div>
+
               <span class="util-section-label">游戏目录（version.dll 加载器的安装位置）</span>
               <div class="util-path-box">
                 <span class="path-value placeholder" id="modGameDirText">尚未选择游戏目录</span>
@@ -432,7 +449,7 @@
               </div>
               <div class="util-check-row">
                 <input type="checkbox" id="modIncludeSampleCheck" checked>
-                <label for="modIncludeSampleCheck">同时安装内置 SDK 与示例 mod（行为日志 / 游戏变速，含 sidecar 元数据）</label>
+                <label for="modIncludeSampleCheck">同时安装内置 SDK 与示例 mod（行为日志，含 sidecar 元数据）</label>
               </div>
               <div class="util-check-row">
                 <input type="checkbox" id="modForceUninstallCheck">
@@ -454,7 +471,7 @@
                   <li>加载器按 mod 旁的 sidecar（<span class="util-mono">*.json</span>）做依赖拓扑排序与 API 版本协商；敏感能力（游戏操作 / 变速）默认关闭，需 mod 在 sidecar 声明权限（可用 <span class="util-mono">*.permissions.json</span> 覆盖）。</li>
                   <li>mod 是引用 CesiumLoader.SDK 开发的 .NET DLL（事件订阅 + 数据读取），编译后连同 sidecar 放进 <span class="util-mono">mods\</span> 目录即被自动加载。下方列表显示当前 mods\ 与 sdk\ 目录内容。</li>
                   <li>每个 mod 可用右侧开关<span class="util-mono">启用 / 禁用</span>（改 sidecar 的 enabled 字段，重启游戏生效）。</li>
-                  <li>点 <span class="util-mono">🔑</span> 设置 mod 权限：只有「操作」默认拒绝（模拟操作，敏感）；<span class="util-mono">变速</span> 是内置能力——启用变速 mod 即生效，无需授权。点 <span class="util-mono">⚙</span> 在表单里改 mod 配置（开关/数字/文字，保存到 <span class="util-mono">configs\{mod}.json</span>）。</li>
+                  <li>点 <span class="util-mono">🔑</span> 设置 mod 权限：只有「操作」默认拒绝（模拟操作，敏感）；<span class="util-mono">变速</span> 是加载器内置功能——用上方「游戏变速」开关控制，无需权限。点 <span class="util-mono">⚙</span> 在表单里改 mod 配置（开关/数字/文字，保存到 <span class="util-mono">configs\{mod}.json</span>）。</li>
                   <li><span class="util-mono">⚙ 加载器设置</span> 可视化编辑 <span class="util-mono">doorstop_config.json</span>（含变速基础倍速、控制台开关、超时时间等）。所有配置均可在界面里改，无需手改 JSON。</li>
                   <li>游戏运行中也能安装/卸载，但 version.dll 被占用时写入/删除会失败——那种情况先完全退出游戏再操作。</li>
                 </ul>

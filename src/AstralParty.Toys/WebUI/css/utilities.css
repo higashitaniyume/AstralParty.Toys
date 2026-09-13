@@ -788,3 +788,60 @@ input[type="number"].util-input::-webkit-inner-spin-button { -webkit-appearance:
   gap: 8px;
   white-space: nowrap;
 }
+
+/* ---------- 游戏变速栏（加载器内置功能） ---------- */
+.util-speedhack-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-md);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.util-speedhack-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.speedhack-toggle {
+  font-size: 13px;
+}
+
+.speedhack-toggle input {
+  width: 16px;
+  height: 16px;
+}
+
+.speedhack-speed-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--gp-text);
+}
+
+.speedhack-speed-row input[type="number"] {
+  width: 70px;
+  padding: 4px 8px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--gp-text);
+  font-size: 13px;
+}
+
+.speedhack-hint {
+  font-size: 12px;
+  color: var(--gp-text-muted);
+}
+
+.speedhack-note {
+  font-size: 12px;
+  color: var(--gp-text-muted);
+  line-height: 1.5;
+}
