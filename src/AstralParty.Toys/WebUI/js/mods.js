@@ -163,6 +163,8 @@
         const delBtn = kind === 'mod'
           ? `<button class="mod-del-btn" data-file="${esc(entry.fileName)}" title="删除该 mod">🗑</button>` : '';
         const title = entry.displayName || entry.name;
+        const folderTag = kind === 'mod' && entry.directoryName
+          ? `<span class="mod-folder-tag" title="mods\\${esc(entry.directoryName)}\\">📁 ${esc(entry.directoryName)}</span>` : '';
         const ver = entry.version ? ` v${esc(entry.version)}` : '';
         const author = entry.author ? ` · ${esc(entry.author)}` : '';
         const sdk = entry.sdkVersion ? ` · SDK ${esc(entry.sdkVersion)}` : '';
@@ -182,7 +184,7 @@
             <button class="mod-config-btn" data-config-file="${esc(entry.fileName)}" title="修改 mod 配置">⚙</button>
           </span>` : '';
         return `<div class="mod-list-item${entry.enabled === false ? ' mod-disabled' : ''}">
-          <span class="mod-name" title="${esc(entry.fileName)}">${esc(title)}${ver}${author}${sdk}${warning}${deps}</span>
+          <span class="mod-name" title="${esc(entry.fileName)}">${folderTag}${esc(title)}${ver}${author}${sdk}${warning}${deps}</span>
           <span class="mod-meta">${size}${time ? ' · ' + esc(time) : ''}</span>
           ${desc}
           ${controls}

@@ -174,51 +174,20 @@ public sealed class ModManager
         try
         {
             if (!Directory.Exists(directory)) return list;
+            // 新布局: mods\{ModId}\{ModId}.dll (每 mod 一个文件夹, sidecar 在文件夹内)
+            foreach (var sub in Directory.EnumerateDirectories(directory).OrderBy(d => d, StringComparer.OrdinalIgnoreCase))
+            {
+                var dirName = Path.GetFileName(sub);
+                var dllPath = Path.Combine(sub, dirName + ".dll");
+                if (!File.Exists(dllPath)) continue;   // 文件夹里没有同名 dll, 不是 mod 文件夹
+                list.Add(ScanModEntry(dllPath, dirName));
+            }
+            // 旧布局兼容: mods 根下平铺的 .dll (sidecar 在 mods 根)
             foreach (var file in Directory.EnumerateFiles(directory, "*.dll").OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
             {
-                var info = new FileInfo(file);
-                var entry = new ModEntryInfo
-                {
-                    Name = Path.GetFileNameWithoutExtension(file),
-                    FileName = Path.GetFileName(file),
-                    SizeBytes = info.Length,
-                    ModifiedUtc = info.LastWriteTimeUtc
-                };
-                // 同名 sidecar(由 SDK SdkManifest.ExportSidecar / 脚手架 cesium new 写出):
-                // {id,name,version,author,description,permissions,sdkVersion,dependencies}
-                var sidecar = Path.ChangeExtension(file, ".json");
-                if (File.Exists(sidecar))
-                {
-                    try
-                    {
-                        using var doc = JsonDocument.Parse(File.ReadAllText(sidecar));
-                        var root = doc.RootElement;
-                        entry.Id = root.TryGetProperty("id", out var i) ? i.GetString() ?? "" : "";
-                        entry.DisplayName = root.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
-                        entry.Version = root.TryGetProperty("version", out var v) ? v.GetString() ?? "" : "";
-                        entry.Author = root.TryGetProperty("author", out var a) ? a.GetString() ?? "" : "";
-                        entry.Description = root.TryGetProperty("description", out var d) ? d.GetString() ?? "" : "";
-                        entry.SdkVersion = root.TryGetProperty("sdkVersion", out var s) ? s.GetString() ?? "" : "";
-                        entry.Enabled = !root.TryGetProperty("enabled", out var en) || en.ValueKind != JsonValueKind.False;
-                        entry.Permissions = root.TryGetProperty("permissions", out var p) && p.ValueKind == JsonValueKind.Number
-                            ? p.GetInt32() : 0;
-                        if (root.TryGetProperty("dependencies", out var deps) && deps.ValueKind == JsonValueKind.Array)
-                        {
-                            foreach (var dep in deps.EnumerateArray())
-                            {
-                                var id = dep.TryGetProperty("id", out var dId) ? dId.GetString() ?? "" : "";
-                                var minV = dep.TryGetProperty("minVersion", out var dMin) ? dMin.GetString() ?? "" : "";
-                                if (!string.IsNullOrEmpty(id))
-                                    entry.Dependencies.Add(new ModDependencyInfo { Id = id, MinVersion = minV });
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        // sidecar 损坏按无 sidecar 处理
-                    }
-                }
-                list.Add(entry);
+                if (list.Any(m => string.Equals(m.Name, Path.GetFileNameWithoutExtension(file), StringComparison.OrdinalIgnoreCase)))
+                    continue;
+                list.Add(ScanModEntry(file, null));
             }
         }
         catch
@@ -226,6 +195,54 @@ public sealed class ModManager
             // 扫描失败按空列表处理
         }
         return list;
+    }
+
+    private static ModEntryInfo ScanModEntry(string file, string? directoryName)
+    {
+        var info = new FileInfo(file);
+        var entry = new ModEntryInfo
+        {
+            Name = Path.GetFileNameWithoutExtension(file),
+            FileName = Path.GetFileName(file),
+            DirectoryName = directoryName,
+            SizeBytes = info.Length,
+            ModifiedUtc = info.LastWriteTimeUtc
+        };
+        // 同名 sidecar(新布局: mod 文件夹内 {Name}.json; 旧布局: 同目录 {Name}.json):
+        // {id,name,version,author,description,permissions,sdkVersion,dependencies}
+        var sidecar = Path.ChangeExtension(file, ".json");
+        if (File.Exists(sidecar))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(sidecar));
+                var root = doc.RootElement;
+                entry.Id = root.TryGetProperty("id", out var i) ? i.GetString() ?? "" : "";
+                entry.DisplayName = root.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
+                entry.Version = root.TryGetProperty("version", out var v) ? v.GetString() ?? "" : "";
+                entry.Author = root.TryGetProperty("author", out var a) ? a.GetString() ?? "" : "";
+                entry.Description = root.TryGetProperty("description", out var d) ? d.GetString() ?? "" : "";
+                entry.SdkVersion = root.TryGetProperty("sdkVersion", out var s) ? s.GetString() ?? "" : "";
+                entry.Enabled = !root.TryGetProperty("enabled", out var en) || en.ValueKind != JsonValueKind.False;
+                entry.Permissions = root.TryGetProperty("permissions", out var p) && p.ValueKind == JsonValueKind.Number
+                    ? p.GetInt32() : 0;
+                if (root.TryGetProperty("dependencies", out var deps) && deps.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var dep in deps.EnumerateArray())
+                    {
+                        var id = dep.TryGetProperty("id", out var dId) ? dId.GetString() ?? "" : "";
+                        var minV = dep.TryGetProperty("minVersion", out var dMin) ? dMin.GetString() ?? "" : "";
+                        if (!string.IsNullOrEmpty(id))
+                            entry.Dependencies.Add(new ModDependencyInfo { Id = id, MinVersion = minV });
+                    }
+                }
+            }
+            catch
+            {
+                // sidecar 损坏按无 sidecar 处理
+            }
+        }
+        return entry;
     }
 
     // ============================== 安装 / 卸载 ==============================
@@ -287,12 +304,14 @@ public sealed class ModManager
             if (HasEmbeddedSdk)
                 WriteAllBytesProtected(Path.Combine(loaderRoot, SdkFolderName, SdkDllName), EmbeddedSdkDll!);
 
-            // 示例 mod（可选）：DLL + sidecar 元数据（依赖解析/权限/版本协商需要 sidecar）
+            // 示例 mod（可选）：每 mod 一个文件夹 mods\ActivityLogMod\{DLL + sidecar}
             if (includeSampleMod && HasEmbeddedSampleMod)
             {
-                WriteAllBytesProtected(Path.Combine(loaderRoot, ModsFolderName, SampleModDllName), EmbeddedSampleModDll!);
+                var sampleDir = Path.Combine(loaderRoot, ModsFolderName, SampleModDllName.Replace(".dll", ""));
+                Directory.CreateDirectory(sampleDir);
+                WriteAllBytesProtected(Path.Combine(sampleDir, SampleModDllName), EmbeddedSampleModDll!);
                 if (EmbeddedSampleSidecar is not null)
-                    WriteAllBytesProtected(Path.Combine(loaderRoot, ModsFolderName, SampleModDllName.Replace(".dll", ".json")), EmbeddedSampleSidecar);
+                    WriteAllBytesProtected(Path.Combine(sampleDir, SampleModDllName.Replace(".dll", ".json")), EmbeddedSampleSidecar);
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -447,8 +466,8 @@ public sealed class ModManager
             "version.dll",
             "AstralParty_ModLoader/doorstop_config.json",
             "AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll",
-            "AstralParty_ModLoader/mods/ActivityLogMod.dll",
-            "AstralParty_ModLoader/mods/ActivityLogMod.json"
+            "AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.dll",
+            "AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.json"
         };
 
         foreach (var relative in requiredRelative)
@@ -513,11 +532,13 @@ public sealed class ModManager
             // SDK
             ExtractEntryToFile(archive, "AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll",
                 Path.Combine(loaderRoot, SdkFolderName, SdkDllName));
-            // 示例 mod: DLL + sidecar
-            ExtractEntryToFile(archive, "AstralParty_ModLoader/mods/ActivityLogMod.dll",
-                Path.Combine(loaderRoot, ModsFolderName, SampleModDllName));
-            ExtractEntryToFile(archive, "AstralParty_ModLoader/mods/ActivityLogMod.json",
-                Path.Combine(loaderRoot, ModsFolderName, SampleModDllName.Replace(".dll", ".json")));
+            // 示例 mod: 每 mod 一个文件夹
+            var sampleDir = Path.Combine(loaderRoot, ModsFolderName, SampleModDllName.Replace(".dll", ""));
+            Directory.CreateDirectory(sampleDir);
+            ExtractEntryToFile(archive, "AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.dll",
+                Path.Combine(sampleDir, SampleModDllName));
+            ExtractEntryToFile(archive, "AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.json",
+                Path.Combine(sampleDir, SampleModDllName.Replace(".dll", ".json")));
 
             // 写入安装清单（记录版本，供 GetStatus 显示/对比）
             var manifestEntry = archive.GetEntry(InstalledManifestFileName);
@@ -763,10 +784,10 @@ public sealed class ModManager
         if (string.IsNullOrWhiteSpace(gameDirectory) || string.IsNullOrWhiteSpace(fileName))
             throw new ArgumentException("游戏目录或 mod 文件名无效。");
         var modsDir = Path.Combine(gameDirectory, LoaderFolderName, ModsFolderName);
-        var dllPath = Path.Combine(modsDir, fileName);
-        if (!File.Exists(dllPath)) throw new FileNotFoundException($"mod 不存在：{fileName}");
+        var (dllPath, _) = ResolveModPath(modsDir, fileName);
+        if (dllPath is null) throw new FileNotFoundException($"mod 不存在：{fileName}");
 
-        var sidecarPath = Path.Combine(modsDir, Path.GetFileNameWithoutExtension(fileName) + ".json");
+        var sidecarPath = Path.ChangeExtension(dllPath, ".json");
         string json;
         if (File.Exists(sidecarPath))
         {
@@ -782,6 +803,21 @@ public sealed class ModManager
         var updated = SetJsonBool(json, "enabled", enabled);
         WriteAllBytesProtected(sidecarPath, System.Text.Encoding.UTF8.GetBytes(updated));
         return enabled;
+    }
+
+    /// <summary>按文件名在 mods 目录定位 mod(DLL 路径 + 文件夹名)。
+    /// 新布局: mods\{FolderName}\{FolderName}.dll; 旧布局: mods\{FileName}.dll。</summary>
+    private static (string? Dll, string? DirectoryName) ResolveModPath(string modsDir, string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName)) return (null, null);
+        var stem = Path.GetFileNameWithoutExtension(fileName);
+        // 新布局优先
+        var inFolder = Path.Combine(modsDir, stem, fileName);
+        if (File.Exists(inFolder)) return (inFolder, stem);
+        // 旧布局平铺
+        var flat = Path.Combine(modsDir, fileName);
+        if (File.Exists(flat)) return (flat, null);
+        return (null, null);
     }
 
     /// <summary>mod 配置文件路径(configs\{modName}.json, SdkConfig 约定; 不存在时返回 null)。</summary>
@@ -841,7 +877,7 @@ public sealed class ModManager
         return prefix + separator + "\n  \"" + key + "\": " + (value ? "true" : "false") + "\n" + suffix;
     }
 
-    /// <summary>把 mod DLL 复制进游戏 mods 目录。</summary>
+    /// <summary>把 mod DLL 复制进游戏 mods 目录(新布局: mods\{Name}\{Name}.dll)。</summary>
     public ModEntryInfo ImportMod(string gameDirectory, string sourcePath)
     {
         if (string.IsNullOrWhiteSpace(gameDirectory) || !Directory.Exists(gameDirectory))
@@ -852,16 +888,22 @@ public sealed class ModManager
             throw new InvalidDataException("mod 必须是 .dll 文件。");
 
         var modsDir = Path.Combine(gameDirectory, LoaderFolderName, ModsFolderName);
-        Directory.CreateDirectory(modsDir);
 
         var fileName = Path.GetFileName(sourcePath);
-        var target = Path.Combine(modsDir, fileName);
+        var stem = Path.GetFileNameWithoutExtension(fileName);
+        // 每 mod 一个文件夹; 若已有同名 mod(文件夹或平铺), 覆盖其 DLL
+        var (existing, existingDir) = ResolveModPath(modsDir, fileName);
+        var dirName = existingDir ?? stem;
+        var modFolder = Path.Combine(modsDir, dirName);
+        Directory.CreateDirectory(modFolder);
+        var target = Path.Combine(modFolder, fileName);
         WriteAllBytesProtected(target, File.ReadAllBytes(sourcePath));
 
         return new ModEntryInfo
         {
-            Name = Path.GetFileNameWithoutExtension(fileName),
+            Name = stem,
             FileName = fileName,
+            DirectoryName = dirName,
             SizeBytes = new FileInfo(target).Length,
             ModifiedUtc = File.GetLastWriteTimeUtc(target)
         };
@@ -872,19 +914,31 @@ public sealed class ModManager
     {
         if (string.IsNullOrWhiteSpace(gameDirectory) || string.IsNullOrWhiteSpace(fileName))
             return null;
-        var target = Path.Combine(gameDirectory, LoaderFolderName, ModsFolderName, fileName);
-        if (!File.Exists(target)) return null;
+        var modsDir = Path.Combine(gameDirectory, LoaderFolderName, ModsFolderName);
+        var (target, dirName) = ResolveModPath(modsDir, fileName);
+        if (target is null || !File.Exists(target)) return null;
 
         var info = new ModEntryInfo
         {
             Name = Path.GetFileNameWithoutExtension(fileName),
-            FileName = fileName,
+            FileName = Path.GetFileName(target),
+            DirectoryName = dirName,
             SizeBytes = new FileInfo(target).Length,
             ModifiedUtc = File.GetLastWriteTimeUtc(target)
         };
         try
         {
             File.Delete(target);
+            // 新布局: 删掉整个 mod 文件夹(含 sidecar/附属文件); 平铺旧布局只删 DLL
+            if (!string.IsNullOrEmpty(dirName))
+            {
+                var folder = Path.Combine(modsDir, dirName);
+                if (Directory.Exists(folder))
+                {
+                    // 只删 mod 文件夹里的已知文件 + 空文件夹(不误删用户放在里面的其它东西? 约定: 整个文件夹都属于该 mod)
+                    Directory.Delete(folder, recursive: true);
+                }
+            }
             return info;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -982,6 +1036,10 @@ public sealed class ModEntryInfo
 {
     public string Name { get; set; } = "";
     public string FileName { get; set; } = "";
+
+    /// <summary>mod 文件夹名(相对 mods 目录, 新布局 mods\{DirectoryName}\{FileName})。
+    /// 平铺旧布局 mod 为 null。</summary>
+    public string? DirectoryName { get; set; }
     public long SizeBytes { get; set; }
     public DateTime ModifiedUtc { get; set; }
 

@@ -45,7 +45,9 @@ public sealed class ModManagerTests
         Assert.True(Directory.Exists(Path.Combine(loaderRoot, ModManager.LogsFolderName)), "logs 目录未创建");
         Assert.True(File.Exists(Path.Combine(loaderRoot, ModManager.ConfigFileName)), "doorstop_config.json 未复制");
         Assert.True(File.Exists(Path.Combine(loaderRoot, ModManager.SdkFolderName, ModManager.SdkDllName)), "SDK 未复制");
-        Assert.True(File.Exists(Path.Combine(loaderRoot, ModManager.ModsFolderName, ModManager.SampleModDllName)), "示例 mod 未复制");
+        // 示例 mod 在新布局的 mod 文件夹里
+        Assert.True(File.Exists(Path.Combine(loaderRoot, ModManager.ModsFolderName, "ActivityLogMod", ModManager.SampleModDllName)), "示例 mod 未复制");
+        Assert.True(File.Exists(Path.Combine(loaderRoot, ModManager.ModsFolderName, "ActivityLogMod", ModManager.SampleModDllName.Replace(".dll", ".json"))), "示例 mod sidecar 未复制");
 
         // 状态里的列表
         Assert.Single(status.Sdk);
@@ -123,11 +125,14 @@ public sealed class ModManagerTests
 
         Assert.Equal("my-custom-mod", entry.Name);
         Assert.Equal("my-custom-mod.dll", entry.FileName);
+        Assert.Equal("my-custom-mod", entry.DirectoryName);
+        // 新布局: mods\my-custom-mod\my-custom-mod.dll
         Assert.True(File.Exists(Path.Combine(
-            harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName, "my-custom-mod.dll")));
+            harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName,
+            "my-custom-mod", "my-custom-mod.dll")));
 
         var status = harness.Manager.GetStatus();
-        Assert.Contains(status.Mods, m => m.FileName == "my-custom-mod.dll");
+        Assert.Contains(status.Mods, m => m.FileName == "my-custom-mod.dll" && m.DirectoryName == "my-custom-mod");
     }
 
     [Fact]
@@ -192,6 +197,71 @@ public sealed class ModManagerTests
         var dep = Assert.Single(entry.Dependencies);
         Assert.Equal("LibMod", dep.Id);
         Assert.Equal("1.0.0", dep.MinVersion);
+    }
+
+    [Fact]
+    public void ScanMods_NewFolderLayout_ReadsModFromSubdirectory()
+    {
+        using var harness = new ModHarness("ap-mod-folderlayout");
+        harness.Manager.SaveStoredGameDirectory(harness.GameDirectory);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+
+        // 新布局: mods\MyMod\MyMod.dll + MyMod.json(sidecar 在 mod 文件夹内)
+        var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
+        var modFolder = Path.Combine(modsDir, "MyMod");
+        Directory.CreateDirectory(modFolder);
+        harness.Sandbox.WriteFile(Path.Combine(modFolder, "MyMod.dll"), new byte[] { 0x4D, 0x5A, 0x01 });
+        File.WriteAllText(Path.Combine(modFolder, "MyMod.json"),
+            "{\"id\":\"MyMod\",\"name\":\"我的Mod\",\"version\":\"1.2.0\",\"permissions\":1,\"sdkVersion\":\"2.0.0\"}");
+
+        var status = harness.Manager.GetStatus();
+        var entry = Assert.Single(status.Mods);
+        Assert.Equal("MyMod", entry.Id);
+        Assert.Equal("我的Mod", entry.DisplayName);
+        Assert.Equal("1.2.0", entry.Version);
+        Assert.Equal("MyMod", entry.DirectoryName, ignoreCase: true);
+        Assert.Equal("MyMod.dll", entry.FileName);
+    }
+
+    [Fact]
+    public void ScanMods_IgnoresNonModFolders()
+    {
+        using var harness = new ModHarness("ap-mod-nonmodfolder");
+        harness.Manager.SaveStoredGameDirectory(harness.GameDirectory);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+
+        var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
+        // 文件夹里没有同名 dll → 不是 mod 文件夹, 应忽略
+        Directory.CreateDirectory(Path.Combine(modsDir, "README"));
+        File.WriteAllText(Path.Combine(modsDir, "README", "readme.txt"), "hello");
+        // 有同名 dll 但还有其它文件 → 正常识别
+        Directory.CreateDirectory(Path.Combine(modsDir, "RealMod"));
+        harness.Sandbox.WriteFile(Path.Combine(modsDir, "RealMod", "RealMod.dll"), new byte[] { 0x4D, 0x5A });
+        File.WriteAllText(Path.Combine(modsDir, "RealMod", "extra.txt"), "extra");
+
+        var mods = harness.Manager.GetStatus().Mods;
+        var entry = Assert.Single(mods);
+        Assert.Equal("RealMod", entry.Name);
+    }
+
+    [Fact]
+    public void DeleteMod_FolderLayout_RemovesWholeFolder()
+    {
+        using var harness = new ModHarness("ap-mod-del-folder");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+
+        var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
+        var modFolder = Path.Combine(modsDir, "MyMod");
+        Directory.CreateDirectory(modFolder);
+        harness.Sandbox.WriteFile(Path.Combine(modFolder, "MyMod.dll"), new byte[] { 0x4D, 0x5A });
+        File.WriteAllText(Path.Combine(modFolder, "MyMod.json"), "{\"id\":\"MyMod\",\"name\":\"我的Mod\",\"version\":\"1.0.0\"}");
+        Assert.Single(harness.Manager.GetStatus().Mods);
+
+        var removed = harness.Manager.DeleteMod(harness.GameDirectory, "MyMod.dll");
+        Assert.NotNull(removed);
+        Assert.Equal("MyMod", removed.DirectoryName);
+        Assert.False(Directory.Exists(modFolder), "删除 mod 应移除整个文件夹");
+        Assert.Empty(harness.Manager.GetStatus().Mods);
     }
 
     [Fact]
@@ -533,8 +603,8 @@ public sealed class ModManagerTests
             Add("version.dll", loader);
             Add("AstralParty_ModLoader/doorstop_config.json", config);
             Add("AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll", sdk);
-            Add("AstralParty_ModLoader/mods/ActivityLogMod.dll", mod);
-            Add("AstralParty_ModLoader/mods/ActivityLogMod.json", sidecar);
+            Add("AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.dll", mod);
+            Add("AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.json", sidecar);
 
             string Sha(byte[] data) => Convert.ToHexString(
                 System.Security.Cryptography.SHA256.HashData(data)).ToLowerInvariant();
@@ -547,8 +617,8 @@ public sealed class ModManagerTests
                 manifest.Append("\"version.dll\":\"").Append(Sha(loader)).Append("\",");
                 manifest.Append("\"AstralParty_ModLoader/doorstop_config.json\":\"").Append(Sha(config)).Append("\",");
                 manifest.Append("\"AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll\":\"").Append(Sha(sdk)).Append("\",");
-                manifest.Append("\"AstralParty_ModLoader/mods/ActivityLogMod.dll\":\"").Append(Sha(mod)).Append("\",");
-                manifest.Append("\"AstralParty_ModLoader/mods/ActivityLogMod.json\":\"").Append(Sha(sidecar)).Append("\"");
+                manifest.Append("\"AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.dll\":\"").Append(Sha(mod)).Append("\",");
+                manifest.Append("\"AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.json\":\"").Append(Sha(sidecar)).Append("\"");
             }
             manifest.Append("}}");
             Add(ModManager.InstalledManifestFileName, System.Text.Encoding.UTF8.GetBytes(manifest.ToString()));
@@ -581,7 +651,10 @@ public sealed class ModManagerTests
         Assert.True(File.Exists(Path.Combine(harness.GameDirectory, "version.dll")));
         Assert.True(File.Exists(Path.Combine(loaderRoot, ModManager.ConfigFileName)));
         Assert.True(File.Exists(Path.Combine(loaderRoot, ModManager.SdkFolderName, ModManager.SdkDllName)));
-        Assert.True(File.Exists(Path.Combine(loaderRoot, ModManager.ModsFolderName, ModManager.SampleModDllName)));
+        // 新布局: 示例 mod 在 mods\ActivityLogMod\ 文件夹里
+        var sampleDir = Path.Combine(loaderRoot, ModManager.ModsFolderName, "ActivityLogMod");
+        Assert.True(File.Exists(Path.Combine(sampleDir, ModManager.SampleModDllName)));
+        Assert.True(File.Exists(Path.Combine(sampleDir, ModManager.SampleModDllName.Replace(".dll", ".json"))));
         Assert.True(File.Exists(Path.Combine(loaderRoot, ModManager.InstalledManifestFileName)));
 
         // 已装版本被 GetStatus 读出
