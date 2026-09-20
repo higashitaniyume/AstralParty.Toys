@@ -728,7 +728,7 @@ public sealed class ModManager
         WriteAllBytesProtected(LoaderConfigPath(gameDirectory), System.Text.Encoding.UTF8.GetBytes(json));
     }
 
-    // ============================== mod 配置表单 (configs\{mod}.json 键值编辑) ==============================
+    // ============================== mod 配置表单 (mods\{ModId}\config.json 键值编辑) ==============================
 
     /// <summary>读取 mod 配置为表单字段列表(按 JSON 值类型分类); 文件不存在返回空列表。
     /// 每个字段带 name + kind(bool/number/string) + 当前值。</summary>
@@ -769,15 +769,14 @@ public sealed class ModManager
         return list;
     }
 
-    /// <summary>按表单字段保存 mod 配置(序列化回 JSON; 类型由字段 Kind 决定)。</summary>
+    /// <summary>按表单字段保存 mod 配置(序列化回 JSON; 类型由字段 Kind 决定)。
+    /// 落盘位置与 mod 自己读的完全一致: <c>mods\{ModId}\config.json</c>(DLL 旁边)。</summary>
     public void SaveModConfigFields(string gameDirectory, string fileName, List<ModConfigField> fields)
     {
         if (string.IsNullOrWhiteSpace(gameDirectory) || string.IsNullOrWhiteSpace(fileName))
             throw new ArgumentException("游戏目录或 mod 文件名无效。");
-        var loaderRoot = Path.Combine(gameDirectory, LoaderFolderName);
-        var configsDir = Path.Combine(loaderRoot, "configs");
-        Directory.CreateDirectory(configsDir);
-        var path = Path.Combine(configsDir, Path.GetFileNameWithoutExtension(fileName) + ".json");
+        var path = ModConfigWritePath(gameDirectory, fileName);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
         var dict = new Dictionary<string, object?>();
         foreach (var field in fields)
@@ -873,17 +872,44 @@ public sealed class ModManager
         return (null, null);
     }
 
-    /// <summary>mod 配置文件路径(configs\{modName}.json, SdkConfig 约定; 不存在时返回 null)。</summary>
+    /// <summary>
+    /// mod 配置文件名(与 mod 的 DLL 同目录)。SDK 的 <c>ModConfig</c> 就是按
+    /// <c>modDirectory\config.json</c> 落盘的, 所以这里必须同名同目录 —— 否则 mod 读的
+    /// 和 Toys 写的是两个文件, 界面上改了配置游戏里根本不生效。
+    /// </summary>
+    private const string ModConfigFileName = "config.json";
+
+    /// <summary>mod 配置的落盘位置(mods\{ModId}\config.json; 不要求已存在)。</summary>
+    private static string ModConfigWritePath(string gameDirectory, string fileName)
+    {
+        var modsDir = Path.Combine(gameDirectory, LoaderFolderName, ModsFolderName);
+        var (_, directoryName) = ResolveModPath(modsDir, fileName);
+        var folder = directoryName ?? Path.GetFileNameWithoutExtension(fileName);
+        return Path.Combine(modsDir, folder, ModConfigFileName);
+    }
+
+    /// <summary>旧版集中存放位置(AstralParty_ModLoader\configs\{modName}.json); 仅用于读取兼容。</summary>
+    private static string LegacyModConfigPath(string gameDirectory, string fileName)
+    {
+        return Path.Combine(gameDirectory, LoaderFolderName, "configs",
+            Path.GetFileNameWithoutExtension(fileName) + ".json");
+    }
+
+    /// <summary>
+    /// mod 配置文件路径(现行约定 <c>mods\{ModId}\config.json</c>, 与 mod 的 DLL 同目录)。
+    /// 只有旧版 <c>configs\{modName}.json</c> 存在时返回旧路径(读取兼容; 一旦保存或"高级编辑"
+    /// 就会迁到新位置); 两处都不存在则返回 null。
+    /// </summary>
     public string? ModConfigPath(string gameDirectory, string fileName)
     {
         if (string.IsNullOrWhiteSpace(gameDirectory) || string.IsNullOrWhiteSpace(fileName)) return null;
-        var loaderRoot = Path.Combine(gameDirectory, LoaderFolderName);
-        var configsDir = Path.Combine(loaderRoot, "configs");
-        var path = Path.Combine(configsDir, Path.GetFileNameWithoutExtension(fileName) + ".json");
-        return File.Exists(path) ? path : null;
+        var path = ModConfigWritePath(gameDirectory, fileName);
+        if (File.Exists(path)) return path;
+        var legacy = LegacyModConfigPath(gameDirectory, fileName);
+        return File.Exists(legacy) ? legacy : null;
     }
 
-    /// <summary>读取 mod 配置内容(configs\{modName}.json); 不存在返回空串。</summary>
+    /// <summary>读取 mod 配置内容(mods\{ModId}\config.json; 尚未迁移的旧配置也能读到); 不存在返回空串。</summary>
     public string ReadModConfig(string gameDirectory, string fileName)
     {
         var path = ModConfigPath(gameDirectory, fileName);
@@ -891,17 +917,32 @@ public sealed class ModManager
         try { return File.ReadAllText(path); } catch { return ""; }
     }
 
-    /// <summary>用系统默认编辑器打开 mod 配置文件; 不存在则创建空的。</summary>
+    /// <summary>
+    /// 用系统默认编辑器打开 mod 配置文件; 不存在则创建一份带注释的空配置。
+    /// 若只有旧版 configs\{modName}.json, 先把它复制到 <c>mods\{ModId}\config.json</c> 再打开
+    /// —— 否则用户改的是一份 mod 根本不会读的文件。
+    /// </summary>
     public string OpenModConfig(string gameDirectory, string fileName)
     {
         if (string.IsNullOrWhiteSpace(gameDirectory) || string.IsNullOrWhiteSpace(fileName))
             throw new ArgumentException("游戏目录或 mod 文件名无效。");
-        var loaderRoot = Path.Combine(gameDirectory, LoaderFolderName);
-        var configsDir = Path.Combine(loaderRoot, "configs");
-        Directory.CreateDirectory(configsDir);
-        var path = Path.Combine(configsDir, Path.GetFileNameWithoutExtension(fileName) + ".json");
+
+        var path = ModConfigWritePath(gameDirectory, fileName);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+
         if (!File.Exists(path))
-            File.WriteAllText(path, "{\n  // 配置说明见对应 mod 文档; 公开字段(public field)才会被读取\n}\n");
+        {
+            var legacy = LegacyModConfigPath(gameDirectory, fileName);
+            var migrated = false;
+            if (File.Exists(legacy))
+            {
+                try { File.Copy(legacy, path); migrated = true; }
+                catch { migrated = false; }
+            }
+            if (!migrated)
+                File.WriteAllText(path, "{\n  // 配置说明见对应 mod 文档; 公开字段(public field)才会被读取\n}\n");
+        }
+
         OpenInExplorer(path);
         return path;
     }

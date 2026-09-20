@@ -331,7 +331,7 @@
       const fileName = data.fileName;
       const fields = data.fields;
       const rows = fields.length === 0
-        ? '<div class="cfg-hint">还没有配置文件（configs\\' + esc(fileName.replace(/\.dll$/i, '')) + '.json）。保存后将创建。</div>'
+        ? '<div class="cfg-hint">还没有配置文件（mods\\' + esc(fileName.replace(/\.dll$/i, '')) + '\\config.json）。保存后将创建。</div>'
         : fields.map((f, idx) => {
             const id = `cfgfield-${idx}`;
             if (f.kind === 'bool') {
@@ -347,7 +347,7 @@
           }).join('');
       const html = `
         <div class="cfg-form">
-          <div class="cfg-hint">配置保存在 <b>configs\\${esc(fileName.replace(/\.dll$/i, ''))}.json</b>，由 mod 的 SdkConfig 读取。勾选框 = 开关，数字框 = 数值，文本框 = 文字。</div>
+          <div class="cfg-hint">配置保存在 <b>mods\\${esc(fileName.replace(/\.dll$/i, ''))}\\config.json</b>（与 mod 的 dll 同目录，由 mod 的 SdkConfig 读写；重启游戏后生效）。勾选框 = 开关，数字框 = 数值，文本框 = 文字。</div>
           ${rows}
           <div class="cfg-actions">
             <button class="secondary-btn" data-cfg-field-cancel>取消</button>

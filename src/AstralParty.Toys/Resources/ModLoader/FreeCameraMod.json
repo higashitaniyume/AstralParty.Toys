@@ -1,1 +1,1 @@
-{"id":"FreeCameraMod","name":"自由相机","version":"2.1.0","author":"CesiumLoader","description":"F1 开关自由相机; WASD 移动, Q/E 升降, 鼠标转向, Shift 加速, Ctrl 减速, 滚轮调 FOV, F2 复位","permissions":1,"sdkVersion":"2.1.0","dependencies":[]}
+{"id":"FreeCameraMod","name":"自由相机","version":"2.1.1","author":"CesiumLoader","description":"F1 开关俯瞰视角; 默认跟随抬高(游戏自带的鼠标/键盘操作照常可用), config.json 里 mode=preset 可改为固定机位","permissions":1,"sdkVersion":"2.1.1","dependencies":[]}

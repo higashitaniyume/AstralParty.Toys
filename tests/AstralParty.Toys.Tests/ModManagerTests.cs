@@ -344,14 +344,46 @@ public sealed class ModManagerTests
         var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
         harness.Sandbox.WriteFile(Path.Combine(modsDir, "CfgMod.dll"), new byte[] { 0x4D, 0x5A });
 
-        // 无配置 → Open 创建并返回路径
+        // 无配置 → Open 创建并返回路径(配置必须与 mod 的 dll 同目录, 否则 mod 读不到)
         var path = harness.Manager.OpenModConfig(harness.GameDirectory, "CfgMod.dll");
         Assert.True(File.Exists(path), "OpenModConfig 应创建配置文件");
-        Assert.EndsWith(Path.Combine("configs", "CfgMod.json"), path);
+        Assert.EndsWith(Path.Combine("mods", "CfgMod", "config.json"), path);
 
         // 写内容后 Read 能读回
         File.WriteAllText(path, "{\"LogUi\": true}");
         Assert.Equal("{\"LogUi\": true}", harness.Manager.ReadModConfig(harness.GameDirectory, "CfgMod.dll"));
+    }
+
+    [Fact]
+    public void ModConfig_LivesBesideModDll_AndMigratesLegacyConfigsFolder()
+    {
+        using var harness = new ModHarness("ap-mod-config-path");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var loaderRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
+        var modDir = Path.Combine(loaderRoot, ModManager.ModsFolderName, "CfgMod");
+        harness.Sandbox.WriteFile(Path.Combine(modDir, "CfgMod.dll"), new byte[] { 0x4D, 0x5A });
+
+        // 现行约定: mods\{ModId}\config.json —— SDK 的 ModConfig 就是按 DLL 同目录落盘的
+        var path = harness.Manager.OpenModConfig(harness.GameDirectory, "CfgMod.dll");
+        Assert.Equal(Path.Combine(modDir, "config.json"), path);
+
+        harness.Manager.SaveModConfigFields(harness.GameDirectory, "CfgMod.dll", new List<ModConfigField>
+        {
+            new() { Name = "LogUi", Kind = "bool", BoolValue = true }
+        });
+        Assert.Contains("\"LogUi\": true", harness.Manager.ReadModConfig(harness.GameDirectory, "CfgMod.dll"));
+        Assert.Equal(Path.Combine(modDir, "config.json"),
+            harness.Manager.ModConfigPath(harness.GameDirectory, "CfgMod.dll"));
+
+        // 旧版集中存放(AstralParty_ModLoader\configs\{mod}.json)仍能读到, 打开时自动迁到 mod 目录
+        File.Delete(Path.Combine(modDir, "config.json"));
+        var legacy = Path.Combine(loaderRoot, "configs", "CfgMod.json");
+        harness.Sandbox.WriteFile(legacy, System.Text.Encoding.UTF8.GetBytes("{\"LegacyKey\": 7}"));
+        Assert.Equal("{\"LegacyKey\": 7}", harness.Manager.ReadModConfig(harness.GameDirectory, "CfgMod.dll"));
+
+        var reopened = harness.Manager.OpenModConfig(harness.GameDirectory, "CfgMod.dll");
+        Assert.Equal(Path.Combine(modDir, "config.json"), reopened);
+        Assert.Equal("{\"LegacyKey\": 7}", harness.Manager.ReadModConfig(harness.GameDirectory, "CfgMod.dll"));
     }
 
     [Fact]
