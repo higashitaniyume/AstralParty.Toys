@@ -64,15 +64,29 @@ jobs:
           $extract = "$env:TEMP/cesium-loader-latest"
           if (Test-Path $extract) { Remove-Item $extract -Recurse -Force }
           Expand-Archive -Path $zipPath -DestinationPath $extract -Force
+          $resources = "src/AstralParty.Toys/Resources/ModLoader"
+          # 加载器 + SDK
           $targets = @(
-            @{ From = "$extract/version.dll"; To = "src/AstralParty.Toys/Resources/ModLoader/version.dll" },
-            @{ From = "$extract/AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll"; To = "src/AstralParty.Toys/Resources/ModLoader/CesiumLoader.SDK.dll" },
-            @{ From = "$extract/AstralParty_ModLoader/mods/ActivityLogMod.dll"; To = "src/AstralParty.Toys/Resources/ModLoader/ActivityLogMod.dll" }
+            @{ From = "$extract/version.dll"; To = "$resources/version.dll" },
+            @{ From = "$extract/AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll"; To = "$resources/CesiumLoader.SDK.dll" }
           )
           foreach ($t in $targets) {
             if (-not (Test-Path $t.From)) { throw "解压包缺少文件: $($t.From)" }
             Copy-Item $t.From $t.To -Force
           }
+
+          # 内置 mod: 按包内实际内容同步（每 mod 一个文件夹 mods/{ModId}/{ModId}.dll + .json），
+          # 新增/移除内置 mod 不需要改这里；Resources 里与包同名的文件会被覆盖为随包版本。
+          $modsRoot = "$extract/AstralParty_ModLoader/mods"
+          if (-not (Test-Path $modsRoot)) { throw "解压包缺少 mods 目录: $modsRoot" }
+          $mods = @(Get-ChildItem $modsRoot -Directory)
+          if ($mods.Count -eq 0) { throw "解压包里没有任何 mod: $modsRoot" }
+          foreach ($mod in $mods) {
+            foreach ($file in Get-ChildItem $mod.FullName -File) {
+              Copy-Item $file.FullName "$resources/$($file.Name)" -Force
+            }
+          }
+          Write-Host "内置 mod: $($mods.Name -join ', ')"
           # 记录内嵌加载器版本（ModManager 读取显示/更新对比）
           if (Test-Path "$extract/cesium-loader.json") {
             $manifest = Get-Content "$extract/cesium-loader.json" -Raw | ConvertFrom-Json

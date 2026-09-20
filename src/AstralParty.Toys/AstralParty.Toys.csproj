@@ -9,10 +9,10 @@
     <AssemblyName>AstralParty.Toys</AssemblyName>
     <RootNamespace>AstralParty.Toys</RootNamespace>
     <StartupObject>AstralParty.Toys.App</StartupObject>
-    <!-- 与发布 tag 同步递增：v0.2.0 → v0.3.0（加载器 mod 管理成熟版: 变速内置+权限取消） -->
-    <Version>0.3.0</Version>
-    <AssemblyVersion>0.3.0.0</AssemblyVersion>
-    <FileVersion>0.3.0.0</FileVersion>
+    <!-- 与发布 tag 同步递增：v0.3.0 → v0.4.0（内置 CesiumLoader 加载器/SDK 2.1.0 + 内置自由相机 mod） -->
+    <Version>0.4.0</Version>
+    <AssemblyVersion>0.4.0.0</AssemblyVersion>
+    <FileVersion>0.4.0.0</FileVersion>
     <ApplicationIcon>WebUI\images\UT_AccountHeadShot_70902.ico</ApplicationIcon>
   </PropertyGroup>
 
@@ -24,7 +24,12 @@
     <EmbeddedResource Include="Resources\SpeedhackTools\version.dll;Resources\SpeedhackTools\speedhack_config.json">
       <LogicalName>AstralParty.Toys.SpeedhackTools.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="Resources\ModLoader\version.dll;Resources\ModLoader\doorstop_config.json;Resources\ModLoader\CesiumLoader.SDK.dll;Resources\ModLoader\ActivityLogMod.dll;Resources\ModLoader\ActivityLogMod.json;Resources\ModLoader\loader-version.json">
+    <!-- 内置加载器组件: 加载器/SDK/内置 mod 的 sidecar 都以「内嵌资源」编译进程序集。
+         更新方式: 用 CesiumLoader 仓库的 tools\package-modloader.ps1 打包后, 把包内
+         version.dll / sdk\CesiumLoader.SDK.dll / mods\{ModId}\* 覆盖到 Resources\ModLoader\,
+         loader-version.json 写包内 cesium-loader.json 的 version。CI 也会在打 tag 时自动同步
+         (.github/workflows/release.yml 的 "Fetch latest CesiumLoader package")。 -->
+    <EmbeddedResource Include="Resources\ModLoader\version.dll;Resources\ModLoader\doorstop_config.json;Resources\ModLoader\CesiumLoader.SDK.dll;Resources\ModLoader\ActivityLogMod.dll;Resources\ModLoader\ActivityLogMod.json;Resources\ModLoader\FreeCameraMod.dll;Resources\ModLoader\FreeCameraMod.json;Resources\ModLoader\loader-version.json">
       <LogicalName>AstralParty.Toys.ModLoader.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
     <Content Include="Protocol\*.dll">
