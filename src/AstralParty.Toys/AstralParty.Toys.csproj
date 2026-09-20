@@ -9,10 +9,10 @@
     <AssemblyName>AstralParty.Toys</AssemblyName>
     <RootNamespace>AstralParty.Toys</RootNamespace>
     <StartupObject>AstralParty.Toys.App</StartupObject>
-    <!-- 与发布 tag 同步递增：v0.4.0 → v0.4.1（内置加载器/SDK 2.1.0 → 2.1.1：自由相机跟随抬高 + 就绪校验；mod 配置改读 dll 同目录） -->
-    <Version>0.4.1</Version>
-    <AssemblyVersion>0.4.1.0</AssemblyVersion>
-    <FileVersion>0.4.1.0</FileVersion>
+    <!-- 与发布 tag 同步递增：v0.4.1 → v0.4.2（内置加载器/SDK 2.1.1 → 2.1.2：自由相机可在游戏内用 Ctrl+= / Ctrl+- 实时调高度） -->
+    <Version>0.4.2</Version>
+    <AssemblyVersion>0.4.2.0</AssemblyVersion>
+    <FileVersion>0.4.2.0</FileVersion>
     <ApplicationIcon>WebUI\images\UT_AccountHeadShot_70902.ico</ApplicationIcon>
   </PropertyGroup>
 
