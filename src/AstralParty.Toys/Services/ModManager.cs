@@ -11,7 +11,7 @@ namespace AstralParty.Toys.Services;
 /// <summary>
 /// 游戏 Mod 加载器（CesiumLoader version.dll Doorstop 式代理）与 mod 的安装 / 卸载 / 列表管理。
 /// 加载器本体 version.dll（Doorstop 式代理，UnityPlayer 导入 version.dll 时被优先加载）与
-/// 内置 SDK（CesiumLoader.SDK.dll）、示例 mod（ActivityLogMod.dll）、
+/// 内置 SDK（CesiumLoader.SDK.dll）、内置 mod（见 <see cref="BuiltInModIds"/>：行为日志 / 自由相机）、
 /// 各 mod 的 sidecar 元数据（*.json）以及 doorstop_config.json 以「内嵌资源」编译进程序集
 /// （AstralParty.Toys.ModLoader.*）。
 /// 安装 = 把 version.dll 写为游戏 exe 目录下的 version.dll，并创建
@@ -29,7 +29,13 @@ public sealed class ModManager
     public const string SdkDllName = "CesiumLoader.SDK.dll";
     public const string SampleModDllName = "ActivityLogMod.dll";
 
+    /// <summary>随程序集内置的 mod（ModId，顺序即安装顺序）。资源名 = {ModId}.dll / {ModId}.json。</summary>
+    public static readonly IReadOnlyList<string> BuiltInModIds = ["ActivityLogMod", "FreeCameraMod"];
+
     private const string ResourcePrefix = "AstralParty.Toys.ModLoader.";
+
+    /// <summary>发布包（cesium-loader.zip）内 mod 条目的前缀；zip 内路径统一用正斜杠。</summary>
+    private const string PackageModsPrefix = "AstralParty_ModLoader/mods/";
 
     /// <summary>内嵌加载器版本号；来源：构建时下载的 cesium-loader.json 里 version 字段（CI 自动更新），本地开发构建为 dev-local。</summary>
     private static readonly string EmbeddedVersion = ReadEmbeddedVersion();
@@ -57,11 +63,28 @@ public sealed class ModManager
     private static readonly byte[]? EmbeddedLoaderDll = ReadEmbeddedResource(LoaderDllName);
     private static readonly byte[]? EmbeddedConfig = ReadEmbeddedResource(ConfigFileName);
     private static readonly byte[]? EmbeddedSdkDll = ReadEmbeddedResource(SdkDllName);
-    private static readonly byte[]? EmbeddedSampleModDll = ReadEmbeddedResource(SampleModDllName);
-    private static readonly byte[]? EmbeddedSampleSidecar = ReadEmbeddedResource(SampleModDllName.Replace(".dll", ".json"));
+
+    /// <summary>内置 mod 的内嵌资源（DLL + 可选 sidecar）。资源缺失的 mod 会被跳过，不影响其它 mod。</summary>
+    private static readonly IReadOnlyList<BuiltInModResource> EmbeddedBuiltInMods = ReadBuiltInMods();
+
     private static readonly string? EmbeddedLoaderHash = EmbeddedLoaderDll is null
         ? null
         : Convert.ToHexString(SHA256.HashData(EmbeddedLoaderDll));
+
+    /// <summary>一个内置 mod 的内嵌资源对。</summary>
+    private readonly record struct BuiltInModResource(string Id, byte[] Dll, byte[]? Sidecar);
+
+    private static BuiltInModResource[] ReadBuiltInMods()
+    {
+        var list = new List<BuiltInModResource>();
+        foreach (var id in BuiltInModIds)
+        {
+            var dll = ReadEmbeddedResource(id + ".dll");
+            if (dll is null) continue;   // 该 mod 未随程序集分发 → 跳过
+            list.Add(new BuiltInModResource(id, dll, ReadEmbeddedResource(id + ".json")));
+        }
+        return list.ToArray();
+    }
 
     private static byte[]? ReadEmbeddedResource(string name)
     {
@@ -85,7 +108,12 @@ public sealed class ModManager
     public static bool HasEmbeddedLoader => EmbeddedLoaderDll is not null;
     public static bool HasEmbeddedConfig => EmbeddedConfig is not null;
     public static bool HasEmbeddedSdk => EmbeddedSdkDll is not null;
-    public static bool HasEmbeddedSampleMod => EmbeddedSampleModDll is not null;
+    /// <summary>程序集里是否带了内置 mod（至少一个）。</summary>
+    public static bool HasEmbeddedBuiltInMods => EmbeddedBuiltInMods.Count > 0;
+    /// <summary>内置 mod 里是否包含行为日志（ActivityLogMod）——兼容旧判定。</summary>
+    public static bool HasEmbeddedSampleMod => EmbeddedBuiltInMods.Any(m => m.Id == SampleModDllName.Replace(".dll", ""));
+    /// <summary>程序集里实际带上的内置 mod id（界面/诊断显示用）。</summary>
+    public static IReadOnlyList<string> EmbeddedBuiltInModIdList => EmbeddedBuiltInMods.Select(m => m.Id).ToArray();
 
     private string StateFilePath => Path.Combine(_profileDirectory, "modloader-state.json");
 
@@ -257,7 +285,9 @@ public sealed class ModManager
 
     public static string DescribeInstalled() => SpeedhackManager.IsGameRunning()
         ? "加载器文件已写入游戏目录。游戏正在运行，本次不会立刻生效——重启游戏后才会加载 mod。"
-        : "加载器已安装到游戏目录。启动游戏后会自动加载 mods\\ 目录下的所有 mod，并在控制台窗口显示日志。";
+        : $"加载器已安装到游戏目录。启动游戏后会自动加载 mods\\ 目录下的所有 mod"
+          + (HasEmbeddedBuiltInMods ? $"（内置：{string.Join("、", EmbeddedBuiltInModIdList)}）" : "")
+          + "，并在控制台窗口显示日志。";
 
     /// <summary>把内嵌文件写入游戏目录 + 创建目录结构。version.dll 目标已存在且不是内置文件时，必须 overwriteDll 才会覆盖。</summary>
     public void Install(string gameDirectory, bool overwriteDll, bool includeSampleMod)
@@ -304,14 +334,18 @@ public sealed class ModManager
             if (HasEmbeddedSdk)
                 WriteAllBytesProtected(Path.Combine(loaderRoot, SdkFolderName, SdkDllName), EmbeddedSdkDll!);
 
-            // 示例 mod（可选）：每 mod 一个文件夹 mods\ActivityLogMod\{DLL + sidecar}
-            if (includeSampleMod && HasEmbeddedSampleMod)
+            // 内置 mod（可选）：每 mod 一个文件夹 mods\{ModId}\{ModId}.dll + sidecar
+            // 已存在的同名文件会被覆盖为随包版本（升级工具时一并升级内置 mod）。
+            if (includeSampleMod)
             {
-                var sampleDir = Path.Combine(loaderRoot, ModsFolderName, SampleModDllName.Replace(".dll", ""));
-                Directory.CreateDirectory(sampleDir);
-                WriteAllBytesProtected(Path.Combine(sampleDir, SampleModDllName), EmbeddedSampleModDll!);
-                if (EmbeddedSampleSidecar is not null)
-                    WriteAllBytesProtected(Path.Combine(sampleDir, SampleModDllName.Replace(".dll", ".json")), EmbeddedSampleSidecar);
+                foreach (var mod in EmbeddedBuiltInMods)
+                {
+                    var modDir = Path.Combine(loaderRoot, ModsFolderName, mod.Id);
+                    Directory.CreateDirectory(modDir);
+                    WriteAllBytesProtected(Path.Combine(modDir, mod.Id + ".dll"), mod.Dll);
+                    if (mod.Sidecar is not null)
+                        WriteAllBytesProtected(Path.Combine(modDir, mod.Id + ".json"), mod.Sidecar);
+                }
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -461,14 +495,21 @@ public sealed class ModManager
         using var stream = new MemoryStream(zipBytes);
         using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
 
-        var requiredRelative = new[]
+        // 必需文件：加载器 / 配置 / SDK
+        var requiredRelative = new List<string>
         {
             "version.dll",
             "AstralParty_ModLoader/doorstop_config.json",
-            "AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll",
-            "AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.dll",
-            "AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.json"
+            "AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll"
         };
+        // 包内 mod：不写死具体 mod —— mods\{ModId}\ 下的文件一律纳入校验，
+        // 这样发布包新增/移除内置 mod（如后来的自由相机）时这里无需改动。
+        requiredRelative.AddRange(archive.Entries
+            .Where(e => e.FullName.StartsWith(PackageModsPrefix, StringComparison.OrdinalIgnoreCase)
+                        && !string.IsNullOrEmpty(e.Name))
+            .Select(e => e.FullName));
+        if (requiredRelative.Count == 3)
+            throw new InvalidDataException("发布包里没有任何 mod（AstralParty_ModLoader/mods/ 为空），已停止安装。");
 
         foreach (var relative in requiredRelative)
         {
@@ -532,13 +573,19 @@ public sealed class ModManager
             // SDK
             ExtractEntryToFile(archive, "AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll",
                 Path.Combine(loaderRoot, SdkFolderName, SdkDllName));
-            // 示例 mod: 每 mod 一个文件夹
-            var sampleDir = Path.Combine(loaderRoot, ModsFolderName, SampleModDllName.Replace(".dll", ""));
-            Directory.CreateDirectory(sampleDir);
-            ExtractEntryToFile(archive, "AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.dll",
-                Path.Combine(sampleDir, SampleModDllName));
-            ExtractEntryToFile(archive, "AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.json",
-                Path.Combine(sampleDir, SampleModDllName.Replace(".dll", ".json")));
+            // mod：每 mod 一个文件夹。包里有什么就装什么（不写死 mod 列表），
+            // 同时拒绝含 ".." 的条目，避免 zip 路径穿越写出 mods\ 之外。
+            foreach (var entry in archive.Entries)
+            {
+                if (!entry.FullName.StartsWith(PackageModsPrefix, StringComparison.OrdinalIgnoreCase)) continue;
+                if (string.IsNullOrEmpty(entry.Name)) continue;   // 目录条目
+                var relative = entry.FullName.Substring(PackageModsPrefix.Length).Replace('/', Path.DirectorySeparatorChar);
+                if (!IsSafeRelativePath(relative))
+                    throw new InvalidDataException($"发布包含有非法路径：{entry.FullName}");
+                var target = Path.Combine(loaderRoot, ModsFolderName, relative);
+                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                WriteAllBytesProtected(target, ReadEntryBytes(entry));
+            }
 
             // 写入安装清单（记录版本，供 GetStatus 显示/对比）
             var manifestEntry = archive.GetEntry(InstalledManifestFileName);
@@ -564,6 +611,12 @@ public sealed class ModManager
             ?? throw new InvalidDataException($"发布包缺少文件：{entryName}");
         WriteAllBytesProtected(targetPath, ReadEntryBytes(entry));
     }
+
+    /// <summary>发布包内的相对路径是否安全（不含 ".." 穿越、不是绝对路径）。</summary>
+    private static bool IsSafeRelativePath(string relative)
+        => !string.IsNullOrWhiteSpace(relative)
+           && !relative.Contains("..", StringComparison.Ordinal)
+           && !Path.IsPathRooted(relative);
 
     private static byte[] ReadEntryBytes(ZipArchiveEntry entry)
     {

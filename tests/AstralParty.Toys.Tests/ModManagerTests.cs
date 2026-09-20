@@ -18,6 +18,9 @@ public sealed class ModManagerTests
         Assert.True(ModManager.HasEmbeddedConfig, "内置 doorstop_config.json 资源缺失");
         Assert.True(ModManager.HasEmbeddedSdk, "内置 SDK 资源缺失");
         Assert.True(ModManager.HasEmbeddedSampleMod, "内置示例 mod 资源缺失");
+        // 内置 mod 一个都不能少: 资源缺失会在 ReadBuiltInMods 里被静默跳过, 所以这里按列表逐一对齐
+        Assert.True(ModManager.HasEmbeddedBuiltInMods, "内置 mod 资源缺失");
+        Assert.Equal(ModManager.BuiltInModIds, ModManager.EmbeddedBuiltInModIdList);
     }
 
     [Fact]
@@ -45,14 +48,19 @@ public sealed class ModManagerTests
         Assert.True(Directory.Exists(Path.Combine(loaderRoot, ModManager.LogsFolderName)), "logs 目录未创建");
         Assert.True(File.Exists(Path.Combine(loaderRoot, ModManager.ConfigFileName)), "doorstop_config.json 未复制");
         Assert.True(File.Exists(Path.Combine(loaderRoot, ModManager.SdkFolderName, ModManager.SdkDllName)), "SDK 未复制");
-        // 示例 mod 在新布局的 mod 文件夹里
-        Assert.True(File.Exists(Path.Combine(loaderRoot, ModManager.ModsFolderName, "ActivityLogMod", ModManager.SampleModDllName)), "示例 mod 未复制");
-        Assert.True(File.Exists(Path.Combine(loaderRoot, ModManager.ModsFolderName, "ActivityLogMod", ModManager.SampleModDllName.Replace(".dll", ".json"))), "示例 mod sidecar 未复制");
+        // 内置 mod 全部装进各自的 mod 文件夹（DLL + sidecar）
+        foreach (var modId in ModManager.BuiltInModIds)
+        {
+            var modDir = Path.Combine(loaderRoot, ModManager.ModsFolderName, modId);
+            Assert.True(File.Exists(Path.Combine(modDir, modId + ".dll")), $"{modId} 未复制");
+            Assert.True(File.Exists(Path.Combine(modDir, modId + ".json")), $"{modId} sidecar 未复制");
+        }
 
         // 状态里的列表
         Assert.Single(status.Sdk);
-        Assert.Single(status.Mods); // ActivityLogMod(变速已是加载器内置功能, 不再是 mod)
+        Assert.Equal(ModManager.BuiltInModIds.Count, status.Mods.Count); // 内置 mod(变速已是加载器内置功能, 不再是 mod)
         Assert.Contains(status.Mods, m => m.FileName == ModManager.SampleModDllName);
+        Assert.Contains(status.Mods, m => m.FileName == "FreeCameraMod.dll");
     }
 
     [Fact]
@@ -140,11 +148,15 @@ public sealed class ModManagerTests
     {
         using var harness = new ModHarness("ap-mod-delete");
         harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: true);
-        Assert.Single(harness.Manager.GetStatus().Mods);
+        Assert.Equal(ModManager.BuiltInModIds.Count, harness.Manager.GetStatus().Mods.Count);
 
-        var removed = harness.Manager.DeleteMod(harness.GameDirectory, ModManager.SampleModDllName);
-        Assert.NotNull(removed);
-        Assert.Equal(ModManager.SampleModDllName, removed.FileName);
+        // 逐个删掉内置 mod，最后 mods 目录应为空
+        foreach (var modId in ModManager.BuiltInModIds)
+        {
+            var removed = harness.Manager.DeleteMod(harness.GameDirectory, modId + ".dll");
+            Assert.NotNull(removed);
+            Assert.Equal(modId + ".dll", removed.FileName);
+        }
         Assert.Empty(harness.Manager.GetStatus().Mods);
     }
 
