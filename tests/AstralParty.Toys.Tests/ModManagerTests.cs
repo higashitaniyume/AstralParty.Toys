@@ -473,6 +473,79 @@ public sealed class ModManagerTests
         Assert.Equal(2.0, harness.Manager.ReadLoaderConfig(harness.GameDirectory).SpeedhackBaseSpeed);
     }
 
+    [Fact]
+    public void Install_RaisesSdkVersion_ButKeepsUserSettings()
+    {
+        using var harness = new ModHarness("ap-mod-sdk-sync");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: true);
+        harness.Manager.SetSpeedhack(harness.GameDirectory, 2.0);
+
+        var bundle = ModManager.BundleSdkVersion;
+        Assert.False(string.IsNullOrEmpty(bundle), "内置 doorstop_config.json 模板没有 sdkVersion");
+
+        // 模拟"老版本装出来的配置": sdkVersion 停在旧号(随包内置 mod 已声明更高的 SdkVersion)
+        var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
+        File.WriteAllText(path, File.ReadAllText(path).Replace(bundle, "2.1.0"));
+        Assert.Equal("2.1.0", harness.Manager.ReadLoaderConfig(harness.GameDirectory).SdkVersion);
+
+        // 重新安装 → sdkVersion 必须抬到随包版本, 否则加载器会拒绝加载新版内置 mod; 用户设置照旧
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: true);
+
+        var config = harness.Manager.ReadLoaderConfig(harness.GameDirectory);
+        Assert.Equal(bundle, config.SdkVersion);
+        Assert.Equal(2.0, config.SpeedhackBaseSpeed);
+    }
+
+    [Fact]
+    public void Install_DoesNotDowngradeNewerSdkVersion()
+    {
+        using var harness = new ModHarness("ap-mod-sdk-nodowngrade");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+
+        var bundle = ModManager.BundleSdkVersion;
+        Assert.False(string.IsNullOrEmpty(bundle), "内置 doorstop_config.json 模板没有 sdkVersion");
+
+        // 用户自己装了更新的加载器(配置里的 SDK 号比随包版本还高) → 安装不得把它降回去
+        var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
+        File.WriteAllText(path, File.ReadAllText(path).Replace(bundle, "9.9.9"));
+
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: false);
+        Assert.Equal("9.9.9", harness.Manager.ReadLoaderConfig(harness.GameDirectory).SdkVersion);
+    }
+
+    [Fact]
+    public void InstallPackage_RaisesSdkVersion_FromPackage()
+    {
+        using var harness = new ModHarness("ap-mod-pkg-sdk-sync");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.SetSpeedhack(harness.GameDirectory, 2.0);
+
+        // 老配置停在旧 SDK 号 → 从发布包更新时抬到包内声明的版本
+        var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
+        File.WriteAllText(path, File.ReadAllText(path).Replace(ModManager.BundleSdkVersion, "2.0.0"));
+
+        var bytes = BuildFakePackage("5.0.0", configSdkVersion: "9.9.9");
+        harness.Manager.InstallPackage(harness.GameDirectory, bytes, overwriteDll: true);
+
+        var config = harness.Manager.ReadLoaderConfig(harness.GameDirectory);
+        Assert.Equal("9.9.9", config.SdkVersion);
+        Assert.Equal(2.0, config.SpeedhackBaseSpeed); // 用户设置仍保留
+    }
+
+    [Fact]
+    public void InstallPackage_WithoutSdkVersion_LeavesConfigAlone()
+    {
+        using var harness = new ModHarness("ap-mod-pkg-sdk-keep");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var before = harness.Manager.ReadLoaderConfig(harness.GameDirectory).SdkVersion;
+        Assert.False(string.IsNullOrEmpty(before), "内置 doorstop_config.json 模板没有 sdkVersion");
+
+        // 老发布包(配置里没写 sdkVersion) → 不添不改(加载器会用自己编译进去的默认值)
+        harness.Manager.InstallPackage(harness.GameDirectory, BuildFakePackage("5.0.0"), overwriteDll: true);
+
+        Assert.Equal(before, harness.Manager.ReadLoaderConfig(harness.GameDirectory).SdkVersion);
+    }
+
     // ============================== 加载器配置 / 权限 / 配置表单 ==============================
 
     [Fact]
@@ -631,7 +704,7 @@ public sealed class ModManagerTests
     // ============================== 联网更新：包解析 / 校验 / 安装 ==============================
 
     /// <summary>构造一个符合发布布局的内存 zip（version.dll Doorstop 式，含清单，可带/不带哈希校验）。</summary>
-    private static byte[] BuildFakePackage(string version, bool includeHashes = true)
+    private static byte[] BuildFakePackage(string version, bool includeHashes = true, string? configSdkVersion = null)
     {
         using var memory = new MemoryStream();
         using (var archive = new ZipArchive(memory, ZipArchiveMode.Create, leaveOpen: true))
@@ -644,7 +717,10 @@ public sealed class ModManagerTests
             }
 
             var loader = new byte[] { 0x4D, 0x5A, 0x01, 0x02, 0x03 }; // 假 version.dll
-            var config = new byte[] { 0x7B, 0x7D };                    // 假 doorstop_config.json "{}"
+            // 假 doorstop_config.json: 默认 "{}"(老包不带 sdkVersion), 也可指定包内声明的 SDK 版本
+            var config = configSdkVersion is null
+                ? new byte[] { 0x7B, 0x7D }
+                : System.Text.Encoding.UTF8.GetBytes("{\"sdkVersion\":\"" + configSdkVersion + "\"}");
             var sdk = new byte[] { 0x53, 0x44, 0x4B, 0x01 };          // 假 SDK
             var mod = new byte[] { 0x4D, 0x4F, 0x44, 0x01 };          // 假 mod
             var sidecar = new byte[] { 0x7B, 0x7D };                  // 假 sidecar "{}"

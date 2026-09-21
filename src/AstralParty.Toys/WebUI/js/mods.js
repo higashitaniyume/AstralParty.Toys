@@ -246,7 +246,7 @@
       const rows = [
         ['enabled', '启用加载器', 'bool', config.enabled],
         ['speedhackBaseSpeed', '启动时基础倍速（1.0 = 正常；2.0 = 全程 2 倍速；可留 1.0 后由 mod 热键变速。不支持减速，最小 1.0）', 'number', config.speedhackBaseSpeed, { min: 1, max: 100, step: 0.1 }],
-        ['speedControlEnabled', '允许 mod 热键变速（Delete 设为 1.0x / Alt+= Alt+- 调倍率，最低 1 倍）', 'bool', config.speedControlEnabled],
+        ['speedControlEnabled', '允许 mod 热键变速（Delete 在 1.0x 与刚才的倍率之间切换 / Alt+= Alt+- 调倍率，最低 1 倍）', 'bool', config.speedControlEnabled],
         ['consoleEnabled', '显示控制台窗口（mod 日志）', 'bool', config.consoleEnabled],
         ['consoleTopmost', '控制台窗口置顶', 'bool', config.consoleTopmost],
         ['forwardActivityLog', '把 mod 日志转发到控制台', 'bool', config.forwardActivityLog],

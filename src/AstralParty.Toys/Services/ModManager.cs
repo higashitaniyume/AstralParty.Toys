@@ -74,6 +74,9 @@ public sealed class ModManager
     /// <summary>内置 mod 的内嵌资源（DLL + 可选 sidecar）。资源缺失的 mod 会被跳过，不影响其它 mod。</summary>
     private static readonly IReadOnlyList<BuiltInModResource> EmbeddedBuiltInMods = ReadBuiltInMods();
 
+    /// <summary>内置 doorstop_config.json 模板里声明的 SDK 版本（加载器用它校验 mod 声明的 SdkVersion）。</summary>
+    private static readonly string EmbeddedSdkVersion = ReadSdkVersionFromConfigBytes(EmbeddedConfig);
+
     private static readonly string? EmbeddedLoaderHash = EmbeddedLoaderDll is null
         ? null
         : Convert.ToHexString(SHA256.HashData(EmbeddedLoaderDll));
@@ -121,6 +124,9 @@ public sealed class ModManager
     public static bool HasEmbeddedSampleMod => EmbeddedBuiltInMods.Any(m => m.Id == SampleModDllName.Replace(".dll", ""));
     /// <summary>程序集里实际带上的内置 mod id（界面/诊断显示用）。</summary>
     public static IReadOnlyList<string> EmbeddedBuiltInModIdList => EmbeddedBuiltInMods.Select(m => m.Id).ToArray();
+
+    /// <summary>内置配置模板声明的 SDK 版本（界面/测试核对用；空 = 模板缺失或没写该字段）。</summary>
+    public static string BundleSdkVersion => EmbeddedSdkVersion;
 
     private string StateFilePath => Path.Combine(_profileDirectory, "modloader-state.json");
 
@@ -336,6 +342,8 @@ public sealed class ModManager
             var configPath = Path.Combine(loaderRoot, ConfigFileName);
             if (!File.Exists(configPath) && HasEmbeddedConfig)
                 WriteAllBytesProtected(configPath, EmbeddedConfig!);
+            // 老配置可能停在旧 SDK 号：把 sdkVersion 抬到随包版本，否则新版内置 mod 会被加载器拒绝加载
+            SyncLoaderConfigSdkVersion(configPath, EmbeddedSdkVersion);
 
             // 内置 SDK
             if (HasEmbeddedSdk)
@@ -577,6 +585,10 @@ public sealed class ModManager
             var configPath = Path.Combine(loaderRoot, ConfigFileName);
             if (!File.Exists(configPath))
                 ExtractEntryToFile(archive, "AstralParty_ModLoader/doorstop_config.json", configPath);
+            // 老配置可能停在旧 SDK 号（不覆盖用户配置）：抬到随包版本，否则新版内置 mod 会被拒绝加载
+            var packageConfigEntry = archive.GetEntry("AstralParty_ModLoader/doorstop_config.json");
+            SyncLoaderConfigSdkVersion(configPath,
+                packageConfigEntry is null ? "" : ReadSdkVersionFromConfigBytes(ReadEntryBytes(packageConfigEntry)));
             // SDK
             ExtractEntryToFile(archive, "AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll",
                 Path.Combine(loaderRoot, SdkFolderName, SdkDllName));
@@ -740,6 +752,108 @@ public sealed class ModManager
             ["sdkVersion"] = config.SdkVersion
         }, new JsonSerializerOptions { WriteIndented = true });
         WriteAllBytesProtected(LoaderConfigPath(gameDirectory), System.Text.Encoding.UTF8.GetBytes(json));
+    }
+
+    /// <summary>从配置文本里取 sdkVersion（容错：解析失败 / 没有该字段返回空串）。</summary>
+    private static string ParseSdkVersionFromText(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return "";
+        try
+        {
+            using var doc = JsonDocument.Parse(StripJsonComments(text));
+            return doc.RootElement.TryGetProperty("sdkVersion", out var sv) && sv.ValueKind == JsonValueKind.String
+                ? sv.GetString() ?? ""
+                : "";
+        }
+        catch
+        {
+            return "";
+        }
+    }
+
+    /// <summary>从 doorstop_config.json 的字节里取 sdkVersion（容错，失败返回空串）。</summary>
+    private static string ReadSdkVersionFromConfigBytes(byte[]? bytes)
+    {
+        if (bytes is null || bytes.Length == 0) return "";
+        try
+        {
+            return ParseSdkVersionFromText(System.Text.Encoding.UTF8.GetString(bytes));
+        }
+        catch
+        {
+            return "";
+        }
+    }
+
+    /// <summary>SemVer（主.次.修订）比较：a&gt;b 返回正数、相等 0、a&lt;b 负数；解析不出的段按 0 算。</summary>
+    private static int CompareSemVer(string a, string b)
+    {
+        static int[] Parts(string value)
+        {
+            var parts = new int[3];
+            var texts = (value ?? "").Split('.');
+            for (var i = 0; i < 3 && i < texts.Length; i++)
+                int.TryParse(texts[i].Trim(), out parts[i]);
+            return parts;
+        }
+
+        var left = Parts(a);
+        var right = Parts(b);
+        for (var i = 0; i < 3; i++)
+        {
+            if (left[i] != right[i]) return left[i] > right[i] ? 1 : -1;
+        }
+        return 0;
+    }
+
+    /// <summary>把已有 doorstop_config.json 的 sdkVersion 抬到随包版本（只升不降），其余字段与注释原样保留。
+    ///
+    /// 为什么必须做：加载器用配置里的 sdkVersion 校验 mod 声明的 SdkVersion，声明更高就直接拒绝加载该 mod
+    /// （见 CesiumLoader 的 modmeta）。安装/更新会把内置 mod 覆盖成随包版本，而配置以前是"已存在就不动" ——
+    /// 于是停在旧 SDK 号的老配置会让新版内置 mod 全部拒绝加载（mod 全失效）。这里只改这一个字段：
+    /// 用户的变速倍率、开关等设置一律不动；配置里本来没有该字段时也不添加（加载器会用它自己编译进去的默认值）。
+    /// 同步是尽力而为：失败也不影响安装本身。</summary>
+    private static void SyncLoaderConfigSdkVersion(string configPath, string bundleSdkVersion)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(bundleSdkVersion) || !File.Exists(configPath)) return;
+
+            var bytes = File.ReadAllBytes(configPath);
+            var hasBom = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
+            var offset = hasBom ? 3 : 0;
+            var text = System.Text.Encoding.UTF8.GetString(bytes, offset, bytes.Length - offset);
+
+            var current = ParseSdkVersionFromText(text);
+            if (current.Length == 0) return;                              // 没有该字段：加载器用自身默认值，不必干预
+            if (CompareSemVer(bundleSdkVersion, current) <= 0) return;    // 同版或更新：不降级
+
+            // 用 MatchEvaluator 而不是 "$1...(版本号)...$2"：替换串里 "$1" 紧跟版本号首位数字时
+            // .NET 会把它读成 $12 这种两位分组引用, 写坏 JSON。
+            var updated = System.Text.RegularExpressions.Regex.Replace(
+                text,
+                "(\"sdkVersion\"\\s*:\\s*\")[^\"]*(\")",
+                match => match.Groups[1].Value + bundleSdkVersion + match.Groups[2].Value);
+            if (updated == text) return;
+            // 写回前先自检: 改完必须还能解析出目标版本, 否则宁可不动(绝不能把配置写坏)
+            if (!string.Equals(ParseSdkVersionFromText(updated), bundleSdkVersion, StringComparison.Ordinal)) return;
+
+            var encoded = System.Text.Encoding.UTF8.GetBytes(updated);
+            if (hasBom)
+            {
+                var withBom = new byte[encoded.Length + 3];
+                withBom[0] = 0xEF;
+                withBom[1] = 0xBB;
+                withBom[2] = 0xBF;
+                Array.Copy(encoded, 0, withBom, 3, encoded.Length);
+                encoded = withBom;
+            }
+            WriteAllBytesProtected(configPath, encoded);
+        }
+        catch
+        {
+            // 尽力而为：失败只是回到旧行为（mod 可能被拒），不能让安装整体失败
+        }
     }
 
     // ============================== mod 配置表单 (mods\{ModId}\config.json 键值编辑) ==============================
