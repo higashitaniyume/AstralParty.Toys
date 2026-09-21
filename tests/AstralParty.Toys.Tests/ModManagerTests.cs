@@ -58,9 +58,10 @@ public sealed class ModManagerTests
 
         // 状态里的列表
         Assert.Single(status.Sdk);
-        Assert.Equal(ModManager.BuiltInModIds.Count, status.Mods.Count); // 内置 mod(变速已是加载器内置功能, 不再是 mod)
+        Assert.Equal(ModManager.BuiltInModIds.Count, status.Mods.Count); // 行为日志 + 自由相机 + 变速热键 mod
         Assert.Contains(status.Mods, m => m.FileName == ModManager.SampleModDllName);
         Assert.Contains(status.Mods, m => m.FileName == "FreeCameraMod.dll");
+        Assert.Contains(status.Mods, m => m.FileName == "SpeedHackMod.dll");
     }
 
     [Fact]
