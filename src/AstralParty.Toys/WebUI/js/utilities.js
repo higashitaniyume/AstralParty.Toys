@@ -31,6 +31,8 @@
 
     bindEvents() {
       $('utilsBackHomeBtn')?.addEventListener('click', () => showPage('home'));
+      // 兼容性警告里的"去模组页面"——用户想要新功能(含热键变速)时引导到模组页
+      $('utilsGoModsBtn')?.addEventListener('click', () => showPage('mods'));
       $('utilsInstallBtn')?.addEventListener('click', () => {
         this.saveConfig('install');
       });

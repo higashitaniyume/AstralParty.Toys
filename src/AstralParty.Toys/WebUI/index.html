@@ -232,6 +232,39 @@
         </div>
 
         <div class="utilities-body">
+          <!-- 兼容性大警告: 本页是旧版独立变速器, 与模组加载器互斥 -->
+          <section class="util-compat-warning" id="utilsCompatWarning">
+            <div class="util-compat-icon">⚠️</div>
+            <div class="util-compat-main">
+              <h3>注意：这个「变速器」和模组系统<strong>不兼容</strong>，两个只能装一个</h3>
+              <p class="util-compat-lead">
+                本页安装的是<strong>旧版独立变速器</strong>（<span class="util-mono">speedhack-rs</span>），
+                模组加载器用的也是同一个文件名 <span class="util-mono">version.dll</span> ——
+                同时安装会互相覆盖，游戏只会加载其中一个。
+              </p>
+              <div class="util-compat-choice">
+                <div class="util-compat-option">
+                  <span class="util-compat-tag tag-old">只想要变速</span>
+                  <p>不装任何 mod、只用加速 → 就留在本页，按下面卡片里的「⚡ 安装」即可。
+                     <br><small>（本页的旧版变速器自带独立的配置与热键，功能到此为止。）</small></p>
+                </div>
+                <div class="util-compat-option">
+                  <span class="util-compat-tag tag-new">想要新功能</span>
+                  <p>相机工具 / 活动日志 / 模组管理 / 权限声明 / 游戏内热键变速…
+                     <strong>也包括变速本身</strong> → 请到「🧩 模组」页面。
+                     <br><small>模组页面内置换速开关：<span class="util-mono">1.0</span> = 正常，
+                     <span class="util-mono">2.0</span> = 全程 2 倍速；进游戏后还能用
+                     <span class="util-mono">Alt</span>+<span class="util-mono">=</span> /
+                     <span class="util-mono">Alt</span>+<span class="util-mono">-</span> 实时调整（最低 1 倍，不支持减速）。</small></p>
+                </div>
+              </div>
+              <div class="util-compat-actions">
+                <button class="primary-btn" id="utilsGoModsBtn">🧩 去模组页面（推荐）</button>
+                <span class="util-compat-keep">只想用旧版变速器？忽略这段，照下面操作即可。</span>
+              </div>
+            </div>
+          </section>
+
           <div class="util-grid">
             <!-- 左：安装管理 -->
             <article class="util-card">
@@ -427,7 +460,8 @@
                   </label>
                   <label class="speedhack-speed-row">
                     <span>倍速</span>
-                    <input type="number" id="modSpeedhackSpeed" min="0.1" max="100" step="0.1" value="2.0">
+                    <input type="number" id="modSpeedhackSpeed" min="1" max="100" step="0.1" value="2.0"
+                       title="启动时基础倍速（1.0 = 正常；不支持减速，最小 1.0）">
                   </label>
                   <button class="primary-btn" id="modSpeedhackSaveBtn" style="padding:5px 13px;font-size:12px;white-space:nowrap">✔ 应用变速</button>
                   <span class="speedhack-hint" id="modSpeedhackHint">1.0 = 正常速度</span>
