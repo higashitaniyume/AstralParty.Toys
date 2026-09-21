@@ -2,6 +2,36 @@
 
 本文件按版本记录 `AstralParty.Toys` 的功能变更。版本号与 GitHub 发布 tag 一一对应（如 `v0.2.0`），发布产物由 [release.yml](.github/workflows/release.yml) 在打 tag 时自动构建。
 
+## [v0.4.3] - 2026-09-21
+
+### ✨ 新增内置 mod：变速（SpeedHackMod）
+
+变速引擎本来就是加载器内置能力（`doorstop_config.json` 的 `speedhackBaseSpeed`），
+但改倍率要重启游戏。这一版把它接到了键盘上，**游戏里随时调**：
+
+- `Delete`：开关变速（开 = 上次的倍率，关 = 回到 `1.0x`）；
+- `Alt` + `=`（即 `+`，小键盘 `+` 也行）：**加速**；`Alt` + `-`：**减速**；
+  每次 `speedStep`（默认 0.5，按住不放会连续调）；
+- **只读键盘**：不接管鼠标、不做输入独占、不拦截游戏自己的按键，不影响正常游玩；
+- 屏幕上弹当前倍率（`变速: 2.5x`），到上下限（默认 `0.1x` ~ `10x`）时提示"已是极限"；
+- 调完停手约 1.2 秒自动写回 `mods\SpeedHackMod\config.json`，下次启动沿用；
+- **不覆盖**你在 doorstop / 模组页面设的基准倍率：启动时引擎已是 2.0x 就当作"已开启 2.0x"，
+  只有按 `Delete` 或 `Alt` + `+`/`-` 之后才由 mod 接管；
+- 倍率/热键/范围全都能在 `config.json` 里改（`speedStep` / `minSpeed` / `maxSpeed` /
+  `toggleKey` / `speedUpKey` / `speedDownKey` / `useNumpadKeys` / `rememberSpeed` / `notify`）。
+
+> ⚠️ 变速影响游戏感知的所有时间（动画/回合/**网络超时**）。联机对局慎用，有断线/封号风险。
+
+### 🔧 内置组件升级
+
+- 内置 CesiumLoader 加载器 / SDK `2.1.2 → 2.1.3`：
+  新增 `SpeedHack.StepSpeed` / `ClampSpeed`（热键算倍率用的纯函数，带单元测试），
+  并修掉 `SetSpeed` 对 `NaN` 的漏检（`NaN` 会让游戏虚拟时间彻底坏掉）。
+
+### 📋 其它
+
+- 模组页勾选项文案更新为「同时安装内置 mod（行为日志 + 自由相机 + 变速，含 sidecar 元数据）」。
+
 ## [v0.4.2] - 2026-09-21
 
 ### ✨ 自由相机可在游戏内实时调高度

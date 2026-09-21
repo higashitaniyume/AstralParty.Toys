@@ -1,0 +1,1 @@
+{"id":"SpeedHackMod","name":"变速","version":"2.1.3","author":"CesiumLoader","description":"Delete 开关变速; Alt+= / Alt+- 实时调整游戏倍率(默认每次 0.5, 按住可连续调); 倍率/热键可在 config.json 改","permissions":4,"sdkVersion":"2.1.3","dependencies":[]}

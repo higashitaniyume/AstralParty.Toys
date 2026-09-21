@@ -11,7 +11,7 @@ namespace AstralParty.Toys.Services;
 /// <summary>
 /// 游戏 Mod 加载器（CesiumLoader version.dll Doorstop 式代理）与 mod 的安装 / 卸载 / 列表管理。
 /// 加载器本体 version.dll（Doorstop 式代理，UnityPlayer 导入 version.dll 时被优先加载）与
-/// 内置 SDK（CesiumLoader.SDK.dll）、内置 mod（见 <see cref="BuiltInModIds"/>：行为日志 / 自由相机）、
+/// 内置 SDK（CesiumLoader.SDK.dll）、内置 mod（见 <see cref="BuiltInModIds"/>：行为日志 / 自由相机 / 变速）、
 /// 各 mod 的 sidecar 元数据（*.json）以及 doorstop_config.json 以「内嵌资源」编译进程序集
 /// （AstralParty.Toys.ModLoader.*）。
 /// 安装 = 把 version.dll 写为游戏 exe 目录下的 version.dll，并创建
@@ -30,7 +30,7 @@ public sealed class ModManager
     public const string SampleModDllName = "ActivityLogMod.dll";
 
     /// <summary>随程序集内置的 mod（ModId，顺序即安装顺序）。资源名 = {ModId}.dll / {ModId}.json。</summary>
-    public static readonly IReadOnlyList<string> BuiltInModIds = ["ActivityLogMod", "FreeCameraMod"];
+    public static readonly IReadOnlyList<string> BuiltInModIds = ["ActivityLogMod", "FreeCameraMod", "SpeedHackMod"];
 
     private const string ResourcePrefix = "AstralParty.Toys.ModLoader.";
 
