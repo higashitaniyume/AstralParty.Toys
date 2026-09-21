@@ -199,8 +199,10 @@
     // 用加载器配置填充变速栏状态（开关 + 倍速）
     syncSpeedhackBar(config) {
       if (!config) return;
-      const speed = Number(config.speedhackBaseSpeed ?? 1.0);
-      const enabled = speed > 0 && Math.abs(speed - 1.0) > 0.001;
+      // 加载器硬性下限 1.0：配置里残留的 <1 值(旧版写的)按 1.0 显示，避免界面显示"0.5x"却实际跑 1x
+      const raw = Number(config.speedhackBaseSpeed ?? 1.0);
+      const speed = Number.isFinite(raw) && raw >= 1.0 ? raw : 1.0;
+      const enabled = Math.abs(speed - 1.0) > 0.001;
       const enableEl = $('modSpeedhackEnable');
       const speedEl = $('modSpeedhackSpeed');
       const labelEl = $('modSpeedhackEnableLabel');
@@ -210,18 +212,18 @@
         enableEl.disabled = false;
       }
       if (speedEl) {
-        speedEl.value = enabled ? speed : (speed === 1.0 ? '2.0' : String(speed));
+        speedEl.value = enabled ? speed : '2.0';
         speedEl.disabled = !enabled;
       }
       if (labelEl) labelEl.textContent = enabled ? '变速已启用' : '变速已禁用';
-      if (hintEl) hintEl.textContent = enabled ? `当前 ${speed}x（重启游戏生效）` : '1.0 = 正常速度';
+      if (hintEl) hintEl.textContent = enabled ? `当前 ${speed}x（重启游戏生效）` : '1.0 = 正常速度；最低 1.0，不支持减速';
     },
 
     saveSpeedhack() {
       const enabled = $('modSpeedhackEnable')?.checked === true;
       const speed = Number($('modSpeedhackSpeed')?.value ?? 2.0);
-      if (!(speed > 0 && speed <= 100)) {
-        toast('倍速必须在 0.1 ~ 100 之间');
+      if (!(speed >= 1 && speed <= 100)) {
+        toast('倍速必须在 1 ~ 100 之间（1.0 = 正常速度；加载器不支持减速）');
         return;
       }
       const baseSpeed = enabled ? speed : 1.0;
@@ -243,7 +245,8 @@
       this.syncSpeedhackBar(config);
       const rows = [
         ['enabled', '启用加载器', 'bool', config.enabled],
-        ['speedhackBaseSpeed', '启动时基础倍速（1.0 = 正常；2.0 = 全程 2 倍速；可留 1.0 后由 mod 热键变速）', 'number', config.speedhackBaseSpeed, { min: 0.1, max: 100, step: 0.1 }],
+        ['speedhackBaseSpeed', '启动时基础倍速（1.0 = 正常；2.0 = 全程 2 倍速；可留 1.0 后由 mod 热键变速。不支持减速，最小 1.0）', 'number', config.speedhackBaseSpeed, { min: 1, max: 100, step: 0.1 }],
+        ['speedControlEnabled', '允许 mod 热键变速（Delete 设为 1.0x / Alt+= Alt+- 调倍率，最低 1 倍）', 'bool', config.speedControlEnabled],
         ['consoleEnabled', '显示控制台窗口（mod 日志）', 'bool', config.consoleEnabled],
         ['consoleTopmost', '控制台窗口置顶', 'bool', config.consoleTopmost],
         ['forwardActivityLog', '把 mod 日志转发到控制台', 'bool', config.forwardActivityLog],
@@ -316,6 +319,7 @@
         consoleTopmost: bool('consoleTopmost'),
         forwardActivityLog: bool('forwardActivityLog'),
         speedhackBaseSpeed: speed,
+        speedControlEnabled: bool('speedControlEnabled'),
         sdkVersion: text('sdkVersion')
       };
     },

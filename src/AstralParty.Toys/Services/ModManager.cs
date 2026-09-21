@@ -29,6 +29,13 @@ public sealed class ModManager
     public const string SdkDllName = "CesiumLoader.SDK.dll";
     public const string SampleModDllName = "ActivityLogMod.dll";
 
+    /// <summary>加载器内置变速的倍率下限 = 1.0：加载器不支持减速，低于 1.0 的请求会被忽略。
+    /// 与加载器 speedhack.h 的 kSpeedMin / SDK SpeedHack.MinSpeed 保持一致。</summary>
+    public const double MinBaseSpeed = 1.0;
+
+    /// <summary>加载器内置变速的倍率上限，与 speedhack.h 的 kSpeedMax 一致。</summary>
+    public const double MaxBaseSpeed = 100.0;
+
     /// <summary>随程序集内置的 mod（ModId，顺序即安装顺序）。资源名 = {ModId}.dll / {ModId}.json。</summary>
     public static readonly IReadOnlyList<string> BuiltInModIds = ["ActivityLogMod", "FreeCameraMod", "SpeedHackMod"];
 
@@ -629,13 +636,15 @@ public sealed class ModManager
     // ============================== 游戏变速（加载器内置功能） ==============================
 
     /// <summary>设置加载器内置变速的基础倍率: 写 doorstop_config.json 的 speedhackBaseSpeed。
-    /// 1.0 = 正常(禁用变速); 其他值(如 2.0) = 启动游戏即变速, 全程保持。重启游戏生效。</summary>
+    /// 1.0 = 正常(禁用变速); 其他值(如 2.0) = 启动游戏即变速, 全程保持。重启游戏生效。
+    /// 下限硬性为 1.0 —— 加载器不接受减速请求(低于 1.0 会被忽略并按 1.0 处理)。</summary>
     public void SetSpeedhack(string gameDirectory, double baseSpeed)
     {
         if (string.IsNullOrWhiteSpace(gameDirectory))
             throw new ArgumentException("请先选择游戏目录。");
-        if (baseSpeed <= 0 || baseSpeed > 100)
-            throw new InvalidOperationException("倍速必须在 (0,100] 之间（1.0 = 正常速度）。");
+        if (baseSpeed < MinBaseSpeed || baseSpeed > MaxBaseSpeed)
+            throw new InvalidOperationException(
+                $"倍速必须在 [{MinBaseSpeed:0.#},{MaxBaseSpeed:0.#}] 之间（1.0 = 正常速度，不支持减速）。");
 
         var config = ReadLoaderConfig(gameDirectory);
         config.SpeedhackBaseSpeed = baseSpeed;
@@ -692,6 +701,8 @@ public sealed class ModManager
             if (root.TryGetProperty("forwardActivityLog", out var fa) && fa.ValueKind == JsonValueKind.True) defaults.ForwardActivityLog = true;
             if (root.TryGetProperty("forwardActivityLog", out fa) && fa.ValueKind == JsonValueKind.False) defaults.ForwardActivityLog = false;
             if (root.TryGetProperty("speedhackBaseSpeed", out var sp) && sp.ValueKind == JsonValueKind.Number) defaults.SpeedhackBaseSpeed = sp.GetDouble();
+            if (root.TryGetProperty("speedControlEnabled", out var sc) && sc.ValueKind == JsonValueKind.True) defaults.SpeedControlEnabled = true;
+            if (root.TryGetProperty("speedControlEnabled", out sc) && sc.ValueKind == JsonValueKind.False) defaults.SpeedControlEnabled = false;
             if (root.TryGetProperty("sdkVersion", out var sv) && sv.ValueKind == JsonValueKind.String) defaults.SdkVersion = sv.GetString()!;
         }
         catch
@@ -701,13 +712,15 @@ public sealed class ModManager
         return defaults;
     }
 
-    /// <summary>保存加载器配置(写回 doorstop_config.json, 无注释)。speedhackBaseSpeed 限制在 (0,100]。</summary>
+    /// <summary>保存加载器配置(写回 doorstop_config.json, 无注释)。
+    /// speedhackBaseSpeed 限制在 [1,100]: 加载器不支持减速, 小于 1.0 的值写了也会被忽略。</summary>
     public void SaveLoaderConfig(string gameDirectory, LoaderConfig config)
     {
         if (string.IsNullOrWhiteSpace(gameDirectory))
             throw new ArgumentException("请先选择游戏目录。");
-        if (config.SpeedhackBaseSpeed <= 0 || config.SpeedhackBaseSpeed > 100)
-            throw new InvalidOperationException("变速基础倍率必须在 (0,100] 之间（1.0 = 正常速度）。");
+        if (config.SpeedhackBaseSpeed < MinBaseSpeed || config.SpeedhackBaseSpeed > MaxBaseSpeed)
+            throw new InvalidOperationException(
+                $"变速基础倍率必须在 [{MinBaseSpeed:0.#},{MaxBaseSpeed:0.#}] 之间（1.0 = 正常速度，不支持减速）。");
 
         var json = JsonSerializer.Serialize(new Dictionary<string, object?>
         {
@@ -723,6 +736,7 @@ public sealed class ModManager
             ["consoleTopmost"] = config.ConsoleTopmost,
             ["forwardActivityLog"] = config.ForwardActivityLog,
             ["speedhackBaseSpeed"] = config.SpeedhackBaseSpeed,
+            ["speedControlEnabled"] = config.SpeedControlEnabled,
             ["sdkVersion"] = config.SdkVersion
         }, new JsonSerializerOptions { WriteIndented = true });
         WriteAllBytesProtected(LoaderConfigPath(gameDirectory), System.Text.Encoding.UTF8.GetBytes(json));
@@ -1199,6 +1213,8 @@ public sealed class LoaderConfig
     public bool ConsoleTopmost { get; set; } = true;
     public bool ForwardActivityLog { get; set; } = true;
     public double SpeedhackBaseSpeed { get; set; } = 1.0;
+    /// <summary>变速控制文件通道(mod 热键变速用)。默认开; 关掉后 SpeedHackMod 的热键失效(基础倍率仍生效)。</summary>
+    public bool SpeedControlEnabled { get; set; } = true;
     public string SdkVersion { get; set; } = "2.0.0";
 }
 

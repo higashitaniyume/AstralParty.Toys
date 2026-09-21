@@ -16,9 +16,14 @@
   "consoleTopmost": false,
   "forwardActivityLog": true,
   // 变速引擎基础倍率: 游戏启动即应用, 全程保持。1.0=正常(默认), 2.0=全程2倍速。
-  // 范围 (0,100]; 设 1.0 或省略 = 不启用(可用 SpeedHackMod 热键临时变速)。
+  // 范围 [1,100] —— 低于 1 倍(减速)被硬性禁止, 写更小的值会按 1.0 处理并记日志。
+  // 设 1.0 或省略 = 不启用(可用 SpeedHackMod 热键临时变速)。
   "speedhackBaseSpeed": 1.0,
+  // 变速控制文件通道(mod 侧热键变速用): 热更程序集无法 P/Invoke, 只能通过
+  // AstralParty_ModLoader\speed\request.txt 请求倍率。false = 关掉该通道
+  // (基础倍率仍然生效, 但 SpeedHackMod 的热键不再可用)。
+  "speedControlEnabled": true,
   // 当前分发的 SDK 版本(SemVer): 加载器用它校验 mod 声明的 SdkVersion,
   // 不兼容时拒绝加载该 mod。升级 SDK 时同步更新此字段。
-  "sdkVersion": "2.1.3"
+  "sdkVersion": "2.1.5"
 }

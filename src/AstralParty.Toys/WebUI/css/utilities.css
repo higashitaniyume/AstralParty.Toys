@@ -302,6 +302,95 @@ body:not(.reduce-motion) #modsView:not(.page-entering) .util-card {
 .util-note-box li { font-size: 12px; color: var(--gp-text-sub); line-height: 1.7; }
 .util-note-title { font-size: 12.5px; font-weight: 800; color: var(--gp-gold); }
 
+/* ============================================================================
+   兼容性大警告（旧版独立变速器 vs 模组加载器）
+   醒目但不刺眼：粉红描边 + 高亮标题，页面顶部长条通栏。
+   ============================================================================ */
+.util-compat-warning {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  border-radius: var(--gp-radius-md);
+  background:
+    linear-gradient(135deg, rgba(255, 23, 118, 0.16) 0%, rgba(168, 85, 247, 0.12) 55%, rgba(250, 204, 21, 0.10) 100%),
+    var(--gp-bg-card);
+  border: 2px solid var(--gp-border-pink);
+  box-shadow: var(--gp-shadow-md), inset 0 0 40px rgba(255, 23, 118, 0.08);
+  animation: util-compat-in 0.35s ease-out;
+}
+
+@keyframes util-compat-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.util-compat-icon {
+  flex: 0 0 auto;
+  font-size: 34px;
+  line-height: 1;
+  filter: drop-shadow(0 0 10px rgba(250, 204, 21, 0.55));
+}
+
+.util-compat-main { flex: 1; min-width: 0; }
+
+.util-compat-main h3 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.2px;
+}
+
+.util-compat-main h3 strong { color: var(--gp-pink); }
+
+.util-compat-lead {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--gp-text-sub);
+}
+
+.util-compat-choice {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.util-compat-option {
+  padding: 12px 14px;
+  border-radius: var(--gp-radius-sm);
+  background: rgba(10, 14, 28, 0.55);
+  border: 1px solid var(--gp-border);
+}
+
+.util-compat-option p { margin: 8px 0 0; font-size: 12.5px; line-height: 1.75; color: var(--gp-text-sub); }
+.util-compat-option small { color: var(--gp-text-muted); }
+.util-compat-option strong { color: #fff; }
+
+.util-compat-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: var(--gp-radius-full);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+.util-compat-tag.tag-old { background: rgba(148, 163, 184, 0.22); color: var(--gp-text-sub); border: 1px solid rgba(148, 163, 184, 0.45); }
+.util-compat-tag.tag-new { background: rgba(250, 204, 21, 0.18); color: var(--gp-gold); border: 1px solid var(--gp-border-gold); }
+
+.util-compat-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.util-compat-keep { font-size: 12px; color: var(--gp-text-muted); }
+
 /* 配置编辑区 */
 .util-form-row {
   display: flex;
