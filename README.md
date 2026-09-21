@@ -2,7 +2,7 @@
 
 ## **文件下载和问题反馈（企鹅）：1078464597**
 
-`AstralParty.Toys` 是面向《吉星派对》（Astral Party）的 Windows 本地工具箱，整合离线回放分析、协议帧查看、筹码复盘、游戏素材展示和变速器管理。所有数据处理均在本地完成。
+`AstralParty.Toys` 是面向《吉星派对》（Astral Party）的 Windows 本地工具箱，整合离线回放分析、协议帧查看、筹码复盘、游戏素材展示、**Mod 加载器（CesiumLoader）与模组管理**和变速器管理。所有数据处理均在本地完成。
 
 ## 下载与版本选择
 
@@ -47,7 +47,30 @@ AstralParty.Toys-<版本>-<架构>-<运行时模式>-<打包方式>
 - 逐帧查看 protobuf JSON；未知消息显示十六进制载荷
 - 导出完整回放 JSON、筹码 JSON/CSV，以及适合 AI 复盘的自然语言文本
 
-### 游戏工具
+### 模组（Mod）
+
+内置 [CesiumLoader](https://github.com/higashitaniyume/CesiumLoader) 加载器与 3 个内置 mod，把 mod 系统装进游戏目录：
+
+- 一键安装 / 更新 / 卸载加载器（`version.dll` + `AstralParty_ModLoader\`）；写入前做 SHA-256 校验，
+  不会盲目覆盖游戏目录里其它工具的 `version.dll`，目录里已有同名文件时需勾选「允许覆盖」
+- 「内嵌版本 / 已装版本 / 最新版本」三栏对照，可一键从 GitHub 更新到最新发布版
+- 加载器设置可视化编辑（`doorstop_config.json`）：总开关、控制台窗口与置顶、日志转发、各项等待超时、
+  **变速基础倍速**与「允许 mod 热键变速」
+- 游戏变速（加载器内置功能）：界面上直接开关并设定基础倍速（`1.0` = 正常，进游戏即生效），
+  不必手动改配置文件
+- 模组管理：列出 `mods\` 下每个 mod（名称 / 版本 / 能力声明），可启用或禁用（重启游戏生效）、
+  编辑该 mod 的配置、删除；也能导入外部 mod 的 DLL
+- 一键打开 `mods\` / `sdk\` / `logs\` 目录
+- 自带 3 个内置 mod：
+  - **行为日志**：把出牌 / 投骰 / 回合等行为写进 `logs\activity-mod.log`，并转发到加载器控制台
+  - **自由相机**：`F1` 开关俯瞰视角，`Ctrl`+`=` / `Ctrl`+`-` 游戏内实时调高度
+  - **变速**：`Delete` 设为 `1.0x`，`Alt`+`=` / `Alt`+`-` 游戏内实时调倍率（默认每次 0.5，按住连调），
+    屏幕上提示当前倍率
+
+倍率范围 `[1.0, 100]`：**低于 1 倍（减速）不允许**，界面上填小于 1 的值会被拒绝。倍速只改变游戏感知的时间
+（动画 / 演出 / 回合 / 网络超时），**别把倍率调太高**（建议 ≤3x）。
+
+### 游戏工具（旧版独立变速器）
 
 内置 [speedhack-rs](https://github.com/Hirtol/speedhack-rs) x64 版，并提供图形化管理：
 
@@ -59,6 +82,10 @@ AstralParty.Toys-<版本>-<架构>-<运行时模式>-<打包方式>
 - DLL 与默认配置模板保存在 `Resources/SpeedhackTools`，并作为程序集资源嵌入 `AstralParty.Toys.dll`；发布目录不需要额外携带这两个源文件
 
 安装、卸载前应完全退出游戏；游戏内需关闭垂直同步。
+
+> ⚠️ 这一页装的是**旧版独立变速器**（speedhack-rs），它和「模组」页的加载器都叫 `version.dll`，
+> **两者只能装一个**（同时装会互相覆盖，游戏只会加载其中一个）。页面顶部为此有互斥警告框：
+> 只想要变速就留在本页；想要模组功能（也包括游戏内热键变速）请到「模组」页 —— 加载器本身就内置了变速。
 
 ### 素材与界面
 
@@ -94,7 +121,7 @@ dotnet run --project .\replaytool\src\AstralParty.Toys\AstralParty.Toys.csproj
 dotnet test .\replaytool\tests\AstralParty.Toys.Tests\AstralParty.Toys.Tests.csproj
 ```
 
-测试自带合成回放数据（用游戏自己的 protobuf 生成类构造），**不依赖真实录像，也不需要联网**；
+当前 87 个用例（85 通过 + 2 跳过）。测试自带合成回放数据（用游戏自己的 protobuf 生成类构造），**不依赖真实录像，也不需要联网**；
 `Protocol\` 与 `GameData\` 会随项目引用自动复制到测试输出目录。需要真实录像的用例在没有数据时
 报告为「已跳过」，把回放放进游戏回放目录或设置 `ASTRAL_TEST_REPLAY` 指向文件即可启用。
 覆盖范围与合成夹具的说明见 `docs\replay-format.md` 第 8 节。
@@ -129,6 +156,8 @@ replaytool\src\AstralParty.Toys\bin\Release\net8.0-windows\win-x64\publish\Astra
   - 回放库设置：`replay-library.json`（回放库目录默认就是同一个文件夹）
 - WebView2 浏览器数据与缓存：`%LOCALAPPDATA%\AstralParty.Toys\WebView2`
 - 游戏安装目录中的变速器：`version.dll` 与 `speedhack_config.json`
+- 游戏安装目录中的加载器 / mod：`AstralParty_ModLoader\`（`doorstop_config.json`、`mods\`、`sdk\`、`logs\`）；
+  变速控制文件通道在其中的 `speed\`，并镜像一份到 `%LOCALAPPDATA%\AstralParty_ModLoader\speed`
 
 文档目录不可写时会回退到 `%APPDATA%\AstralParty.Toys`；首次运行会把旧的 `%APPDATA%` 配置迁移到文档目录，
 但**不覆盖**文档目录里已有的设置。
