@@ -859,7 +859,9 @@ public sealed class ModManager
     // ============================== mod 配置表单 (mods\{ModId}\config.json 键值编辑) ==============================
 
     /// <summary>读取 mod 配置为表单字段列表(按 JSON 值类型分类); 文件不存在返回空列表。
-    /// 每个字段带 name + kind(bool/number/string) + 当前值。</summary>
+    /// 每个字段带 name + kind(bool/number/string/key) + 当前值。
+    /// kind=key 的是键位绑定(名字以 Key 结尾, 如 toggleKey/speedUpKey): 值本身是字符串,
+    /// 但 UI 用"按一下要设的键"来采集(含鼠标侧键), 而不是让用户手打 KeyCode 名字。</summary>
     public List<ModConfigField> ReadModConfigFields(string gameDirectory, string fileName)
     {
         var list = new List<ModConfigField>();
@@ -883,7 +885,9 @@ public sealed class ModManager
                         field.NumberValue = prop.Value.TryGetInt64(out var l) ? l : prop.Value.GetDouble();
                         break;
                     case JsonValueKind.String:
-                        field.Kind = "string"; field.StringValue = prop.Value.GetString() ?? ""; break;
+                        field.Kind = IsKeyBindingField(prop.Name) ? "key" : "string";
+                        field.StringValue = prop.Value.GetString() ?? "";
+                        break;
                     default:
                         field.Kind = "other"; field.StringValue = prop.Value.GetRawText(); break;
                 }
@@ -896,6 +900,15 @@ public sealed class ModManager
         }
         return list;
     }
+
+    /// <summary>
+    /// 字段名是否是键位绑定。约定: 以 <c>Key</c> 结尾(toggleKey/speedUpKey/resetKey/dumpAllKey...)。
+    ///
+    /// 这只是"UI 用哪种控件"的提示, 认错了也不会坏数据 —— 值仍然是字符串, 保存路径完全一样,
+    /// 用户随时可以退回文本框手写 KeyCode 名字(或点"高级编辑"直接改 JSON)。
+    /// </summary>
+    private static bool IsKeyBindingField(string name)
+        => name.Length > 3 && name.EndsWith("Key", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>按表单字段保存 mod 配置(序列化回 JSON; 类型由字段 Kind 决定)。
     /// 落盘位置与 mod 自己读的完全一致: <c>mods\{ModId}\config.json</c>(DLL 旁边)。</summary>
@@ -913,6 +926,8 @@ public sealed class ModManager
             {
                 case "bool": dict[field.Name] = field.BoolValue; break;
                 case "number": dict[field.Name] = field.NumberValue; break;
+                // 键位和普通字符串一样落盘(kind=key 只是 UI 的"用捕获控件"提示)
+                case "key": dict[field.Name] = field.StringValue; break;
                 default: dict[field.Name] = field.StringValue; break;
             }
         }
@@ -1336,7 +1351,7 @@ public sealed class LoaderConfig
 public sealed class ModConfigField
 {
     public string Name { get; set; } = "";
-    /// <summary>bool / number / string / other（other 原样保留原始 JSON 文本）。</summary>
+    /// <summary>bool / number / string / key(键位绑定) / other（other 原样保留原始 JSON 文本）。</summary>
     public string Kind { get; set; } = "string";
     public bool BoolValue { get; set; }
     public double NumberValue { get; set; }

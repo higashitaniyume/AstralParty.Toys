@@ -689,7 +689,8 @@ public sealed class ModManagerTests
         Assert.Equal(3, fields.Count);
         Assert.Contains(fields, f => f.Name == "Enabled" && f.Kind == "bool" && f.BoolValue);
         Assert.Contains(fields, f => f.Name == "BaseSpeed" && f.Kind == "number" && f.NumberValue == 1.5);
-        Assert.Contains(fields, f => f.Name == "SpeedUpKey" && f.Kind == "string" && f.StringValue == "F1");
+        // SpeedUpKey 以 Key 结尾 → 读回来是 kind=key(UI 用"按键捕获"控件而不是普通文本框)
+        Assert.Contains(fields, f => f.Name == "SpeedUpKey" && f.Kind == "key" && f.StringValue == "F1");
 
         // 改布尔值后回读
         harness.Manager.SaveModConfigFields(harness.GameDirectory, "FieldMod.dll", new List<ModConfigField>
@@ -699,6 +700,51 @@ public sealed class ModManagerTests
         var readBack = harness.Manager.ReadModConfigFields(harness.GameDirectory, "FieldMod.dll");
         var enabled = Assert.Single(readBack);
         Assert.False(enabled.BoolValue);
+    }
+
+    [Fact]
+    public void ReadModConfigFields_MarksKeyBindingsForCaptureUi()
+    {
+        using var harness = new ModHarness("ap-mod-keykind");
+        var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
+        harness.Sandbox.WriteFile(Path.Combine(modsDir, "KeyMod.dll"), new byte[] { 0x4D, 0x5A });
+
+        harness.Manager.SaveModConfigFields(harness.GameDirectory, "KeyMod.dll", new List<ModConfigField>
+        {
+            new() { Name = "toggleKey", Kind = "string", StringValue = "Mouse3" },   // 鼠标侧键
+            new() { Name = "speedUpKey", Kind = "string", StringValue = "Equals" },
+            new() { Name = "note", Kind = "string", StringValue = "随便写点啥" },
+            new() { Name = "key", Kind = "string", StringValue = "名字太短, 不当键位" }
+        });
+
+        var fields = harness.Manager.ReadModConfigFields(harness.GameDirectory, "KeyMod.dll");
+        Assert.Contains(fields, f => f.Name == "toggleKey" && f.Kind == "key" && f.StringValue == "Mouse3");
+        Assert.Contains(fields, f => f.Name == "speedUpKey" && f.Kind == "key" && f.StringValue == "Equals");
+        // 不以 Key 结尾的字符串照旧是普通文本
+        Assert.Contains(fields, f => f.Name == "note" && f.Kind == "string" && f.StringValue == "随便写点啥");
+        Assert.Contains(fields, f => f.Name == "key" && f.Kind == "string");
+    }
+
+    [Fact]
+    public void SaveModConfigFields_WritesKeyKindAsPlainString()
+    {
+        using var harness = new ModHarness("ap-mod-keysave");
+        var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
+        harness.Sandbox.WriteFile(Path.Combine(modsDir, "KeySaveMod.dll"), new byte[] { 0x4D, 0x5A });
+
+        // UI 采集到的键位最终和手写 JSON 完全一样(就是普通字符串), kind=key 直接存也要能落盘
+        harness.Manager.SaveModConfigFields(harness.GameDirectory, "KeySaveMod.dll", new List<ModConfigField>
+        {
+            new() { Name = "toggleKey", Kind = "key", StringValue = "Mouse4" }
+        });
+
+        var json = File.ReadAllText(Path.Combine(modsDir, "KeySaveMod", "config.json"));
+        Assert.Contains("\"toggleKey\": \"Mouse4\"", json);
+
+        var field = Assert.Single(harness.Manager.ReadModConfigFields(harness.GameDirectory, "KeySaveMod.dll"));
+        Assert.Equal("toggleKey", field.Name);
+        Assert.Equal("key", field.Kind);
+        Assert.Equal("Mouse4", field.StringValue);
     }
 
     // ============================== 联网更新：包解析 / 校验 / 安装 ==============================
