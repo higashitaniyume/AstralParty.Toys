@@ -1,1 +1,1 @@
-{"id":"ActivityLogMod","name":"行为日志","version":"2.1.5","author":"CesiumLoader","description":"记录玩家行为日志(出牌/投骰/回合)","permissions":1,"sdkVersion":"2.1.5","dependencies":[]}
+{"id":"ActivityLogMod","name":"行为日志","version":"2.1.6","author":"CesiumLoader","description":"记录玩家行为日志(出牌/投骰/回合)","permissions":1,"sdkVersion":"2.1.6","dependencies":[]}

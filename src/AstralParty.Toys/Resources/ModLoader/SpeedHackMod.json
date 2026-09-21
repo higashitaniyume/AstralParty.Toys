@@ -1,1 +1,1 @@
-{"id":"SpeedHackMod","name":"变速","version":"2.1.5","author":"CesiumLoader","description":"Delete 设为 1.0x; Alt+= / Alt+- 实时调整游戏倍率(1.0x 起, 默认每次 0.5, 按住可连续调); 倍率/热键可在 config.json 改","permissions":4,"sdkVersion":"2.1.5","dependencies":[]}
+{"id":"SpeedHackMod","name":"变速","version":"2.1.6","author":"CesiumLoader","description":"Delete 在 1.0x 与刚才的倍率之间切换(再按一次切回); Alt+= / Alt+- 实时调整游戏倍率(1.0x 起, 默认每次 0.5, 按住可连续调); 倍率/热键可在 config.json 改","permissions":4,"sdkVersion":"2.1.6","dependencies":[]}
