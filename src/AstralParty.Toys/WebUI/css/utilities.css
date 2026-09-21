@@ -859,6 +859,53 @@ input[type="number"].util-input::-webkit-inner-spin-button { -webkit-appearance:
   margin-top: 6px;
 }
 
+/* ---------- 键位捕获按钮（mod 配置里的 toggleKey / speedUpKey …） ---------- */
+.cfg-row.cfg-key {
+  gap: 8px;
+}
+
+.key-btn {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--gp-text);
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.key-btn:hover {
+  border-color: var(--gp-accent, #4da3ff);
+}
+
+.key-btn.capturing {
+  border-color: var(--gp-accent, #4da3ff);
+  background: rgba(77, 163, 255, 0.12);
+  color: var(--gp-accent, #4da3ff);
+}
+
+.key-clear {
+  flex: 0 0 auto;
+  width: 26px;
+  padding: 4px 0;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  background: transparent;
+  color: var(--gp-text-muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.key-clear:hover {
+  border-color: var(--gp-accent, #4da3ff);
+  color: var(--gp-text);
+}
+
 /* ---------- 游戏变速栏（加载器内置功能） ---------- */
 .util-speedhack-bar {
   display: flex;

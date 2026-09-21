@@ -246,7 +246,7 @@
       const rows = [
         ['enabled', '启用加载器', 'bool', config.enabled],
         ['speedhackBaseSpeed', '启动时基础倍速（1.0 = 正常；2.0 = 全程 2 倍速；可留 1.0 后由 mod 热键变速。不支持减速，最小 1.0）', 'number', config.speedhackBaseSpeed, { min: 1, max: 100, step: 0.1 }],
-        ['speedControlEnabled', '允许 mod 热键变速（Delete 在 1.0x 与刚才的倍率之间切换 / Alt+= Alt+- 调倍率，最低 1 倍）', 'bool', config.speedControlEnabled],
+        ['speedControlEnabled', '允许 mod 热键变速（Delete 在 1.0x 与刚才的倍率之间切换 / Alt+= Alt+- 调倍率，最低 1 倍；键位可在「变速」的 ⚙ 配置里改）', 'bool', config.speedControlEnabled],
         ['consoleEnabled', '显示控制台窗口（mod 日志）', 'bool', config.consoleEnabled],
         ['consoleTopmost', '控制台窗口置顶', 'bool', config.consoleTopmost],
         ['forwardActivityLog', '把 mod 日志转发到控制台', 'bool', config.forwardActivityLog],
@@ -347,11 +347,19 @@
             if (f.kind === 'other') {
               return `<label class="cfg-row"><span class="cfg-label">${esc(f.name)}（JSON）</span><input type="text" data-field="${id}" data-kind="other" value="${esc(f.stringValue)}"></label>`;
             }
+            if (f.kind === 'key') {
+              const current = f.stringValue || '';
+              return `<div class="cfg-row cfg-key">
+                <span class="cfg-label">${esc(f.name)}</span>
+                <button type="button" class="key-btn" data-field="${id}" data-kind="key" data-key="${esc(current)}" title="点一下，再按下要绑的键（支持鼠标左/右/中键与侧键；Esc 取消）">${esc(current || '未设置（用 mod 默认）')}</button>
+                <button type="button" class="key-clear" data-clear="${id}" title="清空（让 mod 用它自己的默认键）">×</button>
+              </div>`;
+            }
             return `<label class="cfg-row"><span class="cfg-label">${esc(f.name)}</span><input type="text" data-field="${id}" data-kind="string" value="${esc(f.stringValue)}"></label>`;
           }).join('');
       const html = `
         <div class="cfg-form">
-          <div class="cfg-hint">配置保存在 <b>mods\\${esc(fileName.replace(/\.dll$/i, ''))}\\config.json</b>（与 mod 的 dll 同目录，由 mod 的 SdkConfig 读写；重启游戏后生效）。勾选框 = 开关，数字框 = 数值，文本框 = 文字。</div>
+          <div class="cfg-hint">配置保存在 <b>mods\\${esc(fileName.replace(/\.dll$/i, ''))}\\config.json</b>（与 mod 的 dll 同目录，由 mod 的 SdkConfig 读写；重启游戏后生效）。勾选框 = 开关，数字框 = 数值，文本框 = 文字；<b>按键按钮</b> = 点一下再按要绑的键（键盘任意键或鼠标左/右/中键、侧键，Esc 取消）。</div>
           ${rows}
           <div class="cfg-actions">
             <button class="secondary-btn" data-cfg-field-cancel>取消</button>
@@ -361,6 +369,7 @@
         </div>`;
       openModal(`⚙ 配置 · ${esc(fileName)}`, html);
       const modal = $('globalModal');
+      bindKeyCapture(modal);
       modal?.querySelector('[data-cfg-field-cancel]')?.addEventListener('click', closeModal);
       modal?.querySelector('[data-cfg-field-raw]')?.addEventListener('click', () => {
         closeModal();
@@ -372,12 +381,146 @@
           const kind = el?.dataset.kind || f.kind;
           if (kind === 'bool') return { name: f.name, kind: 'bool', boolValue: el?.checked === true };
           if (kind === 'number') return { name: f.name, kind: 'number', numberValue: Number(el?.value ?? f.numberValue) };
+          // 键位在后台就是普通字符串, 只是 UI 用"捕获"来采集
+          if (kind === 'key') return { name: f.name, kind: 'string', stringValue: el?.dataset.key ?? f.stringValue ?? '' };
           return { name: f.name, kind: 'string', stringValue: el?.value ?? f.stringValue };
         });
         post({ type: 'modSaveConfigFields', fileName, fields: out });
       });
     }
   };
+
+  // =====================================================================
+  // 按键捕获（mod 配置里的 toggleKey / speedUpKey / resetKey …）
+  //
+  // mod 侧(Unity)读的是 KeyCode 名字，所以这里要把浏览器的事件翻译成那套名字：
+  //   键盘：event.code（"KeyA" / "Digit1" / "NumpadAdd" / "AltLeft" …）
+  //   鼠标：event.button（0 左 / 1 中 / 2 右 / 3 侧键"后退" / 4 侧键"前进"）
+  // 认不出来的键（媒体键等）不写进配置，只提示 —— 绝不猜一个可能不对的名字存下去。
+  // =====================================================================
+
+  // 与 Unity KeyCode 名字相同的部分（不用换算）
+  const UNITY_KEY_BY_CODE = {
+    Backquote: 'BackQuote', Minus: 'Minus', Equal: 'Equals', Backspace: 'Backspace', Tab: 'Tab',
+    CapsLock: 'CapsLock', Space: 'Space', Enter: 'Return', NumpadEnter: 'KeypadEnter',
+    Escape: 'Escape', Delete: 'Delete', Insert: 'Insert', Home: 'Home', End: 'End',
+    PageUp: 'PageUp', PageDown: 'PageDown', PrintScreen: 'Print', ScrollLock: 'ScrollLock', Pause: 'Pause',
+    ArrowUp: 'UpArrow', ArrowDown: 'DownArrow', ArrowLeft: 'LeftArrow', ArrowRight: 'RightArrow',
+    ShiftLeft: 'LeftShift', ShiftRight: 'RightShift',
+    ControlLeft: 'LeftControl', ControlRight: 'RightControl',
+    AltLeft: 'LeftAlt', AltRight: 'RightAlt',
+    MetaLeft: 'LeftWindows', MetaRight: 'RightWindows',
+    BracketLeft: 'LeftBracket', BracketRight: 'RightBracket', Backslash: 'Backslash',
+    Semicolon: 'Semicolon', Quote: 'Quote', Comma: 'Comma', Period: 'Period', Slash: 'Slash',
+    NumpadAdd: 'KeypadPlus', NumpadSubtract: 'KeypadMinus', NumpadMultiply: 'KeypadMultiply',
+    NumpadDivide: 'KeypadDivide', NumpadDecimal: 'KeypadPeriod', NumLock: 'Numlock', ContextMenu: 'Menu'
+  };
+
+  // 浏览器鼠标键号 → Unity Mouse0-4（注意中间/右键的编号不是直觉顺序：Unity 里 1 = 右键、2 = 中键）
+  const UNITY_KEY_BY_MOUSE_BUTTON = { 0: 'Mouse0', 1: 'Mouse2', 2: 'Mouse1', 3: 'Mouse3', 4: 'Mouse4' };
+
+  function unityKeyNameFromCode(code) {
+    if (!code) return '';
+    if (UNITY_KEY_BY_CODE[code]) return UNITY_KEY_BY_CODE[code];
+    let m = /^Key([A-Z])$/.exec(code);        // KeyA…KeyZ → A…Z
+    if (m) return m[1];
+    m = /^Digit([0-9])$/.exec(code);          // Digit0…Digit9 → Alpha0…Alpha9
+    if (m) return 'Alpha' + m[1];
+    m = /^F([1-9]|1[0-2])$/.exec(code);       // F1…F12
+    if (m) return code;
+    m = /^Numpad([0-9])$/.exec(code);         // Numpad0…Numpad9 → Keypad0…Keypad9
+    if (m) return 'Keypad' + m[1];
+    return '';
+  }
+
+  let stopKeyCapture = null;   // 当前正在捕获的那一个（同一时刻只允许一个）
+
+  function bindKeyCapture(modal) {
+    if (!modal) return;
+
+    modal.querySelectorAll('.key-btn').forEach(btn => {
+      btn.addEventListener('click', () => startKeyCapture(btn));
+    });
+
+    // 清空 = 让 mod 用它的默认键（mod 读到空值会退回内置默认，例如变速的 Delete）
+    modal.querySelectorAll('.key-clear').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = modal.querySelector(`[data-field="${btn.dataset.clear}"]`);
+        if (target) setKeyButtonValue(target, '');
+      });
+    });
+  }
+
+  function setKeyButtonValue(btn, name) {
+    btn.dataset.key = name;
+    btn.textContent = name || '未设置（用 mod 默认）';
+  }
+
+  function startKeyCapture(btn) {
+    if (stopKeyCapture) stopKeyCapture();   // 前一个还开着：直接取消
+
+    const original = btn.textContent;
+    btn.classList.add('capturing');
+    btn.textContent = '按下按键…（Esc 取消）';
+
+    const onKeyDown = e => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (e.repeat) return;
+      if (e.key === 'Escape' || e.code === 'Escape') { done('', '取消'); return; }
+      const name = unityKeyNameFromCode(e.code);
+      if (!name) { toast('这个键不支持，请换一个'); return; }
+      done(name, '已设为 ' + name);
+    };
+
+    const onMouseDown = e => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const name = UNITY_KEY_BY_MOUSE_BUTTON[e.button];
+      if (!name) { toast('这个鼠标键不支持，请换一个'); return; }
+      done(name, '已设为 ' + name);
+    };
+
+    // 鼠标侧键按下去还会让浏览器"后退/前进"：捕获期间一并压掉（在 WebView 里按侧键不该跳页）
+    const swallow = e => { e.preventDefault(); e.stopImmediatePropagation(); };
+
+    function done(name, message) {
+      stop();
+      if (name) setKeyButtonValue(btn, name);
+      else btn.textContent = original;
+      btn.blur();
+      if (message) toast(message);
+    }
+
+    function stop() {
+      document.removeEventListener('keydown', onKeyDown, true);
+      document.removeEventListener('mousedown', onMouseDown, true);
+      document.removeEventListener('mouseup', swallow, true);
+      document.removeEventListener('auxclick', swallow, true);
+      document.removeEventListener('click', swallow, true);
+      document.removeEventListener('contextmenu', swallow, true);
+      btn.classList.remove('capturing');
+      stopKeyCapture = null;
+
+      // 结束这一下自身的 click 还可能落到按钮上(用鼠标键绑定时必然如此), 吞掉它,
+      // 否则按钮会立刻又开始捕获。没有后续 click 也没关系, 到点自动撤掉。
+      const onceClick = e => { e.preventDefault(); e.stopImmediatePropagation(); removeOnce(); };
+      const timer = setTimeout(removeOnce, 400);
+      function removeOnce() {
+        clearTimeout(timer);
+        document.removeEventListener('click', onceClick, true);
+      }
+      document.addEventListener('click', onceClick, true);
+    }
+
+    stopKeyCapture = stop;
+    document.addEventListener('keydown', onKeyDown, true);
+    document.addEventListener('mousedown', onMouseDown, true);
+    document.addEventListener('mouseup', swallow, true);
+    document.addEventListener('auxclick', swallow, true);
+    document.addEventListener('click', swallow, true);
+    document.addEventListener('contextmenu', swallow, true);
+  }
 
   function fmtBytes(bytes) {
     const value = Number(bytes ?? 0);

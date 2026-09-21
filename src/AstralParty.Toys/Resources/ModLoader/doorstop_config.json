@@ -25,5 +25,5 @@
   "speedControlEnabled": true,
   // 当前分发的 SDK 版本(SemVer): 加载器用它校验 mod 声明的 SdkVersion,
   // 不兼容时拒绝加载该 mod。升级 SDK 时同步更新此字段。
-  "sdkVersion": "2.1.6"
+  "sdkVersion": "2.1.7"
 }
