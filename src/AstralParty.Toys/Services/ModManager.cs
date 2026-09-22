@@ -165,11 +165,20 @@ public sealed class ModManager
 
             status.GameRunning = SpeedhackManager.IsGameRunning();
 
-            // 已安装版本：游戏目录 AstralParty_ModLoader\cesium-loader.json（安装时写入）
+            // 已安装版本：优先 AstralParty_ModLoader\cesium-loader.json（安装时写入）；
+            // 0.4.7 之前的老安装没有这个清单 —— 退回从加载器日志回读（界面上标注「来自日志」）。
             var loaderRootForVersion = string.IsNullOrEmpty(directory) ? "" : Path.Combine(directory, LoaderFolderName);
+            var installedVersionSource = "";
             status.InstalledVersion = loaderRootForVersion.Length > 0
-                ? ReadInstalledVersion(Path.Combine(loaderRootForVersion, "cesium-loader.json"))
+                ? ResolveInstalledVersion(directory, out installedVersionSource)
                 : "";
+            // 最后一层兜底：装完从没成功启动到 mod 加载阶段 → 日志里也没有版本行 → 用配置里的 sdkVersion 提示
+            if (status.InstalledVersion.Length == 0 && loaderRootForVersion.Length > 0)
+            {
+                var sdkHint = ReadConfiguredSdkVersion(loaderRootForVersion);
+                if (sdkHint.Length > 0) { status.InstalledVersion = sdkHint; installedVersionSource = "config"; }
+            }
+            status.InstalledVersionSource = installedVersionSource;
             status.EmbeddedVersion = EmbeddedVersion;
 
             // mod 列表 / SDK 列表（安装目录存在才扫）
@@ -302,8 +311,9 @@ public sealed class ModManager
           + (HasEmbeddedBuiltInMods ? $"（内置：{string.Join("、", EmbeddedBuiltInModIdList)}）" : "")
           + "，并在控制台窗口显示日志。";
 
-    /// <summary>把内嵌文件写入游戏目录 + 创建目录结构。version.dll 目标已存在且不是内置文件时，必须 overwriteDll 才会覆盖。</summary>
-    public void Install(string gameDirectory, bool overwriteDll, bool includeSampleMod)
+    /// <summary>把内嵌文件写入游戏目录 + 创建目录结构。version.dll 目标已存在且不是内置文件时，必须 overwriteDll 才会覆盖。
+    /// 已装加载器比内置的更新时（降级）默认拒绝，需要 allowDowngrade 显式放行。</summary>
+    public void Install(string gameDirectory, bool overwriteDll, bool includeSampleMod, bool allowDowngrade = false)
     {
         if (!HasEmbeddedLoader)
             throw new InvalidOperationException("程序集缺少内置加载器资源（version.dll），无法安装。");
@@ -313,6 +323,17 @@ public sealed class ModManager
             throw new DirectoryNotFoundException($"游戏目录不存在：{gameDirectory}");
         if (string.IsNullOrEmpty(SpeedhackManager.ContainsGameExe(gameDirectory)))
             throw new InvalidOperationException("所选目录里没有找到 AstralParty.exe / AstralParty_CN.exe，确认这是游戏 exe 所在的目录？");
+
+        // 降级闸门: 游戏目录里已装的加载器比本程序内置的更新时，默认拒绝这次"安装"。
+        // 场景: 用户装过更新版的加载器（比如将来某个 3.x），却拿了较旧版本的 Toys ——
+        //       点一下「安装加载器」就把新加载器静默换回旧版，功能无声退化。
+        // 已装版本从安装清单读，0.4.7 之前的老安装（没有清单）退回读加载器日志。
+        var installedBeforeInstall = ResolveInstalledVersion(gameDirectory, out var installedSource);
+        if (!allowDowngrade && EmbeddedVersion.Length > 0 && installedBeforeInstall.Length > 0
+            && CompareSemVer(EmbeddedVersion, installedBeforeInstall) < 0)
+            throw new InvalidOperationException(
+                $"游戏目录里已装的加载器（{installedBeforeInstall}{SourceHint(installedSource)}）比本程序内置的（{EmbeddedVersion}）更新 —— 这是一次降级，已阻止。" +
+                "如确定要降级，请勾选「允许降级安装较旧的加载器」；通常更好的做法是改用较新版本的 AstralParty.Toys。");
 
         var targetDll = Path.Combine(gameDirectory, LoaderDllName);
         if (File.Exists(targetDll) && !MatchesEmbeddedLoader(targetDll) && !overwriteDll)
@@ -526,6 +547,77 @@ public sealed class ModManager
         }
     }
 
+    /// <summary>从加载器日志回读版本号 —— 用于**没有安装清单的老安装**（0.4.7 之前装的那批，
+    /// 它们的 cesium-loader.json 不存在，只靠清单读不出「已装版本」）。
+    ///
+    /// 加载器每次启动都会往 logs\cesium-loader.log 追加一行（loader.cpp 的 mod 加载报告）：
+    ///     CesiumLoader loader v2.1.7 / SDK v2.1.7 — mod 加载报告
+    /// 该日志是单文件追加、不轮转（spdlog basic_file_sink, truncate=false），所以取**最后一次**匹配
+    /// 就是最近一次运行的加载器版本。这只是没有清单时的推测，界面必须标注「来自日志」以免被当成权威值。</summary>
+    private static string ReadVersionFromLogs(string loaderRoot)
+    {
+        try
+        {
+            var logPath = Path.Combine(loaderRoot, LogsFolderName, "cesium-loader.log");
+            if (!File.Exists(logPath)) return "";
+
+            // 日志会一直追加、可能很大：只读尾部 256 KB（版本行在每次启动的加载报告里，靠近文件末尾）。
+            const int tailBytes = 256 * 1024;
+            using var stream = new FileStream(logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            var start = Math.Max(0, stream.Length - tailBytes);
+            stream.Seek(start, SeekOrigin.Begin);
+            var buffer = new byte[stream.Length - start];
+            var read = stream.Read(buffer, 0, buffer.Length);
+            var text = System.Text.Encoding.UTF8.GetString(buffer, 0, read);
+
+            var matches = System.Text.RegularExpressions.Regex.Matches(text, @"CesiumLoader loader v([0-9][0-9.]*)");
+            return matches.Count > 0 ? matches[^1].Groups[1].Value : "";
+        }
+        catch
+        {
+            return "";   // 游戏运行中占用、权限不足等：读不到就当没有，绝不影响状态显示
+        }
+    }
+
+    /// <summary>已装加载器版本：优先安装清单（权威），没有清单的老安装退回日志回读。
+    /// <paramref name="source"/> 回传来源（"manifest" / "log" / ""），供界面区分显示。</summary>
+    private static string ResolveInstalledVersion(string gameDirectory, out string source)
+    {
+        var loaderRoot = Path.Combine(gameDirectory, LoaderFolderName);
+        var fromManifest = ReadInstalledVersion(Path.Combine(loaderRoot, "cesium-loader.json"));
+        if (fromManifest.Length > 0) { source = "manifest"; return fromManifest; }
+
+        var fromLog = ReadVersionFromLogs(loaderRoot);
+        if (fromLog.Length > 0) { source = "log"; return fromLog; }
+
+        source = "";
+        return "";
+    }
+
+    /// <summary>错误信息里的版本来源说明 —— 从日志回读的版本**可能已过期**（例如用户手动换过 version.dll、
+    /// 或上次运行的是别的版本），所以降级拦截的提示里要讲清楚来源，别让用户以为工具认错了版本。</summary>
+    private static string SourceHint(string source) =>
+        source == "log" ? "，此版本由加载器日志推断、可能已过期" : "";
+
+    /// <summary>读配置里的 sdkVersion —— 「已装版本」的**最后**一层兜底提示。
+    ///
+    /// 场景：老安装(没有清单) + 装完从没成功启动到 mod 加载阶段(日志里就没有版本行)。
+    /// 本项目里加载器与 SDK 同步发版，所以配置里的 sdkVersion 数值上等于当时的加载器版本，
+    /// 但它终究是**另一个字段**，因此只用于界面显示，**不参与降级判断**（用户可以手改它）。</summary>
+    private static string ReadConfiguredSdkVersion(string loaderRoot)
+    {
+        try
+        {
+            var path = Path.Combine(loaderRoot, ConfigFileName);
+            if (!File.Exists(path)) return "";
+            return ParseSdkVersionFromText(File.ReadAllText(path));
+        }
+        catch
+        {
+            return "";
+        }
+    }
+
     /// <summary>下载最新发布包到字节数组（不落盘）。网络异常/无 Release 时抛异常。</summary>
     public async Task<byte[]> DownloadLatestPackageAsync(CancellationToken cancellationToken = default)
     {
@@ -608,8 +700,9 @@ public sealed class ModManager
         }
     }
 
-    /// <summary>把发布包内容写入游戏目录（version.dll + doorstop_config + sdk + mods + sidecar + 清单）。游戏运行中覆盖 version.dll 会因占用失败。</summary>
-    public void InstallPackage(string gameDirectory, byte[] zipBytes, bool overwriteDll)
+    /// <summary>把发布包内容写入游戏目录（version.dll + doorstop_config + sdk + mods + sidecar + 清单）。游戏运行中覆盖 version.dll 会因占用失败。
+    /// 包内版本比游戏目录已装的更旧时（降级）默认拒绝，需要 allowDowngrade 显式放行。</summary>
+    public void InstallPackage(string gameDirectory, byte[] zipBytes, bool overwriteDll, bool allowDowngrade = false)
     {
         if (string.IsNullOrWhiteSpace(gameDirectory))
             throw new ArgumentException("请先选择游戏目录。");
@@ -621,6 +714,16 @@ public sealed class ModManager
         var manifest = ParsePackageManifest(zipBytes)
             ?? throw new InvalidDataException("发布包缺少清单（cesium-loader.json），已停止安装。");
         ValidatePackage(zipBytes, manifest);
+
+        // 降级闸门（与 Install 同一条规则）：包内版本比游戏目录已装的更旧 → 默认拒绝。
+        // 已装版本从安装清单读，老安装（没有清单）退回读加载器日志。
+        var installedBeforePackage = ResolveInstalledVersion(gameDirectory, out var packageInstalledSource);
+        var packageVersion = manifest.Version;
+        if (!allowDowngrade && packageVersion.Length > 0 && installedBeforePackage.Length > 0
+            && CompareSemVer(packageVersion, installedBeforePackage) < 0)
+            throw new InvalidOperationException(
+                $"发布包里的加载器（{packageVersion}）比游戏目录里已装的（{installedBeforePackage}{SourceHint(packageInstalledSource)}）更旧 —— 这是一次降级，已阻止。" +
+                "如确定要降级，请勾选「允许降级安装较旧的加载器」；通常更好的做法是改用较新版本的 AstralParty.Toys。");
 
         var targetDll = Path.Combine(gameDirectory, LoaderDllName);
         if (File.Exists(targetDll) && !MatchesEmbeddedLoader(targetDll) && !overwriteDll)
@@ -1463,6 +1566,9 @@ public sealed class ModStatus
     public string BundleHash { get; set; } = "";
     public string EmbeddedVersion { get; set; } = "";
     public string InstalledVersion { get; set; } = "";
+    /// <summary>InstalledVersion 的来源："manifest"（安装清单，权威）/ "log"（加载器日志自报，老安装）/
+    /// "config"（配置里的 sdkVersion 兜底，仅显示用）/ ""。</summary>
+    public string InstalledVersionSource { get; set; } = "";
     public string LatestVersion { get; set; } = "";
     public bool UpdateAvailable { get; set; }
     public string UpdateError { get; set; } = "";
