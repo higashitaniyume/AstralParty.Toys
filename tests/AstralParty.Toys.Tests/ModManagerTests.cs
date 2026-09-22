@@ -546,6 +546,79 @@ public sealed class ModManagerTests
         Assert.Equal(before, harness.Manager.ReadLoaderConfig(harness.GameDirectory).SdkVersion);
     }
 
+    // ============================== 老配置补齐 Steam 绕过开关 ==============================
+
+    [Fact]
+    public void Install_AddsMissingSteamBypassKeys_ButKeepsUserValuesAndComments()
+    {
+        using var harness = new ModHarness("ap-mod-steam-keys-add");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
+
+        // 模拟"旧版内置模板装出来的配置": 没有 steamBypass 键; 用户已把主开关关掉过, 还写了自己的注释
+        File.WriteAllText(path,
+            "{\n  // 这是我自己写的注释\n  \"enabled\": true,\n  \"speedhackBaseSpeed\": 2.0,\n"
+            + "  \"steamBypassEnabled\": false,\n  \"sdkVersion\": \"2.1.7\"\n}");
+
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: false);
+
+        var config = harness.Manager.ReadLoaderConfig(harness.GameDirectory);
+        Assert.False(config.SteamBypassEnabled);              // 用户显式关掉的值必须原样保留
+        Assert.True(config.SteamBypassRestartCheck);          // 缺失的按键位补上(= 模板默认)
+        Assert.True(config.SteamBypassMatchmaking);
+        Assert.True(config.SteamBypassLobbyQuery);
+        Assert.Equal("auto", config.SteamBypassTaskCtorMode);
+        Assert.False(config.SteamBypassLobbyMethods);         // 地雷键必须补成 false
+        Assert.Equal(2.0, config.SpeedhackBaseSpeed);         // 其它用户设置照旧
+        Assert.Equal("2.2.0", config.SdkVersion);             // sdkVersion 同时被抬升
+
+        var text = File.ReadAllText(path);
+        Assert.Contains("这是我自己写的注释", text);           // 原注释保留(文本插入而不是重写)
+        // ★ 必须断言文件文本: ReadLoaderConfig 对"缺失的键"返回的默认值恰好就是要断言的默认值,
+        //   只看解析结果无法区分"键被补上了"和"键根本不存在"。
+        Assert.Contains("\"steamBypassMatchmaking\":", text);
+        Assert.Contains("\"steamBypassLobbyQuery\":", text);
+        Assert.Contains("\"steamBypassTaskCtorMode\": \"auto\"", text);
+        Assert.Contains("\"steamBypassLobbyMethods\": false", text);
+        Assert.Contains("\"steamBypassEnabled\": false", text);   // 用户的值没被覆盖
+    }
+
+    [Fact]
+    public void Install_LeavesFullySpecifiedSteamKeysUntouched()
+    {
+        using var harness = new ModHarness("ap-mod-steam-keys-keep");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
+
+        // 新模板装出来的配置 7 个键都在 → 再次安装必须一字不改(幂等)
+        var before = File.ReadAllText(path);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: false);
+        Assert.Equal(before, File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void InstallPackage_AddsMissingSteamBypassKeys()
+    {
+        using var harness = new ModHarness("ap-mod-pkg-steam-keys");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
+        File.WriteAllText(path, "{\n  \"enabled\": true,\n  \"sdkVersion\": \"2.1.7\"\n}");
+
+        // 走发布包这条路(旧版 Toys 的"下载更新"就是它)也要补齐
+        harness.Manager.InstallPackage(harness.GameDirectory,
+            BuildFakePackage("5.0.0", configSdkVersion: "9.9.9"), overwriteDll: true);
+
+        var config = harness.Manager.ReadLoaderConfig(harness.GameDirectory);
+        Assert.True(config.SteamBypassEnabled);
+        Assert.True(config.SteamBypassMatchmaking);
+        Assert.False(config.SteamBypassLobbyMethods);
+        Assert.Equal("9.9.9", config.SdkVersion);
+
+        var text = File.ReadAllText(path);
+        Assert.Contains("\"steamBypassEnabled\": true", text);    // 确实写进了文件
+        Assert.Contains("\"steamBypassLobbyMethods\": false", text);
+    }
+
     // ============================== 加载器配置 / 权限 / 配置表单 ==============================
 
     [Fact]
