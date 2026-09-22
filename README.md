@@ -1,6 +1,6 @@
 # AstralParty.Toys
 
-## **文件下载和问题反馈（企鹅）：1078464597**
+## 企鹅：1078464597
 
 `AstralParty.Toys` 是面向《吉星派对》（Astral Party）的 Windows 本地工具箱，整合离线回放分析、协议帧查看、筹码复盘、游戏素材展示、**Mod 加载器（[CesiumLoader](https://github.com/higashitaniyume/CesiumLoader)）与模组管理**和变速器管理。所有数据处理均在本地完成。
 
