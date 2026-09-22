@@ -344,6 +344,8 @@ public sealed class ModManager
                 WriteAllBytesProtected(configPath, EmbeddedConfig!);
             // 老配置可能停在旧 SDK 号：把 sdkVersion 抬到随包版本，否则新版内置 mod 会被加载器拒绝加载
             SyncLoaderConfigSdkVersion(configPath, EmbeddedSdkVersion);
+            // 老配置里没有 Steam 绕过开关：补齐（只追加缺失的键，不动用户已有值与注释）
+            SyncLoaderConfigSteamKeys(configPath);
 
             // 内置 SDK
             if (HasEmbeddedSdk)
@@ -654,6 +656,8 @@ public sealed class ModManager
             var packageConfigEntry = archive.GetEntry("AstralParty_ModLoader/doorstop_config.json");
             SyncLoaderConfigSdkVersion(configPath,
                 packageConfigEntry is null ? "" : ReadSdkVersionFromConfigBytes(ReadEntryBytes(packageConfigEntry)));
+            // 老配置里没有 Steam 绕过开关：补齐（只追加缺失的键，不动用户已有值与注释）
+            SyncLoaderConfigSteamKeys(configPath);
             // SDK
             ExtractEntryToFile(archive, "AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll",
                 Path.Combine(loaderRoot, SdkFolderName, SdkDllName));
@@ -946,6 +950,114 @@ public sealed class ModManager
         catch
         {
             // 尽力而为：失败只是回到旧行为（mod 可能被拒），不能让安装整体失败
+        }
+    }
+
+    /// <summary>把缺失的 Steam 绕过开关补进已有的 doorstop_config.json（保留注释与用户已有值）。
+    ///
+    /// ★ 这不是"让功能生效"——加载器读配置时缺失的键用**编译进去的默认值**，而这一组的默认值就是全开，
+    ///   所以老配置（1.6 KB 那版模板、根本没有这些键）配新加载器照样能绕过 Steam。补齐是为了两件事：
+    ///     1) 配置自文档化：用户在 Toys 之外的编辑器里也能看到有哪些开关、分别管什么；
+    ///     2) 防回退：**旧版 Toys** 的 SaveLoaderConfig 是白名单字典、不认识这些键 —— 用户在旧版里
+    ///        保存一次「加载器设置」就会把它们删掉，于是特意关掉的绕过被静默恢复成默认值（全开）。
+    ///        新版装过一次之后键就在文件里了，此后旧版删掉也会被这里补回来。
+    ///
+    /// 安全性：只**追加**缺失的键（已有的一律不动）；文本插入而非重写，注释/顺序原样保留；
+    /// 改完先自检（仍能解析 + 原有键值一字未改 + 新键都在），任何一步不满足就**不写盘**。
+    /// 尽力而为：失败只是少补几个键，绝不能让安装整体失败。</summary>
+    private static void SyncLoaderConfigSteamKeys(string configPath)
+    {
+        try
+        {
+            if (!File.Exists(configPath)) return;
+
+            var bytes = File.ReadAllBytes(configPath);
+            var hasBom = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
+            var offset = hasBom ? 3 : 0;
+            var text = System.Text.Encoding.UTF8.GetString(bytes, offset, bytes.Length - offset);
+
+            Func<string, JsonDocument?> tryParse = value =>
+            {
+                try { return JsonDocument.Parse(StripJsonComments(value.TrimStart('\uFEFF'))); }
+                catch { return null; }
+            };
+
+            using var before = tryParse(text);
+            if (before is null || before.RootElement.ValueKind != JsonValueKind.Object) return;
+
+            var existing = before.RootElement.EnumerateObject()
+                .Select(property => property.Name)
+                .ToHashSet(StringComparer.Ordinal);
+
+            // 顺序与加载器配置模板一致；Literal 是写进 JSON 的字面量。
+            (string Name, string Literal, string Comment)[] catalog =
+            [
+                ("steamBypassEnabled", "true", "Steam 绕过主开关: 无 Steam 启动游戏(拦截 SteamManager.Awake)"),
+                ("steamBypassRestartCheck", "true", "附加保险: 让 SteamAPI_RestartAppIfNecessary 恒返回 0"),
+                ("steamBypassMatchmaking", "true", "大厅匹配绕过: 修「点创建/加入房间没反应」"),
+                ("steamBypassLobbyQuery", "true", "退房兜底: 修退房/被踢时 await 之后的 NRE"),
+                ("steamBypassLobbyHasValue", "true", "阶段3(实测作废、hook 从未命中; 保留无害)"),
+                ("steamBypassTaskCtorMode", "\"auto\"", "方案C 调用方式: auto / direct / invoke"),
+                ("steamBypassLobbyMethods", "false", "方案B 备用安全网 —— 实测开启会导致启动崩溃, 必须保持 false")
+            ];
+            var missing = catalog.Where(item => !existing.Contains(item.Name)).ToArray();
+            if (missing.Length == 0) return;
+
+            // 插入到最后一个 '}' 之前（JSON 成员顺序无所谓），只动这一处。
+            var closeIndex = text.LastIndexOf('}');
+            if (closeIndex < 0) return;
+            var head = text.Substring(0, closeIndex);
+            var tail = text.Substring(closeIndex);
+
+            // 前一个成员若没有尾逗号（模板里 sdkVersion 就是最后一个且无逗号），要补一个，否则 JSON 非法。
+            // 逗号必须补在**行尾**而不是行尾空白之后 —— 否则会写出 "…2.2.0"\n  , 这种难看的怪格式。
+            var headTrimmed = head.TrimEnd();
+            var trailing = head.Substring(headTrimmed.Length);   // 原样的行尾空白(换行 + 可能的缩进)
+            var needComma = headTrimmed.Length > 0 && headTrimmed[^1] is not (',' or '{');
+
+            var eol = text.Contains("\r\n") ? "\r\n" : "\n";
+            var lines = new List<string>
+            {
+                "  // ---- Steam 绕过（加载器原生功能, 非 mod）: 不装 Steam 也能启动游戏, 建房/退房正常 ----",
+                "  // 键缺失时加载器用编译进去的默认值(= 全开), 这里补齐只为让配置自文档化。详见 docs/steam-bypass.md",
+            };
+            foreach (var item in missing)
+            {
+                lines.Add("  // " + item.Comment);
+                lines.Add("  \"" + item.Name + "\": " + item.Literal + ",");
+            }
+            lines[^1] = lines[^1].TrimEnd(',');   // 我们这组是这个对象里的最后一批成员
+
+            var updated = headTrimmed + (needComma ? "," : "") + eol + eol
+                        + string.Join(eol, lines) + (trailing.Length > 0 ? trailing : eol) + tail;
+
+            // 自检: 改完必须仍能解析、原有键值一字未改、新键都在；否则宁可不动(绝不能把配置写坏)。
+            using var after = tryParse(updated);
+            if (after is null || after.RootElement.ValueKind != JsonValueKind.Object) return;
+            var afterValues = after.RootElement.EnumerateObject()
+                .ToDictionary(property => property.Name, property => property.Value.GetRawText(), StringComparer.Ordinal);
+            foreach (var property in before.RootElement.EnumerateObject())
+            {
+                if (!afterValues.TryGetValue(property.Name, out var raw) || raw != property.Value.GetRawText()) return;
+            }
+            foreach (var item in missing)
+            {
+                if (!afterValues.ContainsKey(item.Name)) return;
+            }
+
+            var encoded = System.Text.Encoding.UTF8.GetBytes(updated);
+            if (hasBom)
+            {
+                var withBom = new byte[encoded.Length + 3];
+                withBom[0] = 0xEF; withBom[1] = 0xBB; withBom[2] = 0xBF;
+                Array.Copy(encoded, 0, withBom, 3, encoded.Length);
+                encoded = withBom;
+            }
+            WriteAllBytesProtected(configPath, encoded);
+        }
+        catch
+        {
+            // 尽力而为：少补几个键不影响任何功能（加载器有默认值）
         }
     }
 
