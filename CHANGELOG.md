@@ -2,6 +2,39 @@
 
 本文件按版本记录 `AstralParty.Toys` 的功能变更。版本号与 GitHub 发布 tag 一一对应（如 `v0.2.0`），发布产物由 [release.yml](.github/workflows/release.yml) 在打 tag 时自动构建。
 
+## [v0.4.9] - 2026-09-22
+
+### 🩹 修复：「从 Steam 启动」没有真正恢复 Steam 大厅联机
+
+上一版（0.4.8）在选「从 Steam 启动」时只把 `steamBypassEnabled` 一个键写成 `false`，**这是不够的**：
+加载器的 hook 都是**启动时无条件安装、不检测 Steam 是否在运行**的（加载器 `docs/steam-bypass.md` 第 6 节第 4 条），
+而且各自只受自己的键控制 ——
+
+- `steamBypassEnabled` → 阶段1：拦 `SteamManager.Awake`（"非 Steam 客户端启动就退出"）与 `SteamAPI_RestartAppIfNecessary`；
+- `steamBypassMatchmaking` → 阶段2/3/方案B：`CreateLobbyAsync` / `JoinLobbyAsync` 换成已完成的空 Task（`steamLobbyId` 恒为 0）；
+- `steamBypassLobbyQuery` → 阶段5：`LobbyQuery.RequestAsync` 换成"结果为空"（源码注释明写"只受它自己控制"）。
+
+所以只关主开关时，**从 Steam 启动仍然不会创建真大厅、房间列表照样返回空**，Steam 好友邀请 / 大厅分享进房依旧是坏的。
+现在这一套**三个键一起开、一起关**：
+
+- 选「绕过 Steam 启动」→ 三个键全写 `true`；选「从 Steam 启动」→ 三个键全写 `false`（等于完全回到原版行为）；
+- 首页单选框的状态判定改成"**三个里任一个还开着**就算绕过模式"：混合状态（比如手动只关了主开关）
+  不会再被显示成「从 Steam 启动」，点一下「从 Steam 启动」就能把整套收拾干净；
+- 其余几个键不用动：`steamBypassRestartCheck` 只在主开关为真时有意义，`steamBypassLobbyHasValue` 与「方案B」
+  都挂在大厅匹配那个分支里，`steamBypassLobbyMethods` 无论如何都必须保持 `false`。
+
+### 💬 提示
+
+- 没装加载器时选「绕过 Steam 启动」会明确提示"还没安装加载器 —— 缺了它的 Steam 绕过，游戏会在启动早期自己退出，
+  可在「模组」页一键安装，或改选「从 Steam 启动」"（与"装了但绕过是关的"分成两种措辞，都只提醒不拦截）；
+- 「加载器设置」里 Steam 绕过那一组的标题补了一句：首页的单选框会把前三个开关作为一套一起开 / 关。
+
+### 🧪 测试
+
+- 「首页启动方式 → 加载器配置」的用例重写为整套语义：三个键一起关（文件长度只 +3、模板注释与其它键原样）、
+  幂等、混合状态归一、老配置里没有这些键时不写盘、**不碰注释里的同名字面量**、UTF-8 BOM 保留；
+  新增 `IsSteamBypassActive` 判定用例（三个里任一为真即为绕过模式）。
+
 ## [v0.4.8] - 2026-09-22
 
 ### 🎛 启动方式可选：从 Steam 启动 / 绕过 Steam 启动

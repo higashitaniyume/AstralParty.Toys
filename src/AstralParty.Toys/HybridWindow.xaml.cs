@@ -755,19 +755,22 @@ public partial class HybridWindow : Window
         LaunchGameDirectly("已绕过 Steam，直接启动游戏主程序。");
     }
 
-    /// <summary>首页「绕过 Steam 启动」单选框：把选择同步进加载器配置（保留注释）。
+    /// <summary>首页「启动方式」单选框：把选择同步进加载器配置（保留注释）。
+    /// 「绕过 Steam 启动」= 整套绕过打开；「从 Steam 启动」= 整套关掉（完全回到原版行为，Steam 真大厅可用）。
     /// 失败只提示、不改单选框状态 —— 单选框本身是前端偏好，配置同步是尽力而为。</summary>
-    private void HandleSetSteamBypass(bool enabled)
+    private void HandleSetSteamBypass(bool bypass)
     {
         try
         {
             var directory = RequireModGameDirectory();
-            if (_modManager.SetSteamBypassEnabled(directory, enabled))
+            if (_modManager.SetSteamBypassProfile(directory, bypass))
             {
                 Post(new
                 {
                     type = "toast",
-                    message = $"已同步加载器设置：绕过 Steam 启动 = {(enabled ? "开" : "关")}（重启游戏生效）"
+                    message = bypass
+                        ? "已切换到绕过 Steam：加载器的 Steam 绕过已打开（重启游戏生效）"
+                        : "已切换到从 Steam 启动：加载器的 Steam 绕过已整套关闭，Steam 大厅联机恢复正常（重启游戏生效）"
                 });
             }
             else
@@ -785,8 +788,10 @@ public partial class HybridWindow : Window
         }
     }
 
-    /// <summary>把加载器配置里当前的 <c>steamBypassEnabled</c> 推给首页，让「启动方式」单选框一进界面就跟配置一致
-    /// （加载器配置模板里它是开的 → 首页就显示「绕过 Steam 启动」）。
+    /// <summary>把加载器配置里当前的 Steam 绕过状态推给首页，让「启动方式」单选框一进界面就跟配置一致。
+    ///
+    /// 判定用 <see cref="ModManager.IsSteamBypassActive"/>（三个键任一为真即算绕过）：
+    /// 只要还有 hook 会生效，Steam 那边的行为就不是原版，首页就不能显示成「从 Steam 启动」。
     ///
     /// 没装加载器（没有 doorstop_config.json）时不推：那时没有"配置"可跟随，首页保留自己的默认 ——「从 Steam 启动」。
     /// 推送失败也不影响任何功能，首页会退回它自己记住的选择。</summary>
@@ -801,7 +806,7 @@ public partial class HybridWindow : Window
             Post(new
             {
                 type = "steamBypassSync",
-                payload = new { enabled = _modManager.ReadLoaderConfig(gameDirectory).SteamBypassEnabled }
+                payload = new { enabled = ModManager.IsSteamBypassActive(_modManager.ReadLoaderConfig(gameDirectory)) }
             });
         }
         catch
@@ -840,17 +845,25 @@ public partial class HybridWindow : Window
         }
     }
 
-    /// <summary>直接启动（绕过 Steam）时的提醒：Steam 没在运行、加载器的 Steam 绕过又没生效的话，
+    /// <summary>直接启动（绕过 Steam）时的提醒：没装加载器、或加载器的 Steam 绕过没生效、且 Steam 又没在运行的话，
     /// 游戏会在启动早期打印"[ERROR] [SteamManager] 非Steam客户端启动, 退出游戏"然后自己退出。
-    /// 只提醒不拦截 —— Steam 在后台跑着时直接启动一般也能进游戏。</summary>
+    /// 只提醒不拦截 —— Steam 在后台跑着时直接启动一般也能进游戏。
+    ///
+    /// 这里只看 <c>steamBypassEnabled</c>（阶段1 = 那道自杀门）：只有它决定"启动早期会不会自己退出"，
+    /// 与匹配 / 房间列表那几个键无关（那几个影响的是联机大厅，不是能不能进游戏）。</summary>
     private string SteamBypassCaveat(string gameDirectory)
     {
         try
         {
-            if (Process.GetProcessesByName("steam").Length > 0) return "";
-            if (_modManager.GetStatus().Installed &&
-                _modManager.ReadLoaderConfig(gameDirectory).SteamBypassEnabled) return "";
-            return "（提示：Steam 没在运行，加载器的「Steam 绕过」也没生效，游戏可能会在启动早期自己退出 ——"
+            if (Process.GetProcessesByName("steam").Length > 0) return "";   // Steam 在跑：直接启动一般也能进游戏
+            if (!_modManager.GetStatus().Installed)
+            {
+                return "（提示：Steam 没在运行，而且还没安装加载器 —— 缺了它的 Steam 绕过，游戏会在启动早期自己退出。"
+                     + "可在「模组」页一键安装加载器，或改选「从 Steam 启动」）";
+            }
+
+            if (_modManager.ReadLoaderConfig(gameDirectory).SteamBypassEnabled) return "";
+            return "（提示：Steam 没在运行，加载器的「Steam 绕过」是关的，游戏可能会在启动早期自己退出 ——"
                  + "可在「模组 → 加载器设置」里打开它）";
         }
         catch
