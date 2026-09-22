@@ -24,6 +24,7 @@
         post({
           type: 'modInstall',
           overwriteDll: $('modOverwriteCheck')?.checked === true,
+          allowDowngrade: $('modDowngradeCheck')?.checked === true,
           includeSample: $('modIncludeSampleCheck')?.checked !== false
         });
       });
@@ -40,7 +41,8 @@
       $('modDownloadUpdateBtn')?.addEventListener('click', () => {
         post({
           type: 'modDownloadUpdate',
-          overwriteDll: $('modUpdateOverwriteCheck')?.checked === true
+          overwriteDll: $('modUpdateOverwriteCheck')?.checked === true,
+          allowDowngrade: $('modUpdateDowngradeCheck')?.checked === true
         });
       });
       $('modLoaderSettingsBtn')?.addEventListener('click', () => this.openLoaderSettings());
@@ -143,7 +145,15 @@
       const embedded = $('modEmbeddedVersion');
       if (embedded) embedded.textContent = status.embeddedVersion || '—';
       const installed = $('modInstalledVersion');
-      if (installed) installed.textContent = status.installedVersion || '—';
+      if (installed) {
+        // 老安装（0.4.7 之前）没有安装清单，版本只能间接推断 —— 明确标注来源，别当成权威值：
+        //   log    = 加载器日志里它自报的版本行（准确，但只在成功加载过 mod 的那次启动里才有）
+        //   config = 配置里的 sdkVersion 兜底（本项目中与加载器版本同号，但终究是另一个字段）
+        const v = status.installedVersion || '';
+        const src = status.installedVersionSource;
+        const suffix = src === 'log' ? '（来自日志）' : (src === 'config' ? '（来自配置）' : '');
+        installed.textContent = v ? `${v}${suffix}` : '—';
+      }
       const latest = $('modLatestVersion');
       if (latest) latest.textContent = status.latestVersion || '—';
 

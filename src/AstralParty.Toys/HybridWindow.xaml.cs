@@ -313,9 +313,11 @@ public partial class HybridWindow : Window
                 case "modInstall":
                     var modOverwrite = root.TryGetProperty("overwriteDll", out var modOverwriteElement) &&
                                        modOverwriteElement.GetBoolean();
+                    var modAllowDowngrade = root.TryGetProperty("allowDowngrade", out var modDowngradeElement) &&
+                                            modDowngradeElement.GetBoolean();
                     var includeSample = root.TryGetProperty("includeSample", out var includeSampleElement) &&
                                         includeSampleElement.GetBoolean();
-                    HandleModInstall(modOverwrite, includeSample);
+                    HandleModInstall(modOverwrite, includeSample, modAllowDowngrade);
                     break;
                 case "modUninstall":
                     var modForce = root.TryGetProperty("force", out var modForceElement) && modForceElement.GetBoolean();
@@ -451,7 +453,9 @@ public partial class HybridWindow : Window
                 case "modDownloadUpdate":
                     var updateOverwrite = root.TryGetProperty("overwriteDll", out var updateOverwriteElement) &&
                                           updateOverwriteElement.GetBoolean();
-                    _ = HandleModDownloadUpdateAsync(updateOverwrite);
+                    var updateAllowDowngrade = root.TryGetProperty("allowDowngrade", out var updateDowngradeElement) &&
+                                               updateDowngradeElement.GetBoolean();
+                    _ = HandleModDownloadUpdateAsync(updateOverwrite, updateAllowDowngrade);
                     break;
                 case "closeWindow":
                     Close();
@@ -1384,9 +1388,9 @@ public partial class HybridWindow : Window
         }
     }
 
-    private void HandleModInstall(bool overwriteDll, bool includeSample)
+    private void HandleModInstall(bool overwriteDll, bool includeSample, bool allowDowngrade)
     {
-        _modManager.Install(RequireModGameDirectory(), overwriteDll, includeSample);
+        _modManager.Install(RequireModGameDirectory(), overwriteDll, includeSample, allowDowngrade);
         Post(new { type = "toast", message = ModManager.DescribeInstalled() });
         PushModStatus();
     }
@@ -1526,7 +1530,7 @@ public partial class HybridWindow : Window
         }
     }
 
-    private async Task HandleModDownloadUpdateAsync(bool overwriteDll)
+    private async Task HandleModDownloadUpdateAsync(bool overwriteDll, bool allowDowngrade)
     {
         Post(new { type = "toast", message = "正在下载最新 CesiumLoader 并安装…" });
         try
@@ -1534,7 +1538,7 @@ public partial class HybridWindow : Window
             var directory = RequireModGameDirectory();
             var bytes = await _modManager.DownloadLatestPackageAsync().ConfigureAwait(true);
             var manifest = ModManager.ParsePackageManifest(bytes);
-            _modManager.InstallPackage(directory, bytes, overwriteDll);
+            _modManager.InstallPackage(directory, bytes, overwriteDll, allowDowngrade);
 
             var versionText = string.IsNullOrEmpty(manifest?.Version) ? "" : $"（{manifest.Version}）";
             Post(new { type = "toast", message = $"加载器已更新{versionText}。" + (SpeedhackManager.IsGameRunning() ? "游戏正在运行，重启游戏后生效。" : "") });

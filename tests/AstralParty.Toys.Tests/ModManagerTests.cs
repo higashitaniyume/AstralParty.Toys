@@ -619,6 +619,122 @@ public sealed class ModManagerTests
         Assert.Contains("\"steamBypassLobbyMethods\": false", text);
     }
 
+    // ============================== 老安装(没有清单)的版本回读 与 降级闸门 ==============================
+
+    /// <summary>把安装清单里的版本改掉 —— 用来模拟"目录里装的是另一个版本"（老安装没有清单时改成删除）。</summary>
+    private static void OverwriteManifestVersion(ModHarness harness, string version)
+    {
+        var manifestPath = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, "cesium-loader.json");
+        var node = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(manifestPath))!;
+        node["version"] = version;
+        File.WriteAllText(manifestPath, node.ToJsonString());
+    }
+
+    [Fact]
+    public void GetStatus_ReadsInstalledVersionFromLoaderLog_WhenManifestMissing()
+    {
+        using var harness = new ModHarness("ap-mod-version-from-log");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+
+        // 模拟"0.4.7 之前装的老安装"：没有安装清单，只有加载器日志（加载器每次启动会追加版本行）
+        var loaderRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
+        File.Delete(Path.Combine(loaderRoot, "cesium-loader.json"));
+        Directory.CreateDirectory(Path.Combine(loaderRoot, "logs"));
+        File.WriteAllText(Path.Combine(loaderRoot, "logs", "cesium-loader.log"),
+            "[hijack] version.dll Doorstop 引导线程启动 (enabled=true)\n"
+            + "  CesiumLoader loader v2.1.6 / SDK v2.1.6 — mod 加载报告\n"
+            + "...（下一局游戏）\n"
+            + "  CesiumLoader loader v2.1.7 / SDK v2.1.7 — mod 加载报告\n");
+
+        var status = harness.Manager.GetStatus();
+        Assert.Equal("2.1.7", status.InstalledVersion);       // 取最后一次运行，而不是第一次
+        Assert.Equal("log", status.InstalledVersionSource);
+    }
+
+    [Fact]
+    public void GetStatus_PrefersManifestOverLog()
+    {
+        using var harness = new ModHarness("ap-mod-version-manifest-wins");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+
+        // 同时存在清单与日志（且日志是更旧的版本）→ 以清单为准
+        var loaderRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
+        Directory.CreateDirectory(Path.Combine(loaderRoot, "logs"));
+        File.WriteAllText(Path.Combine(loaderRoot, "logs", "cesium-loader.log"),
+            "  CesiumLoader loader v1.0.0 / SDK v1.0.0 — mod 加载报告\n");
+
+        var status = harness.Manager.GetStatus();
+        Assert.Equal("2.2.0", status.InstalledVersion);
+        Assert.Equal("manifest", status.InstalledVersionSource);
+    }
+
+    [Fact]
+    public void Install_RefusesDowngrade_UnlessExplicitlyAllowed()
+    {
+        using var harness = new ModHarness("ap-mod-downgrade-block");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        OverwriteManifestVersion(harness, "9.9.9");   // 假装已装了更新的加载器
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: false));
+        Assert.Contains("降级", ex.Message);
+        Assert.Contains("9.9.9", ex.Message);
+
+        // 显式放行才允许降级
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: false, allowDowngrade: true);
+        Assert.Equal("2.2.0", harness.Manager.GetStatus().InstalledVersion);
+    }
+
+    [Fact]
+    public void InstallPackage_RefusesDowngrade_UnlessExplicitlyAllowed()
+    {
+        using var harness = new ModHarness("ap-mod-pkg-downgrade-block");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        OverwriteManifestVersion(harness, "9.9.9");
+
+        // 发布包 5.0.0 < 已装 9.9.9 → 降级，默认拒绝
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            harness.Manager.InstallPackage(harness.GameDirectory, BuildFakePackage("5.0.0"), overwriteDll: true));
+        Assert.Contains("降级", ex.Message);
+
+        harness.Manager.InstallPackage(harness.GameDirectory, BuildFakePackage("5.0.0"),
+            overwriteDll: true, allowDowngrade: true);
+        Assert.Equal("5.0.0", harness.Manager.GetStatus().InstalledVersion);
+    }
+
+    [Fact]
+    public void GetStatus_FallsBackToConfiguredSdkVersion_WhenNoManifestAndNoLog()
+    {
+        using var harness = new ModHarness("ap-mod-version-from-config");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+
+        // 老安装、而且装完从没成功启动到 mod 加载阶段（日志里没有版本行）→ 用配置里的 sdkVersion 提示
+        var loaderRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
+        File.Delete(Path.Combine(loaderRoot, "cesium-loader.json"));
+        var configPath = Path.Combine(loaderRoot, "doorstop_config.json");
+        File.WriteAllText(configPath, File.ReadAllText(configPath).Replace("\"2.2.0\"", "\"2.1.6\""));
+
+        var status = harness.Manager.GetStatus();
+        Assert.Equal("2.1.6", status.InstalledVersion);
+        Assert.Equal("config", status.InstalledVersionSource);
+    }
+
+    [Fact]
+    public void Install_DoesNotTreatConfiguredSdkVersionAsDowngradeEvidence()
+    {
+        using var harness = new ModHarness("ap-mod-config-not-authoritative");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+
+        var loaderRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
+        File.Delete(Path.Combine(loaderRoot, "cesium-loader.json"));   // 没有清单 → 只能靠配置
+        var configPath = Path.Combine(loaderRoot, "doorstop_config.json");
+        // 用户手改配置里的 sdkVersion（比如为了绕过 mod 的 SDK 校验）→ 不能因此把安装当成"降级"拦住
+        File.WriteAllText(configPath, File.ReadAllText(configPath).Replace("\"2.2.0\"", "\"9.9.9\""));
+
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: false);
+        Assert.Equal("2.2.0", harness.Manager.GetStatus().InstalledVersion);
+    }
+
     // ============================== 加载器配置 / 权限 / 配置表单 ==============================
 
     [Fact]
