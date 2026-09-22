@@ -23,7 +23,72 @@
   // AstralParty_ModLoader\speed\request.txt 请求倍率。false = 关掉该通道
   // (基础倍率仍然生效, 但 SpeedHackMod 的热键不再可用)。
   "speedControlEnabled": true,
+  // Steam 自杀门绕过: 国服客户端在非 Steam 客户端启动时, AOT 类 SteamManager 的
+  // Awake() 会打印 "[ERROR] 非Steam客户端启动, 退出游戏" 并退出。true=把 Awake()
+  // 换成 no-op(原生 inline hook), 让游戏继续启动; false=恢复原版行为(会退出游戏)。
+  // 不伪造 Steam 身份, 不改动 steam_api64.dll 的认证语义。
+  "steamBypassEnabled": true,
+  // 附加保险: 让 steam_api64.dll 的 SteamAPI_RestartAppIfNecessary 恒返回 0
+  // (本是 Steamworks 的无害样板调用)。仅在 steamBypassEnabled=true 时生效。
+  "steamBypassRestartCheck": true,
+  // Steam 大厅匹配绕过(阶段2): Steam 全关时点"创建房间/加入房间"毫无反应, 原因是真实的
+  // SteamMatchmaking.CreateLobbyAsync 会抛 NullReferenceException, 这个 async 异常把建房
+  // 流程整个吃掉(游戏不崩)。true=把 CreateLobbyAsync/JoinLobbyAsync 换成"返回一个已完成、
+  // 结果为 null 的 Task<Lobby?>", 游戏按"没有 Steam 大厅"正常建房(协议里 LobbyId=0 合法);
+  // false=恢复原版行为(创建/加入房间仍会无反应)。
+  // 只受本开关控制, 与 steamBypassEnabled/steamBypassRestartCheck 互不影响。
+  "steamBypassMatchmaking": true,
+  // Steam 大厅匹配绕过(阶段3): 上一步(阶段2)之后实测异常**前进到了** Steamworks.Data.Lobby.SetPublic
+  // —— UICom_CreateRoom.cs:133 的 val.HasValue 被判成 true, 于是进 if 块, 第 136 行 SetPublic() 抛
+  // NullReferenceException。true = 把 AOT 方法 System.Nullable`1<Steamworks.Data.Lobby>::get_HasValue()
+  // 换成恒返回 false(原生 inline hook); false = 不挂钩。
+  // **实测作废(保留但无效)**: 实机日志里这个 hook 的"首次被拦截"那行从未出现 —— HybridCLR 解释器
+  // 把 Nullable.HasValue 当**内建指令**内联处理, 不走 MethodInfo->methodPointer。hook 留着无害,
+  // 但它不是解法; 真正的解法是下面的 steamBypassTaskCtorMode(方案C) + steamBypassLobbyMethods(方案B)。
+  // 只在 steamBypassMatchmaking=true 时有意义(阶段2 没装就没有 Nullable 类可解析)。
+  "steamBypassLobbyHasValue": true,
+  // 方案C(主): 造"已完成的空 Task<Lobby?>"时 Task<T>..ctor(T) 的调用方式。
+  // 实测根因: il2cpp_runtime_invoke 给 Task<T>..ctor(Nullable<Lobby>) 传**值类型参数**时编组不正确
+  // —— 传进去的 Nullable 的 hasValue 落成了非零(证据: 安装期探针里 il2cpp_field_get_value_object
+  // 返回的是**非空**装箱对象, 而"空 Nullable"按 .NET 语义装箱应得 NULL)。于是 await 回来后
+  // val.HasValue 被判成 true, 游戏执行 UICom_CreateRoom.cs:136 的 Lobby.SetPublic() 抛 NRE。
+  // 取值:
+  //   "auto"  (默认) = 先 direct(按原生 ABI 直调 ctor 的 methodPointer, 绕过 runtime_invoke 编组),
+  //                    探针校验(IsCompleted / get_Result / hasValue 诊断)失败则**自动退回** invoke,
+  //                    并在日志里说明实际走的哪条路;
+  //   "direct"       = 只用 direct, 校验失败即不挂钩(游戏行为与原版一致);
+  //   "invoke"       = 只用 il2cpp_runtime_invoke(旧行为)。
+  // 非法取值按 "auto" 处理并记日志。日志会分别打印 direct / invoke 两条路径各自的 hasValue 诊断,
+  // 因此能明确看出 direct 有没有把 hasValue 变成 false。
+  "steamBypassTaskCtorMode": "auto",
+  // 方案B(备用安全网, **默认关**): 把 Steamworks.Data.Lobby 上会抛异常的方法挂成无害 ——
+  //   Lobby.SetPublic() / Lobby.SetJoinable(bool) -> no-op;
+  //   Lobby.Id: 若**是属性**(存在 get_Id)则 get_Id() 恒返回 0(SteamId 零值 -> steamLobbyId=0);
+  //             若**是字段**则只记日志(字段不可 hook), 不硬来。
+  // ★ 为什么默认 false(**不要改回 true**): 实机把本键设为 true(其余配置与已验证通过的配置
+  //   完全一致)会导致**游戏启动早期崩溃** —— 退出码 0xC0000005(访问冲突), 崩溃模块
+  //   GameAssembly.dll, 而崩溃前最后一条日志正是方案B 的 "Lobby.get_Id 首次被拦截";
+  //   改回 false 后同样配置下一切正常(启动成功、登录成功、点"创建房间"成功进房, NRE 次数 0)。
+  //   => true 是**地雷值**: 任何缺省本键的旧配置都会踩到它, 所以默认必须是 false。
+  // ★ 为什么现在**不需要**它: 方案C 已把 Task 的结果构造成**真正的空 Nullable**(HasValue=false),
+  //   游戏侧 if (val.HasValue) { ... } 整块被跳过, SetPublic/SetJoinable 根本不会被调用。
+  // ★ 定位: 只有"哪天 hasValue 又变回 true"时的备用安全网; 若要启用, 请自行在实机验证启动不崩。
+  // 只在 steamBypassMatchmaking=true 时有意义。
+  "steamBypassLobbyMethods": false,
+  // Steam 大厅查询绕过(阶段5, 默认 true): 把 AOT 方法 Steamworks.Data.LobbyQuery::RequestAsync()
+  // 换成"恒返回一个预建好的、结果为长度 0 的 Lobby[] 的已完成 Task<Lobby[]>"。
+  // 实机实测(6 条 NRE, 栈顶就是本方法): 退房/解散/被踢时
+  //   GameLogic.RoomLogic.OnExitRoomS2CServerCallBack -> ... -> Steamworks.Data.LobbyQuery.RequestAsync()
+  // 抛 NullReferenceException。**注意**: 抛点在 await 的 RequestAsync() 上, **不是**
+  // SteamMatchmaking.LobbyList 取值本身(此前文档标为"未实测", 现已实测确认)。
+  // 危害: NRE 让 await 之后的代码全部不执行 -> 本地房间状态不清、被踢提示不弹、不返回房间列表页。
+  // 修法: RoomLogic.cs:385 的 `array != null && array.Length > 0` 因长度 0 而为 false,
+  // 跳过 Steam 大厅清理, 于是 :398 UpdateRoomByExit / :401 ClearRoomInfo / :567-573 正常执行。
+  // 影响面为零: 全仓 grep 确认全游戏只有这 2 处调用(RoomLogic.cs:384 与 :554)。
+  // 独立开关: 与 steamBypassEnabled/steamBypassMatchmaking/steamBypassLobbyHasValue/
+  // steamBypassLobbyMethods 互不影响。false = 恢复原版行为(退房/解散/被踢时 await 之后仍被跳过)。
+  "steamBypassLobbyQuery": true,
   // 当前分发的 SDK 版本(SemVer): 加载器用它校验 mod 声明的 SdkVersion,
   // 不兼容时拒绝加载该 mod。升级 SDK 时同步更新此字段。
-  "sdkVersion": "2.1.7"
+  "sdkVersion": "2.2.0"
 }

@@ -250,6 +250,15 @@
         ['consoleEnabled', '显示控制台窗口（mod 日志）', 'bool', config.consoleEnabled],
         ['consoleTopmost', '控制台窗口置顶', 'bool', config.consoleTopmost],
         ['forwardActivityLog', '把 mod 日志转发到控制台', 'bool', config.forwardActivityLog],
+        // ---- Steam 绕过（加载器功能，非 mod：必须在托管层加载前用原生 hook 拦下，见加载器 docs\steam-bypass.md）----
+        ['__steam', 'Steam 绕过 —— 不装 Steam 也能启动，且建房 / 退房正常', 'header', ''],
+        ['steamBypassEnabled', '不装 Steam 也能启动游戏（拦住 SteamManager.Awake 的“非 Steam 客户端启动就退出游戏”）', 'bool', config.steamBypassEnabled],
+        ['steamBypassRestartCheck', '附加保险：忽略 Steam 的“请从 Steam 启动”重启请求（SteamAPI_RestartAppIfNecessary）', 'bool', config.steamBypassRestartCheck],
+        ['steamBypassMatchmaking', '修复点“创建 / 加入房间”没反应（大厅匹配改为直接返回空结果）', 'bool', config.steamBypassMatchmaking],
+        ['steamBypassLobbyQuery', '修复退房 / 被踢时的报错（房间列表查询返回空列表）', 'bool', config.steamBypassLobbyQuery],
+        ['steamBypassLobbyHasValue', '阶段3 兜底（实测已作废、hook 从未命中；保持开启即可，无副作用）', 'bool', config.steamBypassLobbyHasValue],
+        ['steamBypassTaskCtorMode', 'Task 构造方式（auto / direct / invoke，一般保持 auto）', 'text', config.steamBypassTaskCtorMode],
+        ['steamBypassLobbyMethods', '⚠ 方案B 备用安全网 —— 实测开启会导致游戏启动崩溃（0xC0000005），请保持关闭', 'bool', config.steamBypassLobbyMethods],
         ['useManagedBootstrap', '使用托管引导（实验性，一般保持关闭）', 'bool', config.useManagedBootstrap],
         ['gameAssemblyTimeoutSec', '等待 GameAssembly.dll 秒数', 'number', config.gameAssemblyTimeoutSec, { min: 1, max: 600 }],
         ['domainTimeoutSec', '等待托管域初始化秒数', 'number', config.domainTimeoutSec, { min: 1, max: 600 }],
@@ -282,6 +291,9 @@
       switch (kind) {
         case 'bool':
           return `<label class="cfg-row cfg-check"><input type="checkbox" data-cfg="${id}" ${value ? 'checked' : ''}> <span>${esc(label)}</span></label>`;
+        case 'header':
+          // 分组标题：只是视觉分隔，不参与 collectLoaderConfig 取值
+          return `<div class="cfg-hint cfg-section" data-cfg-header="${id}">${esc(label)}</div>`;
         case 'number':
           return `<label class="cfg-row"><span class="cfg-label">${esc(label)}</span><input type="number" data-cfg="${id}" value="${esc(String(value))}" ${attrStr}></label>`;
         case 'readonly':
@@ -320,6 +332,13 @@
         forwardActivityLog: bool('forwardActivityLog'),
         speedhackBaseSpeed: speed,
         speedControlEnabled: bool('speedControlEnabled'),
+        steamBypassEnabled: bool('steamBypassEnabled'),
+        steamBypassRestartCheck: bool('steamBypassRestartCheck'),
+        steamBypassMatchmaking: bool('steamBypassMatchmaking'),
+        steamBypassLobbyQuery: bool('steamBypassLobbyQuery'),
+        steamBypassLobbyHasValue: bool('steamBypassLobbyHasValue'),
+        steamBypassLobbyMethods: bool('steamBypassLobbyMethods'),
+        steamBypassTaskCtorMode: text('steamBypassTaskCtorMode'),
         sdkVersion: text('sdkVersion')
       };
     },

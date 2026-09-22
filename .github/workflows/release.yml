@@ -65,10 +65,15 @@ jobs:
           if (Test-Path $extract) { Remove-Item $extract -Recurse -Force }
           Expand-Archive -Path $zipPath -DestinationPath $extract -Force
           $resources = "src/AstralParty.Toys/Resources/ModLoader"
-          # 加载器 + SDK
+          # 加载器 + SDK + 配置模板。
+          # ★ doorstop_config.json 必须一起同步：ModManager 的 EmbeddedSdkVersion 就是从这个内嵌模板里读的，
+          #   安装/更新时用它把用户已装配置的 sdkVersion 抬到随包版本。若模板停在旧 SDK 号，用户配置也停在旧的，
+          #   而新版内置 mod 声明的是新 SdkVersion —— 加载器会判 SdkVersionTooNew 把内置 mod 全部拒绝加载。
+          #   同时它也是全新安装写进游戏目录的那份模板（含 Steam 绕过等开关）。
           $targets = @(
             @{ From = "$extract/version.dll"; To = "$resources/version.dll" },
-            @{ From = "$extract/AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll"; To = "$resources/CesiumLoader.SDK.dll" }
+            @{ From = "$extract/AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll"; To = "$resources/CesiumLoader.SDK.dll" },
+            @{ From = "$extract/AstralParty_ModLoader/doorstop_config.json"; To = "$resources/doorstop_config.json" }
           )
           foreach ($t in $targets) {
             if (-not (Test-Path $t.From)) { throw "解压包缺少文件: $($t.From)" }
