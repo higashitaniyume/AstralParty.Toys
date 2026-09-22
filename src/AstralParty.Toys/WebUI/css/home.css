@@ -307,7 +307,9 @@ body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-game-logo {
   bottom: 78px;
   z-index: 16;
   display: flex;
+  flex-direction: column;   /* 启动按钮在上，启动方式单选框在它下面 */
   align-items: flex-end;
+  gap: 10px;
 }
 
 .lobby-corner-launch .lobby-card-btn {
@@ -332,6 +334,51 @@ body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-game-logo {
   top: -26px;
   width: 130px;
   height: 130px;
+}
+
+/* 启动方式（单选框，二选一）：从 Steam 启动（默认）/ 绕过 Steam 启动。
+   「绕过」= 直接启动游戏主程序，并且会同步打开「加载器设置」里的 Steam 绕过开关。 */
+.launch-mode-options {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.launch-mode-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 2px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  background: rgba(10, 14, 23, 0.78);
+  color: #cbd5e6;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 160ms var(--motion-ease), background 160ms var(--motion-ease), color 160ms var(--motion-ease);
+}
+
+.launch-mode-item:hover {
+  border-color: rgba(255, 48, 139, 0.55);
+  color: #f3f5fa;
+}
+
+.launch-mode-item.is-active {
+  border-color: #ff308b;
+  background: rgba(255, 48, 139, 0.18);
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(255, 48, 139, 0.28);
+}
+
+.launch-mode-item input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #ff308b;
+  cursor: pointer;
 }
 
 body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-hero-art {

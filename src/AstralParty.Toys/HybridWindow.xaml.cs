@@ -181,6 +181,7 @@ public partial class HybridWindow : Window
                     _webReady = true;
                     StartupOverlay.Visibility = Visibility.Collapsed;
                     Post(new { type = "homeData", payload = _homeDataService.GetHomeData() });
+                    PostSteamBypassSync();
                     await SendReplayLibraryAsync(runMaintain: true);
                     Post(new { type = "librarySettings", payload = BuildLibrarySettingsPayload() });
                     var args = Environment.GetCommandLineArgs();
@@ -188,6 +189,7 @@ public partial class HybridWindow : Window
                     break;
                 case "getHomeData":
                     Post(new { type = "homeData", payload = _homeDataService.GetHomeData() });
+                    PostSteamBypassSync();
                     break;
                 case "openReplay":
                     await PickAndLoadReplayAsync();
@@ -265,7 +267,16 @@ public partial class HybridWindow : Window
                     }
                     break;
                 case "launchGame":
-                    HandleLaunchGame();
+                    // 首页「启动游戏」下面那两个单选框决定走哪条路（默认：从 Steam 启动）
+                    HandleLaunchGame(root.TryGetProperty("bypassSteam", out var bypassSteamElement) &&
+                                     bypassSteamElement.GetBoolean());
+                    break;
+                case "setSteamBypass":
+                    // 首页「绕过 Steam 启动」单选框 —— 与「加载器设置」里的同名开关是同一个配置
+                    if (root.TryGetProperty("enabled", out var steamBypassElement))
+                    {
+                        HandleSetSteamBypass(steamBypassElement.GetBoolean());
+                    }
                     break;
                 case "speedhackStatus":
                     PushSpeedhackStatus();
@@ -440,6 +451,8 @@ public partial class HybridWindow : Window
                             var config = modLoaderCfgElement.Deserialize<LoaderConfig>(WebReadOptions) ?? new LoaderConfig();
                             _modManager.SaveLoaderConfig(RequireModGameDirectory(), config);
                             Post(new { type = "toast", message = "已保存加载器设置（重启游戏生效）" });
+                            // 加载器设置里的「Steam 绕过」与首页的「绕过 Steam 启动」是同一个配置：改完回推给首页
+                            Post(new { type = "steamBypassSync", payload = new { enabled = config.SteamBypassEnabled } });
                         }
                         catch (Exception ex)
                         {
@@ -709,10 +722,14 @@ public partial class HybridWindow : Window
     private const string SteamLaunchUrl = "steam://rungameid/2622000";
 
     /// <summary>
-    /// 优先交给 Steam 启动（能带上 Steam 的 DRM / 云存档 / 更新检查）。
-    /// Steam 没装或 steam:// 协议没注册时，退回直接启动探测到的游戏主程序。
+    /// 启动游戏。首页「启动游戏」下面那两个单选框（二选一）决定走哪条路：
+    ///   · 从 Steam 启动（默认）—— 交给 steam:// 协议，能带上 Steam 的 DRM / 云存档 / 更新检查。
+    ///     Steam 没装或 steam:// 协议没注册时，退回直接启动探测到的游戏主程序。
+    ///   · 绕过 Steam 启动 —— 直接拉起游戏主程序，完全不经过 Steam。游戏本体在"非 Steam 客户端"下会在
+    ///     启动早期自己退出（[SteamManager] 非Steam客户端启动），所以这条路依赖加载器的 Steam 绕过；
+    ///     那个开关与首页这个单选框是同一个配置，勾选时就已经写进 doorstop_config.json 了。
     /// </summary>
-    private void HandleLaunchGame()
+    private void HandleLaunchGame(bool bypassSteam)
     {
         if (SpeedhackManager.IsGameRunning())
         {
@@ -720,39 +737,125 @@ public partial class HybridWindow : Window
             return;
         }
 
+        if (!bypassSteam)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(SteamLaunchUrl) { UseShellExecute = true });
+                Post(new { type = "toast", message = "已交给 Steam 启动 Astral Party，稍等一下。" });
+                return;
+            }
+            catch (Exception steamError)
+            {
+                LaunchGameDirectly($"Steam 不可用（{steamError.Message}），已直接启动游戏主程序。");
+                return;
+            }
+        }
+
+        LaunchGameDirectly("已绕过 Steam，直接启动游戏主程序。");
+    }
+
+    /// <summary>首页「绕过 Steam 启动」单选框：把选择同步进加载器配置（保留注释）。
+    /// 失败只提示、不改单选框状态 —— 单选框本身是前端偏好，配置同步是尽力而为。</summary>
+    private void HandleSetSteamBypass(bool enabled)
+    {
         try
         {
-            Process.Start(new ProcessStartInfo(SteamLaunchUrl) { UseShellExecute = true });
-            Post(new { type = "toast", message = "已交给 Steam 启动 Astral Party，稍等一下。" });
-            return;
-        }
-        catch (Exception steamError)
-        {
-            var gameDirectory = _speedhackManager.ResolveGameDirectory();
-            var gameExe = string.IsNullOrEmpty(gameDirectory) ? null : SpeedhackManager.ContainsGameExe(gameDirectory);
-            if (gameExe is null)
+            var directory = RequireModGameDirectory();
+            if (_modManager.SetSteamBypassEnabled(directory, enabled))
             {
                 Post(new
                 {
                     type = "toast",
-                    message = $"没能启动游戏：{steamError.Message}。请确认已安装 Steam；也可以在「变速器」页手动选择游戏目录后再试。"
+                    message = $"已同步加载器设置：绕过 Steam 启动 = {(enabled ? "开" : "关")}（重启游戏生效）"
                 });
-                return;
             }
-
-            try
+            else
             {
-                Process.Start(new ProcessStartInfo(gameExe)
+                Post(new
                 {
-                    UseShellExecute = true,
-                    WorkingDirectory = gameDirectory!
+                    type = "toast",
+                    message = "已记住这个选择，但没能同步到加载器配置（还没装加载器？在「模组」页安装一次就会同步）。"
                 });
-                Post(new { type = "toast", message = "Steam 不可用，已直接启动游戏主程序。" });
             }
-            catch (Exception ex)
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = $"已记住这个选择，但同步加载器配置失败：{ex.Message}" });
+        }
+    }
+
+    /// <summary>把加载器配置里当前的 <c>steamBypassEnabled</c> 推给首页，让「启动方式」单选框一进界面就跟配置一致
+    /// （加载器配置模板里它是开的 → 首页就显示「绕过 Steam 启动」）。
+    ///
+    /// 没装加载器（没有 doorstop_config.json）时不推：那时没有"配置"可跟随，首页保留自己的默认 ——「从 Steam 启动」。
+    /// 推送失败也不影响任何功能，首页会退回它自己记住的选择。</summary>
+    private void PostSteamBypassSync()
+    {
+        try
+        {
+            var gameDirectory = _modManager.ResolveGameDirectory();
+            if (string.IsNullOrEmpty(gameDirectory)) return;
+            if (!File.Exists(_modManager.LoaderConfigPath(gameDirectory))) return;
+
+            Post(new
             {
-                Post(new { type = "toast", message = $"启动游戏失败：{ex.Message}" });
-            }
+                type = "steamBypassSync",
+                payload = new { enabled = _modManager.ReadLoaderConfig(gameDirectory).SteamBypassEnabled }
+            });
+        }
+        catch
+        {
+            // 尽力而为：读不到配置就让首页用它自己记住的选择
+        }
+    }
+
+    /// <summary>直接拉起游戏主程序（不经过 Steam），成功后把 successMessage（必要时再加一句提醒）发给前端。</summary>
+    private void LaunchGameDirectly(string successMessage)
+    {
+        var gameDirectory = _speedhackManager.ResolveGameDirectory();
+        var gameExe = string.IsNullOrEmpty(gameDirectory) ? null : SpeedhackManager.ContainsGameExe(gameDirectory);
+        if (gameExe is null)
+        {
+            Post(new
+            {
+                type = "toast",
+                message = "没能启动游戏：没有找到游戏主程序。请先在「变速器」页选择游戏目录，或确认游戏已安装。"
+            });
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(gameExe)
+            {
+                UseShellExecute = true,
+                WorkingDirectory = gameDirectory!
+            });
+            Post(new { type = "toast", message = successMessage + SteamBypassCaveat(gameDirectory!) });
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = $"启动游戏失败：{ex.Message}" });
+        }
+    }
+
+    /// <summary>直接启动（绕过 Steam）时的提醒：Steam 没在运行、加载器的 Steam 绕过又没生效的话，
+    /// 游戏会在启动早期打印"[ERROR] [SteamManager] 非Steam客户端启动, 退出游戏"然后自己退出。
+    /// 只提醒不拦截 —— Steam 在后台跑着时直接启动一般也能进游戏。</summary>
+    private string SteamBypassCaveat(string gameDirectory)
+    {
+        try
+        {
+            if (Process.GetProcessesByName("steam").Length > 0) return "";
+            if (_modManager.GetStatus().Installed &&
+                _modManager.ReadLoaderConfig(gameDirectory).SteamBypassEnabled) return "";
+            return "（提示：Steam 没在运行，加载器的「Steam 绕过」也没生效，游戏可能会在启动早期自己退出 ——"
+                 + "可在「模组 → 加载器设置」里打开它）";
+        }
+        catch
+        {
+            return "";
         }
     }
 
@@ -1393,6 +1496,7 @@ public partial class HybridWindow : Window
         _modManager.Install(RequireModGameDirectory(), overwriteDll, includeSample, allowDowngrade);
         Post(new { type = "toast", message = ModManager.DescribeInstalled() });
         PushModStatus();
+        PostSteamBypassSync();   // 刚装/更新完，首页的启动方式单选框跟上新配置
     }
 
     private void HandleModUninstall(bool force)
@@ -1543,6 +1647,7 @@ public partial class HybridWindow : Window
             var versionText = string.IsNullOrEmpty(manifest?.Version) ? "" : $"（{manifest.Version}）";
             Post(new { type = "toast", message = $"加载器已更新{versionText}。" + (SpeedhackManager.IsGameRunning() ? "游戏正在运行，重启游戏后生效。" : "") });
             PushModStatus();
+            PostSteamBypassSync();   // 刚更新完，首页的启动方式单选框跟上新配置
         }
         catch (Exception ex)
         {

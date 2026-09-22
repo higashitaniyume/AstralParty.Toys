@@ -86,12 +86,26 @@
           </button>
         </div>
 
-        <!-- 右下角：启动游戏（Steam AppID 2622000），比其他入口大一圈 -->
+        <!-- 右下角：启动游戏（Steam AppID 2622000），比其他入口大一圈。
+             按钮下面一组单选框二选一：从 Steam 启动（默认）/ 绕过 Steam 启动 —— 后者直接拉起游戏主程序，
+             并把加载器的 Steam 绕过开关一起打开（两者是同一个配置，见 doorstop_config.json）。 -->
         <div class="lobby-corner-launch">
           <button class="lobby-card-btn card-launch" id="btnMenuLaunchGame" title="启动 Astral Party（吉星派对）">
             <div class="card-btn-text">启动游戏</div>
             <img class="card-btn-logo" src="images/astral-party-logo.png" alt="Astral Party">
           </button>
+          <div class="launch-mode-options" role="radiogroup" aria-label="启动方式">
+            <label class="launch-mode-item" id="launchModeSteam"
+                   title="交给 Steam 启动：DRM / 云存档 / 更新检查都走 Steam（默认）">
+              <input type="radio" name="launchMode" id="launchViaSteam" checked>
+              <span>从 Steam 启动</span>
+            </label>
+            <label class="launch-mode-item" id="launchModeBypass"
+                   title="直接启动游戏主程序，完全不经过 Steam；会同时打开加载器的「Steam 绕过」，没装 Steam 也能进游戏">
+              <input type="radio" name="launchMode" id="launchBypassSteam">
+              <span>绕过 Steam 启动</span>
+            </label>
+          </div>
         </div>
 
         <!-- Bottom Dock Bar -->

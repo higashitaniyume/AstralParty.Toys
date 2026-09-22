@@ -619,6 +619,113 @@ public sealed class ModManagerTests
         Assert.Contains("\"steamBypassLobbyMethods\": false", text);
     }
 
+    // ============================== 首页「绕过 Steam 启动」→ 加载器配置 ==============================
+    //
+    // 首页那个复选框和「加载器设置」里的 steamBypassEnabled 是同一个配置。写入必须做到：
+    //   只动这一个字面量（注释、其它键、缩进全保留），且写完自检通过才落盘。
+
+    [Fact]
+    public void SetSteamBypassEnabled_FlipsOnlyThatLiteral_AndKeepsComments()
+    {
+        using var harness = new ModHarness("ap-mod-set-steam-bypass");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
+
+        var before = File.ReadAllText(path);
+        Assert.Contains("\"steamBypassEnabled\": true", before);   // 模板默认是开
+        var beforeConfig = harness.Manager.ReadLoaderConfig(harness.GameDirectory);
+
+        Assert.True(harness.Manager.SetSteamBypassEnabled(harness.GameDirectory, false));
+
+        var text = File.ReadAllText(path);
+        Assert.Contains("\"steamBypassEnabled\": false", text);
+        // 模板里的注释必须在（这正是不能用 SaveLoaderConfig 的原因：它是白名单字典整体重写、会清掉注释）
+        Assert.Contains("本是 Steamworks 的无害样板调用", text);
+        // "true" → "false" 只多一个字符 == 文件几乎原样，没有被整体重写成无注释版本
+        Assert.Equal(before.Length + 1, text.Length);
+
+        var afterConfig = harness.Manager.ReadLoaderConfig(harness.GameDirectory);
+        Assert.False(afterConfig.SteamBypassEnabled);                                 // 只有它变了
+        Assert.Equal(beforeConfig.SpeedhackBaseSpeed, afterConfig.SpeedhackBaseSpeed);
+        Assert.Equal(beforeConfig.SteamBypassMatchmaking, afterConfig.SteamBypassMatchmaking);
+        Assert.Equal(beforeConfig.SteamBypassLobbyMethods, afterConfig.SteamBypassLobbyMethods);
+        Assert.Equal(beforeConfig.SdkVersion, afterConfig.SdkVersion);
+    }
+
+    [Fact]
+    public void SetSteamBypassEnabled_IsIdempotent_AndCountsAlreadyTargetAsSuccess()
+    {
+        using var harness = new ModHarness("ap-mod-set-steam-bypass-idem");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
+        var before = File.ReadAllText(path);
+
+        // 已经是 true（模板默认）→ 无事可做，但算成功：前端不该弹"同步失败"
+        Assert.True(harness.Manager.SetSteamBypassEnabled(harness.GameDirectory, true));
+        Assert.Equal(before, File.ReadAllText(path));            // 一字未改
+
+        Assert.True(harness.Manager.SetSteamBypassEnabled(harness.GameDirectory, false));
+        Assert.True(harness.Manager.SetSteamBypassEnabled(harness.GameDirectory, true));
+        Assert.True(harness.Manager.ReadLoaderConfig(harness.GameDirectory).SteamBypassEnabled);
+    }
+
+    [Fact]
+    public void SetSteamBypassEnabled_ReturnsFalse_WhenConfigMissing_AndDoesNotCreateIt()
+    {
+        using var harness = new ModHarness("ap-mod-set-steam-bypass-nofile");
+
+        // 还没安装加载器：不能凭空造一个 doorstop_config.json 出来
+        Assert.False(harness.Manager.SetSteamBypassEnabled(harness.GameDirectory, true));
+        Assert.False(File.Exists(harness.Manager.LoaderConfigPath(harness.GameDirectory)));
+    }
+
+    [Fact]
+    public void SetSteamBypassEnabled_ReturnsFalse_WhenKeyMissing_AndLeavesFileUntouched()
+    {
+        using var harness = new ModHarness("ap-mod-set-steam-bypass-nokey");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
+
+        var text = "{\n  // 老模板：没有 steamBypass 这一组键\n  \"enabled\": true\n}";
+        File.WriteAllText(path, text);
+
+        // 不添加键（加载器用编译进去的默认值，补齐是安装流程的活），也不许改坏文件
+        Assert.False(harness.Manager.SetSteamBypassEnabled(harness.GameDirectory, true));
+        Assert.Equal(text, File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void SetSteamBypassEnabled_DoesNotRewriteCommentMentions()
+    {
+        using var harness = new ModHarness("ap-mod-set-steam-bypass-comment");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
+
+        // 只有**注释里**提到这个键（真实键不存在）：就地替换会先命中注释 —— 自检必须拦住，不能写盘
+        var text = "{\n  // 说明: \"steamBypassEnabled\": true 才是主开关\n  \"enabled\": true\n}";
+        File.WriteAllText(path, text);
+
+        Assert.False(harness.Manager.SetSteamBypassEnabled(harness.GameDirectory, false));
+        Assert.Equal(text, File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void SetSteamBypassEnabled_PreservesUtf8Bom()
+    {
+        using var harness = new ModHarness("ap-mod-set-steam-bypass-bom");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
+
+        // 用户在记事本里存过一遍 → 文件带 BOM；改写后 BOM 必须还在（加载器两侧都会剥 BOM，但别去动它）
+        var text = File.ReadAllText(path);
+        File.WriteAllBytes(path, [0xEF, 0xBB, 0xBF, .. System.Text.Encoding.UTF8.GetBytes(text)]);
+
+        Assert.True(harness.Manager.SetSteamBypassEnabled(harness.GameDirectory, false));
+        var after = File.ReadAllBytes(path);
+        Assert.True(after.Length >= 3 && after[0] == 0xEF && after[1] == 0xBB && after[2] == 0xBF);
+        Assert.False(harness.Manager.ReadLoaderConfig(harness.GameDirectory).SteamBypassEnabled);
+    }
+
     // ============================== 老安装(没有清单)的版本回读 与 降级闸门 ==============================
 
     /// <summary>把安装清单里的版本改掉 —— 用来模拟"目录里装的是另一个版本"（老安装没有清单时改成删除）。</summary>
