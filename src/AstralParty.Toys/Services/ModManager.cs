@@ -948,20 +948,43 @@ public sealed class ModManager
         WriteAllBytesProtected(LoaderConfigPath(gameDirectory), System.Text.Encoding.UTF8.GetBytes(json));
     }
 
-    /// <summary>只改 doorstop_config.json 里 <c>steamBypassEnabled</c> 这一个开关 —— 注释、其它键、缩进统统原样保留。
+    /// <summary>首页「启动方式」单选框要写的那一组键 —— 它们是**一套**，必须同开同关（见
+    /// <see cref="SetSteamBypassProfile"/> 的说明：只关主开关不足以恢复原版行为）。</summary>
+    public static readonly string[] SteamBypassProfileKeys =
+    [
+        "steamBypassEnabled",      // 阶段1: SteamManager.Awake -> no-op + RestartAppIfNecessary -> 0
+        "steamBypassMatchmaking",  // 阶段2/3/方案B: CreateLobbyAsync / JoinLobbyAsync -> 已完成的空 Task
+        "steamBypassLobbyQuery"    // 阶段5: LobbyQuery.RequestAsync -> 结果为空 Lobby[] 的已完成 Task
+    ];
+
+    /// <summary>这套绕过当前是否**有任何一个**是开着的（首页单选框据此显示"绕过 Steam 启动"）。
     ///
-    /// 首页「启动游戏」下面那个「绕过 Steam 启动」单选框，和「加载器设置」里的「不装 Steam 也能启动游戏」
-    /// 是**同一个配置**：勾上它表示"直接拉起游戏主程序、不经过 Steam"，而游戏本体在非 Steam 客户端下会在
-    /// 启动早期自己退出（[SteamManager] 非Steam客户端启动, 退出游戏），所以必须同时打开加载器的 Steam 绕过。
-    /// 这里就是把它写下去的那一步；方向反过来（在加载器设置里改了）由调用方回推给首页。
+    /// 用"任一为真"而不是只看主开关：只要还有一部分 hook 在起作用，Steam 那边的行为就已经不是原版了
+    /// （比如主开关关了、匹配绕过还开着 → 照样不建真大厅），此时首页绝不能显示成「从 Steam 启动」。</summary>
+    public static bool IsSteamBypassActive(LoaderConfig config)
+        => config.SteamBypassEnabled || config.SteamBypassMatchmaking || config.SteamBypassLobbyQuery;
+
+    /// <summary>把「Steam 绕过」这一套开关写成同一个值：开 = 绕过模式（不装 Steam 也能玩），关 = 完全原版行为。
+    /// 注释、其它键、缩进统统原样保留（就地替换字面量，不整体重写）。
+    ///
+    /// ★ 为什么是**三个键一起**而不是只动主开关：加载器的这些 hook 都是**启动时无条件安装**的，
+    ///   不检测 Steam 是否在运行（加载器 <c>docs/steam-bypass.md</c> 第 6 节第 4 条），而且各自只受自己的键控制：
+    ///     · <c>steamBypassEnabled</c>   → 阶段1（拦 <c>SteamManager.Awake</c>、<c>SteamAPI_RestartAppIfNecessary</c>）
+    ///     · <c>steamBypassMatchmaking</c> → 阶段2/3/方案B（建房 / 进房返回空 Task → <c>steamLobbyId</c> 恒为 0）
+    ///     · <c>steamBypassLobbyQuery</c>  → 阶段5（房间列表查询返回空，源码注释写明"只受它自己控制"）
+    ///   所以只把主开关关掉时，**从 Steam 启动仍然不会创建真大厅、房间列表照样返回空** ——
+    ///   Steam 好友邀请 / 大厅分享进房依然是坏的。要做到"从 Steam 启动就用真大厅"，必须三个一起关。
+    ///   （其余几个键不用动：<c>steamBypassRestartCheck</c> 只在主开关为真时有意义，
+    ///   <c>steamBypassLobbyHasValue</c> / 方案B 都挂在 <c>steamBypassMatchmaking</c> 分支里，
+    ///   <c>steamBypassLobbyMethods</c> 无论如何都必须保持 false。）
     ///
     /// 为什么不用 SaveLoaderConfig：那是"白名单字典整体重写"，会把模板里那一大段中文注释全丢掉 ——
-    /// 首页切一下启动方式不该顺手清掉用户的配置注释。所以跟 SyncLoaderConfigSdkVersion /
-    /// SyncLoaderConfigSteamKeys 同一套做法：文本就地替换一个字面量，写完先自检，任一步不满足就不写盘。
+    /// 首页切一下启动方式不该顺手清掉用户的配置注释。做法与 SyncLoaderConfigSdkVersion /
+    /// SyncLoaderConfigSteamKeys 一致：文本就地替换，写完自检，任一步不满足就不写盘。
     ///
-    /// 返回：确实让配置变成了目标值返回 true；配置不存在（加载器还没装）或里面没有这个键（老模板）返回 false，
-    /// 由调用方提示用户（加载器键缺失时用它编译进去的默认值，安装/更新流程会把键补齐）。</summary>
-    public bool SetSteamBypassEnabled(string gameDirectory, bool enabled)
+    /// 返回：确实让这一套变成了目标值返回 true；配置不存在（加载器还没装）或三个键一个都不在（老模板）
+    /// 返回 false，由调用方提示用户（键缺失时加载器用它编译进去的默认值，安装/更新流程会把键补齐）。</summary>
+    public bool SetSteamBypassProfile(string gameDirectory, bool enabled)
     {
         if (string.IsNullOrWhiteSpace(gameDirectory)) return false;
 
@@ -973,30 +996,44 @@ public sealed class ModManager
         var offset = hasBom ? 3 : 0;
         var text = System.Text.Encoding.UTF8.GetString(bytes, offset, bytes.Length - offset);
 
-        // 用 MatchEvaluator 而不是 "$1true"：替换串里 "$1" 紧跟着字母时容易被 .NET 读成别的分组引用，
-        // 这里虽然只到 $1 也保持和 sdkVersion 那处一致的写法。
-        var updated = System.Text.RegularExpressions.Regex.Replace(
-            text,
-            "(\"steamBypassEnabled\"\\s*:\\s*)(true|false)",
-            match => match.Groups[1].Value + (enabled ? "true" : "false"));
-        if (updated == text)
+        // 用 MatchEvaluator（不是 "$1true"）：替换串里 "$1" 紧跟字母时容易被 .NET 读成别的分组引用。
+        // ★ 跳过注释里的同名串：模板注释里就写着 steamBypassEnabled=true 这类说明，直接替换会把注释改花。
+        //   跳过的风险由下面的自检兜住：某个真键若被误判成注释而没改到，解析出来的值就不等于目标值 → 不写盘。
+        var literal = enabled ? "true" : "false";
+        var updated = text;
+        foreach (var key in SteamBypassProfileKeys)
         {
-            // 没改动有两种情况：值本来就对（算成功，不必提示），或配置里根本没有这个键（交给安装流程补齐）。
-            return text.Contains("\"steamBypassEnabled\"", StringComparison.Ordinal);
+            updated = System.Text.RegularExpressions.Regex.Replace(
+                updated,
+                "(\"" + key + "\"\\s*:\\s*)(true|false)",
+                match => IsInsideLineComment(updated, match.Index)
+                    ? match.Value
+                    : match.Groups[1].Value + literal);
         }
 
-        // 写回前自检：改完必须仍能解析、且读回来的就是这个值 —— 否则宁可不动（绝不能把配置写坏）。
+        // 写回前自检（同时用来判断"本来就对"）：
+        //   · 改完必须仍能解析；
+        //   · 配置里**出现过**的键，值必须都等于目标值（否则宁可不动 —— 绝不能把配置写坏）；
+        //   · 一个键都没出现 = 老模板（没有这套开关）→ 返回 false，交给安装/更新流程补齐，也不动文件。
+        var presentKeys = 0;
         try
         {
             using var doc = JsonDocument.Parse(StripJsonComments(updated.TrimStart('\uFEFF')));
-            if (!doc.RootElement.TryGetProperty("steamBypassEnabled", out var value)) return false;
-            if (value.ValueKind is not (JsonValueKind.True or JsonValueKind.False)) return false;
-            if ((value.ValueKind == JsonValueKind.True) != enabled) return false;
+            foreach (var key in SteamBypassProfileKeys)
+            {
+                if (!doc.RootElement.TryGetProperty(key, out var value)) continue;
+                if (value.ValueKind is not (JsonValueKind.True or JsonValueKind.False)) return false;
+                if ((value.ValueKind == JsonValueKind.True) != enabled) return false;
+                presentKeys++;
+            }
         }
         catch
         {
             return false;
         }
+
+        if (presentKeys == 0) return false;
+        if (updated == text) return true;   // 本来就全是目标值：无事可做，算成功（前端不该弹"同步失败"）
 
         var encoded = System.Text.Encoding.UTF8.GetBytes(updated);
         if (hasBom)
@@ -1009,6 +1046,15 @@ public sealed class ModManager
 
         WriteAllBytesProtected(configPath, encoded);
         return true;
+    }
+
+    /// <summary>判断 <paramref name="index"/> 处是否落在 <c>//</c> 行注释里（这些配置只用行注释，没有块注释）。
+    /// 就地替换时用它跳过注释里的同名串 —— 只改真正的键。</summary>
+    private static bool IsInsideLineComment(string text, int index)
+    {
+        var lineStart = text.LastIndexOf('\n', Math.Max(0, index - 1)) + 1;
+        var comment = text.IndexOf("//", lineStart, StringComparison.Ordinal);
+        return comment >= 0 && comment < index;
     }
 
     /// <summary>从配置文本里取 sdkVersion（容错：解析失败 / 没有该字段返回空串）。

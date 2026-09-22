@@ -261,7 +261,7 @@
         ['consoleTopmost', '控制台窗口置顶', 'bool', config.consoleTopmost],
         ['forwardActivityLog', '把 mod 日志转发到控制台', 'bool', config.forwardActivityLog],
         // ---- Steam 绕过（加载器功能，非 mod：必须在托管层加载前用原生 hook 拦下，见加载器 docs\steam-bypass.md）----
-        ['__steam', 'Steam 绕过 —— 不装 Steam 也能启动，且建房 / 退房正常', 'header', ''],
+        ['__steam', 'Steam 绕过 —— 不装 Steam 也能启动，且建房 / 退房正常（首页「启动方式」单选框把下面前三个开关作为一套一起开 / 关；要从 Steam 启动并用真大厅，这三个都必须关）', 'header', ''],
         ['steamBypassEnabled', '不装 Steam 也能启动游戏（拦住 SteamManager.Awake 的“非 Steam 客户端启动就退出游戏”）', 'bool', config.steamBypassEnabled],
         ['steamBypassRestartCheck', '附加保险：忽略 Steam 的“请从 Steam 启动”重启请求（SteamAPI_RestartAppIfNecessary）', 'bool', config.steamBypassRestartCheck],
         ['steamBypassMatchmaking', '修复点“创建 / 加入房间”没反应（大厅匹配改为直接返回空结果）', 'bool', config.steamBypassMatchmaking],

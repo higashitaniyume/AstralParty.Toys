@@ -9,12 +9,12 @@
     <AssemblyName>AstralParty.Toys</AssemblyName>
     <RootNamespace>AstralParty.Toys</RootNamespace>
     <StartupObject>AstralParty.Toys.App</StartupObject>
-    <!-- 与发布 tag 同步递增：v0.4.7 → v0.4.8（首页「启动游戏」下面新增启动方式单选框：从 Steam 启动 /
-         绕过 Steam 启动，二选一；「绕过 Steam 启动」= 直接拉起游戏主程序 + 把加载器的 steamBypassEnabled
-         写开，两边是同一个配置、双向同步，写入时保留配置里的注释） -->
-    <Version>0.4.8</Version>
-    <AssemblyVersion>0.4.8.0</AssemblyVersion>
-    <FileVersion>0.4.8.0</FileVersion>
+    <!-- 与发布 tag 同步递增：v0.4.8 → v0.4.9（修复「从 Steam 启动」没有真正恢复 Steam 大厅联机：
+         加载器的 hook 各自受自己的键控制，必须把 steamBypassEnabled / steamBypassMatchmaking /
+         steamBypassLobbyQuery 三个键作为一套一起开、一起关） -->
+    <Version>0.4.9</Version>
+    <AssemblyVersion>0.4.9.0</AssemblyVersion>
+    <FileVersion>0.4.9.0</FileVersion>
     <ApplicationIcon>WebUI\images\UT_AccountHeadShot_70902.ico</ApplicationIcon>
   </PropertyGroup>
 
