@@ -598,6 +598,7 @@ dotnet test tests\AstralParty.Toys.Tests\AstralParty.Toys.Tests.csproj --filter 
 | `ReplayLibraryTests` | 扫描 / 归档 / 放回 / 自动整理 / 删除 / 不可解析文件的放回拦截 / 「库 = 游戏目录」守卫 |
 | `ConfigLocationTests` | 文档目录优先、不可写回退 AppData、旧配置迁移、配置目录不被当成回放条目 |
 | `SpeedhackTests` | 内嵌资源、安装 / 卸载 / 覆盖保护、配置往返 JSON |
+| `ModManagerTests` | 加载器安装 / 更新 / 卸载与覆盖保护、`doorstop_config.json` 读写（含「补齐缺失键但保留注释」、SDK 版本升降级闸门、首页「绕过 Steam 启动」单键同步）、mod 扫描 / 导入 / 启停 / 删除 / 配置表单、发布包解析与篡改拒绝、与旧版独立变速器的互斥检测 |
 | `CatalogAndAssetTests` | 角色 / 地图 / 怪物 / 筹码 / 物品配表、内嵌素材、报告引用素材可解析、AI 摘要五个章节 |
 | `EmbeddedWebUiTests` | 前端页面整包内嵌（源码 `WebUI\**` 一个不漏）、Content-Type、404、页面/JS/CSS 里的本地引用都能取到 |
 | `WebResourceStreamTests` | 交给 WebView2 的响应流包装：内容原样读出、读完自行释放内层流、之后再读返回 0 |

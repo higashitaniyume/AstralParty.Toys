@@ -2,6 +2,35 @@
 
 本文件按版本记录 `AstralParty.Toys` 的功能变更。版本号与 GitHub 发布 tag 一一对应（如 `v0.2.0`），发布产物由 [release.yml](.github/workflows/release.yml) 在打 tag 时自动构建。
 
+## [v0.4.8] - 2026-09-22
+
+### 🎛 启动方式可选：从 Steam 启动 / 绕过 Steam 启动
+
+主界面「启动游戏」按钮下方新增一组单选框，二选一（默认「从 Steam 启动」）：
+
+- **从 Steam 启动**：交给 `steam://rungameid/2622000`，DRM / 云存档 / 更新检查都走 Steam；
+  Steam 没装或协议没注册时，仍然退回直接启动游戏主程序；
+- **绕过 Steam 启动**：直接拉起游戏主程序，完全不经过 Steam。游戏本体发现"非 Steam 客户端"会在启动早期
+  自己退出（`[SteamManager] 非Steam客户端启动, 退出游戏`），所以这条路依赖加载器的 Steam 绕过 ——
+  而这两者本来就是**同一个配置**：首页切换会写进 `doorstop_config.json` 的 `steamBypassEnabled`，
+  在「加载器设置」里改这个开关也会回推到首页；进界面时以配置里的当前值为准（没装加载器则用本地记住的选择）；
+- 写入加载器配置时**只改这一个字面量**：注释、其它键、缩进原样保留（不走 `SaveLoaderConfig` 的白名单重写），
+  写完先自检（仍能解析 + 读回来就是目标值）才落盘；
+- 绕过启动时如果 Steam 没在运行、加载器的绕过又没生效，会提示一句"游戏可能自己退出" —— 只提醒不拦截。
+
+### 📝 文档
+
+- README 的模组章节补上加载器本体说明：CesiumLoader 是本项目的**配套加载器**（独立仓库、Doorstop 式
+  `version.dll` 代理 + MinHook 原生 hook + HybridCLR 就绪后 `Assembly.Load` 拉起托管 mod），
+  因此能在 AOT 的 `SteamManager.Awake` 之前拦下"非 Steam 客户端启动就退出游戏"；同时列出 Steam 绕过这组
+  开关与新的启动方式；
+- 修正 README 里过期的测试用例数，`docs/replay-format.md` 的测试表补上 `ModManagerTests` 一行。
+
+### 🧪 测试
+
+- 新增 6 个用例覆盖「首页启动方式 → 加载器配置」的写入：只动一个字面量（文件长度只 +1、模板注释仍在）、
+  幂等、配置缺失时不凭空建文件、不碰注释里的同名字面量、UTF-8 BOM 保留。
+
 ## [v0.4.7] - 2026-09-22
 
 ### 🚀 不装 Steam 也能启动游戏（内置加载器 / SDK 2.1.7 → 2.2.0）

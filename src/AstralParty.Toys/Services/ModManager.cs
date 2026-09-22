@@ -948,6 +948,69 @@ public sealed class ModManager
         WriteAllBytesProtected(LoaderConfigPath(gameDirectory), System.Text.Encoding.UTF8.GetBytes(json));
     }
 
+    /// <summary>只改 doorstop_config.json 里 <c>steamBypassEnabled</c> 这一个开关 —— 注释、其它键、缩进统统原样保留。
+    ///
+    /// 首页「启动游戏」下面那个「绕过 Steam 启动」单选框，和「加载器设置」里的「不装 Steam 也能启动游戏」
+    /// 是**同一个配置**：勾上它表示"直接拉起游戏主程序、不经过 Steam"，而游戏本体在非 Steam 客户端下会在
+    /// 启动早期自己退出（[SteamManager] 非Steam客户端启动, 退出游戏），所以必须同时打开加载器的 Steam 绕过。
+    /// 这里就是把它写下去的那一步；方向反过来（在加载器设置里改了）由调用方回推给首页。
+    ///
+    /// 为什么不用 SaveLoaderConfig：那是"白名单字典整体重写"，会把模板里那一大段中文注释全丢掉 ——
+    /// 首页切一下启动方式不该顺手清掉用户的配置注释。所以跟 SyncLoaderConfigSdkVersion /
+    /// SyncLoaderConfigSteamKeys 同一套做法：文本就地替换一个字面量，写完先自检，任一步不满足就不写盘。
+    ///
+    /// 返回：确实让配置变成了目标值返回 true；配置不存在（加载器还没装）或里面没有这个键（老模板）返回 false，
+    /// 由调用方提示用户（加载器键缺失时用它编译进去的默认值，安装/更新流程会把键补齐）。</summary>
+    public bool SetSteamBypassEnabled(string gameDirectory, bool enabled)
+    {
+        if (string.IsNullOrWhiteSpace(gameDirectory)) return false;
+
+        var configPath = LoaderConfigPath(gameDirectory);
+        if (!File.Exists(configPath)) return false;
+
+        var bytes = File.ReadAllBytes(configPath);
+        var hasBom = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
+        var offset = hasBom ? 3 : 0;
+        var text = System.Text.Encoding.UTF8.GetString(bytes, offset, bytes.Length - offset);
+
+        // 用 MatchEvaluator 而不是 "$1true"：替换串里 "$1" 紧跟着字母时容易被 .NET 读成别的分组引用，
+        // 这里虽然只到 $1 也保持和 sdkVersion 那处一致的写法。
+        var updated = System.Text.RegularExpressions.Regex.Replace(
+            text,
+            "(\"steamBypassEnabled\"\\s*:\\s*)(true|false)",
+            match => match.Groups[1].Value + (enabled ? "true" : "false"));
+        if (updated == text)
+        {
+            // 没改动有两种情况：值本来就对（算成功，不必提示），或配置里根本没有这个键（交给安装流程补齐）。
+            return text.Contains("\"steamBypassEnabled\"", StringComparison.Ordinal);
+        }
+
+        // 写回前自检：改完必须仍能解析、且读回来的就是这个值 —— 否则宁可不动（绝不能把配置写坏）。
+        try
+        {
+            using var doc = JsonDocument.Parse(StripJsonComments(updated.TrimStart('\uFEFF')));
+            if (!doc.RootElement.TryGetProperty("steamBypassEnabled", out var value)) return false;
+            if (value.ValueKind is not (JsonValueKind.True or JsonValueKind.False)) return false;
+            if ((value.ValueKind == JsonValueKind.True) != enabled) return false;
+        }
+        catch
+        {
+            return false;
+        }
+
+        var encoded = System.Text.Encoding.UTF8.GetBytes(updated);
+        if (hasBom)
+        {
+            var withBom = new byte[encoded.Length + 3];
+            withBom[0] = 0xEF; withBom[1] = 0xBB; withBom[2] = 0xBF;
+            Array.Copy(encoded, 0, withBom, 3, encoded.Length);
+            encoded = withBom;
+        }
+
+        WriteAllBytesProtected(configPath, encoded);
+        return true;
+    }
+
     /// <summary>从配置文本里取 sdkVersion（容错：解析失败 / 没有该字段返回空串）。
     ///
     /// ★ 必须自行剥 UTF-8 BOM：本方法有两类调用方 —— File.ReadAllText（会剥 BOM）与

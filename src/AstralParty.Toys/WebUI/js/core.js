@@ -226,6 +226,11 @@ host?.addEventListener('message', event => {
       if (window.ModsModule) window.ModsModule.syncSpeedhackBar(msg.payload?.config);
       break;
 
+    case 'steamBypassSync':
+      // 加载器设置里改了「Steam 绕过」→ 首页的「绕过 Steam 启动」单选框跟着走（同一个配置）
+      if (window.HomeModule) window.HomeModule.applySteamBypassSync(msg.payload);
+      break;
+
     case 'modConfigFields':
       if (window.ModsModule) window.ModsModule.renderConfigFields(msg.payload);
       break;

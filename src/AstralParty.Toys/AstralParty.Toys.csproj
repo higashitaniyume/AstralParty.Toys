@@ -9,12 +9,12 @@
     <AssemblyName>AstralParty.Toys</AssemblyName>
     <RootNamespace>AstralParty.Toys</RootNamespace>
     <StartupObject>AstralParty.Toys.App</StartupObject>
-    <!-- 与发布 tag 同步递增：v0.4.6 → v0.4.7（内置加载器/SDK 2.1.7 → 2.2.0：加载器新增 Steam 绕过
-         —— 不装 Steam 也能启动游戏；「加载器设置」里可视化开关这套绕过；内嵌安装补写
-         cesium-loader.json，使「已安装版本」可被识别，从旧版升级时才知道要不要更新） -->
-    <Version>0.4.7</Version>
-    <AssemblyVersion>0.4.7.0</AssemblyVersion>
-    <FileVersion>0.4.7.0</FileVersion>
+    <!-- 与发布 tag 同步递增：v0.4.7 → v0.4.8（首页「启动游戏」下面新增启动方式单选框：从 Steam 启动 /
+         绕过 Steam 启动，二选一；「绕过 Steam 启动」= 直接拉起游戏主程序 + 把加载器的 steamBypassEnabled
+         写开，两边是同一个配置、双向同步，写入时保留配置里的注释） -->
+    <Version>0.4.8</Version>
+    <AssemblyVersion>0.4.8.0</AssemblyVersion>
+    <FileVersion>0.4.8.0</FileVersion>
     <ApplicationIcon>WebUI\images\UT_AccountHeadShot_70902.ico</ApplicationIcon>
   </PropertyGroup>
 

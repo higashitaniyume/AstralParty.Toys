@@ -2,7 +2,7 @@
 
 ## **文件下载和问题反馈（企鹅）：1078464597**
 
-`AstralParty.Toys` 是面向《吉星派对》（Astral Party）的 Windows 本地工具箱，整合离线回放分析、协议帧查看、筹码复盘、游戏素材展示、**Mod 加载器（CesiumLoader）与模组管理**和变速器管理。所有数据处理均在本地完成。
+`AstralParty.Toys` 是面向《吉星派对》（Astral Party）的 Windows 本地工具箱，整合离线回放分析、协议帧查看、筹码复盘、游戏素材展示、**Mod 加载器（[CesiumLoader](https://github.com/higashitaniyume/CesiumLoader)）与模组管理**和变速器管理。所有数据处理均在本地完成。
 
 ## 下载与版本选择
 
@@ -49,13 +49,20 @@ AstralParty.Toys-<版本>-<架构>-<运行时模式>-<打包方式>
 
 ### 模组（Mod）
 
-内置 [CesiumLoader](https://github.com/higashitaniyume/CesiumLoader) 加载器与 3 个内置 mod，把 mod 系统装进游戏目录：
+内置 **CesiumLoader** 加载器与 3 个内置 mod，把 mod 系统装进游戏目录。CesiumLoader 是**本项目的配套加载器**（同一个作者维护，源码在独立仓库 [higashitaniyume/CesiumLoader](https://github.com/higashitaniyume/CesiumLoader)：C++ 原生加载器 + 托管 SDK）。
+
+它是 Doorstop 思路的 `version.dll` 代理：靠 Windows 自带的 DLL 劫持在游戏启动最开始就拿到控制权，用 MinHook 挂原生 hook，等游戏的 HybridCLR 热更程序集就绪后，再用 `Assembly.Load(byte[])` 把托管 mod 拉起来。所以它能做到普通 mod 做不到的事 —— 例如在 AOT 的 `SteamManager.Awake` 之前拦下「非 Steam 客户端启动就退出游戏」。写 mod 用的 SDK（`netstandard2.0`）、示例 mod、CLI 工具与文档都在那个仓库里；Steam 绕过的原理见 [docs/steam-bypass.md](https://github.com/higashitaniyume/CesiumLoader/blob/master/docs/steam-bypass.md)。
 
 - 一键安装 / 更新 / 卸载加载器（`version.dll` + `AstralParty_ModLoader\`）；写入前做 SHA-256 校验，
   不会盲目覆盖游戏目录里其它工具的 `version.dll`，目录里已有同名文件时需勾选「允许覆盖」
-- 「内嵌版本 / 已装版本 / 最新版本」三栏对照，可一键从 GitHub 更新到最新发布版
+- 「内嵌版本 / 已装版本 / 最新版本」三栏对照（当前内嵌 **2.2.0**），可一键从 GitHub 更新到最新发布版
 - 加载器设置可视化编辑（`doorstop_config.json`）：总开关、控制台窗口与置顶、日志转发、各项等待超时、
-  **变速基础倍速**与「允许 mod 热键变速」
+  **变速基础倍速**、「允许 mod 热键变速」，以及 **Steam 绕过**一整组开关（`steamBypass*`：「不装 Steam 也能启动游戏」
+  「修建房 / 加入房间没反应」「修退房 / 被踢报错」等，默认全开；其中「方案B 备用安全网」实测会让游戏启动崩溃，标注了⚠并保持关闭）
+- **启动方式二选一**：主界面「启动游戏」按钮下方可直接选「从 Steam 启动」（默认）或「绕过 Steam 启动」。
+  选「绕过 Steam 启动」会直接拉起游戏主程序（不经过 Steam），并同时把加载器的「不装 Steam 也能启动游戏」
+  写开 —— 两者本来就是同一个配置，改的是 `doorstop_config.json` 里的同一个键，注释与其它设置原样保留；
+  在「加载器设置」里改这个开关，首页的单选框也会跟着同步
 - 游戏变速（加载器内置功能）：界面上直接开关并设定基础倍速（`1.0` = 正常，进游戏即生效），
   不必手动改配置文件
 - 模组管理：列出 `mods\` 下每个 mod（名称 / 版本 / 能力声明），可启用或禁用（重启游戏生效）、
@@ -125,7 +132,7 @@ dotnet run --project .\replaytool\src\AstralParty.Toys\AstralParty.Toys.csproj
 dotnet test .\replaytool\tests\AstralParty.Toys.Tests\AstralParty.Toys.Tests.csproj
 ```
 
-当前 87 个用例（85 通过 + 2 跳过）。测试自带合成回放数据（用游戏自己的 protobuf 生成类构造），**不依赖真实录像，也不需要联网**；
+当前 108 个用例。测试自带合成回放数据（用游戏自己的 protobuf 生成类构造），**不依赖真实录像，也不需要联网**；
 `Protocol\` 与 `GameData\` 会随项目引用自动复制到测试输出目录。需要真实录像的用例在没有数据时
 报告为「已跳过」，把回放放进游戏回放目录或设置 `ASTRAL_TEST_REPLAY` 指向文件即可启用。
 覆盖范围与合成夹具的说明见 `docs\replay-format.md` 第 8 节。
