@@ -9,12 +9,11 @@
     <AssemblyName>AstralParty.Toys</AssemblyName>
     <RootNamespace>AstralParty.Toys</RootNamespace>
     <StartupObject>AstralParty.Toys.App</StartupObject>
-    <!-- 与发布 tag 同步递增：v0.4.8 → v0.4.9（修复「从 Steam 启动」没有真正恢复 Steam 大厅联机：
-         加载器的 hook 各自受自己的键控制，必须把 steamBypassEnabled / steamBypassMatchmaking /
-         steamBypassLobbyQuery 三个键作为一套一起开、一起关） -->
-    <Version>0.4.9</Version>
-    <AssemblyVersion>0.4.9.0</AssemblyVersion>
-    <FileVersion>0.4.9.0</FileVersion>
+    <!-- 与发布 tag 同步递增：v0.4.9 → v0.4.10（内嵌加载器 2.2.0 → 2.2.1：自由相机整体重做为
+         滚轮缩放（沿当前视线前后移动、视角完全不变，F1 恢复原视角），SDK 侧新增自由相机数学函数） -->
+    <Version>0.4.10</Version>
+    <AssemblyVersion>0.4.10.0</AssemblyVersion>
+    <FileVersion>0.4.10.0</FileVersion>
     <ApplicationIcon>WebUI\images\UT_AccountHeadShot_70902.ico</ApplicationIcon>
   </PropertyGroup>
 
