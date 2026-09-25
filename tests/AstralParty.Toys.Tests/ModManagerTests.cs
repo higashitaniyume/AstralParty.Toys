@@ -570,7 +570,7 @@ public sealed class ModManagerTests
         Assert.Equal("auto", config.SteamBypassTaskCtorMode);
         Assert.False(config.SteamBypassLobbyMethods);         // 地雷键必须补成 false
         Assert.Equal(2.0, config.SpeedhackBaseSpeed);         // 其它用户设置照旧
-        Assert.Equal("2.2.0", config.SdkVersion);             // sdkVersion 同时被抬升
+        Assert.Equal("2.2.1", config.SdkVersion);             // sdkVersion 同时被抬升
 
         var text = File.ReadAllText(path);
         Assert.Contains("这是我自己写的注释", text);           // 原注释保留(文本插入而不是重写)
@@ -815,7 +815,7 @@ public sealed class ModManagerTests
             "  CesiumLoader loader v1.0.0 / SDK v1.0.0 — mod 加载报告\n");
 
         var status = harness.Manager.GetStatus();
-        Assert.Equal("2.2.0", status.InstalledVersion);
+        Assert.Equal("2.2.1", status.InstalledVersion);
         Assert.Equal("manifest", status.InstalledVersionSource);
     }
 
@@ -833,7 +833,7 @@ public sealed class ModManagerTests
 
         // 显式放行才允许降级
         harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: false, allowDowngrade: true);
-        Assert.Equal("2.2.0", harness.Manager.GetStatus().InstalledVersion);
+        Assert.Equal("2.2.1", harness.Manager.GetStatus().InstalledVersion);
     }
 
     [Fact]
@@ -863,7 +863,7 @@ public sealed class ModManagerTests
         var loaderRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
         File.Delete(Path.Combine(loaderRoot, "cesium-loader.json"));
         var configPath = Path.Combine(loaderRoot, "doorstop_config.json");
-        File.WriteAllText(configPath, File.ReadAllText(configPath).Replace("\"2.2.0\"", "\"2.1.6\""));
+        File.WriteAllText(configPath, File.ReadAllText(configPath).Replace("\"2.2.1\"", "\"2.1.6\""));
 
         var status = harness.Manager.GetStatus();
         Assert.Equal("2.1.6", status.InstalledVersion);
@@ -880,10 +880,10 @@ public sealed class ModManagerTests
         File.Delete(Path.Combine(loaderRoot, "cesium-loader.json"));   // 没有清单 → 只能靠配置
         var configPath = Path.Combine(loaderRoot, "doorstop_config.json");
         // 用户手改配置里的 sdkVersion（比如为了绕过 mod 的 SDK 校验）→ 不能因此把安装当成"降级"拦住
-        File.WriteAllText(configPath, File.ReadAllText(configPath).Replace("\"2.2.0\"", "\"9.9.9\""));
+        File.WriteAllText(configPath, File.ReadAllText(configPath).Replace("\"2.2.1\"", "\"9.9.9\""));
 
         harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: false);
-        Assert.Equal("2.2.0", harness.Manager.GetStatus().InstalledVersion);
+        Assert.Equal("2.2.1", harness.Manager.GetStatus().InstalledVersion);
     }
 
     // ============================== 加载器配置 / 权限 / 配置表单 ==============================

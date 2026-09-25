@@ -1,1 +1,1 @@
-{"id":"FreeCameraMod","name":"自由相机","version":"2.2.0","author":"CesiumLoader","description":"F1 开关俯瞰视角(默认跟随抬高, 游戏自带的鼠标/键盘操作照常可用); 鼠标滚轮 游戏内实时调高度(Ctrl+= / Ctrl+- 同效); config.json 里 mode=preset 可改为固定机位","permissions":1,"sdkVersion":"2.2.0","dependencies":[]}
+{"id":"FreeCameraMod","name":"自由相机","version":"2.2.1","author":"CesiumLoader","description":"滚轮缩放: 相机沿当前视线前后移动(朝向/俯角完全不变, 向前滚=拉近/放大, 向后滚=拉远/看更多); F1(可改键)恢复原来的视角。进游戏不接管任何东西, 只在你滚轮后才临时覆盖相机位置","permissions":1,"sdkVersion":"2.2.1","dependencies":[]}

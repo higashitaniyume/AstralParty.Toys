@@ -2,6 +2,41 @@
 
 本文件按版本记录 `AstralParty.Toys` 的功能变更。版本号与 GitHub 发布 tag 一一对应（如 `v0.2.0`），发布产物由 [release.yml](.github/workflows/release.yml) 在打 tag 时自动构建。
 
+## [v0.4.10] - 2026-09-25
+
+### 🎥 内置自由相机整体重做：滚轮缩放（视角完全不变）
+
+内置 CesiumLoader 加载器 / SDK / 内置 mod `2.2.0 → 2.2.1`，重点是**自由相机重写** ——
+旧版那套「`F1` 开关俯瞰视角 + 滚轮调高度」已经全部删掉：
+
+- 进游戏**不再接管**任何东西，也不需要开关：**鼠标滚轮沿当前视线前后移动** —— 只写相机位置，
+  朝向 / 俯角 / FOV 一律不写，所以是「视角不变，只是远近变了」；向前滚 = 拉近，向后滚 = 拉远；
+- `F1` 恢复**原来的视角**（`F2` 把缩放归零），两个键都能在模组页该 mod 的 `⚙` 里改；
+  滚回原处、切场景、换相机、卸载 mod 都会把相机完整交还游戏；
+- 旧的 `config.json` **首次启动自动迁移**：清掉 `mode` / `height` / `pitch` / `heightStep` 等旧键，
+  写入新 schema（`zoomStep` / `zoomInMax` / `zoomOutMax` / `invertWheel` / `smooth*` / `restoreKey` / `resetKey`），
+  原来的 `toggleKey` 会接成 `restoreKey`，不用重设；
+- SDK 侧新增 `FreeCameraMath.ApplyScrollToZoom / SmoothTowards / DollyPosition / IsSettled`
+  （滚轮步进、限位与阻尼共用同一套数学），加载器侧 334 个单元测试全部通过。
+
+### 🔧 内置组件升级
+
+- 内置 CesiumLoader 加载器 / SDK / 内置 mod `2.2.0 → 2.2.1`，内嵌的 `doorstop_config.json` 模板里
+  `sdkVersion` 一并同步；
+- 「安装 / 修复加载器」用的内嵌资源已经是 2.2.1；也可以直接点模组页的「**⬇ 从 GitHub 更新**」，
+  它拉的是 CesiumLoader 最新 Release，和本版内嵌的是同一份。
+
+### 💬 更新时注意
+
+- 更新**不会覆盖**你的 `doorstop_config.json`（Steam 绕过开关、变速倍率原样保留），只会把里面的
+  `sdkVersion` 抬到 `2.2.1` —— 这一步是必需的：加载器用它校验每个 mod 声明的 `SdkVersion`，
+  没抬上去的话新版内置 mod 会被判成「要求更高的 SDK 版本」而**全部拒绝加载**（游戏内热键全失灵）；
+- 安装 / 更新前请**完全退出游戏**（`version.dll` 被占用时无法覆盖），更新完重启游戏生效。
+
+### 📝 文档
+
+- README 的模组章节同步新行为（自由相机 = 滚轮缩放、内嵌版本 2.2.1）。
+
 ## [v0.4.9] - 2026-09-22
 
 ### 🩹 修复：「从 Steam 启动」没有真正恢复 Steam 大厅联机
