@@ -19,7 +19,12 @@ public sealed class SpeedhackManager
     public const string ConfigName = "speedhack_config.json";
     private const string ResourcePrefix = "AstralParty.Toys.SpeedhackTools.";
 
-    private static readonly string[] GameExeNames = ["astralparty.exe", "astralparty_cn.exe"];
+    /// <summary>
+    /// 游戏主程序的通配匹配：国服 <c>AstralParty_CN.exe</c>、国际服 <c>AstralParty.exe</c>、
+    /// TapTap 端或其它渠道的 <c>AstralParty*.exe</c> 都认，不再写死那两个确切名字。
+    /// （加载器 / version.dll 是按 exe 旁边的位置加载的，跟 exe 具体叫什么无关。）
+    /// </summary>
+    public const string GameExeSearchPattern = "AstralParty*.exe";
 
     private static readonly Assembly Assembly = typeof(SpeedhackManager).Assembly;
 
@@ -315,7 +320,7 @@ public sealed class SpeedhackManager
         if (!Directory.Exists(gameDirectory))
             throw new DirectoryNotFoundException($"游戏目录不存在：{gameDirectory}");
         if (string.IsNullOrEmpty(ContainsGameExe(gameDirectory)))
-            throw new InvalidOperationException("所选目录里没有找到 AstralParty.exe / AstralParty_CN.exe，确认这是游戏 exe 所在的目录？");
+            throw new InvalidOperationException("所选目录里没有找到游戏主程序（AstralParty*.exe），确认这是游戏 exe 所在的目录？");
 
         var targetDll = Path.Combine(gameDirectory, DllName);
         if (File.Exists(targetDll) && !MatchesEmbeddedDll(targetDll) && !overwriteDll)
@@ -524,7 +529,11 @@ public sealed class SpeedhackManager
     }
 
     /// <summary>通过 Steam 注册表 + libraryfolders.vdf 找到游戏 exe 所在目录（含启动器子目录）。</summary>
-    public static string? DetectGameDirectory()
+    public static string? DetectGameDirectory() =>
+        EnumerateGameDirectories().FirstOrDefault();
+
+    /// <summary>顺着 Steam 库把所有含游戏 exe 的目录都列出来（供多位置管理 / 系统搜索复用）。</summary>
+    public static IReadOnlyList<string> EnumerateGameDirectories()
     {
         var found = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var steamBase in SteamBases())
@@ -542,7 +551,7 @@ public sealed class SpeedhackManager
                 }
             }
         }
-        return found.OrderBy(path => path, StringComparer.OrdinalIgnoreCase).FirstOrDefault();
+        return found.OrderBy(path => path, StringComparer.OrdinalIgnoreCase).ToArray();
     }
 
     private static IEnumerable<string> SteamBases()
@@ -604,12 +613,13 @@ public sealed class SpeedhackManager
         }
     }
 
+    /// <summary>目录里第一个匹配 <see cref="GameExeSearchPattern"/>（AstralParty*.exe）的 exe 完整路径，找不到返回 null。</summary>
     public static string? ContainsGameExe(string directory)
     {
         try
         {
-            return Directory.EnumerateFiles(directory, "*.exe")
-                .FirstOrDefault(file => GameExeNames.Contains(Path.GetFileName(file), StringComparer.OrdinalIgnoreCase));
+            return Directory.EnumerateFiles(directory, GameExeSearchPattern)
+                .FirstOrDefault(file => !string.IsNullOrEmpty(Path.GetFileName(file)));
         }
         catch
         {

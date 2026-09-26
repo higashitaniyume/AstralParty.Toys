@@ -2,15 +2,18 @@
 (function () {
   const ReplayModule = {
     libraryData: null,
+    // 归档 / 放回 / 删除正在进行中（文件 IO + 之后整表重扫）：挡住重复点击
+    busyButton: null,
 
     init() {
       this.bindEvents();
     },
 
     bindEvents() {
-      // Sub-nav tab switcher
-      document.querySelectorAll('.subnav-tab').forEach(tab => {
+      // Sub-nav tab switcher（只绑外层页签：内层「数据统计/原始协议帧」也用 .subnav-tab，它们各有处理器）
+      document.querySelectorAll('#replaySubnav .subnav-tab').forEach(tab => {
         tab.addEventListener('click', () => {
+          if (!tab.dataset.tab) return;
           this.switchReplayTab(tab.dataset.tab);
         });
       });
@@ -39,13 +42,15 @@
       });
       $('libraryBannerAutoBtn')?.addEventListener('click', () => {
         const data = this.libraryData || {};
+        // 保留局数用用户在设置页配的值；拿 capacity（游戏内上限，恒为 10）去覆盖会静默改掉用户的设置
+        const keepInGame = data.keepInGame || data.capacity || 10;
         post({
           type: 'librarySaveSettings',
           libraryRoot: data.libraryRoot || null,
           autoMaintain: true,
-          keepInGame: data.capacity || 10
+          keepInGame
         });
-        toast('已开启自动托管：以后每次打开本工具都会自动把超出席位的旧回放归档进库。');
+        toast(`已开启自动托管：以后每次打开本工具都会自动把超出席位的旧回放归档进库（游戏内保留最近 ${keepInGame} 局）。`);
       });
       $('libraryBannerDismissBtn')?.addEventListener('click', () => {
         const data = this.libraryData || {};
@@ -113,6 +118,8 @@
     renderLibrary(library) {
       this.libraryData = library || null;
       AppState.replayLibrary = library;
+      // 列表回来了（归档/放回/删除/刷新都会走到这里）：解除行内操作的忙碌锁
+      this.clearRowBusy();
 
       const dirEl = $('libraryDirectoryText');
       if (dirEl) dirEl.textContent = library?.directory || '未检测到游戏回放目录';
@@ -159,9 +166,11 @@
       const banner = $('libraryBanner');
       if (!banner) return;
       const signature = `${gameCount}/${capacity}`;
-      const dismissedFor = window.localStorage.getItem('libraryBannerSignature');
       const isFull = gameCount >= capacity;
       const isNear = gameCount >= capacity - 1 && !isFull;
+      // 席位腾出来之后清掉「稍后再说」的签名，否则下次再存满时这条提醒永远不会回来
+      if (!isFull && !isNear) window.localStorage.removeItem('libraryBannerSignature');
+      const dismissedFor = window.localStorage.getItem('libraryBannerSignature');
       const show = data.available && !data.sameFolder && (isFull || isNear) && dismissedFor !== signature;
 
       banner.classList.toggle('hidden', !show);
@@ -184,6 +193,14 @@
           const overflow = Math.max(0, gameCount - capacity);
           const take = overflow > 0 ? overflow : 3;
           archiveBtn.textContent = `归档最旧的 ${take} 局`;
+        }
+        // 自动托管已经开着就别再劝一次，并按真实配置显示保留局数
+        const autoBtn = $('libraryBannerAutoBtn');
+        if (autoBtn) {
+          const keep = data.keepInGame || capacity;
+          const alreadyOn = data.autoMaintain === true;
+          autoBtn.disabled = alreadyOn;
+          autoBtn.textContent = alreadyOn ? `自动托管已开启（保留 ${keep} 局）` : `开启自动托管（保留 ${keep} 局）`;
         }
       }
     },
@@ -227,7 +244,7 @@
       const badges = [];
       if (item.inGame) badges.push('<span class="badge badge-game">游戏内</span>');
       if (item.inLibrary) badges.push('<span class="badge badge-library">回放库</span>');
-      if (!item.healthy) badges.push('<span class="badge badge-warn">无法解析</span>');
+      if (!item.healthy) badges.push(`<span class="badge badge-warn" title="${esc(item.error || '解析不出结算帧，文件可能已损坏或来自不兼容的版本。')}">无法解析</span>`);
 
       const actions = ['<button data-action="open">查看</button>'];
       if (item.inGame) actions.push('<button data-action="archive">归档</button>');
@@ -273,6 +290,11 @@
       }
       event.stopPropagation();
 
+      // 归档 / 放回 期间再点一次会发出第二个请求，第二次必然命中
+      // 「游戏目录里没有这个回放」的分支，弹出让人以为操作失败的提示
+      if (this.busyButton) return;
+      if (button.dataset.action !== 'delete') this.setRowBusy(button);
+
       switch (button.dataset.action) {
         case 'open':
           post({ type: 'openRecentReplay', token });
@@ -286,6 +308,27 @@
         case 'delete':
           this.confirmDelete(replayId);
           break;
+      }
+    },
+
+    /** 行内操作进行中：按钮置灰 + aria-busy（列表回来后由 clearRowBusy 解除）。 */
+    setRowBusy(button) {
+      this.busyButton = button;
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+      // 兜底：宿主万一没回音，15 秒后自己解锁，不把按钮永久卡死
+      clearTimeout(this.busyTimer);
+      this.busyTimer = setTimeout(() => this.clearRowBusy(), 15000);
+    },
+
+    clearRowBusy() {
+      clearTimeout(this.busyTimer);
+      this.busyTimer = null;
+      const button = this.busyButton;
+      this.busyButton = null;
+      if (button) {
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
       }
     },
 
@@ -350,6 +393,10 @@
 
     renderReport(report) {
       if (!report) return;
+
+      // 换了一局：清掉上一局选中的帧，否则协议表里会有一行"假选中"，
+      // 右边详情却是"请在左侧点击任意协议帧"的占位，自相矛盾
+      AppState.selectedFrame = -1;
 
       $('replayEmptyBox')?.classList.add('hidden');
       $('replayWorkspaceBox')?.classList.remove('hidden');

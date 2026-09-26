@@ -345,9 +345,9 @@ public sealed class ModManagerTests
         var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
         harness.Sandbox.WriteFile(Path.Combine(modsDir, "CfgMod.dll"), new byte[] { 0x4D, 0x5A });
 
-        // 无配置 → Open 创建并返回路径(配置必须与 mod 的 dll 同目录, 否则 mod 读不到)
-        var path = harness.Manager.OpenModConfig(harness.GameDirectory, "CfgMod.dll");
-        Assert.True(File.Exists(path), "OpenModConfig 应创建配置文件");
+        // 无配置 → 创建并返回路径(配置必须与 mod 的 dll 同目录, 否则 mod 读不到)
+        var path = harness.Manager.EnsureModConfig(harness.GameDirectory, "CfgMod.dll");
+        Assert.True(File.Exists(path), "EnsureModConfig 应创建配置文件");
         Assert.EndsWith(Path.Combine("mods", "CfgMod", "config.json"), path);
 
         // 写内容后 Read 能读回
@@ -365,7 +365,7 @@ public sealed class ModManagerTests
         harness.Sandbox.WriteFile(Path.Combine(modDir, "CfgMod.dll"), new byte[] { 0x4D, 0x5A });
 
         // 现行约定: mods\{ModId}\config.json —— SDK 的 ModConfig 就是按 DLL 同目录落盘的
-        var path = harness.Manager.OpenModConfig(harness.GameDirectory, "CfgMod.dll");
+        var path = harness.Manager.EnsureModConfig(harness.GameDirectory, "CfgMod.dll");
         Assert.Equal(Path.Combine(modDir, "config.json"), path);
 
         harness.Manager.SaveModConfigFields(harness.GameDirectory, "CfgMod.dll", new List<ModConfigField>
@@ -382,7 +382,7 @@ public sealed class ModManagerTests
         harness.Sandbox.WriteFile(legacy, System.Text.Encoding.UTF8.GetBytes("{\"LegacyKey\": 7}"));
         Assert.Equal("{\"LegacyKey\": 7}", harness.Manager.ReadModConfig(harness.GameDirectory, "CfgMod.dll"));
 
-        var reopened = harness.Manager.OpenModConfig(harness.GameDirectory, "CfgMod.dll");
+        var reopened = harness.Manager.EnsureModConfig(harness.GameDirectory, "CfgMod.dll");
         Assert.Equal(Path.Combine(modDir, "config.json"), reopened);
         Assert.Equal("{\"LegacyKey\": 7}", harness.Manager.ReadModConfig(harness.GameDirectory, "CfgMod.dll"));
     }
@@ -782,41 +782,38 @@ public sealed class ModManagerTests
     }
 
     [Fact]
-    public void GetStatus_ReadsInstalledVersionFromLoaderLog_WhenManifestMissing()
+    public void GetStatus_ReportsUnknownVersion_WhenManifestMissing()
     {
-        using var harness = new ModHarness("ap-mod-version-from-log");
+        using var harness = new ModHarness("ap-mod-version-unknown");
         harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
 
-        // 模拟"0.4.7 之前装的老安装"：没有安装清单，只有加载器日志（加载器每次启动会追加版本行）
+        // 模拟"0.4.7 之前装的老安装"：没有安装清单。
+        // ★ 即使加载器日志里明明有版本行，也**不再回读** —— 版本只认安装清单，读不到就如实报「未知」，
+        //   由界面提示重新安装一次把它纳入版本管理。猜出来的版本号会被当成权威值，那才是版本信息最坏的形态。
         var loaderRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
         File.Delete(Path.Combine(loaderRoot, "cesium-loader.json"));
         Directory.CreateDirectory(Path.Combine(loaderRoot, "logs"));
         File.WriteAllText(Path.Combine(loaderRoot, "logs", "cesium-loader.log"),
-            "[hijack] version.dll Doorstop 引导线程启动 (enabled=true)\n"
-            + "  CesiumLoader loader v2.1.6 / SDK v2.1.6 — mod 加载报告\n"
-            + "...（下一局游戏）\n"
-            + "  CesiumLoader loader v2.1.7 / SDK v2.1.7 — mod 加载报告\n");
+            "  CesiumLoader loader v2.1.7 / SDK v2.1.7 — mod 加载报告\n");
 
         var status = harness.Manager.GetStatus();
-        Assert.Equal("2.1.7", status.InstalledVersion);       // 取最后一次运行，而不是第一次
-        Assert.Equal("log", status.InstalledVersionSource);
+        Assert.True(status.Installed);
+        Assert.Equal("", status.InstalledVersion);
     }
 
     [Fact]
-    public void GetStatus_PrefersManifestOverLog()
+    public void GetStatus_ReadsInstalledVersionFromManifestOnly()
     {
-        using var harness = new ModHarness("ap-mod-version-manifest-wins");
+        using var harness = new ModHarness("ap-mod-version-manifest-only");
         harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
 
-        // 同时存在清单与日志（且日志是更旧的版本）→ 以清单为准
+        // 同时存在清单与日志（且日志是另一个版本）→ 仍然只认清单
         var loaderRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
         Directory.CreateDirectory(Path.Combine(loaderRoot, "logs"));
         File.WriteAllText(Path.Combine(loaderRoot, "logs", "cesium-loader.log"),
             "  CesiumLoader loader v1.0.0 / SDK v1.0.0 — mod 加载报告\n");
 
-        var status = harness.Manager.GetStatus();
-        Assert.Equal("2.2.1", status.InstalledVersion);
-        Assert.Equal("manifest", status.InstalledVersionSource);
+        Assert.Equal("2.2.1", harness.Manager.GetStatus().InstalledVersion);
     }
 
     [Fact]
@@ -854,36 +851,77 @@ public sealed class ModManagerTests
     }
 
     [Fact]
-    public void GetStatus_FallsBackToConfiguredSdkVersion_WhenNoManifestAndNoLog()
+    public void GetStatus_DoesNotSubstituteConfiguredSdkVersionForInstalledVersion()
     {
-        using var harness = new ModHarness("ap-mod-version-from-config");
+        using var harness = new ModHarness("ap-mod-version-config-ignored");
         harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
 
-        // 老安装、而且装完从没成功启动到 mod 加载阶段（日志里没有版本行）→ 用配置里的 sdkVersion 提示
+        // 老安装（没有清单）+ 配置里手写着另一个 sdkVersion：
+        // 它是**另一个字段**（用户还能手改），不能拿来当「已装版本」显示
         var loaderRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
         File.Delete(Path.Combine(loaderRoot, "cesium-loader.json"));
         var configPath = Path.Combine(loaderRoot, "doorstop_config.json");
         File.WriteAllText(configPath, File.ReadAllText(configPath).Replace("\"2.2.1\"", "\"2.1.6\""));
 
-        var status = harness.Manager.GetStatus();
-        Assert.Equal("2.1.6", status.InstalledVersion);
-        Assert.Equal("config", status.InstalledVersionSource);
+        Assert.Equal("", harness.Manager.GetStatus().InstalledVersion);
     }
 
     [Fact]
-    public void Install_DoesNotTreatConfiguredSdkVersionAsDowngradeEvidence()
+    public void Install_WithoutManifest_DoesNotBlockOnUnknownInstalledVersion()
     {
-        using var harness = new ModHarness("ap-mod-config-not-authoritative");
+        using var harness = new ModHarness("ap-mod-no-manifest-install");
         harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
 
         var loaderRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
-        File.Delete(Path.Combine(loaderRoot, "cesium-loader.json"));   // 没有清单 → 只能靠配置
+        File.Delete(Path.Combine(loaderRoot, "cesium-loader.json"));   // 没有清单 → 版本未知
         var configPath = Path.Combine(loaderRoot, "doorstop_config.json");
         // 用户手改配置里的 sdkVersion（比如为了绕过 mod 的 SDK 校验）→ 不能因此把安装当成"降级"拦住
         File.WriteAllText(configPath, File.ReadAllText(configPath).Replace("\"2.2.1\"", "\"9.9.9\""));
 
         harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: false);
-        Assert.Equal("2.2.1", harness.Manager.GetStatus().InstalledVersion);
+        Assert.Equal("2.2.1", harness.Manager.GetStatus().InstalledVersion);   // 重装后清单回来了
+    }
+
+    // ============================== 加载器来源判定（本工具 vs 外来文件）==============================
+    //
+    // 这一组修的是一个真实误报：点「从 GitHub 更新」装的是**比本程序内置更新**的发布包，
+    // 磁盘上的 version.dll 当然和内置的那份不同 —— 早先只比内置哈希，于是更新完界面一直显示
+    // 「目录里是其它 version.dll」，小白用户看不懂，老用户以为更新失败了。
+
+    [Fact]
+    public void GetStatus_DistinguishesOwnUpdatedLoaderFromForeignDll()
+    {
+        using var harness = new ModHarness("ap-mod-origin");
+        harness.Manager.SaveStoredGameDirectory(harness.GameDirectory);
+
+        // (1) 陌生文件：既不是内置那份，也没有清单记录 → 才报「不是本工具装的」
+        File.WriteAllBytes(Path.Combine(harness.GameDirectory, "version.dll"), [1, 2, 3, 4, 5]);
+        var foreign = harness.Manager.GetStatus();
+        Assert.True(foreign.Installed);
+        Assert.False(foreign.LoaderManaged);
+        Assert.Equal("", foreign.LoaderOrigin);
+        Assert.Contains("不是本工具装的", foreign.Message);
+
+        // (2) 本工具更新过的加载器（发布包的 version.dll 与内置不同，但清单记着它的哈希）→ 不算冲突
+        harness.Manager.InstallPackage(harness.GameDirectory, BuildFakePackage("9.0.0"), overwriteDll: true);
+        var updated = harness.Manager.GetStatus();
+        Assert.True(updated.Installed);
+        Assert.False(updated.LoaderMatchesBundle, "发布包的 version.dll 与内置的不同");
+        Assert.True(updated.LoaderManaged, "更新过的加载器是本工具装的，不能报成外来文件");
+        Assert.Equal("installed", updated.LoaderOrigin);
+        Assert.DoesNotContain("不是本工具装的", updated.Message);
+    }
+
+    [Fact]
+    public void Uninstall_RemovesOwnUpdatedLoader_WithoutForce()
+    {
+        using var harness = new ModHarness("ap-mod-pkg-uninstall-noForce");
+        harness.Manager.InstallPackage(harness.GameDirectory, BuildFakePackage("9.0.0"), overwriteDll: false);
+
+        // 卸载保护只该拦"外来文件"；这个是我们自己装的，不需要「强制卸载」
+        var result = harness.Manager.Uninstall(harness.GameDirectory, force: false);
+        Assert.True(result.RemovedDll);
+        Assert.False(File.Exists(Path.Combine(harness.GameDirectory, "version.dll")));
     }
 
     // ============================== 加载器配置 / 权限 / 配置表单 ==============================

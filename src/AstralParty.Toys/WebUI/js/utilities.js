@@ -209,6 +209,9 @@
 
     applyStatus(payload) {
       this.status = payload.status || payload;
+      // configBroken 是 payload 的兄弟字段，不在 status 里；之前 loadConfigIntoEditor
+      // 读 this.status?.configBroken 永远是 undefined，"解析失败"徽章成了死代码
+      this.configBroken = !!payload.configBroken;
       this.renderStatus();
       // 配置加载：仅在无未保存修改时覆盖编辑器
       if (!this.dirty) this.loadConfigIntoEditor(payload.config);
@@ -288,7 +291,7 @@
         if (status.profileLocationNote) {
           lines.push(dot(status.profileLocationDocuments ? 'ok' : 'warn', status.profileLocationNote));
         }
-        if (status.gameExeFound) lines.push(dot('ok', '目录内检测到游戏程序 AstralParty.exe / AstralParty_CN.exe'));
+        if (status.gameExeFound) lines.push(dot('ok', '目录内检测到游戏主程序（AstralParty*.exe）'));
         else if (status.gameDirectory) lines.push(dot('warn', '目录内未找到 AstralParty 游戏程序（仍可安装，但请确认目录正确）'));
         else lines.push(dot('bad', '尚未定位游戏目录'));
         if (status.bundleDllPresent) {
@@ -347,7 +350,7 @@
         };
       }
       const badge = $('utilsConfigStateBadge');
-      if (this.status?.configBroken) {
+      if (this.configBroken) {
         badge.textContent = '解析失败';
         badge.className = 'badge badge-notice';
       } else {

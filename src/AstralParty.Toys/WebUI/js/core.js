@@ -41,11 +41,29 @@ function openModal(title, contentHtml) {
   titleEl.textContent = title;
   bodyEl.innerHTML = contentHtml;
   modal.classList.add('open');
+  // 记下"打开弹窗之前焦点在哪"，关闭时还回去（键盘用户才不会丢掉位置）
+  modal._restoreFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  // 焦点进弹窗：否则键盘用户还在背后的页面上 Tab，弹窗里的按钮要绕一整圈才够得着
+  $('modalCloseBtn')?.focus();
 }
 
 function closeModal() {
   const modal = $('globalModal');
-  if (modal) modal.classList.remove('open');
+  if (!modal) return;
+  const wasOpen = modal.classList.contains('open');
+  modal.classList.remove('open');
+  if (!wasOpen) return;
+  const restore = modal._restoreFocus;
+  modal._restoreFocus = null;
+  if (restore?.isConnected) restore.focus();
+}
+
+/** 弹窗里的可聚焦元素（Tab 循环用）。 */
+function modalFocusables() {
+  const modal = $('globalModal');
+  if (!modal) return [];
+  return [...modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+    .filter(el => !el.disabled && el.offsetParent !== null);
 }
 
 // Router: animate between home, tools, utilities, mods, wiki, settings
@@ -138,8 +156,11 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', () => showPage(btn.dataset.page));
   });
 
-  // Brand logo click returns to home
+  // Brand logo click returns to home（role=button，补上键盘 Enter/Space）
   $('brandLogoBtn')?.addEventListener('click', () => showPage('home'));
+  $('brandLogoBtn')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showPage('home'); }
+  });
 
   // Modal close handlers
   $('modalCloseBtn')?.addEventListener('click', closeModal);
@@ -147,7 +168,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target === $('globalModal')) closeModal();
   });
   window.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeModal();
+    if (e.key === 'Escape') { closeModal(); return; }
+    // 弹窗打开时把 Tab 圈在弹窗内（焦点不跑到弹窗背后的页面上）
+    const modal = $('globalModal');
+    if (e.key !== 'Tab' || !modal?.classList.contains('open')) return;
+    const focusables = modalFocusables();
+    if (focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey && (active === first || !modal.contains(active))) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && (active === last || !modal.contains(active))) {
+      e.preventDefault();
+      first.focus();
+    }
   });
 });
 
@@ -157,6 +193,18 @@ host?.addEventListener('message', event => {
   if (!msg?.type) return;
 
   switch (msg.type) {
+    case 'appVersion':
+      window.VersionModule?.render(msg.payload);
+      break;
+
+    case 'changelog':
+      window.VersionModule?.renderChangelog(msg.payload);
+      break;
+
+    case 'loaderChangelog':
+      window.VersionModule?.renderLoaderChangelog(msg.payload);
+      break;
+
     case 'homeData':
       AppState.homeData = msg.payload;
       if (window.HomeModule) window.HomeModule.init(msg.payload);
@@ -214,8 +262,13 @@ host?.addEventListener('message', event => {
       break;
 
     case 'modStatus':
-      // PushModStatus 发的是 payload={status:{...}}, 解包后交给渲染
-      if (window.ModsModule) window.ModsModule.renderModStatus(msg.payload?.status ?? msg.payload);
+      // payload = { status, builtInMods }：整份交给渲染，页面自己区分「哪个模组是内置的」
+      if (window.ModsModule) window.ModsModule.renderModStatus(msg.payload);
+      break;
+
+    case 'modUpdateCheck':
+      // 「检查更新」的联网结果（最新版本号 / 错误）
+      if (window.ModsModule) window.ModsModule.renderUpdateCheck(msg.payload);
       break;
 
     case 'modLoaderConfig':
@@ -231,6 +284,19 @@ host?.addEventListener('message', event => {
       if (window.HomeModule) window.HomeModule.applySteamBypassSync(msg.payload);
       break;
 
+    case 'gameProfiles':
+      AppState.gameProfiles = msg.payload;
+      if (window.GameLibModule) window.GameLibModule.renderProfiles(msg.payload);
+      break;
+
+    case 'gameScanResult':
+      if (window.GameLibModule) window.GameLibModule.renderScanResult(msg.payload);
+      break;
+
+    case 'gameScanProgress':
+      if (window.GameLibModule) window.GameLibModule.renderScanProgress(msg.payload);
+      break;
+
     case 'modConfigFields':
       if (window.ModsModule) window.ModsModule.renderConfigFields(msg.payload);
       break;
@@ -238,6 +304,8 @@ host?.addEventListener('message', event => {
     case 'error':
       const loadEl = $('loadingOverlay');
       if (loadEl) loadEl.classList.add('hidden');
+      // 宿主抛异常时不会有别的收尾消息，这里兜住按钮的忙碌态，免得一直转圈
+      window.ModsModule?.clearBusy?.();
       toast(`错误：${msg.message}`);
       break;
   }

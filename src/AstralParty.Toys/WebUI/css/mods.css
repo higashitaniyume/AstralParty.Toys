@@ -1,0 +1,741 @@
+/* mods.css —— 模组管理页（Mod 加载器 / 模组 / 变速）专用样式。
+ *
+ * 信息层级（页面从上到下就是用户的操作顺序）：
+ *   ① .loader-panel  加载器状态 + 版本三栏 —— 版本是这个工具最敏感的信息，字号最大、位置最靠上
+ *   ② .mods-panel    已安装的模组（本页主体）
+ *   ③ 变速          加载器内置功能
+ *   ④ .mods-advanced 高级与排障，默认折叠
+ *
+ * 颜色语义（不靠颜色单独表意，每个状态都同时有文字）：
+ *   绿 = 最新 / 正常   金 = 可更新   红 = 冲突（不是本工具的文件）   灰 = 未知 / 未检测
+ */
+
+.mods-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--gp-bg);
+  overflow: hidden;
+  color: var(--gp-text-main);
+}
+
+/* 进入动画（与其它页面同一套；系统设置里关掉动效时不播） */
+body:not(.reduce-motion) #modsView:not(.page-entering) .utilities-header {
+  animation: content-rise 360ms var(--motion-ease) both;
+}
+body:not(.reduce-motion) #modsView:not(.page-entering) .loader-panel {
+  animation: content-rise 440ms var(--motion-ease) both;
+}
+body:not(.reduce-motion) #modsView:not(.page-entering) .mods-panel {
+  animation: content-rise 440ms var(--motion-ease) 60ms both;
+}
+body:not(.reduce-motion) #modsView:not(.page-entering) .mods-advanced {
+  animation: content-rise 440ms var(--motion-ease) 120ms both;
+}
+
+/* 危险 / 冲突语义的徽标（base.css 只有 notice / event / update / muted） */
+.badge-danger {
+  background: rgba(244, 63, 94, 0.18);
+  color: #ff8298;
+  border: 1px solid rgba(244, 63, 94, 0.45);
+}
+
+.mods-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 26px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* 关键：内容块默认 flex-shrink:1，内容超高时会被压扁而不是让 .mods-body 滚动。
+   .mods-advanced 又是 overflow:hidden —— 一压扁就把「高级与排障」展开后的内容裁掉，
+   于是展开后「根本看不到什么」。禁止收缩，让滚动条正常出现。 */
+.mods-body > * {
+  flex-shrink: 0;
+}
+
+/* ============ ① 加载器面板 ============ */
+
+.loader-panel {
+  position: relative;
+  border-radius: var(--gp-radius-md);
+  border: 1px solid var(--gp-border);
+  background: linear-gradient(135deg, rgba(38, 30, 60, 0.92) 0%, rgba(20, 24, 44, 0.92) 62%);
+  box-shadow: var(--gp-shadow-sm);
+  padding: 16px 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.loader-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  border-radius: var(--gp-radius-md) 0 0 var(--gp-radius-md);
+  background: var(--gp-pink);
+  opacity: 0.75;
+}
+
+.loader-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+.loader-icon {
+  font-size: 24px;
+  line-height: 1.2;
+  flex-shrink: 0;
+}
+.loader-head-text { min-width: 0; flex: 1; }
+.loader-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.loader-title-row h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+}
+.loader-state {
+  margin: 5px 0 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--gp-text-main);
+}
+.loader-hint {
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--gp-text-sub);
+}
+
+/* ---------- 版本三栏 ---------- */
+
+.version-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (max-width: 900px) {
+  .version-board { grid-template-columns: 1fr; }
+}
+
+.version-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: var(--gp-radius-sm);
+  border: 1px solid var(--gp-border);
+  background: rgba(0, 0, 0, 0.24);
+  border-left-width: 3px;
+  border-left-color: rgba(148, 163, 184, 0.5);
+  min-width: 0;
+}
+.version-cell .version-label {
+  font-size: 12px;
+  letter-spacing: 0.6px;
+  color: var(--gp-text-muted);
+  font-weight: 700;
+}
+.version-cell .version-value {
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--gp-text-main);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+  overflow-wrap: anywhere;
+}
+.version-cell .version-note {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--gp-text-muted);
+}
+
+.version-cell.is-current { border-left-color: var(--gp-green); }
+.version-cell.is-current .version-value { color: var(--gp-green); }
+.version-cell.is-update { border-left-color: var(--gp-gold); }
+.version-cell.is-update .version-value { color: var(--gp-gold); }
+.version-cell.is-conflict { border-left-color: #f43f5e; }
+.version-cell.is-conflict .version-value { color: #ff8298; font-size: 17px; }
+.version-cell.is-unknown { border-left-color: rgba(148, 163, 184, 0.6); }
+.version-cell.is-unknown .version-value { color: var(--gp-text-muted); font-size: 17px; }
+
+/* ---------- 版本结论 ---------- */
+
+.version-verdict {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: var(--gp-radius-sm);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--gp-border);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gp-text-sub);
+  line-height: 1.5;
+}
+.verdict-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--gp-blue);
+  box-shadow: 0 0 8px currentColor;
+}
+.version-verdict.is-ok { border-color: rgba(163, 230, 53, 0.45); color: var(--gp-green); }
+.version-verdict.is-ok .verdict-dot { background: var(--gp-green); }
+.version-verdict.is-update { border-color: var(--gp-border-gold); color: var(--gp-gold); }
+.version-verdict.is-update .verdict-dot { background: var(--gp-gold); }
+.version-verdict.is-warn { border-color: rgba(244, 63, 94, 0.5); color: #ff8298; }
+.version-verdict.is-warn .verdict-dot { background: #f43f5e; }
+.version-verdict.is-idle .verdict-dot { background: var(--gp-text-muted); }
+
+.loader-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.loader-actions .primary-btn,
+.loader-actions .secondary-btn {
+  padding: 8px 18px;
+  font-size: 13px;
+}
+
+/* ============ ② / ③ 通用面板 ============ */
+
+.mods-panel {
+  border-radius: var(--gp-radius-md);
+  border: 1px solid var(--gp-border);
+  background: var(--gp-bg-card);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mods-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.mods-panel-head h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mods-panel-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.mods-panel-actions .primary-btn,
+.mods-panel-actions .secondary-btn { padding: 7px 14px; font-size: 12.5px; }
+
+.mods-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  padding: 1px 8px;
+  border-radius: var(--gp-radius-full);
+  background: rgba(56, 189, 248, 0.18);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: var(--gp-blue);
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.mods-sub-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gp-text-muted);
+  letter-spacing: 0.3px;
+}
+
+.mods-foot-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--gp-text-muted);
+}
+
+/* ---------- 模组卡片列表 ---------- */
+
+.mod-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mod-cards-sdk { max-height: 200px; overflow-y: auto; }
+
+.mods-empty {
+  margin: 0;
+  padding: 18px 14px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--gp-text-muted);
+  border: 1px dashed var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.mod-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 13px;
+  border-radius: var(--gp-radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.045);
+  transition: background var(--motion-fast) ease, border-color var(--motion-fast) ease;
+}
+.mod-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--gp-border-highlight);
+}
+.mod-card.mod-disabled { opacity: 0.62; }
+.mod-card.mod-disabled .mod-card-name { text-decoration: line-through; }
+
+.mod-card-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+
+.mod-card-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.mod-card-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--gp-text-main);
+  overflow-wrap: anywhere;
+}
+.mod-card-version {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gp-text-sub);
+  font-variant-numeric: tabular-nums;
+}
+.mod-card-desc {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--gp-text-sub);
+  overflow-wrap: anywhere;
+}
+.mod-card-meta {
+  font-size: 12px;
+  color: var(--gp-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.mod-card-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* 标签：内置 / 可操作游戏 / 已禁用 */
+.mod-chip {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.mod-chip-builtin {
+  color: #7cc4ff;
+  background: rgba(124, 196, 255, 0.14);
+  border-color: rgba(124, 196, 255, 0.38);
+}
+.mod-chip-warn {
+  color: #ffd166;
+  background: rgba(255, 209, 102, 0.15);
+  border-color: rgba(255, 209, 102, 0.4);
+  cursor: help;
+}
+.mod-chip-off {
+  color: var(--gp-text-muted);
+  background: rgba(148, 163, 184, 0.16);
+  border-color: rgba(148, 163, 184, 0.36);
+}
+
+/* ---------- 开关 ---------- */
+
+.mod-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+  color: var(--gp-text-sub);
+  white-space: nowrap;
+  /* 开关本体只有 21px 高 —— 用 padding 把可点区域撑到 ~30px，
+     免得"点开关却没点中"（视觉上完全不变）。 */
+  padding: 4px 2px;
+  margin: -4px -2px;
+}
+.mod-toggle input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.mod-toggle .switch-track {
+  position: relative;
+  width: 38px;
+  height: 21px;
+  flex-shrink: 0;
+  border-radius: var(--gp-radius-full);
+  background: rgba(148, 163, 184, 0.34);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: background var(--motion-fast) ease, border-color var(--motion-fast) ease;
+}
+.mod-toggle .switch-track::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform var(--motion-fast) var(--motion-ease);
+}
+.mod-toggle input:checked + .switch-track {
+  background: var(--gp-pink);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+.mod-toggle input:checked + .switch-track::before { transform: translateX(17px); }
+.mod-toggle input:focus-visible + .switch-track {
+  outline: 2px solid var(--gp-blue);
+  outline-offset: 2px;
+}
+.mod-toggle input:disabled + .switch-track { opacity: 0.45; cursor: not-allowed; }
+
+.mod-toggle-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gp-text-muted);
+}
+.mod-toggle input:checked ~ .mod-toggle-text { color: var(--gp-green); }
+.mod-toggle input:disabled ~ .mod-toggle-text { opacity: 0.6; }
+.mod-toggle:has(input:disabled) { cursor: not-allowed; }
+
+/* ---------- 卡片上的小按钮 ---------- */
+
+.mod-config-btn,
+.mod-del-btn {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--gp-radius-sm);
+  border: 1px solid var(--gp-border);
+  background: transparent;
+  color: var(--gp-text-muted);
+  font-size: 13px;
+  line-height: 1;
+  transition: all var(--motion-fast) ease;
+}
+.mod-config-btn:hover {
+  border-color: var(--gp-blue);
+  color: var(--gp-blue);
+  background: rgba(56, 189, 248, 0.12);
+}
+.mod-del-btn:hover {
+  border-color: #f43f5e;
+  color: #ff8298;
+  background: rgba(244, 63, 94, 0.14);
+}
+.mod-config-btn:focus-visible,
+.mod-del-btn:focus-visible,
+.loader-actions button:focus-visible,
+.mods-panel-actions button:focus-visible {
+  outline: 2px solid var(--gp-blue);
+  outline-offset: 2px;
+}
+
+/* ---------- 变速 ---------- */
+
+.mods-panel-compact { gap: 10px; }
+.speedhack-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.speedhack-speed-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--gp-text-sub);
+}
+.speedhack-speed-row input[type="number"] {
+  width: 84px;
+  padding: 6px 9px;
+  border-radius: var(--gp-radius-sm);
+  border: 1px solid var(--gp-border);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--gp-text-main);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.speedhack-speed-row input[type="number"]:focus { border-color: var(--gp-pink); }
+.speedhack-speed-row input[type="number"]:disabled { opacity: 0.45; }
+.speedhack-row .primary-btn { padding: 7px 16px; font-size: 13px; }
+.speedhack-hint {
+  font-size: 12px;
+  color: var(--gp-text-muted);
+}
+
+/* ============ ④ 高级与排障 ============ */
+
+.mods-advanced {
+  border-radius: var(--gp-radius-md);
+  border: 1px solid var(--gp-border);
+  background: rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+.mods-advanced > summary,
+.mods-help > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 11px 16px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--gp-text-sub);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background var(--motion-fast) ease, color var(--motion-fast) ease;
+}
+.mods-advanced > summary::-webkit-details-marker,
+.mods-help > summary::-webkit-details-marker { display: none; }
+.mods-advanced > summary::before,
+.mods-help > summary::before {
+  content: '▸';
+  font-size: 11px;
+  color: var(--gp-text-muted);
+  transition: transform var(--motion-fast) var(--motion-ease);
+}
+.mods-advanced[open] > summary::before,
+.mods-help[open] > summary::before { transform: rotate(90deg); }
+.mods-advanced > summary:hover,
+.mods-help > summary:hover { background: rgba(255, 255, 255, 0.05); color: var(--gp-text-main); }
+.mods-advanced > summary:focus-visible,
+.mods-help > summary:focus-visible { outline: 2px solid var(--gp-blue); outline-offset: -2px; }
+
+.mods-advanced-hint {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gp-text-muted);
+}
+
+.mods-advanced-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 16px 16px;
+  border-top: 1px solid var(--gp-border);
+}
+
+.mods-advanced-warn {
+  padding: 9px 12px;
+  border-radius: var(--gp-radius-sm);
+  border: 1px solid rgba(244, 63, 94, 0.5);
+  background: rgba(244, 63, 94, 0.12);
+  color: #ffb3bf;
+  font-size: 12.5px;
+  line-height: 1.65;
+}
+.mods-advanced-warn p { margin: 0; }
+.mods-advanced-warn p + p { margin-top: 7px; }
+
+/* 弹窗里的「高级选项」折叠块：复用 .mods-help 的外观，去掉为正文说明准备的分隔线 */
+.cfg-advanced {
+  border-top: 1px dashed var(--gp-border);
+  margin-top: 2px;
+  padding-left: 2px;
+}
+.cfg-advanced > summary {
+  padding: 8px 0;
+  font-size: 12.5px;
+  color: var(--gp-gold);
+}
+.cfg-advanced > summary:hover { background: transparent; }
+
+.mods-help {
+  border-top: 1px dashed var(--gp-border);
+  margin-top: 4px;
+}
+.mods-help > summary { padding: 10px 0; }
+.mods-help ul { margin: 0 0 6px; padding-left: 20px; }
+.mods-help li {
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--gp-text-sub);
+}
+
+/* ============ 配置弹窗表单（加载器设置 / 模组配置）============ */
+
+.cfg-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 380px;
+  max-width: 520px;
+  max-height: 62vh;
+  overflow-y: auto;
+  padding: 2px;
+}
+.cfg-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--gp-text-main);
+}
+.cfg-row.cfg-check { gap: 8px; align-items: flex-start; }
+.cfg-row.cfg-check span { line-height: 1.6; }
+.cfg-row input[type="checkbox"] {
+  accent-color: var(--gp-pink);
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  cursor: pointer;
+}
+.cfg-row input[type="number"],
+.cfg-row input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: var(--gp-radius-sm);
+  border: 1px solid var(--gp-border);
+  background: rgba(0, 0, 0, 0.32);
+  color: var(--gp-text-main);
+  font-size: 13px;
+}
+.cfg-row input:focus { border-color: var(--gp-pink); }
+.cfg-row input:read-only { opacity: 0.6; }
+.cfg-label { flex: 1; min-width: 0; line-height: 1.55; font-size: 12.5px; }
+
+.cfg-hint {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--gp-text-muted);
+}
+.cfg-section {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--gp-border);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--gp-gold);
+}
+.cfg-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+}
+.cfg-actions .primary-btn,
+.cfg-actions .secondary-btn { padding: 8px 18px; font-size: 13px; }
+
+.cfg-row.cfg-key { gap: 8px; }
+.key-btn {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: var(--gp-radius-sm);
+  border: 1px solid var(--gp-border);
+  background: rgba(0, 0, 0, 0.32);
+  color: var(--gp-text-main);
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+  transition: all var(--motion-fast) ease;
+}
+.key-btn:hover { border-color: var(--gp-blue); color: var(--gp-blue); }
+.key-btn.capturing {
+  border-color: var(--gp-gold);
+  color: var(--gp-gold);
+  background: rgba(250, 204, 21, 0.12);
+}
+.key-clear {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: var(--gp-radius-sm);
+  border: 1px solid var(--gp-border);
+  background: transparent;
+  color: var(--gp-text-muted);
+  font-size: 13px;
+  line-height: 1;
+}
+.key-clear:hover { border-color: #f43f5e; color: #ff8298; }
+
+/* ==========================================================================
+   模组页顶部「当前游戏」选择器（多位置切换）
+   ========================================================================== */
+.game-picker-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  margin: 0 0 4px;
+  background: rgba(56, 130, 246, 0.06);
+  border: 1px solid rgba(56, 130, 246, 0.22);
+  border-radius: 10px;
+  flex-wrap: wrap;
+}
+.game-picker-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--gp-text-sub);
+  flex: 0 0 auto;
+}
+.game-picker-select {
+  padding: 5px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: var(--gp-bg-panel);
+  color: var(--gp-text-main);
+  flex: 0 0 auto;
+  max-width: 320px;
+}
+.game-picker-select:disabled { opacity: 0.6; }
+.game-picker-path {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--gp-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--gp-mono, monospace);
+}
+.game-picker-bar .link-btn { flex: 0 0 auto; font-size: 12px; }

@@ -32,6 +32,10 @@
   --gp-shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.35);
   --gp-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
   --gp-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.65);
+  /* 粉色辉光：品牌 logo / 玩家卡 hover / --primary-glow 都用它。
+     注意它以前一直是"被引用但没定义"——那些 box-shadow 会被整条丢弃（不报错），
+     所以这里必须有一个具体值。 */
+  --gp-shadow-pink: 0 0 22px rgba(255, 23, 118, 0.38);
   --header-height: 64px;
   --motion-fast: 160ms;
   --motion-page-out: 180ms;
@@ -78,6 +82,22 @@ button { cursor: pointer; color: inherit; border: none; background: transparent;
 button:active:not(:disabled) {
   scale: 0.96;
   transition-duration: 80ms;
+}
+
+/* 键盘焦点环。
+   上面那句 outline: none 是给鼠标点击去掉难看的默认描边的，但它把键盘可见性也一起干掉了
+   —— 全app就没有一处能看出焦点在哪。这里用 :focus-visible 补回来：键盘 Tab 才有，鼠标点击不出现。 */
+:focus-visible {
+  outline: 2px solid var(--gp-blue);
+  outline-offset: 2px;
+}
+
+/* 焦点落在被裁剪/带背景的元素里时，外描边会被切掉，改成内描边 */
+.mod-card:focus-visible,
+.mod-toggle input:focus-visible + .switch-track,
+.mods-advanced > summary:focus-visible,
+.mods-help > summary:focus-visible {
+  outline-offset: -2px;
 }
 
 .app-shell {
@@ -157,7 +177,7 @@ body.page-home-active .page-container {
 }
 .brand-text small {
   display: block;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--gp-gold);
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -193,6 +213,57 @@ body.page-home-active .page-container {
   color: #ffffff;
   border-color: #ffffff;
   box-shadow: 0 4px 14px rgba(255, 23, 118, 0.5);
+}
+
+/* 顶部栏右侧的版本胶囊：详情页才出现的顶部栏，所以这是"离开大厅后随时能看到版本"的位置。
+   自建构建显示提交号（关键识别信息），没有提交号时显示"本地构建"。 */
+.app-version-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: var(--gp-radius-full);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1.5px solid rgba(255, 255, 255, 0.16);
+  color: var(--gp-text-sub);
+  flex: none;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.app-version-chip:hover {
+  background: rgba(56, 189, 248, 0.16);
+  border-color: rgba(56, 189, 248, 0.55);
+  color: #ffffff;
+}
+.app-version-chip svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  opacity: 0.85;
+}
+.app-version-chip-value {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.2px;
+  font-variant-numeric: tabular-nums;
+}
+.app-version-chip-commit {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gp-text-sub);
+  font-variant-numeric: tabular-nums;
+}
+.app-version-chip-commit:empty { display: none; }
+
+/* 窄窗口（窗口最小 1120px）先舍掉提交号，版本号本身必须在 */
+@media (max-width: 1300px) {
+  .nav-breadcrumbs { gap: 6px; }
+  .nav-crumb-btn { padding: 8px 12px; }
+  .app-version-chip-commit { display: none; }
+}
+@media (max-width: 1180px) {
+  .app-version-chip { padding: 7px 10px; }
+  .app-version-chip svg { display: none; }
 }
 
 .page-container {
@@ -274,6 +345,37 @@ body.page-transitioning .brand-section {
   opacity: 0.45;
   pointer-events: none;
   filter: grayscale(0.8);
+}
+
+/* 按钮"进行中"状态（模组页的安装 / 卸载 / 检查更新 / 更新到最新）。
+   按钮被禁用是为了防重复点击，但看起来应该是"正在做"而不是"不可用"，所以不套灰化。 */
+button.is-busy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: progress;
+}
+.primary-btn.is-busy:disabled,
+.secondary-btn.is-busy:disabled,
+.danger-btn.is-busy:disabled {
+  opacity: 1;
+  filter: none;
+}
+.btn-spinner {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+/* 任何按钮被禁用时都要一眼看出"按不动"，不必每个组件各写一遍 */
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* Game Style Secondary Button */
@@ -378,6 +480,8 @@ body.page-transitioning .brand-section {
   display: flex;
   align-items: center;
   gap: 10px;
+  max-width: min(92vw, 760px);
+  word-break: break-word;
 }
 .toast-container.show {
   opacity: 1;
@@ -542,3 +646,155 @@ body.reduce-motion *::after {
   line-height: 1.7;
   color: var(--gp-text-sub);
 }
+
+/* ==========================================================================
+   版本信息弹窗（js/version.js）：顶部栏版本胶囊 / 大厅状态栏点开就是它
+   ========================================================================== */
+.version-info-hero {
+  padding: 4px 0 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.version-info-number {
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 12px rgba(255, 23, 118, 0.45);
+}
+.version-info-sub {
+  margin-top: 6px;
+  color: var(--gp-text-sub);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.version-info-rows {
+  margin: 18px 0 0;
+  display: grid;
+  gap: 2px;
+}
+.version-info-row {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.version-info-row dt {
+  flex: none;
+  width: 96px;
+  color: var(--gp-text-sub);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.version-info-row dd {
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.version-info-note {
+  margin: 16px 0 0;
+  padding-left: 10px;
+  border-left: 3px solid var(--gp-pink);
+  color: var(--gp-text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.version-info-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* ==========================================================================
+   更新日志弹窗（js/version.js renderChangelog）：把内嵌的 CHANGELOG.md 渲染成可读列表
+   ========================================================================== */
+.changelog { font-size: 13px; line-height: 1.65; }
+.changelog-empty {
+  color: var(--gp-text-muted);
+  font-size: 13px;
+}
+.changelog-h1 {
+  font-size: 18px;
+  font-weight: 900;
+  color: #fff;
+  margin: 0 0 6px;
+}
+.changelog-h2 {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--gp-pink);
+  margin: 22px 0 4px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.changelog-h2:first-of-type { border-top: none; padding-top: 0; margin-top: 12px; }
+.changelog-h3 {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--gp-gold);
+  margin: 16px 0 4px;
+}
+.changelog-p { margin: 6px 0; color: var(--gp-text-sub); }
+.changelog-list {
+  margin: 4px 0 4px;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.changelog-list li { color: var(--gp-text-sub); }
+.changelog-list li strong { color: #fff; font-weight: 800; }
+.changelog code {
+  font-family: Consolas, monospace;
+  font-size: 12px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--gp-blue);
+}
+.changelog-tabs {
+  display: flex;
+  gap: 6px;
+  margin: -6px 0 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.changelog-tab {
+  appearance: none;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--gp-text-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.changelog-tab:hover { color: var(--gp-text-sub); }
+.changelog-tab.is-active {
+  color: #fff;
+  border-bottom-color: var(--gp-pink);
+}
+.changelog-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.changelog-source { font-size: 12px; color: var(--gp-text-muted); }
+.changelog-refresh { flex: none; }
