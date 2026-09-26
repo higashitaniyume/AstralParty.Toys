@@ -63,8 +63,6 @@ public sealed class ModManager
         }
     }
 
-    private static readonly string[] GameExeNames = ["astralparty.exe", "astralparty_cn.exe"];
-
     private static readonly Assembly Assembly = typeof(ModManager).Assembly;
 
     private static readonly byte[]? EmbeddedLoaderDll = ReadEmbeddedResource(LoaderDllName);
@@ -128,6 +126,9 @@ public sealed class ModManager
     /// <summary>内置配置模板声明的 SDK 版本（界面/测试核对用；空 = 模板缺失或没写该字段）。</summary>
     public static string BundleSdkVersion => EmbeddedSdkVersion;
 
+    /// <summary>随程序集内置的加载器版本号（界面显示"内置版本"用；空 = 本地开发构建没内嵌发布包）。</summary>
+    public static string BundleLoaderVersion => EmbeddedVersion;
+
     private string StateFilePath => Path.Combine(_profileDirectory, "modloader-state.json");
 
     // ============================== 状态 ==============================
@@ -159,26 +160,21 @@ public sealed class ModManager
                 if (status.LoaderPresent)
                 {
                     status.LoaderMatchesBundle = MatchesEmbeddedLoader(dllPath);
+                    // 来源判定见 ClassifyLoaderOrigin：点「安装」装的是内置哈希，点「从 GitHub 更新」装的是
+                    // 清单里记的哈希 —— 后者也是本工具装的，只是版本和本程序内置的不同。
+                    status.LoaderOrigin = ClassifyLoaderOrigin(directory, dllPath);
+                    status.LoaderManaged = status.LoaderOrigin.Length > 0;
                     status.Installed = true;
                 }
             }
 
             status.GameRunning = SpeedhackManager.IsGameRunning();
 
-            // 已安装版本：优先 AstralParty_ModLoader\cesium-loader.json（安装时写入）；
-            // 0.4.7 之前的老安装没有这个清单 —— 退回从加载器日志回读（界面上标注「来自日志」）。
-            var loaderRootForVersion = string.IsNullOrEmpty(directory) ? "" : Path.Combine(directory, LoaderFolderName);
-            var installedVersionSource = "";
-            status.InstalledVersion = loaderRootForVersion.Length > 0
-                ? ResolveInstalledVersion(directory, out installedVersionSource)
-                : "";
-            // 最后一层兜底：装完从没成功启动到 mod 加载阶段 → 日志里也没有版本行 → 用配置里的 sdkVersion 提示
-            if (status.InstalledVersion.Length == 0 && loaderRootForVersion.Length > 0)
-            {
-                var sdkHint = ReadConfiguredSdkVersion(loaderRootForVersion);
-                if (sdkHint.Length > 0) { status.InstalledVersion = sdkHint; installedVersionSource = "config"; }
-            }
-            status.InstalledVersionSource = installedVersionSource;
+            // 已安装版本：只认安装 / 更新时写下的清单（AstralParty_ModLoader\cesium-loader.json）。
+            // 清单缺失（0.4.7 之前的老安装，或玩家手删）时如实报「未知」，并让界面提示重新安装一次把它纳入管理 ——
+            // 不再回读加载器日志、也不再拿配置里的 sdkVersion 顶替：那两处猜出来的数字会被当成权威版本号，
+            // 而版本号正是这个工具最不该含糊的地方。
+            status.InstalledVersion = status.Installed ? ReadInstalledVersion(directory) : "";
             status.EmbeddedVersion = EmbeddedVersion;
 
             // mod 列表 / SDK 列表（安装目录存在才扫）
@@ -201,21 +197,28 @@ public sealed class ModManager
         return status;
     }
 
+    /// <summary>状态栏那一句话。只讲「现在是什么状态、下一步该做什么」，不再复述界面已经分栏显示的版本号。</summary>
     private string BuildStatusMessage(ModStatus status)
     {
         if (!HasEmbeddedLoader)
             return "程序集缺少内置加载器资源（ModLoader.version.dll），请重新编译发布版本。";
         if (string.IsNullOrEmpty(status.GameDirectory))
-            return "尚未找到游戏目录：可点击「选择游戏目录」手动指定安装位置。";
+            return "尚未找到游戏目录：点「自动检测」，或手动选择游戏 exe 所在的文件夹。";
         if (!Directory.Exists(status.GameDirectory))
             return $"游戏目录不存在：{status.GameDirectory}";
         if (status.GameRunning)
-            return "检测到游戏正在运行——安装或卸载前请先退出游戏。";
-        if (status.Installed)
-            return status.LoaderMatchesBundle
-                ? $"已安装（{status.GameDirectory}），mod 目录 {ModsFolderName}\\ 中有 {status.Mods.Count} 个 mod。"
-                : "游戏目录存在其它 version.dll（与内置文件不同）——覆盖或卸载前请先确认来源。";
-        return "尚未安装：点击「安装加载器」把文件复制到游戏目录。";
+            return "检测到游戏正在运行：安装 / 更新 / 卸载要完全退出游戏，否则 version.dll 会被占用。";
+        if (!status.Installed)
+            return "尚未安装：点「安装加载器」，把加载器和内置模组装进游戏目录。";
+
+        var mods = $"已加载 {status.Mods.Count} 个模组";
+        if (!status.LoaderManaged)
+            return $"游戏目录里的 version.dll 不是本工具装的（来源不明）——可能是旧版独立变速器或第三方文件，安装或卸载前请先确认。";
+        if (status.InstalledVersion.Length == 0)
+            return $"加载器已就位，但这份安装没有版本清单 —— 重新安装一次就能纳入版本管理（{mods}）。";
+        return string.Equals(status.InstalledVersion, status.EmbeddedVersion, StringComparison.OrdinalIgnoreCase)
+            ? $"加载器已就绪，与内置版本一致（{mods}）。"
+            : $"加载器已就绪（{mods}）。";
     }
 
     private static List<ModEntryInfo> ScanMods(string directory)
@@ -311,7 +314,8 @@ public sealed class ModManager
           + (HasEmbeddedBuiltInMods ? $"（内置：{string.Join("、", EmbeddedBuiltInModIdList)}）" : "")
           + "，并在控制台窗口显示日志。";
 
-    /// <summary>把内嵌文件写入游戏目录 + 创建目录结构。version.dll 目标已存在且不是内置文件时，必须 overwriteDll 才会覆盖。
+    /// <summary>把内嵌文件写入游戏目录 + 创建目录结构。version.dll 目标已存在、且**不是本工具装的**
+    /// （既不是内置那份、也没有记录在安装清单里）时，必须 overwriteDll 才会覆盖。
     /// 已装加载器比内置的更新时（降级）默认拒绝，需要 allowDowngrade 显式放行。</summary>
     public void Install(string gameDirectory, bool overwriteDll, bool includeSampleMod, bool allowDowngrade = false)
     {
@@ -322,23 +326,25 @@ public sealed class ModManager
         if (!Directory.Exists(gameDirectory))
             throw new DirectoryNotFoundException($"游戏目录不存在：{gameDirectory}");
         if (string.IsNullOrEmpty(SpeedhackManager.ContainsGameExe(gameDirectory)))
-            throw new InvalidOperationException("所选目录里没有找到 AstralParty.exe / AstralParty_CN.exe，确认这是游戏 exe 所在的目录？");
+            throw new InvalidOperationException("所选目录里没有找到游戏主程序（AstralParty*.exe），确认这是游戏 exe 所在的目录？");
 
         // 降级闸门: 游戏目录里已装的加载器比本程序内置的更新时，默认拒绝这次"安装"。
-        // 场景: 用户装过更新版的加载器（比如将来某个 3.x），却拿了较旧版本的 Toys ——
+        // 场景: 用户装过更新版的加载器（点「从 GitHub 更新」装的）却拿了较旧版本的 Toys ——
         //       点一下「安装加载器」就把新加载器静默换回旧版，功能无声退化。
-        // 已装版本从安装清单读，0.4.7 之前的老安装（没有清单）退回读加载器日志。
-        var installedBeforeInstall = ResolveInstalledVersion(gameDirectory, out var installedSource);
+        // 已装版本只认安装清单；没有清单（0.4.7 之前的老安装）时无法比较，只能放行 ——
+        // 那种情况下界面上「已装版本」显示为未知，用户能看出工具并没有在装懂。
+        var installedBeforeInstall = ReadInstalledVersion(gameDirectory);
         if (!allowDowngrade && EmbeddedVersion.Length > 0 && installedBeforeInstall.Length > 0
             && CompareSemVer(EmbeddedVersion, installedBeforeInstall) < 0)
             throw new InvalidOperationException(
-                $"游戏目录里已装的加载器（{installedBeforeInstall}{SourceHint(installedSource)}）比本程序内置的（{EmbeddedVersion}）更新 —— 这是一次降级，已阻止。" +
+                $"游戏目录里已装的加载器（{installedBeforeInstall}）比本程序内置的（{EmbeddedVersion}）更新 —— 这是一次降级，已阻止。" +
                 "如确定要降级，请勾选「允许降级安装较旧的加载器」；通常更好的做法是改用较新版本的 AstralParty.Toys。");
 
         var targetDll = Path.Combine(gameDirectory, LoaderDllName);
-        if (File.Exists(targetDll) && !MatchesEmbeddedLoader(targetDll) && !overwriteDll)
+        if (File.Exists(targetDll) && !overwriteDll && ClassifyLoaderOrigin(gameDirectory, targetDll).Length == 0)
             throw new InvalidOperationException(
-                "游戏目录已存在一个与内置不同的 version.dll（可能是其它工具的，如旧版独立变速器）——如确定要覆盖，请勾选「允许覆盖其它 version.dll」。");
+                "游戏目录里的 version.dll 不是本工具装的（来源不明，可能是旧版独立变速器或第三方文件）——" +
+                "如确定要覆盖，请勾选「允许覆盖其它 version.dll」。");
 
         // 互斥检测: 已安装旧版独立变速器(speedhack-rs)? 两者都写 version.dll, 会互相覆盖。
         if (HasSpeedhackInstalled(gameDirectory))
@@ -475,9 +481,9 @@ public sealed class ModManager
         if (!dllExists && !loaderRootExists)
             return new UninstallResult { Message = "游戏目录中没有加载器文件，无需卸载。" };
 
-        if (dllExists && !MatchesEmbeddedLoader(dllPath) && !force)
+        if (dllExists && !force && ClassifyLoaderOrigin(gameDirectory, dllPath).Length == 0)
             throw new InvalidOperationException(
-                "该 version.dll 与内置文件不同，可能不是本工具安装的——未删除任何文件。如确认要删除请勾选「强制卸载」。");
+                "游戏目录里的 version.dll 不是本工具装的（来源不明）——未删除任何文件。如确认要删除请勾选「强制卸载」。");
 
         var result = new UninstallResult();
         if (dllExists)
@@ -522,6 +528,52 @@ public sealed class ModManager
     public const string LatestPackageUrl =
         "https://github.com/higashitaniyume/CesiumLoader/releases/latest/download/cesium-loader.zip";
 
+    /// <summary>CesiumLoader 仓库（取 Release 发布说明当作加载器更新日志）。</summary>
+    public const string LoaderRepo = "higashitaniyume/CesiumLoader";
+
+    /// <summary>内嵌的加载器更新日志（<c>Resources\ModLoader\loader-changelog.md</c>）：CI 打包时写入该版本的
+    /// Release 说明。本地开发构建里是占位内容 → 返回空串，交给运行时去 GitHub 拉（见 <see cref="DownloadLatestReleaseNotesAsync"/>）。</summary>
+    public static string BundledLoaderChangelog => ReadBundledLoaderChangelog();
+
+    private static string ReadBundledLoaderChangelog()
+    {
+        try
+        {
+            using var stream = Assembly.GetManifestResourceStream(ResourcePrefix + "loader-changelog.md");
+            if (stream is null) return "";
+            using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
+            var text = reader.ReadToEnd().Trim();
+            // CI 没写入真实内容时是占位符，不当作有效日志
+            if (text.Length == 0 || text.StartsWith("<!-- placeholder", StringComparison.OrdinalIgnoreCase)) return "";
+            return text;
+        }
+        catch
+        {
+            return "";
+        }
+    }
+
+    /// <summary>去 GitHub 取最新 Release 的发布说明（body）当作加载器更新日志（Markdown）。失败抛异常，由调用方兜底。</summary>
+    public static async Task<string> DownloadLatestReleaseNotesAsync()
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Get, $"https://api.github.com/repos/{LoaderRepo}/releases/latest");
+        req.Headers.Accept.ParseAdd("application/vnd.github+json");
+        using var resp = await Http.SendAsync(req).ConfigureAwait(false);
+        resp.EnsureSuccessStatusCode();
+        var json = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        var tag = root.TryGetProperty("tag_name", out var t) ? t.GetString() : null;
+        var name = root.TryGetProperty("name", out var n) ? n.GetString() : null;
+        var body = root.TryGetProperty("body", out var b) ? b.GetString() : null;
+
+        var header = string.IsNullOrWhiteSpace(name) ? (tag ?? "") : name;
+        var sb = new System.Text.StringBuilder();
+        if (!string.IsNullOrWhiteSpace(header)) sb.AppendLine("## " + header.Trim()).AppendLine();
+        sb.Append(string.IsNullOrWhiteSpace(body) ? "（这个版本没有填写发布说明。）" : body.Trim());
+        return sb.ToString();
+    }
+
     public const string InstalledManifestFileName = "cesium-loader.json";
 
     private static readonly HttpClient Http = CreateHttpClient();
@@ -533,10 +585,18 @@ public sealed class ModManager
         return client;
     }
 
-    private static string ReadInstalledVersion(string manifestPath)
+    /// <summary>读「已安装版本」—— 唯一来源是安装 / 更新时写下的清单
+    /// <c>AstralParty_ModLoader\cesium-loader.json</c>（见 <see cref="WriteInstalledManifest"/>）。
+    ///
+    /// ★ 这里刻意**不**做任何推测：不问加载器日志、也不拿配置里的 sdkVersion 顶替。
+    ///   猜测出来的版本号会被界面当成权威值显示给用户，而"版本"恰恰是 mod 管理器最不能含糊的信息 ——
+    ///   读不到就返回空串，由界面如实显示「版本未知，重新安装一次即可记录」。
+    ///   0.4.7 之前装的加载器没有这份清单，重新安装（或点「从 GitHub 更新」）一次就会补上。</summary>
+    private static string ReadInstalledVersion(string gameDirectory)
     {
         try
         {
+            var manifestPath = Path.Combine(gameDirectory, LoaderFolderName, InstalledManifestFileName);
             if (!File.Exists(manifestPath)) return "";
             using var document = JsonDocument.Parse(File.ReadAllText(manifestPath));
             return document.RootElement.TryGetProperty("version", out var element) ? element.GetString() ?? "" : "";
@@ -547,70 +607,17 @@ public sealed class ModManager
         }
     }
 
-    /// <summary>从加载器日志回读版本号 —— 用于**没有安装清单的老安装**（0.4.7 之前装的那批，
-    /// 它们的 cesium-loader.json 不存在，只靠清单读不出「已装版本」）。
-    ///
-    /// 加载器每次启动都会往 logs\cesium-loader.log 追加一行（loader.cpp 的 mod 加载报告）：
-    ///     CesiumLoader loader v2.1.7 / SDK v2.1.7 — mod 加载报告
-    /// 该日志是单文件追加、不轮转（spdlog basic_file_sink, truncate=false），所以取**最后一次**匹配
-    /// 就是最近一次运行的加载器版本。这只是没有清单时的推测，界面必须标注「来自日志」以免被当成权威值。</summary>
-    private static string ReadVersionFromLogs(string loaderRoot)
+    /// <summary>安装清单里记录的 version.dll SHA256（没有清单 / 没有该条目 / 清单损坏 → 空串）。</summary>
+    private static string ReadManifestLoaderHash(string gameDirectory)
     {
         try
         {
-            var logPath = Path.Combine(loaderRoot, LogsFolderName, "cesium-loader.log");
-            if (!File.Exists(logPath)) return "";
-
-            // 日志会一直追加、可能很大：只读尾部 256 KB（版本行在每次启动的加载报告里，靠近文件末尾）。
-            const int tailBytes = 256 * 1024;
-            using var stream = new FileStream(logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            var start = Math.Max(0, stream.Length - tailBytes);
-            stream.Seek(start, SeekOrigin.Begin);
-            var buffer = new byte[stream.Length - start];
-            var read = stream.Read(buffer, 0, buffer.Length);
-            var text = System.Text.Encoding.UTF8.GetString(buffer, 0, read);
-
-            var matches = System.Text.RegularExpressions.Regex.Matches(text, @"CesiumLoader loader v([0-9][0-9.]*)");
-            return matches.Count > 0 ? matches[^1].Groups[1].Value : "";
-        }
-        catch
-        {
-            return "";   // 游戏运行中占用、权限不足等：读不到就当没有，绝不影响状态显示
-        }
-    }
-
-    /// <summary>已装加载器版本：优先安装清单（权威），没有清单的老安装退回日志回读。
-    /// <paramref name="source"/> 回传来源（"manifest" / "log" / ""），供界面区分显示。</summary>
-    private static string ResolveInstalledVersion(string gameDirectory, out string source)
-    {
-        var loaderRoot = Path.Combine(gameDirectory, LoaderFolderName);
-        var fromManifest = ReadInstalledVersion(Path.Combine(loaderRoot, "cesium-loader.json"));
-        if (fromManifest.Length > 0) { source = "manifest"; return fromManifest; }
-
-        var fromLog = ReadVersionFromLogs(loaderRoot);
-        if (fromLog.Length > 0) { source = "log"; return fromLog; }
-
-        source = "";
-        return "";
-    }
-
-    /// <summary>错误信息里的版本来源说明 —— 从日志回读的版本**可能已过期**（例如用户手动换过 version.dll、
-    /// 或上次运行的是别的版本），所以降级拦截的提示里要讲清楚来源，别让用户以为工具认错了版本。</summary>
-    private static string SourceHint(string source) =>
-        source == "log" ? "，此版本由加载器日志推断、可能已过期" : "";
-
-    /// <summary>读配置里的 sdkVersion —— 「已装版本」的**最后**一层兜底提示。
-    ///
-    /// 场景：老安装(没有清单) + 装完从没成功启动到 mod 加载阶段(日志里就没有版本行)。
-    /// 本项目里加载器与 SDK 同步发版，所以配置里的 sdkVersion 数值上等于当时的加载器版本，
-    /// 但它终究是**另一个字段**，因此只用于界面显示，**不参与降级判断**（用户可以手改它）。</summary>
-    private static string ReadConfiguredSdkVersion(string loaderRoot)
-    {
-        try
-        {
-            var path = Path.Combine(loaderRoot, ConfigFileName);
-            if (!File.Exists(path)) return "";
-            return ParseSdkVersionFromText(File.ReadAllText(path));
+            var manifestPath = Path.Combine(gameDirectory, LoaderFolderName, InstalledManifestFileName);
+            if (!File.Exists(manifestPath)) return "";
+            using var document = JsonDocument.Parse(File.ReadAllText(manifestPath));
+            if (!document.RootElement.TryGetProperty("files", out var files) || files.ValueKind != JsonValueKind.Object)
+                return "";
+            return files.TryGetProperty(LoaderDllName, out var hash) ? hash.GetString() ?? "" : "";
         }
         catch
         {
@@ -709,7 +716,7 @@ public sealed class ModManager
         if (!Directory.Exists(gameDirectory))
             throw new DirectoryNotFoundException($"游戏目录不存在：{gameDirectory}");
         if (string.IsNullOrEmpty(SpeedhackManager.ContainsGameExe(gameDirectory)))
-            throw new InvalidOperationException("所选目录里没有找到 AstralParty.exe / AstralParty_CN.exe，确认这是游戏 exe 所在的目录？");
+            throw new InvalidOperationException("所选目录里没有找到游戏主程序（AstralParty*.exe），确认这是游戏 exe 所在的目录？");
 
         var manifest = ParsePackageManifest(zipBytes)
             ?? throw new InvalidDataException("发布包缺少清单（cesium-loader.json），已停止安装。");
@@ -717,18 +724,19 @@ public sealed class ModManager
 
         // 降级闸门（与 Install 同一条规则）：包内版本比游戏目录已装的更旧 → 默认拒绝。
         // 已装版本从安装清单读，老安装（没有清单）退回读加载器日志。
-        var installedBeforePackage = ResolveInstalledVersion(gameDirectory, out var packageInstalledSource);
+        var installedBeforePackage = ReadInstalledVersion(gameDirectory);
         var packageVersion = manifest.Version;
         if (!allowDowngrade && packageVersion.Length > 0 && installedBeforePackage.Length > 0
             && CompareSemVer(packageVersion, installedBeforePackage) < 0)
             throw new InvalidOperationException(
-                $"发布包里的加载器（{packageVersion}）比游戏目录里已装的（{installedBeforePackage}{SourceHint(packageInstalledSource)}）更旧 —— 这是一次降级，已阻止。" +
+                $"发布包里的加载器（{packageVersion}）比游戏目录里已装的（{installedBeforePackage}）更旧 —— 这是一次降级，已阻止。" +
                 "如确定要降级，请勾选「允许降级安装较旧的加载器」；通常更好的做法是改用较新版本的 AstralParty.Toys。");
 
         var targetDll = Path.Combine(gameDirectory, LoaderDllName);
-        if (File.Exists(targetDll) && !MatchesEmbeddedLoader(targetDll) && !overwriteDll)
+        if (File.Exists(targetDll) && !overwriteDll && ClassifyLoaderOrigin(gameDirectory, targetDll).Length == 0)
             throw new InvalidOperationException(
-                "游戏目录已存在一个与内置不同的 version.dll（可能是其它工具的，如旧版独立变速器）——如确定要覆盖，请勾选「允许覆盖其它 version.dll」。");
+                "游戏目录里的 version.dll 不是本工具装的（来源不明，可能是旧版独立变速器或第三方文件）——" +
+                "如确定要覆盖，请勾选「允许覆盖其它 version.dll」。");
 
         // 互斥检测: 已安装旧版独立变速器
         if (HasSpeedhackInstalled(gameDirectory))
@@ -1478,11 +1486,11 @@ public sealed class ModManager
     }
 
     /// <summary>
-    /// 用系统默认编辑器打开 mod 配置文件; 不存在则创建一份带注释的空配置。
-    /// 若只有旧版 configs\{modName}.json, 先把它复制到 <c>mods\{ModId}\config.json</c> 再打开
-    /// —— 否则用户改的是一份 mod 根本不会读的文件。
+    /// 确保 mod 配置文件存在并返回其路径（不打开资源管理器，纯文件逻辑，方便测试）：
+    /// 不存在则创建一份带注释的空配置；若只有旧版 <c>configs\{modName}.json</c>，
+    /// 先把它复制到 <c>mods\{ModId}\config.json</c>（否则用户改的是一份 mod 根本不会读的文件）。
     /// </summary>
-    public string OpenModConfig(string gameDirectory, string fileName)
+    public string EnsureModConfig(string gameDirectory, string fileName)
     {
         if (string.IsNullOrWhiteSpace(gameDirectory) || string.IsNullOrWhiteSpace(fileName))
             throw new ArgumentException("游戏目录或 mod 文件名无效。");
@@ -1503,6 +1511,13 @@ public sealed class ModManager
                 File.WriteAllText(path, "{\n  // 配置说明见对应 mod 文档; 公开字段(public field)才会被读取\n}\n");
         }
 
+        return path;
+    }
+
+    /// <summary>用系统默认编辑器 / 资源管理器打开 mod 配置文件；不存在则先创建（见 <see cref="EnsureModConfig"/>）。</summary>
+    public string OpenModConfig(string gameDirectory, string fileName)
+    {
+        var path = EnsureModConfig(gameDirectory, fileName);
         OpenInExplorer(path);
         return path;
     }
@@ -1629,14 +1644,35 @@ public sealed class ModManager
 
     // ============================== 工具 ==============================
 
-    private static bool MatchesEmbeddedLoader(string path)
+    /// <summary>磁盘上那个 <c>version.dll</c> 到底是不是「本工具装的那一份」——决定界面该不该报冲突。
+    ///
+    ///   <c>"bundle"</c>    与随程序集内置的加载器逐字节一致（点「安装加载器」装的）
+    ///   <c>"installed"</c> 与安装清单 <c>cesium-loader.json</c> 里记录的哈希一致（点「从 GitHub 更新」装的）
+    ///   <c>""</c>          两者都不是：来源不明（旧版独立变速器 / 第三方文件 / 玩家手换的），
+    ///                       覆盖或卸载前必须让用户确认
+    ///
+    /// ★ <c>"installed"</c> 这一条是**必需**的，也是"更新过加载器之后被一直误报成其它 version.dll"的根因：
+    ///   点「从 GitHub 更新」装的是比本程序内置更新的发布包，磁盘上的文件当然和内置的不同 ——
+    ///   只比内置哈希，就会把本工具自己刚装上去的加载器说成"别人的文件"，小白用户看不懂，
+    ///   老用户还会因此以为更新失败了。判据换成「内置哈希 **或** 清单哈希」之后，两者都算自己人。</summary>
+    private static string ClassifyLoaderOrigin(string gameDirectory, string dllPath)
     {
-        if (EmbeddedLoaderHash is null) return false;
+        if (MatchesEmbeddedLoader(dllPath)) return "bundle";
+        var manifestHash = ReadManifestLoaderHash(gameDirectory);
+        return manifestHash.Length > 0 && MatchesHash(dllPath, manifestHash) ? "installed" : "";
+    }
+
+    private static bool MatchesEmbeddedLoader(string path)
+        => EmbeddedLoaderHash is not null && MatchesHash(path, EmbeddedLoaderHash);
+
+    /// <summary>文件 SHA256 是否等于给定的十六进制哈希（读不到文件 / 哈希串非法 → false）。</summary>
+    private static bool MatchesHash(string path, string expectedHex)
+    {
         try
         {
             using var stream = File.OpenRead(path);
             return CryptographicOperations.FixedTimeEquals(
-                SHA256.HashData(stream), Convert.FromHexString(EmbeddedLoaderHash));
+                SHA256.HashData(stream), Convert.FromHexString(expectedHex));
         }
         catch
         {
@@ -1668,19 +1704,26 @@ public sealed class ModStatus
     public bool GameRunning { get; set; }
     public bool Installed { get; set; }
     public bool LoaderPresent { get; set; }
+
+    /// <summary>磁盘上的 version.dll 是否与随程序集内置的那份逐字节一致。</summary>
     public bool LoaderMatchesBundle { get; set; }
+
+    /// <summary>来源："bundle"（内置）/ "installed"（安装清单记录的、通常是更新过的）/ ""（来源不明）。</summary>
+    public string LoaderOrigin { get; set; } = "";
+
+    /// <summary>磁盘上的 version.dll 是否确实是本工具装的（bundle 或 installed）。
+    /// 界面据此区分「已安装（正常）」与「不是本工具装的（冲突）」——二者都不该被含糊成"文件不一致"。</summary>
+    public bool LoaderManaged { get; set; }
+
     public string LoaderPath { get; set; } = "";
     public string LoaderRoot { get; set; } = "";
     public bool LoaderRootExists { get; set; }
     public string BundleHash { get; set; } = "";
     public string EmbeddedVersion { get; set; } = "";
+
+    /// <summary>已安装的加载器版本 —— 只来自安装清单，读不到就是空串（界面显示「版本未知」）。</summary>
     public string InstalledVersion { get; set; } = "";
-    /// <summary>InstalledVersion 的来源："manifest"（安装清单，权威）/ "log"（加载器日志自报，老安装）/
-    /// "config"（配置里的 sdkVersion 兜底，仅显示用）/ ""。</summary>
-    public string InstalledVersionSource { get; set; } = "";
-    public string LatestVersion { get; set; } = "";
-    public bool UpdateAvailable { get; set; }
-    public string UpdateError { get; set; } = "";
+
     public string Message { get; set; } = "";
     public List<ModEntryInfo> Mods { get; set; } = new();
     public List<ModEntryInfo> Sdk { get; set; } = new();

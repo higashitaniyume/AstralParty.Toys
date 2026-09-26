@@ -11,9 +11,9 @@
     <StartupObject>AstralParty.Toys.App</StartupObject>
     <!-- 与发布 tag 同步递增：v0.4.9 → v0.4.10（内嵌加载器 2.2.0 → 2.2.1：自由相机整体重做为
          滚轮缩放（沿当前视线前后移动、视角完全不变，F1 恢复原视角），SDK 侧新增自由相机数学函数） -->
-    <Version>0.4.10</Version>
-    <AssemblyVersion>0.4.10.0</AssemblyVersion>
-    <FileVersion>0.4.10.0</FileVersion>
+    <Version>0.5.0</Version>
+    <AssemblyVersion>0.5.0.0</AssemblyVersion>
+    <FileVersion>0.5.0.0</FileVersion>
     <ApplicationIcon>WebUI\images\UT_AccountHeadShot_70902.ico</ApplicationIcon>
   </PropertyGroup>
 
@@ -30,7 +30,7 @@
          version.dll / sdk\CesiumLoader.SDK.dll / mods\{ModId}\* 覆盖到 Resources\ModLoader\,
          loader-version.json 写包内 cesium-loader.json 的 version。CI 也会在打 tag 时自动同步
          (.github/workflows/release.yml 的 "Fetch latest CesiumLoader package")。 -->
-    <EmbeddedResource Include="Resources\ModLoader\version.dll;Resources\ModLoader\doorstop_config.json;Resources\ModLoader\CesiumLoader.SDK.dll;Resources\ModLoader\ActivityLogMod.dll;Resources\ModLoader\ActivityLogMod.json;Resources\ModLoader\FreeCameraMod.dll;Resources\ModLoader\FreeCameraMod.json;Resources\ModLoader\SpeedHackMod.dll;Resources\ModLoader\SpeedHackMod.json;Resources\ModLoader\loader-version.json">
+    <EmbeddedResource Include="Resources\ModLoader\version.dll;Resources\ModLoader\doorstop_config.json;Resources\ModLoader\CesiumLoader.SDK.dll;Resources\ModLoader\ActivityLogMod.dll;Resources\ModLoader\ActivityLogMod.json;Resources\ModLoader\FreeCameraMod.dll;Resources\ModLoader\FreeCameraMod.json;Resources\ModLoader\SpeedHackMod.dll;Resources\ModLoader\SpeedHackMod.json;Resources\ModLoader\loader-version.json;Resources\ModLoader\loader-changelog.md">
       <LogicalName>AstralParty.Toys.ModLoader.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
     <Content Include="Protocol\*.dll">
@@ -50,6 +50,10 @@
       <LogicalName>AstralParty.Toys.WebUI/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="PackedAssets\**\*.webp;PackedAssets\**\*.png" />
+    <!-- 仓库根的 CHANGELOG.md 编译进程序集，供「关于 → 更新日志」在程序内展示（宿主读它回推给前端）。 -->
+    <EmbeddedResource Include="..\..\CHANGELOG.md">
+      <LogicalName>AstralParty.Toys.CHANGELOG.md</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
   <!-- 让测试项目能直接驱动 internal 的实现细节（例如交给 WebView2 的响应流包装） -->

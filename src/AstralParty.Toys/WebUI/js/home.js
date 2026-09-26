@@ -1,13 +1,10 @@
-// home.js - Astral Party lobby, portraits, and JSON-driven version announcement
+// home.js - Astral Party lobby & portraits
 (function () {
-  const ANNOUNCEMENT_URL = 'data/game-version-announcement.json';
-
   // localStorage 里记「绕过 Steam 启动」的选择（默认 false = 从 Steam 启动）
   const LAUNCH_BYPASS_KEY = 'launchBypassSteam';
 
   const HomeModule = {
     portraitRotationTimer: null,
-    versionAnnouncement: null,
     eventsBound: false,
 
     init(data) {
@@ -15,7 +12,6 @@
       this.pickInitialPortrait();
       this.startPortraitRotation();
       this.bindEvents();
-      this.loadVersionAnnouncement();
     },
 
     onShowHome() {
@@ -27,17 +23,62 @@
     bindEvents() {
       if (this.eventsBound) return;
       this.eventsBound = true;
-      $('btnMenuLaunchGame')?.addEventListener('click', () => post({
-        type: 'launchGame',
-        bypassSteam: this.isBypassSteam()
-      }));
+      $('btnMenuLaunchGame')?.addEventListener('click', () => this.launchGame());
       $('btnMenuSpeedhack')?.addEventListener('click', () => showPage('utilities'));
       $('btnMenuTools')?.addEventListener('click', () => showPage('tools'));
       $('btnMenuMods')?.addEventListener('click', () => showPage('mods'));
-      $('btnMenuWiki')?.addEventListener('click', () => showPage('wiki'));
       $('dockBtnSettings')?.addEventListener('click', () => showPage('settings'));
-      $('versionAnnouncementMoreBtn')?.addEventListener('click', () => this.showVersionAnnouncement());
+      // 大厅「启动版本」下拉：选一个版本即设为当前游戏（下面两种启动方式都对它生效）。
+      // 选项由 GameLibModule.renderLobbySelect 填充（宿主 ready 时推 gameProfiles）。
+      $('lobbyGameSelect')?.addEventListener('change', event => {
+        const id = event.target.value;
+        if (id) post({ type: 'gameProfileSetActive', id });
+      });
       this.initLaunchMode();
+    },
+
+    // 启动游戏：游戏要好几秒才起得来，期间进程还查不到，宿主也只会回一句 toast。
+    // 所以按钮先短暂锁住 + 转圈，挡掉"以为没点上又点一次"导致的重复拉起。
+    launchGame() {
+      const button = $('btnMenuLaunchGame');
+      if (button?.dataset.busy === '1') return;
+      post({ type: 'launchGame', bypassSteam: this.isBypassSteam() });
+      // 启动瞬间就把「启动方式」锁一段时间：见 lockLaunchMode 的说明（防止刚起的这局被改写配置串味）。
+      this.lockLaunchMode(6000);
+      if (!button) return;
+      button.dataset.busy = '1';
+      button.classList.add('is-launching');
+      clearTimeout(this._launchTimer);
+      this._launchTimer = setTimeout(() => {
+        button.dataset.busy = '0';
+        button.classList.remove('is-launching');
+      }, 5000);
+    },
+
+    // 启动后给「从 Steam / 绕过 Steam」这组单选框上一小段冷却：
+    // 游戏是在**启动早期**才读加载器的 doorstop 配置（Steam 绕过开关）。若这时用户手快、
+    // 立刻切到另一种方式，切换会触发 setSteamBypass 改写那份配置，导致刚拉起的这一局"串味"
+    // —— 明明从 Steam 启动，却被改成绕过（反之亦然）。冷却期内禁止切换即可干净地避免这个竞态。
+    lockLaunchMode(ms) {
+      const steamRadio = $('launchViaSteam');
+      const bypassRadio = $('launchBypassSteam');
+      const group = document.querySelector('.launch-mode-options');
+      if (!steamRadio || !bypassRadio) return;
+      steamRadio.disabled = true;
+      bypassRadio.disabled = true;
+      if (group) {
+        group.classList.add('is-cooldown');
+        group.title = '游戏启动中，稍候即可再切换启动方式';
+      }
+      clearTimeout(this._launchModeCooldownTimer);
+      this._launchModeCooldownTimer = setTimeout(() => {
+        steamRadio.disabled = false;
+        bypassRadio.disabled = false;
+        if (group) {
+          group.classList.remove('is-cooldown');
+          group.removeAttribute('title');
+        }
+      }, ms);
     },
 
     // ---------- 启动方式：从 Steam 启动 / 绕过 Steam 启动（单选框，二选一） ----------
@@ -144,69 +185,6 @@
           img.style.opacity = '1';
         };
       }, 120);
-    },
-
-    async loadVersionAnnouncement() {
-      try {
-        const response = await fetch(ANNOUNCEMENT_URL, { cache: 'no-store' });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const announcement = await response.json();
-        if (!announcement?.title || !announcement?.summary) throw new Error('公告数据不完整');
-        this.versionAnnouncement = announcement;
-        this.renderVersionAnnouncement(announcement);
-      } catch (error) {
-        console.error('Version announcement load error:', error);
-        $('versionAnnouncementCard')?.classList.add('is-error');
-        if ($('versionAnnouncementDate')) $('versionAnnouncementDate').textContent = '';
-        if ($('versionAnnouncementTitle')) $('versionAnnouncementTitle').textContent = '版本公告读取失败';
-        if ($('versionAnnouncementSummary')) $('versionAnnouncementSummary').textContent = `请检查 ${ANNOUNCEMENT_URL}`;
-        if ($('versionAnnouncementPeriod')) $('versionAnnouncementPeriod').textContent = '';
-        if ($('versionAnnouncementMoreBtn')) $('versionAnnouncementMoreBtn').disabled = true;
-      }
-    },
-
-    renderVersionAnnouncement(item) {
-      if ($('versionAnnouncementDate')) {
-        $('versionAnnouncementDate').textContent = item.versionLabel || item.displayDate || '';
-      }
-      if ($('versionAnnouncementTitle')) $('versionAnnouncementTitle').textContent = item.title;
-      if ($('versionAnnouncementSummary')) $('versionAnnouncementSummary').textContent = item.summary;
-      if ($('versionAnnouncementPeriod')) $('versionAnnouncementPeriod').textContent = item.period || '';
-      $('versionAnnouncementCard')?.classList.remove('is-error');
-      if ($('versionAnnouncementMoreBtn')) $('versionAnnouncementMoreBtn').disabled = false;
-    },
-
-    safeExternalUrl(value) {
-      try {
-        const url = new URL(value);
-        return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : '';
-      } catch {
-        return '';
-      }
-    },
-
-    showVersionAnnouncement() {
-      const item = this.versionAnnouncement;
-      if (!item) return;
-      const highlights = Array.isArray(item.highlights) ? item.highlights : [];
-      const sourceUrl = this.safeExternalUrl(item.source?.url);
-      const highlightHtml = highlights.map(highlight => `
-        <section class="version-detail-item">
-          <h4>${esc(highlight.title)}</h4>
-          <p>${esc(highlight.content)}</p>
-        </section>`).join('');
-      openModal(`📢 ${item.category ? esc(item.category) : '游戏版本公告'}`, `
-        <div class="version-detail">
-          <div class="version-detail-meta"><span>${esc(item.versionLabel || '')}</span><span>${esc(item.period || '')}</span></div>
-          <h3>${esc(item.title)}</h3>
-          <p class="version-detail-summary">${esc(item.summary)}</p>
-          <div class="version-detail-list">${highlightHtml}</div>
-          ${item.source?.note ? `<p class="version-detail-note">${esc(item.source.note)}</p>` : ''}
-          ${sourceUrl ? '<button class="secondary-btn" id="versionAnnouncementSourceBtn">↗ 查看 BWiki 原文</button>' : ''}
-        </div>`);
-      $('versionAnnouncementSourceBtn')?.addEventListener('click', () => {
-        post({ type: 'openBrowser', url: sourceUrl });
-      });
     }
   };
 

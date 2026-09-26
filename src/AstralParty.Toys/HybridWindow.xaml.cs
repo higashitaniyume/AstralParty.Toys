@@ -35,11 +35,13 @@ public partial class HybridWindow : Window
     private readonly SpeedhackManager _speedhackManager;
     private readonly ModManager _modManager;
     private readonly ReplayLibraryService _libraryService;
+    private readonly GameLibraryService _gameLibrary;
     private ReplayAnalyzer? _analyzer;
     private ReplayReport? _report;
     private bool _webReady;
     private bool _webRootIsEmbedded;
     private readonly Dictionary<string, string> _replayLibrary = new(StringComparer.Ordinal);
+    private CancellationTokenSource? _deepScanCts;
 
     public HybridWindow()
     {
@@ -50,6 +52,7 @@ public partial class HybridWindow : Window
         _speedhackManager = new SpeedhackManager(_appDirectory);
         _modManager = new ModManager(_appDirectory);
         _libraryService = new ReplayLibraryService(_appDirectory);
+        _gameLibrary = new GameLibraryService();
     }
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -180,8 +183,17 @@ public partial class HybridWindow : Window
                 case "ready":
                     _webReady = true;
                     StartupOverlay.Visibility = Visibility.Collapsed;
+                    // 首启把旧的单目录记忆 + Steam 自动检测结果迁进「游戏档案」，并让当前游戏在两个管理器里保持一致
+                    _gameLibrary.SeedFromLegacyIfEmpty(new[]
+                        {
+                            _modManager.GetStoredGameDirectory(),
+                            _speedhackManager.GetStoredGameDirectory()
+                        }.Concat(SpeedhackManager.EnumerateGameDirectories()));
+                    SyncActiveGameToManagers();
                     Post(new { type = "homeData", payload = _homeDataService.GetHomeData() });
+                    PostAppVersion();
                     PostSteamBypassSync();
+                    PushGameProfiles();
                     await SendReplayLibraryAsync(runMaintain: true);
                     Post(new { type = "librarySettings", payload = BuildLibrarySettingsPayload() });
                     var args = Environment.GetCommandLineArgs();
@@ -191,6 +203,18 @@ public partial class HybridWindow : Window
                     Post(new { type = "homeData", payload = _homeDataService.GetHomeData() });
                     PostSteamBypassSync();
                     break;
+                case "getAppVersion":
+                    PostAppVersion();
+                    break;
+                case "copyVersionInfo":
+                    CopyVersionInfo();
+                    break;
+                case "changelogGet":
+                    PostChangelog();
+                    break;
+                case "loaderChangelogGet":
+                    _ = PostLoaderChangelogAsync(root.TryGetProperty("fresh", out var freshEl) && freshEl.ValueKind == JsonValueKind.True);
+                    break;
                 case "openReplay":
                     await PickAndLoadReplayAsync();
                     break;
@@ -199,6 +223,8 @@ public partial class HybridWindow : Window
                         tokenElement.GetString() is { Length: > 0 } token &&
                         _replayLibrary.TryGetValue(token, out var replayPath) && File.Exists(replayPath))
                         await LoadReplayAsync(replayPath);
+                    else
+                        Post(new { type = "toast", message = "这个回放找不到了（可能已被移动或删除），点「刷新列表」重新扫描。" });
                     break;
                 case "refreshReplays":
                     await SendReplayLibraryAsync(runMaintain: true);
@@ -242,6 +268,58 @@ public partial class HybridWindow : Window
                     break;
                 case "librarySaveSettings":
                     HandleLibrarySaveSettings(root);
+                    break;
+                case "gameProfilesGet":
+                    PushGameProfiles();
+                    break;
+                case "gameProfileBrowse":
+                    HandleGameProfileBrowse();
+                    break;
+                case "gameProfileAddPath":
+                    if (root.TryGetProperty("directory", out var addDirElement) &&
+                        addDirElement.GetString() is { Length: > 0 } addDir)
+                        HandleGameProfileAddPath(addDir,
+                            root.TryGetProperty("activate", out var actEl) && actEl.GetBoolean());
+                    break;
+                case "gameProfileSetActive":
+                    if (root.TryGetProperty("id", out var setActiveIdEl) &&
+                        setActiveIdEl.GetString() is { Length: > 0 } setActiveId)
+                        HandleGameProfileSetActive(setActiveId);
+                    break;
+                case "gameProfileUpdate":
+                    if (root.TryGetProperty("id", out var updIdEl) &&
+                        updIdEl.GetString() is { Length: > 0 } updId)
+                    {
+                        var newLabel = root.TryGetProperty("label", out var lblEl) ? lblEl.GetString() : null;
+                        var newEdition = root.TryGetProperty("edition", out var edEl) ? edEl.GetString() : null;
+                        _gameLibrary.UpdateProfile(updId, newLabel, newEdition);
+                        PushGameProfiles();
+                    }
+                    break;
+                case "gameProfileRemove":
+                    if (root.TryGetProperty("id", out var rmIdEl) &&
+                        rmIdEl.GetString() is { Length: > 0 } rmId)
+                    {
+                        _gameLibrary.Remove(rmId);
+                        SyncActiveGameToManagers();
+                        PushGameProfiles();
+                        PushModStatus();
+                        PushSpeedhackStatus();
+                    }
+                    break;
+                case "gameProfileOpen":
+                    if (root.TryGetProperty("id", out var openIdEl) &&
+                        openIdEl.GetString() is { Length: > 0 } openId)
+                        HandleGameProfileOpen(openId);
+                    break;
+                case "gameScanQuick":
+                    HandleGameScanQuick();
+                    break;
+                case "gameScanDeep":
+                    HandleGameScanDeep(root.TryGetProperty("drive", out var driveEl) ? driveEl.GetString() : null);
+                    break;
+                case "gameScanCancel":
+                    _deepScanCts?.Cancel();
                     break;
                 case "getFrame":
                     if (root.TryGetProperty("index", out var indexElement)) await SendFrameDetailAsync(indexElement.GetInt32());
@@ -452,7 +530,7 @@ public partial class HybridWindow : Window
                             _modManager.SaveLoaderConfig(RequireModGameDirectory(), config);
                             Post(new { type = "toast", message = "已保存加载器设置（重启游戏生效）" });
                             // 加载器设置里的「Steam 绕过」与首页的「绕过 Steam 启动」是同一个配置：改完回推给首页
-                            Post(new { type = "steamBypassSync", payload = new { enabled = config.SteamBypassEnabled } });
+                            Post(new { type = "steamBypassSync", payload = new { enabled = ModManager.IsSteamBypassActive(config) } });
                         }
                         catch (Exception ex)
                         {
@@ -481,7 +559,7 @@ public partial class HybridWindow : Window
         }
     }
 
-    private static void TryOpenExternal(string? url)
+    private void TryOpenExternal(string? url)
     {
         if (string.IsNullOrWhiteSpace(url)) return;
         try
@@ -492,7 +570,11 @@ public partial class HybridWindow : Window
                 Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            // 以前这里静默吞掉：点了「用浏览器打开」毫无反应，用户不知道是没点上还是打不开
+            Post(new { type = "toast", message = $"打不开系统浏览器：{ex.Message}" });
+        }
     }
 
     // ============================== 回放库 ==============================
@@ -716,7 +798,145 @@ public partial class HybridWindow : Window
         capacity = ReplayLibraryService.GameSlotCapacity
     };
 
+    // ============================== 游戏档案（多位置管理） ==============================
+
+    /// <summary>把「当前游戏」目录写进两个管理器各自的状态文件，让模组页 / 变速器页看到的是同一个游戏。</summary>
+    private void SyncActiveGameToManagers()
+    {
+        var dir = _gameLibrary.GetActiveDirectory();
+        if (string.IsNullOrWhiteSpace(dir)) return;
+        _modManager.SaveStoredGameDirectory(dir);
+        _speedhackManager.SaveStoredGameDirectory(dir);
+    }
+
+    private void PushGameProfiles()
+    {
+        var profiles = _gameLibrary.GetProfiles();
+        Post(new
+        {
+            type = "gameProfiles",
+            payload = new
+            {
+                profiles,
+                activeId = profiles.FirstOrDefault(p => p.Active)?.Id,
+                drives = GameLibraryService.FixedDriveRoots()
+            }
+        });
+    }
+
+    private void HandleGameProfileBrowse()
+    {
+        var current = _gameLibrary.GetActiveDirectory();
+        var dialog = new OpenFolderDialog
+        {
+            Title = "选择吉星派对游戏目录（AstralParty exe 所在文件夹）",
+            InitialDirectory = current is { Length: > 0 } && Directory.Exists(current) ? current : null
+        };
+        if (dialog.ShowDialog(this) != true || dialog.FolderName is not { Length: > 0 } folder) return;
+
+        if (GameLibraryService.DetectExe(folder) is null)
+        {
+            Post(new { type = "toast", message = "这个目录里没有找到 AstralParty*.exe，确认选的是游戏 exe 所在的文件夹？" });
+            return;
+        }
+        var view = _gameLibrary.AddDirectory(folder, activate: true);
+        SyncActiveGameToManagers();
+        Post(new { type = "toast", message = $"已添加并切换到：{view.Label}" });
+        PushGameProfiles();
+        PushModStatus();
+        PushSpeedhackStatus();
+    }
+
+    private void HandleGameProfileAddPath(string directory, bool activate)
+    {
+        if (!Directory.Exists(directory) || GameLibraryService.DetectExe(directory) is null)
+        {
+            Post(new { type = "toast", message = "这个目录已经不在了，或里面没有 AstralParty*.exe。" });
+            return;
+        }
+        var view = _gameLibrary.AddDirectory(directory, activate);
+        if (activate) SyncActiveGameToManagers();
+        Post(new { type = "toast", message = activate ? $"已添加并切换到：{view.Label}" : $"已添加：{view.Label}" });
+        PushGameProfiles();
+        if (activate) { PushModStatus(); PushSpeedhackStatus(); }
+    }
+
+    private void HandleGameProfileSetActive(string id)
+    {
+        _gameLibrary.SetActive(id);
+        SyncActiveGameToManagers();
+        PushGameProfiles();
+        PushModStatus();
+        PushSpeedhackStatus();
+    }
+
+    private void HandleGameProfileOpen(string id)
+    {
+        var directory = _gameLibrary.GetDirectory(id);
+        if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+        {
+            Post(new { type = "toast", message = "这个目录已经不在了。" });
+            return;
+        }
+        try { Process.Start(new ProcessStartInfo(directory) { UseShellExecute = true }); }
+        catch (Exception ex) { Post(new { type = "toast", message = $"打不开目录：{ex.Message}" }); }
+    }
+
+    private void HandleGameScanQuick()
+    {
+        Post(new { type = "gameScanProgress", payload = new { mode = "quick", running = true, message = "正在扫描 Steam 库、注册表与常见安装位置…" } });
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                var candidates = _gameLibrary.QuickScan();
+                Post(new { type = "gameScanResult", payload = new { mode = "quick", candidates } });
+            }
+            catch (Exception ex)
+            {
+                Post(new { type = "gameScanProgress", payload = new { mode = "quick", running = false, message = $"扫描出错：{ex.Message}" } });
+            }
+        });
+    }
+
+    private void HandleGameScanDeep(string? drive)
+    {
+        if (string.IsNullOrWhiteSpace(drive) || !Directory.Exists(drive))
+        {
+            Post(new { type = "toast", message = "请选择一个要深度扫描的盘符。" });
+            return;
+        }
+        _deepScanCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        _deepScanCts = cts;
+        var driveRoot = drive;
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                Post(new { type = "gameScanProgress", payload = new { mode = "deep", running = true, message = $"正在深度扫描 {driveRoot} …" } });
+                var candidates = _gameLibrary.DeepScan(driveRoot, cts.Token, (count, current) =>
+                    Post(new { type = "gameScanProgress", payload = new { mode = "deep", running = true, message = $"已扫描 {count} 个目录…", current } }));
+                Post(new { type = "gameScanResult", payload = new { mode = "deep", candidates } });
+            }
+            catch (OperationCanceledException)
+            {
+                Post(new { type = "gameScanProgress", payload = new { mode = "deep", running = false, message = "已取消深度扫描。" } });
+            }
+            catch (Exception ex)
+            {
+                Post(new { type = "gameScanProgress", payload = new { mode = "deep", running = false, message = $"深度扫描出错：{ex.Message}" } });
+            }
+            finally
+            {
+                if (_deepScanCts == cts) _deepScanCts = null;
+                cts.Dispose();
+            }
+        });
+    }
+
     // ============================== 启动游戏 ==============================
+
 
     /// <summary>Steam AppID 2622000（Astral Party / 吉星派对）。</summary>
     private const string SteamLaunchUrl = "steam://rungameid/2622000";
@@ -731,12 +951,10 @@ public partial class HybridWindow : Window
     /// </summary>
     private void HandleLaunchGame(bool bypassSteam)
     {
-        if (SpeedhackManager.IsGameRunning())
-        {
-            Post(new { type = "toast", message = "游戏已经在运行了。" });
-            return;
-        }
-
+        // 不再因为"游戏已经在运行"就拦截再次启动 —— 保存了多个游戏位置时，
+        // 用户可能想在已开一个的情况下再启动另一个（例如国服 + 国际服），或第一次没起来想重试。
+        // 也不再按区服猜"这个版本在不在 Steam 上"：用户在下拉栏选了哪个版本、又选了哪种启动方式就照做，
+        // 不警告、不识别，后果自负（当前"通过 Steam 启动"只有固定 appid 这一条路；"绕过 Steam" = 直启选中的版本）。
         if (!bypassSteam)
         {
             try
@@ -812,6 +1030,84 @@ public partial class HybridWindow : Window
         catch
         {
             // 尽力而为：读不到配置就让首页用它自己记住的选择
+        }
+    }
+
+    /// <summary>把本程序的版本信息推给界面（顶部栏版本胶囊 / 底部状态栏 / 版本详情弹窗都用它）。
+    /// 自建构建也会带上提交号、构建配置、运行时等信息，不会只给一个孤零零的版本号。</summary>
+    private void PostAppVersion()
+    {
+        try
+        {
+            Post(new { type = "appVersion", payload = AppInfo.Get() });
+        }
+        catch (Exception ex)
+        {
+            // 取版本信息失败不该影响任何功能，界面上就显示"版本未知"
+            Debug.WriteLine($"PostAppVersion failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>把内嵌的 CHANGELOG.md（Markdown 文本）推给界面，在「关于 → 更新日志」弹窗里渲染。</summary>
+    private void PostChangelog()
+    {
+        string markdown;
+        try
+        {
+            var asm = typeof(HybridWindow).Assembly;
+            using var stream = asm.GetManifestResourceStream("AstralParty.Toys.CHANGELOG.md");
+            if (stream is null)
+            {
+                Post(new { type = "changelog", payload = new { markdown = "" } });
+                return;
+            }
+            using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
+            markdown = reader.ReadToEnd();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"PostChangelog failed: {ex.Message}");
+            markdown = "";
+        }
+        Post(new { type = "changelog", payload = new { markdown } });
+    }
+
+    /// <summary>把加载器（CesiumLoader）的更新日志推给界面。策略：CI 内嵌优先（离线即时），
+    /// 内嵌为占位/空、或前端要求 fresh 时，去 GitHub 拉最新 Release 发布说明兜底。</summary>
+    private async Task PostLoaderChangelogAsync(bool fresh)
+    {
+        var embedded = ModManager.BundledLoaderChangelog;
+        if (!fresh && !string.IsNullOrWhiteSpace(embedded))
+        {
+            Post(new { type = "loaderChangelog", payload = new { markdown = embedded, source = "bundled" } });
+            return;
+        }
+        try
+        {
+            var notes = await ModManager.DownloadLatestReleaseNotesAsync().ConfigureAwait(true);
+            Post(new { type = "loaderChangelog", payload = new { markdown = notes, source = "github" } });
+        }
+        catch (Exception ex)
+        {
+            // 联网失败：还有内嵌就退回内嵌，否则如实说读不到
+            if (!string.IsNullOrWhiteSpace(embedded))
+                Post(new { type = "loaderChangelog", payload = new { markdown = embedded, source = "bundled" } });
+            else
+                Post(new { type = "loaderChangelog", payload = new { markdown = "", source = "none", error = ex.Message } });
+        }
+    }
+
+    /// <summary>复制版本信息到剪贴板（用 WPF 的剪贴板，比网页的 navigator.clipboard 在 file:// 下可靠）。</summary>
+    private void CopyVersionInfo()
+    {
+        try
+        {
+            Clipboard.SetText(AppInfo.Get().DetailText);
+            Post(new { type = "toast", message = "版本信息已复制到剪贴板" });
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = $"复制失败：{ex.Message}" });
         }
     }
 
@@ -1215,7 +1511,8 @@ public partial class HybridWindow : Window
         {
             var json = await Task.Run(() => JsonSerializer.Serialize(BuildExportReport(_report), new JsonSerializerOptions(JsonOptions) { WriteIndented = true }));
             await File.WriteAllTextAsync(dialog.FileName, json, Encoding.UTF8);
-            Post(new { type = "toast", message = $"已导出到 {dialog.FileName}" });
+            // 只报文件名：完整路径不换行，会长到把居中的 toast 胶囊撑出窗口
+            Post(new { type = "toast", message = $"已导出到 {Path.GetFileName(dialog.FileName)}" });
         }
         finally
         {
@@ -1349,8 +1646,10 @@ public partial class HybridWindow : Window
         }
         else
         {
-            _speedhackManager.SaveStoredGameDirectory(directory);
+            _gameLibrary.AddDirectory(directory, activate: true);
+            SyncActiveGameToManagers();
             Post(new { type = "toast", message = $"已自动定位游戏目录：{directory}" });
+            PushGameProfiles();
         }
         PushSpeedhackStatus();
     }
@@ -1365,8 +1664,10 @@ public partial class HybridWindow : Window
         };
         if (dialog.ShowDialog(this) == true && dialog.FolderName is { Length: > 0 })
         {
-            _speedhackManager.SaveStoredGameDirectory(dialog.FolderName);
+            _gameLibrary.AddDirectory(dialog.FolderName, activate: true);
+            SyncActiveGameToManagers();
             Post(new { type = "toast", message = $"已选择游戏目录：{dialog.FolderName}" });
+            PushGameProfiles();
             PushSpeedhackStatus();
         }
     }
@@ -1462,7 +1763,8 @@ public partial class HybridWindow : Window
     private void PushModStatus()
     {
         var status = _modManager.GetStatus();
-        Post(new { type = "modStatus", payload = new { status } });
+        // builtInMods：随程序内嵌的那几个模组 id —— 前端据此给它们打「内置」标签
+        Post(new { type = "modStatus", payload = new { status, builtInMods = ModManager.EmbeddedBuiltInModIdList } });
     }
 
     private string RequireModGameDirectory()
@@ -1482,8 +1784,10 @@ public partial class HybridWindow : Window
         }
         else
         {
-            _modManager.SaveStoredGameDirectory(directory);
+            _gameLibrary.AddDirectory(directory, activate: true);
+            SyncActiveGameToManagers();
             Post(new { type = "toast", message = $"已自动定位游戏目录：{directory}" });
+            PushGameProfiles();
         }
         PushModStatus();
     }
@@ -1498,8 +1802,10 @@ public partial class HybridWindow : Window
         };
         if (dialog.ShowDialog(this) == true && dialog.FolderName is { Length: > 0 })
         {
-            _modManager.SaveStoredGameDirectory(dialog.FolderName);
+            _gameLibrary.AddDirectory(dialog.FolderName, activate: true);
+            SyncActiveGameToManagers();
             Post(new { type = "toast", message = $"已选择游戏目录：{dialog.FolderName}" });
+            PushGameProfiles();
             PushModStatus();
         }
     }
@@ -1620,30 +1926,20 @@ public partial class HybridWindow : Window
 
     // ============================== Mod 加载器：联网更新 ==============================
 
+    /// <summary>只把「最新版本号」回推给界面 —— 版本三栏的「GitHub 最新」栏与结论都由前端自己算，
+    /// 这里不再拼一句 toast 文案（同一个结论说两遍，用户反而要自己对齐两个说法）。</summary>
     private async Task HandleModCheckUpdateAsync()
     {
-        Post(new { type = "toast", message = "正在检查 CesiumLoader 最新版本…" });
         try
         {
             var bytes = await _modManager.DownloadLatestPackageAsync().ConfigureAwait(true);
             var manifest = ModManager.ParsePackageManifest(bytes);
-            var latest = manifest?.Version ?? "";
-            var installed = _modManager.GetStatus().InstalledVersion;
-
-            var message = string.IsNullOrEmpty(latest)
-                ? "已连接到 GitHub，但发布包没有版本信息。"
-                : string.IsNullOrEmpty(installed)
-                    ? $"最新版本：{latest}（游戏目录里未记录已装版本，可直接更新）。"
-                    : string.Equals(installed, latest, StringComparison.OrdinalIgnoreCase)
-                        ? $"已是最新版本：{latest}。"
-                        : $"发现新版本：{installed} → {latest}。";
-
-            Post(new { type = "toast", message });
+            Post(new { type = "modUpdateCheck", payload = new { latest = manifest?.Version ?? "" } });
             PushModStatus();
         }
         catch (Exception ex)
         {
-            Post(new { type = "toast", message = $"检查更新失败：{ex.Message}" });
+            Post(new { type = "modUpdateCheck", payload = new { error = ex.Message } });
         }
     }
 
@@ -1679,6 +1975,12 @@ public partial class HybridWindow : Window
 
     private void Post(object message)
     {
+        // 可能从后台线程调用（如深度扫描的进度回调）：WebView2 必须在 UI 线程上访问
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.BeginInvoke(() => Post(message));
+            return;
+        }
         if (!_webReady || WebView.CoreWebView2 is null) return;
         WebView.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(message, JsonOptions));
     }

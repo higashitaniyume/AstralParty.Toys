@@ -101,6 +101,23 @@ jobs:
           }
           Set-Content -Path "src/AstralParty.Toys/Resources/ModLoader/loader-version.json" -Value ($version | ConvertTo-Json) -Encoding UTF8
           Write-Host "内嵌加载器版本: $version"
+
+          # 加载器更新日志：取 CesiumLoader 最新 Release 的发布说明（body），内嵌进程序集，
+          # 供「关于 → 更新日志 → 加载器」离线展示；取不到就写占位符（运行时会改为去 GitHub 拉）。
+          $changelogPath = "src/AstralParty.Toys/Resources/ModLoader/loader-changelog.md"
+          try {
+            $headers = @{ "User-Agent" = "AstralParty.Toys-CI"; "Accept" = "application/vnd.github+json" }
+            $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/higashitaniyume/CesiumLoader/releases/latest" -Headers $headers -UseBasicParsing
+            $header = if ($rel.name) { $rel.name } else { $rel.tag_name }
+            $body = if ($rel.body) { $rel.body.Trim() } else { "（这个版本没有填写发布说明。）" }
+            $md = "## $($header)`n`n$body`n"
+            Set-Content -Path $changelogPath -Value $md -Encoding UTF8
+            Write-Host "加载器更新日志: 已写入 Release「$header」说明"
+          } catch {
+            Set-Content -Path $changelogPath -Value "<!-- placeholder: 取 Release 说明失败，运行时改为去 GitHub 拉取。 -->`n" -Encoding UTF8
+            Write-Host "加载器更新日志: 取 Release 说明失败（$($_.Exception.Message)），已写占位符"
+          }
+
           Get-ChildItem "src/AstralParty.Toys/Resources/ModLoader" | Select-Object Name, Length
 
       - name: Resolve package metadata

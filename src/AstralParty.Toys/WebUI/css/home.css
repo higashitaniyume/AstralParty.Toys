@@ -77,7 +77,7 @@ body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-game-logo {
   align-items: center;
   justify-content: flex-start;
   z-index: 2;
-  cursor: pointer;
+  cursor: default;
   overflow: hidden;
 }
 
@@ -130,41 +130,6 @@ body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-game-logo {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-
-/* JSON-driven game version announcement */
-.version-announcement-card {
-  position: absolute; left: 32%; bottom: 92px; z-index: 14;
-  box-sizing: border-box; width: clamp(320px, 30vw, 460px); padding: 18px 20px 16px;
-  overflow: hidden; color: #fff; cursor: default;
-  background: linear-gradient(145deg, rgba(24, 30, 54, 0.97), rgba(12, 16, 31, 0.97));
-  border: 2px solid rgba(255, 255, 255, 0.24); border-radius: 18px;
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.72), 0 0 24px rgba(168, 85, 247, 0.24);
-  backdrop-filter: blur(16px); transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
-}
-.version-announcement-card::before {
-  content: ''; position: absolute; inset: 0 auto 0 0; width: 5px;
-  background: linear-gradient(#ff1776, #a855f7, #38bdf8);
-}
-.version-announcement-card:hover { transform: translateY(-3px); border-color: rgba(244, 114, 182, 0.7); box-shadow: 0 22px 48px rgba(0,0,0,.78), 0 0 30px rgba(236,72,153,.32); }
-.version-announcement-head, .version-announcement-foot { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
-.version-announcement-label { color: #f9a8d4; font-size: 13px; font-weight: 900; letter-spacing: .5px; }
-.version-announcement-head time, .version-announcement-foot span { color: #cbd5e1; font-size: 11px; }
-.version-announcement-card h2 { margin: 10px 0 8px; color: #fff; font-size: 20px; line-height: 1.35; text-shadow: 0 2px 5px rgba(0,0,0,.7); }
-.version-announcement-card > p { margin: 0 0 14px; color: #dbe4f2; font-size: 13px; line-height: 1.65; }
-.version-announcement-foot { padding-top: 12px; border-top: 1px solid rgba(255,255,255,.1); }
-.version-announcement-foot button { padding: 5px 10px; color: #f9a8d4; font-size: 12px; font-weight: 800; background: rgba(244,114,182,.12); border: 1px solid rgba(244,114,182,.35); border-radius: 999px; }
-.version-announcement-foot button:hover { color: #fff; background: rgba(255,23,118,.3); border-color: #f472b6; }
-.version-announcement-foot button:disabled { opacity: .45; cursor: default; }
-.version-announcement-card.is-error { border-color: rgba(248,113,113,.55); }
-.version-detail { color: #e2e8f0; }
-.version-detail-meta { display: flex; justify-content: space-between; gap: 12px; color: #f9a8d4; font-size: 12px; }
-.version-detail > h3 { margin: 12px 0 8px; color: #fff; font-size: 21px; }
-.version-detail-summary, .version-detail-item p, .version-detail-note { color: #cbd5e1; font-size: 13px; line-height: 1.7; }
-.version-detail-list { display: grid; gap: 10px; margin: 16px 0; }
-.version-detail-item { padding: 12px 14px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; }
-.version-detail-item h4, .version-detail-item p { margin: 0; }
-.version-detail-item h4 { margin-bottom: 4px; color: #facc15; font-size: 14px; }
-.version-detail-note { padding-left: 10px; border-left: 3px solid #a855f7; color: #94a3b8; font-size: 11px; }
 
 /* ==========================================================================
    2. RIGHT-SIDE ACTION BUTTONS: 变速器、回放与维基（右下角另有启动游戏）
@@ -297,6 +262,23 @@ body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-game-logo {
 .card-launch:hover {
   box-shadow: 0 18px 42px rgba(255, 48, 139, 0.78), inset 0 2px 6px rgba(255, 255, 255, 0.6);
 }
+/* 启动中：短暂锁住并转圈，挡掉几秒启动窗口期内的重复点击 */
+.card-launch.is-launching {
+  pointer-events: none;
+  filter: saturate(0.85) brightness(0.95);
+}
+.card-launch.is-launching .card-btn-text::after {
+  content: '';
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  margin-left: 8px;
+  vertical-align: -1px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
 
 /* ==========================================================================
    2b. BOTTOM-RIGHT CORNER: 启动游戏（比其他入口大一圈）
@@ -307,10 +289,40 @@ body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-game-logo {
   bottom: 78px;
   z-index: 16;
   display: flex;
-  flex-direction: column;   /* 启动按钮在上，启动方式单选框在它下面 */
+  flex-direction: column;   /* 启动版本在最上、启动按钮在中、启动方式单选框在下 */
   align-items: flex-end;
   gap: 10px;
 }
+
+/* 启动版本下拉（从游戏库选国服 / 国际服 / TapTap / 自定义，选中即设为当前游戏） */
+.lobby-launch-version {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.lobby-launch-version-label {
+  font-size: 14px;
+  font-weight: 800;
+  color: #cbd5e6;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+.lobby-game-select {
+  min-width: 200px;
+  max-width: 296px;
+  padding: 7px 12px;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  background: rgba(10, 14, 23, 0.82);
+  color: #f3f5fa;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 160ms var(--motion-ease), background 160ms var(--motion-ease);
+}
+.lobby-game-select:hover { border-color: rgba(255, 48, 139, 0.55); }
+.lobby-game-select:focus { outline: none; border-color: #ff308b; }
+.lobby-game-select:disabled { opacity: 0.6; cursor: not-allowed; }
+.lobby-game-select option { background: #141826; color: #f3f5fa; }
 
 .lobby-corner-launch .lobby-card-btn {
   width: 296px;
@@ -381,6 +393,14 @@ body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-game-logo {
   cursor: pointer;
 }
 
+/* 启动后冷却：禁止立刻改「启动方式」——否则会改写加载器配置，让刚起的这局串味（详见 home.js lockLaunchMode）。 */
+.launch-mode-options.is-cooldown {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+.launch-mode-options.is-cooldown .launch-mode-item { cursor: not-allowed; }
+
 body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-hero-art {
   animation: hero-idle-float-left 6s ease-in-out infinite alternate, hero-art-fade-in 520ms var(--motion-ease);
 }
@@ -413,10 +433,62 @@ body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-bottom-dock {
   border-top: 1.5px solid rgba(255, 255, 255, 0.12);
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   padding: 0 28px;
   z-index: 25;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Left: 版本状态。大厅没有顶部栏，版本就落在这条状态栏上（点了看完整版本信息）。 */
+.dock-version {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: var(--gp-radius-full);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--gp-text-sub);
+  cursor: pointer;
+  flex: none;   /* 版本不参与压缩：状态栏左右分列，左边长度固定，右边留给设置按钮 */
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.dock-version:hover {
+  background: rgba(168, 85, 247, 0.18);
+  border-color: rgba(168, 85, 247, 0.6);
+  color: #ffffff;
+}
+
+.dock-version-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.8);
+  flex: none;
+}
+
+.dock-version-name {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.dock-version-value {
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+/* 窗口最小 1120px，正常宽度下状态栏左边空得很，所以名字一律显示；
+   真被压到极窄（走不到的分支）时只收起名字，版本号本身永远留着 */
+@media (max-width: 900px) {
+  .dock-version { padding: 6px 10px; }
+  .dock-version-name { display: none; }
 }
 
 /* Right: Settings Nav Button */
@@ -462,3 +534,82 @@ body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-bottom-dock {
 .dock-nav-item:hover svg {
   transform: rotate(45deg);
 }
+
+/* ==========================================================================
+   「公告位」：工具箱更新提示卡（js/version.js）。放在大厅左上角，压在英雄立绘上层。
+   仅当有未读过的新版本时显示；点「知道了」记住这一版；更新后再出现一次。
+   ========================================================================== */
+.lobby-whatsnew {
+  position: absolute;
+  top: clamp(14px, 3vh, 28px);
+  left: clamp(16px, 2vw, 32px);
+  z-index: 16;
+  width: min(320px, 30vw);
+  padding: 14px 16px 16px;
+  border-radius: var(--gp-radius-lg, 16px);
+  background: linear-gradient(160deg, rgba(38, 22, 46, 0.92), rgba(20, 16, 30, 0.92));
+  border: 1px solid rgba(255, 23, 118, 0.45);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  backdrop-filter: blur(6px);
+  color: var(--gp-text-sub);
+}
+body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-whatsnew:not(.hidden) {
+  animation: content-rise 460ms var(--motion-ease) 300ms both;
+}
+.lobby-whatsnew-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.lobby-whatsnew-label {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--gp-pink);
+  text-transform: none;
+}
+.lobby-whatsnew-close {
+  appearance: none;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--gp-text-sub);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  flex: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.lobby-whatsnew-close:hover { background: rgba(255, 23, 118, 0.3); color: #fff; }
+.lobby-whatsnew-title {
+  margin: 8px 0 6px;
+  font-size: 20px;
+  font-weight: 900;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.lobby-whatsnew-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.lobby-whatsnew-list li { color: var(--gp-text-sub); }
+.lobby-whatsnew-more {
+  appearance: none;
+  border: none;
+  background: none;
+  cursor: pointer;
+  margin-top: 12px;
+  padding: 0;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--gp-pink);
+}
+.lobby-whatsnew-more:hover { color: #fff; text-decoration: underline; }

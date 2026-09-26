@@ -239,68 +239,17 @@ public sealed class HomeDataService
     public object GetHomeData()
     {
         var portraits = GetPortraits();
-        var announcements = GetAnnouncements();
 
         return new
         {
-            appVersion = typeof(HomeDataService).Assembly.GetName().Version?.ToString(3) ?? "1.0.0",
             portraitsCount = portraits.Count,
             portraits,
-            announcements,
             greetings = UniversalGreetings,
             heroGreetings = HeroSpecificGreetings,
             clickReactions = ClickReactions,
             wikiUrl = "https://wiki.biligame.com/starengine/%E9%A6%96%E9%A1%B5"
         };
     }
-
-    public static IReadOnlyList<object> GetAnnouncements() =>
-    [
-        new
-        {
-            id = "notice-01",
-            category = "活动",
-            tagClass = "badge-event",
-            title = "【活动】「星辉狂欢盛典」限时开启！累计对局赢取限定看板立绘与专属棋盘",
-            date = "2026-09-06",
-            isNew = true,
-            summary = "全新派对庆典盛大揭幕！完成每日对局与筹码挑战即可兑换限定纪念角色立绘与动态表情。",
-            content = "亲爱的派对指挥官：\n\n「星辉狂欢盛典」现已全面开启！\n\n【活动时间】\n2026年9月6日维护后 - 2026年9月26日 23:59\n\n【核心玩法】\n1. 每日参与匹配对战，赢取「星辉代币」；\n2. 达成指定筹码三级强化，解锁专属荣誉成就；\n3. 庆典商店开放「帕露南」与「芬妮」珍藏立绘换领。\n\n祝各位指挥官掷骰顺遂，派对尽兴！"
-        },
-        new
-        {
-            id = "notice-02",
-            category = "更新",
-            tagClass = "badge-update",
-            title = "【更新】v2.4.0 版本发布：全新回放分析引擎与离线数据解析系统上线",
-            date = "2026-09-04",
-            isNew = true,
-            summary = "全面重构本地回放查看器，支持全量 Protocol 协议帧解析、筹码流转追踪以及毫秒级事件时间线。",
-            content = "亲爱的派对指挥官：\n\n为了给广大玩家与攻略创作者提供更深入、更顺畅的复盘体验，v2.4.0 现已更新上线！\n\n【主要更新内容】\n1. 【全新主界面】：引入看板娘立绘互动欢迎页与三大核心功能导航；\n2. 【工具中心整合】：对局回放分析工具深度优化，支持自动扫描 LocalLow 本地回放；\n3. 【协议帧检视】：内置 Protobuf 数据结构解码器，支持每一帧指令与载荷查看；\n4. 【维基图鉴】：集成全英雄图鉴与 SSR 筹码速查库。\n\n感谢大家一直以来的支持与反馈！"
-        },
-        new
-        {
-            id = "notice-03",
-            category = "维护",
-            tagClass = "badge-maintenance",
-            title = "【维护】全服网络节点扩容与房间对战帧同步优化完成",
-            date = "2026-09-02",
-            isNew = false,
-            summary = "针对跨区联机延迟及断线重连逻辑进行了全量修复，大幅提升多人派对对战的流畅度。",
-            content = "各位玩家朋友：\n\n服务器已于 9月2日 清晨完成无缝热更新，本次维护针对多人联机环境进行了多项底层优化：\n\n- 修复了极端网络波动下可能出现的卡帧与动作脱节；\n- 优化断线重连同步机制，重连速度提升 60%；\n- 补偿礼包已发放到全体注册邮箱，请及时查收。"
-        },
-        new
-        {
-            id = "notice-04",
-            category = "公告",
-            tagClass = "badge-notice",
-            title = "【平衡】关于「筹码地块」购买机制与部分英雄技能数值微调说明",
-            date = "2026-08-30",
-            isNew = false,
-            summary = "为了提升战术博弈的多样性，对部分高费筹码的效果持续回合及基础移动点数进行了适度平衡。",
-            content = "各位指挥官好：\n\n根据近期天梯排位与玩家对局数据，我们对以下内容进行了微调：\n\n1. 【筹码调整】：微调了部分攻击型筹码的增伤梯度，避免开局秒杀带来的挫败感；\n2. 【角色微调】：提升了部分辅助型角色的基础防御与自保能力；\n3. 详细调整数值已在游戏内维基图鉴同步更新。"
-        }
-    ];
 }
 
 public sealed class PortraitItem

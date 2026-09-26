@@ -436,7 +436,7 @@ body:not(.reduce-motion) #toolsView:not(.page-entering) .replay-view:not(.hidden
   padding: 16px 20px;
 }
 .map-info small {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--gp-blue);
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -501,7 +501,7 @@ body:not(.reduce-motion) #toolsView:not(.page-entering) .replay-view:not(.hidden
 }
 .metric-cell small {
   display: block;
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--gp-text-muted);
   font-weight: 700;
 }
@@ -584,7 +584,7 @@ body:not(.reduce-motion) #toolsView:not(.page-entering) .replay-view:not(.hidden
 }
 .stat-badge-item small {
   display: block;
-  font-size: 10.5px;
+  font-size: 12px;
   color: var(--gp-text-muted);
 }
 .stat-badge-item b {
@@ -779,13 +779,13 @@ body:not(.reduce-motion) #toolsView:not(.page-entering) .replay-view:not(.hidden
 }
 
 .library-status-label {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--gp-text-muted);
   letter-spacing: 0.5px;
 }
 
 .library-status-hint {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--gp-text-muted);
 }
 
@@ -821,7 +821,7 @@ body:not(.reduce-motion) #toolsView:not(.page-entering) .replay-view:not(.hidden
   border: none;
   background: none;
   color: var(--gp-gold);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   text-decoration: underline dotted;
@@ -906,7 +906,7 @@ input[type="number"].library-input::-webkit-inner-spin-button { -webkit-appearan
 
 .library-list-count {
   flex: 0 0 auto;
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--gp-text-muted);
   white-space: nowrap;
 }
@@ -930,7 +930,7 @@ input[type="number"].library-input::-webkit-inner-spin-button { -webkit-appearan
 .entry-badges .badge {
   padding: 1px 7px;
   border-radius: var(--gp-radius-full);
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.3px;
 }
@@ -975,7 +975,7 @@ input[type="number"].library-input::-webkit-inner-spin-button { -webkit-appearan
   border: 1px solid rgba(255, 255, 255, 0.22);
   background: rgba(255, 255, 255, 0.06);
   color: var(--gp-text-main);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.18s ease;

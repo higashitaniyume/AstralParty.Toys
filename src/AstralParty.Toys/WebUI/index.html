@@ -10,12 +10,13 @@
   <link rel="stylesheet" href="css/wiki.css">
   <link rel="stylesheet" href="css/settings.css">
   <link rel="stylesheet" href="css/utilities.css">
+  <link rel="stylesheet" href="css/mods.css">
 </head>
 <body>
   <div class="app-shell">
     <!-- Global Header (Appears on subpages, styled to match Astral Party game UI) -->
     <header class="global-header">
-      <div class="brand-section" id="brandLogoBtn" title="返回吉星派对大厅">
+      <div class="brand-section" id="brandLogoBtn" role="button" tabindex="0" aria-label="返回吉星派对大厅" title="返回吉星派对大厅">
         <div class="brand-logo">✦</div>
         <div class="brand-text">
           <h1>ASTRAL PARTY TOYS</h1>
@@ -31,6 +32,17 @@
         <button class="nav-crumb-btn" data-page="wiki"><span>📖</span>维基攻略</button>
         <button class="nav-crumb-btn" data-page="settings"><span>⚙️</span>系统设置</button>
       </nav>
+
+      <!-- Version badge: the top bar only appears on subpages, so this is "the version you see
+           whenever you leave the lobby". Self-built binaries still show commit/config context. -->
+      <button class="app-version-chip" id="appVersionChip" type="button" title="查看详细版本信息">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20.6 13.4 12.6 21.4a2 2 0 0 1-2.8 0l-7.2-7.2a2 2 0 0 1-.6-1.6l.4-6.2A2 2 0 0 1 4.4 4.4l6.2-.4a2 2 0 0 1 1.6.6l7.2 7.2a2 2 0 0 1 0 2.8Z"/>
+          <circle cx="7.5" cy="7.5" r="1.3" fill="currentColor" stroke="none"/>
+        </svg>
+        <span class="app-version-chip-value" id="appVersionChipValue">版本读取中…</span>
+        <span class="app-version-chip-commit" id="appVersionChipCommit"></span>
+      </button>
     </header>
 
     <!-- Main Views Container -->
@@ -39,24 +51,22 @@
       <section id="homeView" class="page-view home-page in-game-lobby">
         <img class="lobby-game-logo" src="images/astral-party-logo.png" alt="Astral Party">
 
+        <!-- 「公告位」：工具箱更新提示卡（js/version.js）。默认隐藏，仅当检测到有未读过的新版本时出现；
+             点「知道了」记住这一版不再提示，更新到新版本后再自动出现一次。 -->
+        <article class="lobby-whatsnew hidden" id="lobbyWhatsNew" aria-live="polite">
+          <div class="lobby-whatsnew-head">
+            <span class="lobby-whatsnew-label">✨ 工具箱已更新</span>
+            <button class="lobby-whatsnew-close" id="lobbyWhatsNewClose" type="button" aria-label="知道了，这一版不再提示">✕</button>
+          </div>
+          <h3 class="lobby-whatsnew-title" id="lobbyWhatsNewTitle">新版本</h3>
+          <ul class="lobby-whatsnew-list" id="lobbyWhatsNewList"></ul>
+          <button class="lobby-whatsnew-more" id="lobbyWhatsNewMore" type="button">查看完整更新日志 ›</button>
+        </article>
+
         <!-- Hero Character Stage on Left -->
-        <div class="lobby-hero-stage stage-left" id="heroPortraitWrapper" title="点击角色互动 / 切换台词">
+        <div class="lobby-hero-stage stage-left" id="heroPortraitWrapper">
           <div class="lobby-stage-glow"></div>
           <img id="heroPortraitImg" class="lobby-hero-art" src="https://assets.astral.local/Portraits/UT_Hero_Card_306.png" alt="橘雪莉">
-
-          <!-- Version announcement loaded from data/game-version-announcement.json -->
-          <article class="version-announcement-card" id="versionAnnouncementCard" aria-live="polite">
-            <div class="version-announcement-head">
-              <span class="version-announcement-label">📢 游戏版本公告</span>
-              <time id="versionAnnouncementDate">读取中…</time>
-            </div>
-            <h2 id="versionAnnouncementTitle">正在读取版本公告…</h2>
-            <p id="versionAnnouncementSummary">请稍候</p>
-            <div class="version-announcement-foot">
-              <span id="versionAnnouncementPeriod"></span>
-              <button type="button" id="versionAnnouncementMoreBtn">查看详情 ›</button>
-            </div>
-          </article>
         </div>
 
         <!-- Right Side Primary Functional Buttons: 变速器、回放与维基 -->
@@ -78,13 +88,9 @@
             <div class="card-btn-text">模组</div>
             <img class="card-btn-chibi" src="https://assets.astral.local/UI/UT_Hero_LevelUp_102_01.webp" alt="模组">
           </button>
-
-          <!-- 4. 维基 (BWiki 攻略) -->
-          <button class="lobby-card-btn card-wiki" id="btnMenuWiki" title="吉星派对 · BWiki 维基攻略">
-            <div class="card-btn-text">维基</div>
-            <img class="card-btn-chibi" src="https://assets.astral.local/UI/UT_Hero_LevelUp_114_01.webp" alt="维基">
-          </button>
         </div>
+
+        <!-- 大厅右侧菜单不再放「维基」入口；维基仍可从顶部菜单栏的「📖 维基攻略」进入。 -->
 
         <!-- 右下角：启动游戏（Steam AppID 2622000），比其他入口大一圈。
              按钮下面一组单选框二选一：从 Steam 启动（默认）/ 绕过 Steam 启动 —— 后者直接拉起游戏主程序，
@@ -94,6 +100,12 @@
             <div class="card-btn-text">启动游戏</div>
             <img class="card-btn-logo" src="images/astral-party-logo.png" alt="Astral Party">
           </button>
+          <!-- 启动版本：从游戏库里选一个版本（国服 / 国际服 / TapTap / 自定义），选中即设为当前游戏。
+               下面两种启动方式都对这个选中的版本生效。 -->
+          <div class="lobby-launch-version">
+            <span class="lobby-launch-version-label">启动版本</span>
+            <select class="lobby-game-select" id="lobbyGameSelect" aria-label="选择要启动的游戏版本"></select>
+          </div>
           <div class="launch-mode-options" role="radiogroup" aria-label="启动方式">
             <label class="launch-mode-item" id="launchModeSteam"
                    title="交给 Steam 启动（DRM / 云存档 / 更新检查都走 Steam），并关闭加载器的 Steam 绕过 —— Steam 大厅 / 好友邀请进房恢复正常（默认）">
@@ -110,6 +122,14 @@
 
         <!-- Bottom Dock Bar -->
         <footer class="lobby-bottom-dock">
+          <!-- Left: version status. The lobby hides the global header, so this dock is the only
+               place a version can live on this page. -->
+          <button class="dock-version" id="dockVersionBtn" type="button" title="查看详细版本信息">
+            <span class="dock-version-dot" aria-hidden="true"></span>
+            <span class="dock-version-name">AstralParty.Toys</span>
+            <span class="dock-version-value" id="dockVersionValue">版本读取中…</span>
+          </button>
+
           <nav class="dock-actions-nav">
             <button class="dock-nav-item" id="dockBtnSettings" title="系统设置">
               <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
@@ -196,13 +216,13 @@
               <div class="library-warning hidden" id="libraryWarningBox"></div>
 
               <div class="library-filter-bar">
-                <input type="search" class="library-input" id="librarySearchInput" placeholder="搜索回放 ID / 地图 / 玩家…">
-                <select class="library-select" id="libraryFilterSelect">
+                <input type="search" class="library-input" id="librarySearchInput" placeholder="搜索回放 ID / 地图 / 玩家…" aria-label="搜索回放">
+                <select class="library-select" id="libraryFilterSelect" aria-label="按来源筛选">
                   <option value="all">全部来源</option>
                   <option value="game">仅游戏内</option>
                   <option value="library">仅回放库</option>
                 </select>
-                <select class="library-select" id="librarySortSelect">
+                <select class="library-select" id="librarySortSelect" aria-label="排序方式">
                   <option value="time">按对局时间</option>
                   <option value="size">按文件大小</option>
                   <option value="id">按回放 ID</option>
@@ -342,7 +362,7 @@
                   <small>启用后无需按快捷键，游戏加载完成就持续使用下方倍速</small>
                 </div>
                 <label class="util-switch" title="每次进入游戏自动启用设定倍速">
-                  <input type="checkbox" id="utilsAutoSpeedToggle">
+                  <input type="checkbox" id="utilsAutoSpeedToggle" aria-label="进入游戏自动倍速">
                   <span class="switch-track"></span>
                 </label>
               </div>
@@ -358,7 +378,7 @@
                     <button class="speed-preset-btn auto-speed-preset" data-speed="5">×5</button>
                     <button class="speed-preset-btn auto-speed-preset" data-speed="10">×10</button>
                   </div>
-                  <input type="number" class="util-input" id="utilsBaseSpeed" min="0.1" step="0.5" value="2">
+                  <input type="number" class="util-input" id="utilsBaseSpeed" min="0.1" step="0.5" value="2" aria-label="自动倍速倍率">
                 </div>
               </div>
 
@@ -368,7 +388,7 @@
                   <small>打开变速器自带的日志控制台窗口</small>
                 </div>
                 <label class="util-switch" title="调试控制台">
-                  <input type="checkbox" id="utilsConsoleToggle">
+                  <input type="checkbox" id="utilsConsoleToggle" aria-label="调试控制台">
                   <span class="switch-track"></span>
                 </label>
               </div>
@@ -378,7 +398,7 @@
                   <strong>挂接延迟 wait_with_hook</strong>
                   <small>进游戏后等待再挂接时间函数的毫秒数（防崩溃）</small>
                 </div>
-                <input type="number" class="util-input" id="utilsWaitMs" min="0" step="100" value="250">
+                <input type="number" class="util-input" id="utilsWaitMs" min="0" step="100" value="250" aria-label="挂接延迟（毫秒）">
               </div>
 
               <div class="util-form-row">
@@ -387,10 +407,10 @@
                   <small>游戏启动后自动以指定倍速加速一段时长（跳过开场动画）</small>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px">
-                  <input type="number" class="util-input" id="utilsStartupSpeed" min="0.1" step="0.5" disabled style="width:74px">
-                  <input type="number" class="util-input" id="utilsStartupDuration" min="1" step="1" disabled style="width:74px" title="时长(秒)">
+                  <input type="number" class="util-input" id="utilsStartupSpeed" min="0.1" step="0.5" disabled style="width:74px" aria-label="启动加速倍率">
+                  <input type="number" class="util-input" id="utilsStartupDuration" min="1" step="1" disabled style="width:74px" title="时长(秒)" aria-label="启动加速时长（秒）">
                   <label class="util-switch" title="启用启动加速">
-                    <input type="checkbox" id="utilsStartupToggle">
+                    <input type="checkbox" id="utilsStartupToggle" aria-label="启用启动加速">
                     <span class="switch-track"></span>
                   </label>
                 </div>
@@ -417,133 +437,180 @@
         </div>
       </section>
 
-      <!-- 4. MODS VIEW (Mod Loader & Mod Management) -->
+      <!-- 4. MODS VIEW (Mod Loader & Mod Management)
+           信息层级：① 加载器状态与版本（本页最敏感的信息）→ ② 已安装的模组（主体）
+           → ③ 游戏变速 → ④ 高级 / 诊断（默认折叠）。 -->
       <section id="modsView" class="page-view mods-page hidden">
-        <div class="utilities-header">
+        <div class="utilities-header mods-header">
           <div class="utilities-title-group">
             <button class="back-btn" id="modsBackHomeBtn">‹ 返回大厅</button>
             <h2>模组管理</h2>
+            <span class="utilities-tagline">CesiumLoader · 加载器 / 模组 / 变速</span>
+          </div>
+          <div class="utilities-header-actions">
+            <button class="secondary-btn" id="modOpenFolderTopBtn">📂 打开 mods 目录</button>
+            <button class="primary-btn" id="modImportTopBtn">＋ 导入模组</button>
           </div>
         </div>
 
-        <div class="utilities-body">
-          <div class="util-grid">
-            <!-- Mod 加载器管理 -->
-            <article class="util-card util-card-wide" id="modManagerCard">
-              <div class="util-card-head">
-                <h3><span>🧩</span> Mod 加载器与模组管理</h3>
-                <span class="badge badge-notice" id="modStatusBadge">未检测</span>
-              </div>
+        <div class="game-picker-bar" id="modGamePickerBar">
+          <span class="game-picker-label">当前游戏</span>
+          <select class="game-picker-select" id="modGameSelect" aria-label="选择当前正在操作的游戏"></select>
+          <span class="game-picker-path" id="modGamePickerPath"></span>
+          <button class="link-btn" id="modGamePickerManageBtn">管理游戏目录…</button>
+        </div>
 
-              <div class="util-status-line">
-                <span class="status-icon" id="modStatusIcon">🔍</span>
-                <div class="util-status-texts">
-                  <strong id="modStatusTitle">正在检测安装状态…</strong>
-                  <p id="modStatusText">请稍候</p>
+        <div class="mods-body">
+          <!-- ① 加载器：状态 + 版本三栏 -->
+          <section class="loader-panel" id="modManagerCard">
+            <div class="loader-head">
+              <span class="loader-icon" id="modStatusIcon">🔍</span>
+              <div class="loader-head-text">
+                <div class="loader-title-row">
+                  <h3>Mod 加载器</h3>
+                  <span class="badge badge-notice" id="modStatusBadge">检测中</span>
                 </div>
+                <p class="loader-state" id="modStatusTitle">正在检测安装状态…</p>
+                <p class="loader-hint" id="modStatusText">请稍候</p>
               </div>
+            </div>
 
-              <div class="util-update-row" id="modUpdateRow">
-                <div class="util-update-info">
-                  <span class="util-update-label">内嵌版本</span>
-                  <strong id="modEmbeddedVersion">—</strong>
-                  <span class="util-update-sep">·</span>
-                  <span class="util-update-label">已装版本</span>
-                  <strong id="modInstalledVersion">—</strong>
-                  <span class="util-update-sep">·</span>
-                  <span class="util-update-label">最新</span>
-                  <strong id="modLatestVersion">—</strong>
-                </div>
-                <div class="util-update-actions">
-                  <button class="secondary-btn" id="modCheckUpdateBtn" style="padding:6px 14px;font-size:12px">↻ 检查更新</button>
-                  <button class="primary-btn" id="modDownloadUpdateBtn" style="padding:6px 14px;font-size:12px;white-space:nowrap">⬇ 从 GitHub 更新</button>
-                  <button class="secondary-btn" id="modLoaderSettingsBtn" style="padding:6px 14px;font-size:12px;white-space:nowrap">⚙ 加载器设置</button>
-                </div>
+            <!-- 版本三栏：已安装 / 随程序内置 / GitHub 最新，下方一句结论 -->
+            <div class="version-board">
+              <div class="version-cell" id="modInstalledCell">
+                <span class="version-label">已安装</span>
+                <strong class="version-value" id="modInstalledVersion">—</strong>
+                <span class="version-note" id="modInstalledNote">正在检测…</span>
               </div>
-              <div class="util-check-row">
-                <input type="checkbox" id="modUpdateOverwriteCheck">
-                <label for="modUpdateOverwriteCheck">更新时允许覆盖游戏目录里其它 version.dll</label>
+              <div class="version-cell" id="modEmbeddedCell">
+                <span class="version-label">随本程序内置</span>
+                <strong class="version-value" id="modEmbeddedVersion">—</strong>
+                <span class="version-note">点「安装加载器」装的就是这一份</span>
               </div>
-              <div class="util-check-row">
-                <input type="checkbox" id="modUpdateDowngradeCheck">
-                <label for="modUpdateDowngradeCheck">允许降级安装较旧的加载器（仅在已装版本比发布包更新时才需要）</label>
+              <div class="version-cell" id="modLatestCell">
+                <span class="version-label">GitHub 最新</span>
+                <strong class="version-value" id="modLatestVersion">未检查</strong>
+                <span class="version-note" id="modLatestNote">点「检查更新」获取</span>
               </div>
+            </div>
+            <div class="version-verdict" id="modVersionVerdict">
+              <span class="verdict-dot"></span>
+              <span id="modVersionVerdictText">正在读取版本信息…</span>
+            </div>
 
-              <div class="util-speedhack-bar" id="modSpeedhackBar">
-                <span class="util-section-label">游戏变速（加载器内置功能）</span>
-                <div class="util-speedhack-controls">
-                  <label class="mod-toggle speedhack-toggle">
-                    <input type="checkbox" id="modSpeedhackEnable">
-                    <span id="modSpeedhackEnableLabel">启用变速</span>
-                  </label>
-                  <label class="speedhack-speed-row">
-                    <span>倍速</span>
-                    <input type="number" id="modSpeedhackSpeed" min="1" max="100" step="0.1" value="2.0"
+            <div class="loader-actions">
+              <button class="primary-btn" id="modInstallBtn">⬇ 安装加载器</button>
+              <button class="secondary-btn" id="modCheckUpdateBtn">↻ 检查更新</button>
+              <button class="primary-btn hidden" id="modDownloadUpdateBtn">⬆ 更新到最新</button>
+              <button class="secondary-btn" id="modLoaderSettingsBtn">⚙ 加载器设置</button>
+              <button class="secondary-btn" id="modLoaderChangelogBtn">📜 加载器更新日志</button>
+            </div>
+          </section>
+
+          <!-- ② 模组列表：本页主体 -->
+          <section class="mods-panel">
+            <div class="mods-panel-head">
+              <h3>已安装的模组 <span class="mods-count" id="modModsCount">—</span></h3>
+              <div class="mods-panel-actions">
+                <button class="secondary-btn" id="modOpenModsBtn">📂 打开 mods 目录</button>
+                <button class="secondary-btn" id="modOpenLogsBtn">📜 打开日志目录</button>
+                <button class="primary-btn" id="modImportBtn">＋ 导入模组 DLL</button>
+              </div>
+            </div>
+            <div class="mod-cards" id="modListContainer">
+              <p class="mods-empty">尚未安装加载器 / 目录为空</p>
+            </div>
+            <p class="mods-foot-note">启用 / 禁用与配置修改都在<strong>重启游戏后</strong>生效；「⚙」改这个模组自己的配置。</p>
+          </section>
+
+          <!-- ③ 游戏变速（加载器内置功能，不是 mod） -->
+          <section class="mods-panel mods-panel-compact" id="modSpeedhackBar">
+            <div class="mods-panel-head">
+              <h3>游戏变速 <span class="mods-sub-count">加载器内置功能</span></h3>
+            </div>
+            <div class="speedhack-row">
+              <label class="mod-toggle speedhack-toggle" title="启用后，启动游戏即按该倍速运行（全程保持）">
+                <input type="checkbox" id="modSpeedhackEnable">
+                <span class="switch-track"></span>
+                <span class="mod-toggle-text" id="modSpeedhackEnableLabel">变速已禁用</span>
+              </label>
+              <label class="speedhack-speed-row">
+                <span>倍速</span>
+                <input type="number" id="modSpeedhackSpeed" min="1" max="100" step="0.1" value="2.0"
                        title="启动时基础倍速（1.0 = 正常；不支持减速，最小 1.0）">
-                  </label>
-                  <button class="primary-btn" id="modSpeedhackSaveBtn" style="padding:5px 13px;font-size:12px;white-space:nowrap">✔ 应用变速</button>
-                  <span class="speedhack-hint" id="modSpeedhackHint">1.0 = 正常速度</span>
-                </div>
-                <div class="speedhack-note">写入 doorstop_config.json 的 speedhackBaseSpeed：启用 = 启动游戏即按该倍速变速（全程保持）；禁用 = 恢复 1.0 正常速度。重启游戏生效。</div>
-              </div>
+              </label>
+              <button class="primary-btn" id="modSpeedhackSaveBtn">应用变速</button>
+              <span class="speedhack-hint" id="modSpeedhackHint">1.0 = 正常速度</span>
+            </div>
+            <p class="mods-foot-note">
+              写入 <span class="util-mono">doorstop_config.json</span> 的
+              <span class="util-mono">speedhackBaseSpeed</span>：启用 = 启动游戏即按该倍速运行（全程保持），
+              禁用 = 恢复 1.0 正常速度。最低 1.0（加载器不支持减速），重启游戏生效。
+            </p>
+          </section>
 
-              <span class="util-section-label">游戏目录（version.dll 加载器的安装位置）</span>
+          <!-- ④ 高级 / 诊断：默认折叠，只有排障与特殊安装才需要 -->
+          <details class="mods-advanced" id="modAdvancedDetails">
+            <summary>高级与排障 <span class="mods-advanced-hint">游戏目录 · 覆盖与降级 · SDK 依赖 · 卸载</span></summary>
+
+            <div class="mods-advanced-body">
+              <span class="util-section-label">游戏目录（version.dll 的安装位置）</span>
               <div class="util-path-box">
                 <span class="path-value placeholder" id="modGameDirText">尚未选择游戏目录</span>
-                <button class="secondary-btn" id="modDetectDirBtn" style="padding:5px 12px;font-size:12px">自动检测</button>
-                <button class="secondary-btn" id="modBrowseDirBtn" style="padding:5px 12px;font-size:12px">选择…</button>
-                <button class="primary-btn" id="modInstallBtn" style="padding:5px 13px;font-size:12px;white-space:nowrap">🧩 安装加载器</button>
+                <button class="secondary-btn" id="modDetectDirBtn">自动检测</button>
+                <button class="secondary-btn" id="modBrowseDirBtn">选择…</button>
               </div>
 
+              <div class="mods-advanced-warn hidden" id="modAdvancedWarn"></div>
+
+              <span class="util-section-label">安装与覆盖选项</span>
+              <div class="util-check-row">
+                <input type="checkbox" id="modIncludeSampleCheck" checked>
+                <label for="modIncludeSampleCheck">安装加载器时一并装上内置模组（行为日志 + 自由相机 + 变速）</label>
+              </div>
               <div class="util-check-row">
                 <input type="checkbox" id="modOverwriteCheck">
-                <label for="modOverwriteCheck">允许覆盖游戏目录里其它 version.dll（用于强行更新安装）</label>
+                <label for="modOverwriteCheck">允许覆盖游戏目录里不属于本工具的 version.dll</label>
               </div>
               <div class="util-check-row">
                 <input type="checkbox" id="modDowngradeCheck">
-                <label for="modDowngradeCheck">允许降级安装较旧的加载器（仅在已装版本比内置更新时才需要）</label>
+                <label for="modDowngradeCheck">允许把已装的加载器降级成内置的较旧版本</label>
               </div>
               <div class="util-check-row">
-                <input type="checkbox" id="modIncludeSampleCheck" checked>
-                <label for="modIncludeSampleCheck">同时安装内置 mod（行为日志 + 自由相机 + 变速，含 sidecar 元数据）</label>
+                <input type="checkbox" id="modUpdateOverwriteCheck">
+                <label for="modUpdateOverwriteCheck">更新时允许覆盖游戏目录里不属于本工具的 version.dll</label>
+              </div>
+              <div class="util-check-row">
+                <input type="checkbox" id="modUpdateDowngradeCheck">
+                <label for="modUpdateDowngradeCheck">更新时允许降级（仅在发布包比已装版本旧时才需要）</label>
               </div>
               <div class="util-check-row">
                 <input type="checkbox" id="modForceUninstallCheck">
-                <label for="modForceUninstallCheck">强制卸载（version.dll 与内置不一致时也删除）</label>
+                <label for="modForceUninstallCheck">强制卸载（version.dll 不属于本工具时也删除）</label>
               </div>
 
               <div class="util-btn-row">
-                <button class="secondary-btn" id="modOpenModsBtn">📂 打开 mods 目录</button>
                 <button class="secondary-btn" id="modOpenSdkBtn">📂 打开 sdk 目录</button>
-                <button class="secondary-btn" id="modOpenLogsBtn">📂 打开 logs 目录</button>
-                <button class="secondary-btn" id="modImportBtn">＋ 导入 mod DLL</button>
                 <button class="danger-btn" id="modUninstallBtn">🗑 卸载加载器</button>
               </div>
 
-              <div class="util-note-box">
-                <span class="util-note-title">📖 说明</span>
+              <span class="util-section-label">SDK 依赖（sdk\ 目录）</span>
+              <div class="mod-cards mod-cards-sdk" id="modSdkContainer">
+                <p class="mods-empty">尚未安装加载器 / 目录为空</p>
+              </div>
+
+              <details class="mods-help">
+                <summary>它是怎么工作的？</summary>
                 <ul>
-                  <li>原理：把内置 <span class="util-mono">version.dll</span>（CesiumLoader Doorstop 式代理）放到游戏 exe 旁边，游戏启动时由 UnityPlayer 自动加载，随后读取 <span class="util-mono">AstralParty_ModLoader\doorstop_config.json</span>、加载 <span class="util-mono">sdk\</span> 与 <span class="util-mono">mods\</span> 下所有 mod，并在控制台窗口按颜色分级显示加载报告（列出要加载的 mod → 逐个 ✔ 成功 / ✘ 失败 → 总结）。不会修改游戏文件。</li>
-                  <li>加载器按 mod 旁的 sidecar（<span class="util-mono">*.json</span>）做依赖拓扑排序与 API 版本协商。已取消权限机制：任何 mod 都能调用 SDK 的全部 API；若 mod 声明了「操作游戏」能力，列表会显示 <span class="util-mono">⚠️ 可操作游戏</span> 警告（仅提示，不阻止）。</li>
-                  <li>mod 是引用 CesiumLoader.SDK 开发的 .NET DLL（事件订阅 + 数据读取），编译后放进 <span class="util-mono">mods\</span> 目录即被自动加载——每 mod 一个文件夹：<span class="util-mono">mods\{ModId}\{ModId}.dll</span>（sidecar 同文件夹）。下方列表显示当前 mods\ 与 sdk\ 目录内容。</li>
-                  <li>每个 mod 可用右侧开关<span class="util-mono">启用 / 禁用</span>（改 sidecar 的 enabled 字段，重启游戏生效）。</li>
-                  <li>点 <span class="util-mono">⚙</span> 在表单里改 mod 配置（开关/数字/文字，保存到 mod 自己目录下的 <span class="util-mono">mods\{mod}\config.json</span>，重启游戏生效）。<span class="util-mono">变速</span> 是加载器内置功能——用上方「游戏变速」开关控制。</li>
-                  <li><span class="util-mono">⚙ 加载器设置</span> 可视化编辑 <span class="util-mono">doorstop_config.json</span>（含变速基础倍速、控制台开关、超时时间等）。所有配置均可在界面里改，无需手改 JSON。</li>
-                  <li>游戏运行中也能安装/卸载，但 version.dll 被占用时写入/删除会失败——那种情况先完全退出游戏再操作。</li>
+                  <li>把内置 <span class="util-mono">version.dll</span>（CesiumLoader，Doorstop 式代理）放到游戏 exe 旁边；游戏启动时由 UnityPlayer 自动加载，再读取 <span class="util-mono">AstralParty_ModLoader\doorstop_config.json</span>，按 <span class="util-mono">mods\</span> 下每个模组的 sidecar（同名 <span class="util-mono">.json</span>）做依赖排序与 SDK 版本协商，然后逐个加载，并在控制台窗口按颜色分级打印加载报告。不会修改游戏文件本身。</li>
+                  <li>每个模组是引用 CesiumLoader.SDK 的 .NET DLL，一个模组一个文件夹：<span class="util-mono">mods\{ModId}\{ModId}.dll</span>，sidecar 与配置（<span class="util-mono">config.json</span>）都在同一个文件夹里。</li>
+                  <li>版本信息只以<strong>安装清单</strong>（<span class="util-mono">AstralParty_ModLoader\cesium-loader.json</span>）为准：安装或更新时写入，界面读它显示「已安装」。看不出（0.4.7 之前的老安装、或清单被删）时界面会如实显示「版本未知」——重新安装一次即可纳入版本管理。</li>
+                  <li>加载器与旧版独立变速器（「游戏工具」页）共用 <span class="util-mono">version.dll</span>，<strong>只能装一个</strong>；加载器本身已内置变速，装它就够了。</li>
+                  <li>游戏运行中也能安装 / 卸载，但 <span class="util-mono">version.dll</span> 被占用时写入或删除会失败——那种情况先完全退出游戏再操作。</li>
                 </ul>
-              </div>
-
-              <div class="mod-list-section">
-                <span class="util-section-label">已安装的 mod（mods\ 目录）</span>
-                <div class="mod-list" id="modListContainer"><span class="path-value placeholder">尚未安装加载器 / 目录为空</span></div>
-              </div>
-
-              <div class="mod-list-section">
-                <span class="util-section-label">SDK 依赖（sdk\ 目录）</span>
-                <div class="mod-list" id="modSdkContainer"><span class="path-value placeholder">尚未安装加载器 / 目录为空</span></div>
-              </div>
-            </article>
-          </div>
+              </details>
+            </div>
+          </details>
         </div>
       </section>
 
@@ -568,10 +635,12 @@
         </div>
 
         <div class="wiki-frame-container">
+          <!-- 不放 src：这一页 hidden 时 iframe 照样会加载，等于每次启动都去拉一整个第三方维基。
+               首次进入维基页时由 wiki.js 懒加载 -->
           <iframe
             id="wikiIframe"
             class="wiki-iframe"
-            src="https://wiki.biligame.com/starengine/%E9%A6%96%E9%A1%B5"
+            title="游戏维基（Starengine Wiki）"
             frameborder="0"
             allowfullscreen>
           </iframe>
@@ -592,10 +661,41 @@
             </div>
             <div class="toggle-switch-row">
               <div class="toggle-info">
-                <h4>界面动态效果</h4>
-                <p>开启看板立绘与页面切换动画</p>
+                <h4 id="animToggleLabel">界面动态效果</h4>
+                <p id="animToggleDesc">开启看板立绘与页面切换动画</p>
               </div>
-              <input type="checkbox" class="switch-input" id="animToggle" checked>
+              <input type="checkbox" class="switch-input" id="animToggle" checked aria-labelledby="animToggleLabel" aria-describedby="animToggleDesc">
+            </div>
+          </article>
+
+          <article class="settings-card game-dir-card">
+            <div class="settings-card-head">
+              <h3><span>🎮</span> 游戏目录（多个位置）</h3>
+              <span class="settings-card-count" id="gameProfileCount"></span>
+            </div>
+            <p class="settings-card-note">保存多个游戏位置（国服 / 国际服 / TapTap 端…）。在「模组」页顶部可切换<strong>当前正在操作的游戏</strong>——安装加载器、变速、导入模组都作用于当前这个。</p>
+            <div class="game-dir-body">
+              <div class="game-dir-col-main">
+                <div class="game-profile-list" id="gameProfileList"></div>
+              </div>
+              <div class="game-dir-col-side">
+                <div class="game-dir-actions">
+                  <button class="secondary-btn" id="gameProfileBrowseBtn">📂 浏览添加…</button>
+                  <button class="primary-btn" id="gameScanBtn">🔍 扫描系统</button>
+                </div>
+                <div class="game-scan-panel hidden" id="gameScanPanel">
+                  <div class="game-scan-status" id="gameScanStatus"></div>
+                  <div class="game-scan-results" id="gameScanResults"></div>
+                  <div class="game-scan-deep">
+                    <span class="game-scan-deep-label">上面没有你的游戏？深度扫描某个盘（较慢，可取消）：</span>
+                    <div class="game-scan-deep-row">
+                      <select id="gameScanDriveSelect" class="library-input" aria-label="选择要深度扫描的盘符"></select>
+                      <button class="secondary-btn" id="gameScanDeepBtn">开始深扫</button>
+                      <button class="secondary-btn hidden" id="gameScanCancelBtn">取消</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </article>
 
@@ -611,13 +711,14 @@
                 <button class="secondary-btn" id="libraryRootBrowseBtn">浏览…</button>
                 <button class="secondary-btn" id="libraryRootOpenBtn">打开</button>
               </div>
+              <p class="settings-field-hint">默认目录 <code>文档\AstralPartyReplays</code> 同时也是工具箱的<strong>配置文件夹</strong>：游戏库（多游戏目录 / 当前游戏）、变速器与加载器状态、回放库设置都存在这里。把库目录改到别处只会移动回放归档，上述配置文件仍留在默认目录。</p>
             </div>
             <div class="toggle-switch-row">
               <div class="toggle-info">
-                <h4>自动保持游戏内最近 10 局</h4>
-                <p>每次打开本工具时，把超出保留名额的旧回放自动归档进库；最新的几局永远不会被动。</p>
+                <h4 id="libraryAutoMaintainLabel">自动保持游戏内最近 10 局</h4>
+                <p id="libraryAutoMaintainDesc">每次打开本工具时，把超出保留名额的旧回放自动归档进库；最新的几局永远不会被动。</p>
               </div>
-              <input type="checkbox" class="switch-input" id="libraryAutoMaintainToggle">
+              <input type="checkbox" class="switch-input" id="libraryAutoMaintainToggle" aria-labelledby="libraryAutoMaintainLabel" aria-describedby="libraryAutoMaintainDesc">
             </div>
             <div class="settings-field">
               <label for="libraryKeepInput">游戏内保留局数</label>
@@ -642,10 +743,14 @@
             <p class="about-description">集成回放分析、协议帧查看、维基浏览和游戏变速器管理，数据均在本地处理。</p>
             <dl class="about-details">
               <div><dt>应用版本</dt><dd id="aboutVersion">正在读取…</dd></div>
-              <div><dt>运行环境</dt><dd>.NET 8 · Windows · WebView2</dd></div>
+              <div><dt>源码提交</dt><dd id="aboutCommit">正在读取…</dd></div>
+              <div><dt>运行环境</dt><dd id="aboutRuntime">正在读取…</dd></div>
+              <div><dt>内置加载器</dt><dd id="aboutLoader">正在读取…</dd></div>
               <div><dt>项目主页</dt><dd>github.com/higashitaniyume/AstralParty.Toys</dd></div>
             </dl>
             <div class="about-actions">
+              <button class="secondary-btn" id="aboutVersionDetailBtn">版本详情</button>
+              <button class="secondary-btn" id="aboutChangelogBtn">📜 更新日志</button>
               <button class="secondary-btn" id="aboutRepositoryBtn">↗ 项目主页</button>
               <button class="secondary-btn" id="aboutSpeedhackBtn">↗ speedhack-rs</button>
             </div>
@@ -656,10 +761,10 @@
 
     <!-- Global Modal Window (Game Themed) -->
     <div class="modal-backdrop" id="globalModal">
-      <div class="modal-content">
+      <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="modal-header">
-          <h3 id="modalTitle">公告详情</h3>
-          <button class="modal-close-btn" id="modalCloseBtn">×</button>
+          <h3 id="modalTitle">详情</h3>
+          <button class="modal-close-btn" id="modalCloseBtn" aria-label="关闭">×</button>
         </div>
         <div class="modal-body" id="modalBody"></div>
       </div>
@@ -675,7 +780,7 @@
     </div>
 
     <!-- Toast -->
-    <div class="toast-container" id="toast"></div>
+    <div class="toast-container" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
   </div>
 
   <style>
@@ -684,6 +789,8 @@
 
   <!-- Modular Scripts -->
   <script src="js/core.js"></script>
+  <script src="js/version.js"></script>
+  <script src="js/gamelib.js"></script>
   <script src="js/home.js"></script>
   <script src="js/replay.js"></script>
   <script src="js/wiki.js"></script>
