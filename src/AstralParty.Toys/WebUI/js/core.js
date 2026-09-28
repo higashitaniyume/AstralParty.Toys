@@ -33,12 +33,13 @@ function toast(message) {
   toast._timer = setTimeout(() => node.classList.remove('show'), 3800);
 }
 
-function openModal(title, contentHtml) {
+function openModal(title, contentHtml, iconName) {
   const modal = $('globalModal');
   const titleEl = $('modalTitle');
   const bodyEl = $('modalBody');
   if (!modal || !titleEl || !bodyEl) return;
-  titleEl.textContent = title;
+  // 标题可带一个 Material Symbols 图标（iconName）；标题文本本身仍做 HTML 转义。
+  titleEl.innerHTML = (iconName && window.Icons ? Icons.svg(iconName) + ' ' : '') + esc(title);
   bodyEl.innerHTML = contentHtml;
   modal.classList.add('open');
   // 记下"打开弹窗之前焦点在哪"，关闭时还回去（键盘用户才不会丢掉位置）

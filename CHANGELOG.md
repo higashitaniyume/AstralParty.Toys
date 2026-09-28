@@ -2,6 +2,12 @@
 
 本文件按版本记录 `AstralParty.Toys` 的功能变更。版本号与 GitHub 发布 tag 一一对应（如 `v0.2.0`），发布产物由 [release.yml](.github/workflows/release.yml) 在打 tag 时自动构建。
 
+## [v0.5.1] - 2026-09-28
+
+### 🎨 优化 UI 界面
+
+- 统一并优化了各页面的图标与视觉细节，界面更清爽一致。
+
 ## [v0.5.0] - 2026-09-26
 
 ### 🩹 修复：点过「从 GitHub 更新」之后，模组页一直说「目录里是其它 version.dll」

@@ -189,6 +189,30 @@ body.page-home-active .page-container {
   gap: 8px;
 }
 
+/* 顶部导航图标：Material Symbols 内联 SVG（viewBox 0 -960 960 960），fill 跟随按钮文字色。 */
+.nav-ico {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  flex: 0 0 auto;
+  display: block;
+}
+
+/* 通用 Material Symbols 内联图标：随 font-size 缩放、颜色跟随文字色。
+   替换页面里原先的 emoji/符号（由 js/icons.js 的 data-icon 水合，或 Icons.svg() 内联）。 */
+.mi {
+  width: 1em;
+  height: 1em;
+  fill: currentColor;
+  display: inline-block;
+  vertical-align: -0.14em;
+  flex: 0 0 auto;
+}
+.mi-lg { width: 1.4em; height: 1.4em; }
+.mi-xl { width: 2.2em; height: 2.2em; vertical-align: middle; }
+/* data-icon 占位容器本身不占额外行高，图标由内部 svg 呈现 */
+[data-icon] { display: inline-flex; align-items: center; }
+
 .nav-crumb-btn {
   display: flex;
   align-items: center;
