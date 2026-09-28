@@ -67,8 +67,8 @@
       const editionOptions = EDITIONS.map(e =>
         `<option value="${e.value}"${e.value === p.edition ? ' selected' : ''}>${e.label}</option>`).join('');
       const warn = !p.directoryExists
-        ? '<span class="game-profile-warn" title="这个目录已经不在了">⚠ 目录已失效</span>'
-        : (!p.valid ? '<span class="game-profile-warn" title="没检测到标准 Unity 游戏结构（缺 *_Data 或 UnityPlayer.dll）">⚠ 结构可疑</span>' : '');
+        ? '<span class="game-profile-warn" title="这个目录已经不在了">' + Icons.svg('warning') + ' 目录已失效</span>'
+        : (!p.valid ? '<span class="game-profile-warn" title="没检测到标准 Unity 游戏结构（缺 *_Data 或 UnityPlayer.dll）">' + Icons.svg('warning') + ' 结构可疑</span>' : '');
       return `
         <div class="game-profile-row${p.active ? ' is-active' : ''}${!p.directoryExists ? ' is-broken' : ''}" data-id="${esc(p.id)}">
           <div class="game-profile-main">
@@ -207,7 +207,7 @@
     candidateRow(c) {
       const srcLabel = { steam: 'Steam', registry: '注册表', common: '常见位置', deep: '深度扫描' }[c.source] || '';
       const validTag = c.valid
-        ? '<span class="game-cand-tag ok">Unity 结构 ✓</span>'
+        ? '<span class="game-cand-tag ok">Unity 结构 ' + Icons.svg('check') + '</span>'
         : '<span class="game-cand-tag warn" title="没检测到标准 Unity 结构">结构可疑</span>';
       return `
         <div class="game-cand-row" data-dir="${esc(c.directory)}">

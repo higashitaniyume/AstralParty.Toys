@@ -263,7 +263,7 @@
       return `
         <div class="replay-entry-row library-row" data-token="${esc(item.token)}" data-replay-id="${esc(item.replayId)}">
           <div class="entry-main">
-            <span class="entry-icon">▶</span>
+            <span class="entry-icon">${Icons.svg('play_arrow', 'mi-lg')}</span>
             <div class="entry-meta">
               <strong>${esc(title || item.replayId)}</strong>
               <small>${esc(facts)}</small>
@@ -477,10 +477,10 @@
         <article class="player-card">
           <div class="player-head">
             <div class="player-avatar-box">
-              ${p.avatar ? `<img src="${esc(p.avatar)}" alt="">` : '<div style="display:grid;place-items:center;height:100%;font-size:20px;color:var(--primary)">✦</div>'}
+              ${p.avatar ? `<img src="${esc(p.avatar)}" alt="">` : `<div style="display:grid;place-items:center;height:100%;font-size:22px;color:var(--primary)">${Icons.svg('person')}</div>`}
             </div>
             <div class="player-titles">
-              <h4>${esc(p.nickname)}${p.finalBossKill ? ' <span style="color:var(--accent-gold)">♛ 决胜</span>' : ''}</h4>
+              <h4>${esc(p.nickname)}${p.finalBossKill ? ` <span style="color:var(--accent-gold)">${Icons.svg('military_tech')} 决胜</span>` : ''}</h4>
               <small>${esc(p.heroName)} · 等级 ${p.accountLevel}</small>
             </div>
           </div>
@@ -596,13 +596,13 @@
             </div>
             <div style="display:flex;align-items:center;gap:8px">
               <button class="secondary-btn" id="exportRelicsTxtBtn" style="padding:6px 14px;font-size:12px;font-weight:800;border-radius:var(--gp-radius-full);color:var(--gp-gold);border-color:rgba(255,215,0,0.3)">
-                <span>🤖</span> 导出 AI 文本 (TXT)
+                <span>${Icons.svg('smart_toy')}</span> 导出 AI 文本 (TXT)
               </button>
               <button class="secondary-btn" id="exportRelicsCsvBtn" style="padding:6px 14px;font-size:12px;font-weight:800;border-radius:var(--gp-radius-full)">
-                <span>📊</span> 导出表格 (CSV)
+                <span>${Icons.svg('table_chart')}</span> 导出表格 (CSV)
               </button>
               <button class="secondary-btn" id="exportRelicsJsonBtn" style="padding:6px 14px;font-size:12px;font-weight:800;border-radius:var(--gp-radius-full)">
-                <span>{ }</span> 导出 JSON
+                <span>${Icons.svg('data_object')}</span> 导出 JSON
               </button>
             </div>
           </div>
@@ -672,7 +672,7 @@
             </div>
             <div style="display:flex;align-items:center;gap:8px">
               <button class="secondary-btn" id="exportShopsCsvBtn" style="padding:6px 14px;font-size:12px;font-weight:800;border-radius:var(--gp-radius-full)">
-                <span>📊</span> 导出表格 (CSV)
+                <span>${Icons.svg('table_chart')}</span> 导出表格 (CSV)
               </button>
             </div>
           </div>

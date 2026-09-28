@@ -253,7 +253,7 @@
           ? '尚未安装；游戏正在运行，本次安装重启游戏后才加载'
           : '尚未安装到游戏';
       }
-      icon.textContent = installedOk ? '⚡' : (status.installed ? '⚠️' : (running ? '⏳' : '🔍'));
+      icon.innerHTML = Icons.svg(installedOk ? 'bolt' : (status.installed ? 'warning' : (running ? 'hourglass_empty' : 'search')));
       text.textContent = status.message || '';
       if ($('utilsConfigPathText')) $('utilsConfigPathText').textContent =
         status.profileConfigPath
@@ -398,7 +398,7 @@
         <div class="util-state-row" data-idx="${idx}">
           <div class="util-state-row-head">
             <span class="util-state-title">档位 ${idx + 1}${state.isToggle ? ' · 点按切换' : ' · 按住生效'}</span>
-            <button class="state-del-btn" data-idx="${idx}" title="删除该档位">✕</button>
+            <button class="state-del-btn" data-idx="${idx}" title="删除该档位">${Icons.svg('close')}</button>
           </div>
           <div class="util-keys-area">
             ${this.chipsHtml(state.keys, `state:${idx}`)}

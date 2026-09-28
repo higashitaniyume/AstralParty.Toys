@@ -144,8 +144,8 @@
       this.activeChangelogTab = tab;
       openModal('更新日志', `
         <div class="changelog-tabs" role="tablist">
-          <button class="changelog-tab${tab === 'app' ? ' is-active' : ''}" data-tab="app" role="tab">🧰 工具箱</button>
-          <button class="changelog-tab${tab === 'loader' ? ' is-active' : ''}" data-tab="loader" role="tab">🧩 加载器</button>
+          <button class="changelog-tab${tab === 'app' ? ' is-active' : ''}" data-tab="app" role="tab">${Icons.svg('handyman')} 工具箱</button>
+          <button class="changelog-tab${tab === 'loader' ? ' is-active' : ''}" data-tab="loader" role="tab">${Icons.svg('extension')} 加载器</button>
         </div>
         <div class="changelog-body" id="changelogBody"><p class="changelog-empty">正在读取…</p></div>`);
       document.querySelectorAll('#globalModal .changelog-tab').forEach(btn =>
@@ -183,11 +183,11 @@
         : (this.loaderSource === 'bundled' ? '来源：随本程序内置（打包时的版本）' : '');
       const foot = `<div class="changelog-foot">
           <span class="changelog-source">${md.trim() ? esc(sourceNote) : ''}</span>
-          <button class="secondary-btn changelog-refresh" id="loaderChangelogRefresh" type="button">↻ 拉取最新</button>
+          <button class="secondary-btn changelog-refresh" id="loaderChangelogRefresh" type="button">${Icons.svg('refresh')} 拉取最新</button>
         </div>`;
       const bodyHtml = md.trim()
         ? this.markdownToHtml(md)
-        : '<p class="changelog-empty">读不到加载器更新日志（内置为空，联网获取也没成功）。点「↻ 拉取最新」重试。</p>';
+        : `<p class="changelog-empty">读不到加载器更新日志（内置为空，联网获取也没成功）。点「${Icons.svg('refresh')} 拉取最新」重试。</p>`;
       // 先渲染，再绑定按钮
       setTimeout(() => {
         $('loaderChangelogRefresh')?.addEventListener('click', () => {

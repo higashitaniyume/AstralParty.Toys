@@ -196,23 +196,23 @@
 
       let badgeText = installed ? '已安装' : '未安装';
       let badgeClass = installed ? 'badge badge-update' : 'badge badge-muted';
-      let iconText = installed ? '🧩' : '🔍';
+      let iconText = installed ? 'extension' : 'search';
       let titleText = installed ? '加载器已就位' : '尚未安装加载器';
 
       if (status.bundleLoaderPresent === false) {
         badgeText = '缺少内置文件';
         badgeClass = 'badge badge-danger';
-        iconText = '❌';
+        iconText = 'cancel';
         titleText = '程序缺少内置加载器文件';
       } else if (installed && !managed) {
         badgeText = '文件不属于本工具';
         badgeClass = 'badge badge-danger';
-        iconText = '⚠️';
+        iconText = 'warning';
         titleText = '游戏目录里的 version.dll 不是本工具装的';
       } else if (installed && newer) {
         badgeText = '可更新';
         badgeClass = 'badge badge-event';
-        iconText = '⬆️';
+        iconText = 'upgrade';
         titleText = `可以更新到 v${newer}`;
       }
       if (running) badgeText += ' · 游戏运行中';
@@ -221,19 +221,19 @@
         badge.textContent = badgeText;
         badge.className = badgeClass;
       }
-      if (icon) icon.textContent = iconText;
+      if (icon) icon.innerHTML = Icons.svg(iconText);
       if (title) title.textContent = titleText;
       if (text) text.textContent = status.message || '';
 
       // 主按钮随状态换角色：没装 → 「安装加载器」是主操作；装了 → 主操作变成「更新」
       const installBtn = $('modInstallBtn');
       if (installBtn) {
-        installBtn.textContent = installed ? '⟳ 重新安装内置版本' : '⬇ 安装加载器';
+        installBtn.innerHTML = installed ? Icons.svg('refresh') + ' 重新安装内置版本' : Icons.svg('download') + ' 安装加载器';
         installBtn.className = installed ? 'secondary-btn' : 'primary-btn';
       }
       const updateBtn = $('modDownloadUpdateBtn');
       if (updateBtn) {
-        updateBtn.textContent = newer ? `⬆ 更新到 v${newer}` : '⬆ 从 GitHub 更新';
+        updateBtn.innerHTML = newer ? Icons.svg('upgrade') + ` 更新到 v${newer}` : Icons.svg('upgrade') + ' 从 GitHub 更新';
         updateBtn.className = newer ? 'primary-btn' : 'secondary-btn';
         updateBtn.classList.toggle('hidden', !installed);
       }
@@ -469,7 +469,7 @@
         chips.push('<span class="mod-chip mod-chip-builtin" title="随加载器一起安装的内置模组">内置</span>');
       }
       if ((Number(entry.permissions) & 2) === 2) {
-        chips.push('<span class="mod-chip mod-chip-warn" title="此模组声明可操作游戏（模拟出牌 / 掷骰 / 移动等）。权限机制已取消，这里只提示：请确认来源可信">⚠ 可操作游戏</span>');
+        chips.push('<span class="mod-chip mod-chip-warn" title="此模组声明可操作游戏（模拟出牌 / 掷骰 / 移动等）。权限机制已取消，这里只提示：请确认来源可信">' + Icons.svg('warning') + ' 可操作游戏</span>');
       }
       if (!enabled) chips.push('<span class="mod-chip mod-chip-off">已禁用</span>');
 
@@ -503,8 +503,8 @@
             <span class="switch-track"></span>
             <span class="mod-toggle-text">${enabled ? '已启用' : '已禁用'}</span>
           </label>
-          <button class="mod-config-btn" data-config-file="${esc(entry.fileName)}" title="修改这个模组的配置" aria-label="修改配置">⚙</button>
-          <button class="mod-del-btn" data-file="${esc(entry.fileName)}" title="删除这个模组" aria-label="删除模组">🗑</button>
+          <button class="mod-config-btn" data-config-file="${esc(entry.fileName)}" title="修改这个模组的配置" aria-label="修改配置">${Icons.svg('settings')}</button>
+          <button class="mod-del-btn" data-file="${esc(entry.fileName)}" title="删除这个模组" aria-label="删除模组">${Icons.svg('delete')}</button>
         </div>
       </article>`;
     },
@@ -636,7 +636,7 @@
           </div>
           <div class="cfg-hint">保存后重启游戏生效；日常只需要改「启用加载器」或「启动时基础倍速」。</div>
         </div>`;
-      openModal('⚙ 加载器设置', html);
+      openModal('加载器设置', html, 'settings');
       $('globalModal')?.querySelector('[data-cfg-cancel]')?.addEventListener('click', closeModal);
       $('globalModal')?.querySelector('[data-cfg-save]')?.addEventListener('click', () => {
         const cfg = this.collectLoaderConfig();
@@ -647,18 +647,22 @@
     cfgRow(id, label, kind, value, attrs) {
       const a = attrs || {};
       const attrStr = Object.entries(a).map(([k, v]) => `${k}="${esc(String(v))}"`).join(' ');
+      // 标签里以「⚠ 」开头的，渲染成 warning 图标 + 文本（其余仍做 HTML 转义）。
+      const lbl = s => String(s).startsWith('⚠ ')
+        ? Icons.svg('warning') + ' ' + esc(String(s).slice(2))
+        : esc(String(s));
       switch (kind) {
         case 'bool':
-          return `<label class="cfg-row cfg-check"><input type="checkbox" data-cfg="${id}" ${value ? 'checked' : ''}> <span>${esc(label)}</span></label>`;
+          return `<label class="cfg-row cfg-check"><input type="checkbox" data-cfg="${id}" ${value ? 'checked' : ''}> <span>${lbl(label)}</span></label>`;
         case 'header':
           // 分组标题：只是视觉分隔，不参与 collectLoaderConfig 取值
-          return `<div class="cfg-hint cfg-section" data-cfg-header="${id}">${esc(label)}</div>`;
+          return `<div class="cfg-hint cfg-section" data-cfg-header="${id}">${lbl(label)}</div>`;
         case 'number':
-          return `<label class="cfg-row"><span class="cfg-label">${esc(label)}</span><input type="number" data-cfg="${id}" value="${esc(String(value))}" ${attrStr}></label>`;
+          return `<label class="cfg-row"><span class="cfg-label">${lbl(label)}</span><input type="number" data-cfg="${id}" value="${esc(String(value))}" ${attrStr}></label>`;
         case 'readonly':
-          return `<label class="cfg-row"><span class="cfg-label">${esc(label)}</span><input type="text" data-cfg="${id}" value="${esc(String(value))}" readonly></label>`;
+          return `<label class="cfg-row"><span class="cfg-label">${lbl(label)}</span><input type="text" data-cfg="${id}" value="${esc(String(value))}" readonly></label>`;
         default:
-          return `<label class="cfg-row"><span class="cfg-label">${esc(label)}</span><input type="text" data-cfg="${id}" value="${esc(String(value))}"></label>`;
+          return `<label class="cfg-row"><span class="cfg-label">${lbl(label)}</span><input type="text" data-cfg="${id}" value="${esc(String(value))}"></label>`;
       }
     },
 
@@ -747,7 +751,7 @@
             <button class="primary-btn" data-cfg-field-save>保存配置</button>
           </div>
         </div>`;
-      openModal(`⚙ 配置 · ${esc(fileName)}`, html);
+      openModal(`配置 · ${fileName}`, html, 'settings');
       const modal = $('globalModal');
       bindKeyCapture(modal);
       modal?.querySelector('[data-cfg-field-cancel]')?.addEventListener('click', closeModal);
