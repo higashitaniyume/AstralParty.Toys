@@ -9,10 +9,10 @@
     <AssemblyName>AstralParty.Toys</AssemblyName>
     <RootNamespace>AstralParty.Toys</RootNamespace>
     <StartupObject>AstralParty.Toys.App</StartupObject>
-    <!-- 与发布 tag 同步递增：v0.5.0 → v0.5.1（优化 UI 界面：统一各页面图标与视觉细节） -->
-    <Version>0.5.1</Version>
-    <AssemblyVersion>0.5.1.0</AssemblyVersion>
-    <FileVersion>0.5.1.0</FileVersion>
+    <!-- 与发布 tag 同步递增：v0.5.1 → v0.5.2（补齐内置 mod CombatOddsMod 的内嵌，改为通配收录） -->
+    <Version>0.5.2</Version>
+    <AssemblyVersion>0.5.2.0</AssemblyVersion>
+    <FileVersion>0.5.2.0</FileVersion>
     <ApplicationIcon>WebUI\images\UT_AccountHeadShot_70902.ico</ApplicationIcon>
   </PropertyGroup>
 
@@ -29,7 +29,14 @@
          version.dll / sdk\CesiumLoader.SDK.dll / mods\{ModId}\* 覆盖到 Resources\ModLoader\,
          loader-version.json 写包内 cesium-loader.json 的 version。CI 也会在打 tag 时自动同步
          (.github/workflows/release.yml 的 "Fetch latest CesiumLoader package")。 -->
-    <EmbeddedResource Include="Resources\ModLoader\version.dll;Resources\ModLoader\doorstop_config.json;Resources\ModLoader\CesiumLoader.SDK.dll;Resources\ModLoader\ActivityLogMod.dll;Resources\ModLoader\ActivityLogMod.json;Resources\ModLoader\FreeCameraMod.dll;Resources\ModLoader\FreeCameraMod.json;Resources\ModLoader\SpeedHackMod.dll;Resources\ModLoader\SpeedHackMod.json;Resources\ModLoader\loader-version.json;Resources\ModLoader\loader-changelog.md">
+    <!-- 加载器/SDK/配置模板/版本与日志: 固定文件, 显式列出。 -->
+    <EmbeddedResource Include="Resources\ModLoader\version.dll;Resources\ModLoader\doorstop_config.json;Resources\ModLoader\CesiumLoader.SDK.dll;Resources\ModLoader\loader-version.json;Resources\ModLoader\loader-changelog.md">
+      <LogicalName>AstralParty.Toys.ModLoader.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <!-- 内置 mod: 按通配吃进 Resources\ModLoader 下所有 *Mod.dll / *Mod.json —— 新增内置 mod
+         (如 CombatOddsMod) 不必再改这里, CI 的 fetch 步骤把包内 mods 展平到此目录后自动内嵌。
+         内置 mod 命名约定必须以 "Mod" 结尾(见 CesiumLoader tools\builtin-mods.json)。 -->
+    <EmbeddedResource Include="Resources\ModLoader\*Mod.dll;Resources\ModLoader\*Mod.json">
       <LogicalName>AstralParty.Toys.ModLoader.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
     <Content Include="Protocol\*.dll">
