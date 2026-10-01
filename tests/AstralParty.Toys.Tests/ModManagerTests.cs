@@ -20,6 +20,14 @@ public sealed class ModManagerTests
         Assert.True(ModManager.HasEmbeddedSampleMod, "内置示例 mod 资源缺失");
         // 内置 mod 一个都不能少: 资源缺失会在 ReadBuiltInMods 里被静默跳过, 所以这里按列表逐一对齐
         Assert.True(ModManager.HasEmbeddedBuiltInMods, "内置 mod 资源缺失");
+        // ★ 回归(0.5.3 真机 bug): 内置 mod 清单曾经在 ModManager 里写死成三个,
+        //   导致 CombatOddsMod 的资源虽然打进了程序集、安装时却被漏掉。
+        //   这里逐个点名 —— 清单必须来自内嵌资源, 少一个都要红。
+        Assert.Contains("ActivityLogMod", ModManager.EmbeddedBuiltInModIdList);
+        Assert.Contains("FreeCameraMod", ModManager.EmbeddedBuiltInModIdList);
+        Assert.Contains("SpeedHackMod", ModManager.EmbeddedBuiltInModIdList);
+        Assert.Contains("CombatOddsMod", ModManager.EmbeddedBuiltInModIdList);
+        // 清单与安装用的那份必须是同一个来源(扫描内嵌资源), 不能各自维护
         Assert.Equal(ModManager.BuiltInModIds, ModManager.EmbeddedBuiltInModIdList);
     }
 
