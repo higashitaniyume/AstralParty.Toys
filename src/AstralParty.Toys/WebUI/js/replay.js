@@ -1,9 +1,19 @@
 // replay.js - Full Replay Tool Logic Integrated within Tools Page (Light Theme)
 (function () {
+  // 下载进度用（宿主回推的是字节数）
+  const fmtBytes = bytes => {
+    const value = Number(bytes ?? 0);
+    if (value >= 1024 * 1024) return (value / 1024 / 1024).toFixed(2) + ' MB';
+    if (value >= 1024) return (value / 1024).toFixed(1) + ' KB';
+    return value + ' B';
+  };
+
   const ReplayModule = {
     libraryData: null,
     // 归档 / 放回 / 删除正在进行中（文件 IO + 之后整表重扫）：挡住重复点击
     busyButton: null,
+    // 「按 ID 下载」弹窗正在下载的回放 ID（进度消息靠它认领自己的进度）
+    downloadId: null,
 
     init() {
       this.bindEvents();
@@ -28,7 +38,8 @@
       $('emptySelectReplayBtn')?.addEventListener('click', () => post({ type: 'openReplay' }));
       $('refreshLibraryBtn')?.addEventListener('click', () => post({ type: 'refreshReplays' }));
 
-      // 回放库：导入 / 打开目录 / 筛选 / 横幅
+      // 回放库：下载（按 ID）/ 导入 / 打开目录 / 筛选 / 横幅
+      $('libraryDownloadBtn')?.addEventListener('click', () => this.openDownloadDialog());
       $('libraryImportBtn')?.addEventListener('click', () => post({ type: 'libraryImport' }));
       $('libraryOpenFolderBtn')?.addEventListener('click', () => post({ type: 'libraryOpenFolder' }));
       $('librarySearchInput')?.addEventListener('input', () => this.renderLibraryRows());
@@ -353,6 +364,160 @@
           closeModal();
         });
       });
+    },
+
+    // ============================== 按 ID 下载（官方回放 CDN → 回放库） ==============================
+
+    /** 区服选项。取值与游戏 ReplayLogic.ChangeReplayCDNUrl(index) 的编号一致。 */
+    cdnOptions() {
+      return [
+        { value: 'CnProd', label: '国服（正式服）' },
+        { value: 'CnDev', label: '国服（测试服）' },
+        { value: 'JpProd', label: '国际服（正式服）' },
+        { value: 'JpDev', label: '国际服（测试服）' }
+      ];
+    },
+
+    /** 默认区服跟随「当前游戏」的版本：国际服 → 国际服正式服，其余（国服 / TapTap / 自定义）→ 国服正式服。 */
+    defaultCdn() {
+      const profiles = AppState.gameProfiles?.profiles || [];
+      const active = profiles.find(profile => profile.active);
+      return active?.edition === 'global' ? 'JpProd' : 'CnProd';
+    },
+
+    openDownloadDialog() {
+      const options = this.cdnOptions()
+        .map(item => `<option value="${item.value}">${esc(item.label)}</option>`)
+        .join('');
+      openModal('按回放 ID 下载到回放库', `
+        <p class="download-intro">
+          回放由服务器录制后放在官方回放服务器上，游戏里点「保存回放」也是从那里拉的。
+          填上回放 ID 就能直接下载进<strong>回放库</strong>：不用打开游戏，也不占游戏内的 10 个席位。
+        </p>
+        <div class="download-form">
+          <label class="download-field">
+            <span>回放 ID</span>
+            <input class="library-input wide" id="replayDownloadIdInput" inputmode="numeric" autocomplete="off"
+                   placeholder="战绩里那一长串数字" aria-label="回放 ID">
+          </label>
+          <label class="download-field">
+            <span>回放服务器（不确定就按当前游戏版本选）</span>
+            <select class="library-select" id="replayDownloadCdnSelect" aria-label="回放服务器">${options}</select>
+          </label>
+        </div>
+        <div class="download-progress hidden" id="replayDownloadProgress">
+          <div class="download-bar" id="replayDownloadBarWrap"><i id="replayDownloadBar"></i></div>
+          <span id="replayDownloadText"></span>
+        </div>
+        <p class="download-status hidden" id="replayDownloadStatus"></p>
+        <div class="download-actions">
+          <button class="primary-btn" id="replayDownloadStartBtn">开始下载</button>
+          <button class="secondary-btn hidden" id="replayDownloadCancelBtn">取消下载</button>
+        </div>
+      `);
+
+      const select = $('replayDownloadCdnSelect');
+      if (select) select.value = this.defaultCdn();
+      this.downloadId = null;
+
+      const start = () => this.startDownload();
+      $('replayDownloadStartBtn')?.addEventListener('click', start);
+      $('replayDownloadIdInput')?.addEventListener('keydown', event => {
+        if (event.key === 'Enter') { event.preventDefault(); start(); }
+      });
+      $('replayDownloadCancelBtn')?.addEventListener('click', () => {
+        const button = $('replayDownloadCancelBtn');
+        if (button) button.disabled = true;
+        this.setDownloadStatus('正在取消下载…', false);
+        post({ type: 'replayDownloadCancel' });
+      });
+      $('replayDownloadIdInput')?.focus();
+    },
+
+    startDownload() {
+      const replayId = ($('replayDownloadIdInput')?.value || '').trim();
+      if (!/^\d{1,32}$/.test(replayId)) {
+        this.setDownloadStatus('回放 ID 只能是数字——就是游戏战绩里那一长串数字。', true);
+        return;
+      }
+      this.downloadId = replayId;
+      this.setDownloadStatus('', false);
+      this.setDownloadRunning(true);
+      this.updateDownloadProgress({ receivedBytes: 0, totalBytes: null, percent: null });
+      post({
+        type: 'replayDownload',
+        replayId,
+        cdn: $('replayDownloadCdnSelect')?.value || 'CnProd'
+      });
+    },
+
+    setDownloadRunning(running) {
+      const start = $('replayDownloadStartBtn');
+      const cancel = $('replayDownloadCancelBtn');
+      if (start) {
+        start.disabled = running;
+        start.textContent = running ? '下载中…' : '开始下载';
+      }
+      if (cancel) {
+        cancel.disabled = false;
+        cancel.classList.toggle('hidden', !running);
+      }
+      $('replayDownloadProgress')?.classList.toggle('hidden', !running);
+    },
+
+    setDownloadStatus(text, isError) {
+      const box = $('replayDownloadStatus');
+      if (!box) return;
+      box.textContent = text || '';
+      box.classList.toggle('hidden', !text);
+      box.classList.toggle('ok', !!text && !isError);
+    },
+
+    updateDownloadProgress(payload) {
+      const percent = payload?.percent;
+      const bar = $('replayDownloadBar');
+      $('replayDownloadBarWrap')?.classList.toggle('indeterminate', percent == null);
+      if (bar && percent != null) bar.style.width = `${percent}%`;
+
+      const text = $('replayDownloadText');
+      if (!text) return;
+      const received = fmtBytes(payload?.receivedBytes || 0);
+      text.textContent = percent != null
+        ? `已下载 ${received} / ${fmtBytes(payload.totalBytes)}（${percent}%）`
+        : `已下载 ${received}`;
+    },
+
+    /** 宿主回推的下载状态：running = 进度，其余三种是收尾。 */
+    renderDownloadState(payload) {
+      if (!payload) return;
+      // 弹窗已经关掉（或被别的弹窗顶掉）时忽略进度：列表刷新另有通道
+      if (!$('globalModal')?.classList.contains('open') || !$('replayDownloadIdInput')) return;
+      // 只认领本弹窗正在下载的那个 ID
+      if (this.downloadId && payload.replayId && payload.replayId !== this.downloadId) return;
+
+      if (payload.state === 'running') {
+        this.updateDownloadProgress(payload);
+        return;
+      }
+
+      this.downloadId = null;
+      this.setDownloadRunning(false);
+      const messages = (payload.messages || []).filter(Boolean);
+
+      if (payload.state === 'done') {
+        closeModal();
+        toast(payload.summary || '下载完成。');
+        // 下载成功但解析不出结算帧这类提醒别丢掉（它决定"能不能放回游戏"）
+        if (messages.length > 1) {
+          openModal('下载完成', `
+            <div class="download-messages">${messages.map(message => `<div>${esc(message)}</div>`).join('')}</div>
+          `);
+        }
+        return;
+      }
+
+      // 失败 / 取消：弹窗留着，ID 可以直接改
+      this.setDownloadStatus(messages.join('\n') || payload.summary || '下载失败。', payload.state !== 'canceled');
     },
 
     renderLibraryResult(payload) {

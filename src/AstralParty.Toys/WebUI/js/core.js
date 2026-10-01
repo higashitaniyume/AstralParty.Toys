@@ -222,6 +222,11 @@ host?.addEventListener('message', event => {
       if (window.ReplayModule) window.ReplayModule.renderLibraryResult(msg.payload);
       break;
 
+    case 'replayDownloadState':
+      // 「按 ID 下载」的进度与收尾（弹窗自己认领，见 ReplayModule.renderDownloadState）
+      window.ReplayModule?.renderDownloadState(msg.payload);
+      break;
+
     case 'librarySettings':
       AppState.librarySettings = msg.payload;
       if (window.SettingsModule) {

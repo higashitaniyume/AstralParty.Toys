@@ -13,6 +13,24 @@ public sealed class ReplayLibrarySettings
     public int KeepInGame { get; set; } = ReplayLibraryService.GameSlotCapacity;
 }
 
+/// <summary>回放下载进度。宿主用 <see cref="IProgress{T}"/> 把它回推给界面（百分比在总量未知时为 null）。</summary>
+public sealed class ReplayDownloadProgress
+{
+    public ReplayDownloadProgress(long receivedBytes, long? totalBytes)
+    {
+        ReceivedBytes = receivedBytes;
+        TotalBytes = totalBytes;
+    }
+
+    public long ReceivedBytes { get; }
+
+    public long? TotalBytes { get; }
+
+    public int? Percent => TotalBytes is > 0
+        ? (int)Math.Clamp(ReceivedBytes * 100 / TotalBytes.Value, 0, 100)
+        : null;
+}
+
 /// <summary>正在被删除的回放位于哪一侧。</summary>
 public enum ReplayDeleteTarget
 {
@@ -110,6 +128,9 @@ public sealed class ReplayOperationResult
 
     /// <summary>存在需要玩家二次确认才能继续的操作（例如放回解析不出结算帧的回放）。</summary>
     public bool NeedsConfirmation { get; set; }
+
+    /// <summary>操作被玩家取消（下载中途点「取消」），既不是成功也不是失败。</summary>
+    public bool Canceled { get; set; }
 
     /// <summary>等待确认的 ReplayId。</summary>
     public List<string> PendingIds { get; set; } = [];
