@@ -36,8 +36,39 @@ public sealed class ModManager
     /// <summary>加载器内置变速的倍率上限，与 speedhack.h 的 kSpeedMax 一致。</summary>
     public const double MaxBaseSpeed = 100.0;
 
-    /// <summary>随程序集内置的 mod（ModId，顺序即安装顺序）。资源名 = {ModId}.dll / {ModId}.json。</summary>
-    public static readonly IReadOnlyList<string> BuiltInModIds = ["ActivityLogMod", "FreeCameraMod", "SpeedHackMod"];
+    /// <summary>
+    /// 随程序集内置的 mod（ModId，顺序即安装顺序）。资源名 = {ModId}.dll / {ModId}.json。
+    ///
+    /// ★ <b>从内嵌资源里扫出来, 不写死清单</b>：csproj 用通配符把 <c>Resources\ModLoader\*Mod.dll</c>
+    ///   全部编进程序集, 这里就必须按同一份来源枚举。曾经写死成三个, 结果新增 CombatOddsMod 时
+    ///   资源明明打进去了、安装却漏了它（0.5.3 的真机 bug）。
+    /// </summary>
+    public static readonly IReadOnlyList<string> BuiltInModIds = DiscoverBuiltInModIds();
+
+    /// <summary>扫内嵌资源名, 认出所有 "<c>*Mod.dll</c>"（内置 mod 的命名约定, 与 csproj 的通配符一致）。</summary>
+    private static string[] DiscoverBuiltInModIds()
+    {
+        try
+        {
+            var ids = new List<string>();
+            foreach (var name in typeof(ModManager).Assembly.GetManifestResourceNames())
+            {
+                if (!name.StartsWith(ResourcePrefix, StringComparison.Ordinal)) continue;
+                var tail = name.Substring(ResourcePrefix.Length);
+                if (!tail.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)) continue;
+                var id = tail.Substring(0, tail.Length - 4);
+                // 以 "Mod" 结尾 = 内置 mod; 这样自动排除 version.dll / CesiumLoader.SDK.dll 等非 mod 资源
+                if (!id.EndsWith("Mod", StringComparison.Ordinal)) continue;
+                if (!ids.Contains(id)) ids.Add(id);
+            }
+            ids.Sort(StringComparer.Ordinal);   // 顺序稳定, 便于对比与测试
+            return ids.ToArray();
+        }
+        catch
+        {
+            return Array.Empty<string>();
+        }
+    }
 
     private const string ResourcePrefix = "AstralParty.Toys.ModLoader.";
 
