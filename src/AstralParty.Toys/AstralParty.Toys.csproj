@@ -9,10 +9,10 @@
     <AssemblyName>AstralParty.Toys</AssemblyName>
     <RootNamespace>AstralParty.Toys</RootNamespace>
     <StartupObject>AstralParty.Toys.App</StartupObject>
-    <!-- 与发布 tag 同步递增：v0.5.1 → v0.5.2（补齐内置 mod CombatOddsMod 的内嵌，改为通配收录） -->
-    <Version>0.5.2</Version>
-    <AssemblyVersion>0.5.2.0</AssemblyVersion>
-    <FileVersion>0.5.2.0</FileVersion>
+    <!-- 与发布 tag 同步递增：v0.5.2 → v0.5.3（按回放 ID 从官方 CDN 下载进回放库） -->
+    <Version>0.5.3</Version>
+    <AssemblyVersion>0.5.3.0</AssemblyVersion>
+    <FileVersion>0.5.3.0</FileVersion>
     <ApplicationIcon>WebUI\images\UT_AccountHeadShot_70902.ico</ApplicationIcon>
   </PropertyGroup>
 

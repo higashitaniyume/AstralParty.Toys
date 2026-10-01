@@ -52,6 +52,12 @@ private string _cdnBaseUrl = "https://sereplaycn.feimogames.com/prod/";   // 默
 下载用 `UnityWebRequest.Get(url)` + `DownloadHandlerFile(savePath)`，**直接流式写盘**到 `<root>\<id>\<id>`；失败则 `TryDeleteExtractDir` 把整个目录删掉（不会留半截文件）。
 CDN 可用 `ChangeReplayCDNUrl(index)` 切换：`0` = JP dev、`1` = JP prod、`2` = CN dev、`3` = CN prod。
 
+> **本工具做的是同一件事，但不需要开游戏**：回放面板「按 ID 下载」→
+> `Services/ReplayCdn.cs`（4 个 base + ID 只认纯数字）+ `ReplayLibraryService.DownloadAsync`
+> 把 `base + replayId` 拉下来直接写进**回放库**（`<库>\<id>\<id>`，与游戏缓存同构）。
+> 区服可选（国服/国际服 × 正式/测试），默认跟随「当前游戏」档案的版本；不存在的 ID 官方 CDN 返回
+> **404**（实测，不会拿错误页冒充 200）。详见 §1.5。
+
 > 推论：**回放文件本身是服务端录制的产物**（消息流原样下发），客户端只是下载器 + 播放器。
 > 这也解释了为什么文件里能出现 `ReplaySnapshotS2C` 这种专门给回放用的消息——它是服务端为了让客户端能重建场景而额外发的。
 
@@ -100,6 +106,16 @@ if (obj == null) DeleteReplayFile(r.id);      // → Directory.Delete(recursive:
 | 归档 | **移动**（游戏目录 → 库） | 腾出名额 |
 | 还原 | **复制**（库 → 游戏目录，库里留备份） | 占一个名额 |
 | 删除 | 删除库里的副本 | 无 |
+| 按 ID 下载 | 从官方回放 CDN 拉取，**直接写进库** | 无（库不是游戏目录，游戏不扫它） |
+
+「按 ID 下载」的下盘流程（`ReplayLibraryService.DownloadAsync`）：
+
+1. `ReplayCdn.IsValidReplayId` 只放行纯数字 ID（ID 会同时进 URL 与目录名，必须挡住 `../` 与查询串注入）；
+2. 边下边写 `<库>\<id>\<id>.part`，把字节数与百分比回推给界面（可随时取消）；
+3. 校验：非空 + 能拆出帧流（防止 CDN 用错误页冒充 200）；库内已有同 ID 时，内容相同→跳过，不同→拒绝覆盖；
+4. 通过后改名为 `<id>`、用游戏自己的 `TryParseReplaySettlementOnly` 写 sidecar、记 `operations.log`；
+5. 解析不出结算帧也**照样保留**（库不是游戏目录，游戏不会扫描它；读不出只说明自带协议比这局旧），
+   但会明确提示「别放回游戏目录」——游戏列到读不出的目录会把它整个删掉（§1.4）。
 
 因为游戏只认 `<id>\<id>` 这个结构，工具全程保持目录名 = 文件名；归档/还原来回搬运不会破坏格式。
 
@@ -599,6 +615,7 @@ dotnet test tests\AstralParty.Toys.Tests\AstralParty.Toys.Tests.csproj --filter 
 | `ConfigLocationTests` | 文档目录优先、不可写回退 AppData、旧配置迁移、配置目录不被当成回放条目 |
 | `SpeedhackTests` | 内嵌资源、安装 / 卸载 / 覆盖保护、配置往返 JSON |
 | `ModManagerTests` | 加载器安装 / 更新 / 卸载与覆盖保护、`doorstop_config.json` 读写（含「补齐缺失键但保留注释」、SDK 版本升降级闸门、首页「绕过 Steam 启动」单键同步）、mod 扫描 / 导入 / 启停 / 删除 / 配置表单、发布包解析与篡改拒绝、与旧版独立变速器的互斥检测 |
+| `ReplayDownloadTests` | 按 ID 下载：4 个 CDN 端点常量与编号、ID 校验（挡 `../`/查询串/全角数字/超长）、落库与 sidecar、同内容跳过、不同内容拒绝覆盖、404、空响应、非帧流内容、读不出结算帧仍保留、取消、非法 ID 不发请求、「库 = 游戏目录」守卫 |
 | `CatalogAndAssetTests` | 角色 / 地图 / 怪物 / 筹码 / 物品配表、内嵌素材、报告引用素材可解析、AI 摘要五个章节 |
 | `EmbeddedWebUiTests` | 前端页面整包内嵌（源码 `WebUI\**` 一个不漏）、Content-Type、404、页面/JS/CSS 里的本地引用都能取到 |
 | `WebResourceStreamTests` | 交给 WebView2 的响应流包装：内容原样读出、读完自行释放内层流、之后再读返回 0 |
@@ -607,6 +624,12 @@ dotnet test tests\AstralParty.Toys.Tests\AstralParty.Toys.Tests.csproj --filter 
 需要真实录像的测试带 `[RealReplayFact]`：没有数据时**报告为跳过**而不是失败。要启用它们，
 把一局回放放进 `%USERPROFILE%\AppData\LocalLow\feimo\AstralParty_CN\Temp\Replay\<id>\<id>`，
 或设置环境变量 `ASTRAL_TEST_REPLAY=<回放文件路径>`。
+
+需要真实回放 CDN 的测试带 `[RealDownloadFact]`（真联网，默认跳过）：
+`$env:ASTRAL_TEST_REPLAY_ID='<回放ID>'; dotnet test … --filter "FullyQualifiedName~FromRealCdn"`
+（需要换区服时再加 `$env:ASTRAL_TEST_REPLAY_CDN='JpProd'`）。它的作用是证明**官方 CDN 的地址拼法今天依然可用**
+——合成响应只能证明落库逻辑，证明不了远端。合并逻辑本身走本地假 HTTP 管道
+（`ReplayLibraryService.DownloadHandlerOverride`，内部属性 + `InternalsVisibleTo`），所以套件默认离线全绿。
 
 自检的两条硬口径（两者都有对应断言）：
 
@@ -663,6 +686,7 @@ dotnet test tests\AstralParty.Toys.Tests\AstralParty.Toys.Tests.csproj --filter 
 | 拆帧 / 校验 / 回合节点 | `GameLogic.Replay.ReplayLoader` | `Services/ReplayAnalyzer.cs`（`ReadFrames`） |
 | 回放包与节点模型 | `GameLogic.Replay.ReplayPackage` / `ReplayTurnNode` / `ReplayRoundNode` / `ReplayFrame` / `TurnBehavior` | `Models.cs`（`ProtocolFrame` / `ReplayReport`） |
 | 下载 / 保存 / 上限 / 列表 | `GameLogic.ReplayLogic` | `Services/ReplayLibraryService.cs` |
+| 按 ID 下载（CDN → 回放库） | `GameLogic.ReplayLogic`（`_cdnBaseUrl + replayId`，4 个 base 见 §1.2） | `Services/ReplayCdn.cs` + `Services/ReplayLibraryService.cs`（`DownloadAsync`） |
 | 播放控制 | `GameLogic.ReplayLogic`（`StartPlaybackAsync` / `JumpToTurnAsync`）、`GameLogic.Replay.ReplayConfig` | — |
 | 协议解码 / 权威校验 | `party.protocol.*`、`ByteBuf.ReadObject<T>` | `Services/GameProtocolContext.cs` |
 | ID → 名称 | `StaticConfigure.*` | `Services/ConfigCatalog.cs` + `GameData/*.bin` |

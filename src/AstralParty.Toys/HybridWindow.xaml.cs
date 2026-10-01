@@ -42,6 +42,8 @@ public partial class HybridWindow : Window
     private bool _webRootIsEmbedded;
     private readonly Dictionary<string, string> _replayLibrary = new(StringComparer.Ordinal);
     private CancellationTokenSource? _deepScanCts;
+    /// <summary>回放下载的取消源：同一时刻只允许一个下载，见 <see cref="HandleReplayDownloadAsync"/>。</summary>
+    private CancellationTokenSource? _replayDownloadCts;
 
     public HybridWindow()
     {
@@ -256,6 +258,12 @@ public partial class HybridWindow : Window
                     break;
                 case "libraryImport":
                     await HandleLibraryImportAsync();
+                    break;
+                case "replayDownload":
+                    await HandleReplayDownloadAsync(root);
+                    break;
+                case "replayDownloadCancel":
+                    _replayDownloadCts?.Cancel();
                     break;
                 case "libraryOpenFolder":
                     HandleLibraryOpenFolder();
@@ -738,6 +746,83 @@ public partial class HybridWindow : Window
         if (dialog.ShowDialog(this) != true) return;
         var path = dialog.FileName;
         await RunLibraryOperationAsync(() => _libraryService.Import(path));
+    }
+
+    /// <summary>
+    /// 按回放 ID 从官方 CDN 下载一局并收进回放库。
+    /// 地址与游戏自己用的一模一样（<c>_cdnBaseUrl + replayId</c>，见 <see cref="ReplayCdn"/>）；
+    /// 区服默认跟随「当前游戏」的版本（国际服 → jp，其余 → cn），界面可以单独改。
+    /// 进度只回给下载弹窗（<c>replayDownloadState</c>），结果也只在那儿收口，
+    /// 所以这里刻意**不**再发 libraryResult——否则同一个失败会弹两次。
+    /// </summary>
+    private async Task HandleReplayDownloadAsync(JsonElement root)
+    {
+        var replayId = (root.TryGetProperty("replayId", out var idElement) ? idElement.GetString() : null)?.Trim() ?? "";
+        var endpoint = ReplayCdn.TryParse(root.TryGetProperty("cdn", out var cdnElement) ? cdnElement.GetString() : null)
+                       ?? ReplayCdn.FromEdition(_gameLibrary.GetActive()?.Edition);
+
+        if (!ReplayCdn.IsValidReplayId(replayId, out var idError))
+        {
+            PostDownloadState(replayId, "failed", 0, null, [idError]);
+            return;
+        }
+        if (_replayDownloadCts is not null)
+        {
+            PostDownloadState(replayId, "failed", 0, null, ["已经有一个回放在下载了，等它结束再试。"]);
+            return;
+        }
+
+        var cancellation = new CancellationTokenSource();
+        _replayDownloadCts = cancellation;
+        long receivedBytes = 0;
+        long? totalBytes = null;
+        // 用 InlineProgress 而不是 Progress<T>：后者的回调是异步投递到 UI 上下文的，
+        // 排在收尾消息之后到达时会让进度条在「完成」之后又跳回去一次。
+        var progress = new InlineProgress<ReplayDownloadProgress>(value =>
+        {
+            receivedBytes = value.ReceivedBytes;
+            totalBytes = value.TotalBytes;
+            PostDownloadState(replayId, "running", value.ReceivedBytes, value.TotalBytes, []);
+        });
+
+        ReplayOperationResult result;
+        try
+        {
+            PostDownloadState(replayId, "running", 0, null, []);
+            result = await _libraryService.DownloadAsync(replayId, endpoint, progress, cancellation.Token);
+        }
+        catch (Exception ex)
+        {
+            result = ReplayOperationResult.Fail($"下载失败：{ex.Message}");
+        }
+        finally
+        {
+            _replayDownloadCts = null;
+            cancellation.Dispose();
+        }
+
+        PostDownloadState(replayId, result.Ok ? "done" : result.Canceled ? "canceled" : "failed",
+            receivedBytes, totalBytes, result.Messages);
+        await SendReplayLibraryAsync(runMaintain: false);
+    }
+
+    /// <summary>把下载进度 / 结果推给界面（下载弹窗按 replayId 认领）。</summary>
+    private void PostDownloadState(string replayId, string state, long receivedBytes, long? totalBytes, IReadOnlyList<string> messages)
+    {
+        Post(new
+        {
+            type = "replayDownloadState",
+            payload = new
+            {
+                replayId,
+                state,
+                receivedBytes,
+                totalBytes,
+                percent = totalBytes is > 0 ? (int)Math.Clamp(receivedBytes * 100 / totalBytes.Value, 0, 100) : (int?)null,
+                summary = messages.Count > 0 ? messages[0] : "",
+                messages
+            }
+        });
     }
 
     private void HandleLibraryOpenFolder()
@@ -1993,5 +2078,19 @@ public partial class HybridWindow : Window
         Application.Current.MainWindow = window;
         window.Show();
         Close();
+    }
+
+    /// <summary>
+    /// 立刻在调用线程上执行回调的 <see cref="IProgress{T}"/>。
+    /// 用于「进度必须按顺序到达」的场合：<see cref="Progress{T}"/> 会把回调异步投递到 UI 上下文，
+    /// 排在收尾消息之后到达的最后一个进度会让界面回退一格。
+    /// </summary>
+    private sealed class InlineProgress<T> : IProgress<T>
+    {
+        private readonly Action<T> _callback;
+
+        public InlineProgress(Action<T> callback) => _callback = callback;
+
+        public void Report(T value) => _callback(value);
     }
 }

@@ -40,6 +40,8 @@ AstralParty.Toys-<版本>-<架构>-<运行时模式>-<打包方式>
 
 - 自动读取 `%USERPROFILE%\AppData\LocalLow\feimo\AstralParty_CN\Temp\Replay`，列出最近 100 个回放
 - 也可手动选择或拖入无扩展名回放文件
+- **按回放 ID 下载到回放库**：知道某局的回放 ID（战绩里那一串数字）就能直接从官方回放服务器把它拉进回放库，
+  不用打开游戏、也不占游戏内那 10 个席位；区服可选（国服 / 国际服 × 正式 / 测试），默认跟随当前游戏的版本
 - 展示对局摘要：地图、结果、游戏版本、时间、回合、进度、Boss 与奖励
 - 统计玩家表现：角色、生命、攻防、星币、伤害、承伤、治疗、移动、卡牌、技能与筹码
 - 按回合查看事件时间线并按玩家或事件筛选
@@ -170,9 +172,11 @@ dotnet run --project .\replaytool\src\AstralParty.Toys\AstralParty.Toys.csproj
 dotnet test .\replaytool\tests\AstralParty.Toys.Tests\AstralParty.Toys.Tests.csproj
 ```
 
-当前 127 个用例。测试自带合成回放数据（用游戏自己的 protobuf 生成类构造），**不依赖真实录像，也不需要联网**；
+当前 176 个用例。测试自带合成回放数据（用游戏自己的 protobuf 生成类构造），**不依赖真实录像，也不需要联网**；
 `Protocol\` 与 `GameData\` 会随项目引用自动复制到测试输出目录。需要真实录像的用例在没有数据时
-报告为「已跳过」，把回放放进游戏回放目录或设置 `ASTRAL_TEST_REPLAY` 指向文件即可启用。
+报告为「已跳过」，把回放放进游戏回放目录或设置 `ASTRAL_TEST_REPLAY` 指向文件即可启用；
+「按 ID 下载」另有一条真联网用例，默认跳过，设置 `ASTRAL_TEST_REPLAY_ID=<回放ID>` 才会跑
+（下载合并逻辑本身走本地假 HTTP 管道，所以离线也能覆盖）。
 覆盖范围与合成夹具的说明见 `docs\replay-format.md` 第 8 节。
 
 ## 构建与发布
