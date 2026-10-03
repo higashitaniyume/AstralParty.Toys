@@ -2,6 +2,22 @@
 
 本文件按版本记录 `AstralParty.Toys` 的功能变更。版本号与 GitHub 发布 tag 一一对应（如 `v0.2.0`），发布产物由 [release.yml](.github/workflows/release.yml) 在打 tag 时自动构建。
 
+## [v0.5.5] - 2026-10-03
+
+### 🩹 修复：「从 GitHub 更新」加载器后，version.dll / SDK 的 .pdb 符号文件不见了
+
+- 加载器从 **2.2.5** 起，发布包里带了 `.pdb` 符号文件（每个 dll 旁边一个同名 `.pdb`，
+  用来把崩溃栈还原成文件名 + 行号）。但 Toys 的「从 GitHub 更新」只按一份**固定清单**拷贝：
+  `version.dll`、`doorstop_config.json`、`sdk\CesiumLoader.SDK.dll`，再加上用通配符整目录拷贝的 `mods\**`。
+- 于是出现一个很别扭的结果：`mods\**` 下的 `.pdb` 因为走通配符**被装了进去**，而根目录的 `version.pdb`
+  和 `sdk\CesiumLoader.SDK.pdb` 不在清单里，**从来没被拷进游戏目录** —— 这两个 dll 一旦崩溃，栈里只有地址没有行号。
+  `bootstrap\` 目录（托管引导，只有实验开关 `useManagedBootstrap=true` 时才加载）同理一直没被安装。
+- 现在：**与每个 dll 成对的同名 `.pdb` 随 dll 一起落盘**（`version.pdb` 落在游戏 exe 同目录，
+  `CesiumLoader.SDK.pdb` 落在 `sdk\`），`bootstrap\` 整个目录（dll + pdb）也一并安装；
+  卸载时会连 `version.pdb` 一起清理。老发布包里没有这些文件时**静默跳过**，不影响安装。
+- 影响范围：只有走「从 GitHub 更新」（或直接装 GitHub 发布包）才会补上这些符号；
+  用「安装加载器」（随包内置的那一份）不受影响 —— 内置资源里本就不含 `.pdb`。
+
 ## [v0.5.4] - 2026-10-01
 
 ### 🩹 修复：点「安装加载器」会漏装战斗胜率助手

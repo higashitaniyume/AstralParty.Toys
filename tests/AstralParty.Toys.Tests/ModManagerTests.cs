@@ -132,6 +132,23 @@ public sealed class ModManagerTests
     }
 
     [Fact]
+    public void Uninstall_RemovesSiblingPdbOfLoader()
+    {
+        using var harness = new ModHarness("ap-mod-uninstall-pdb");
+        harness.Manager.SaveStoredGameDirectory(harness.GameDirectory);
+        harness.Manager.InstallPackage(harness.GameDirectory,
+            BuildFakePackage("2.5.0", includeSymbols: true), overwriteDll: false);
+        Assert.True(File.Exists(Path.Combine(harness.GameDirectory, "version.pdb")));
+
+        var result = harness.Manager.Uninstall(harness.GameDirectory, force: false);
+
+        Assert.True(result.RemovedDll);
+        Assert.False(File.Exists(Path.Combine(harness.GameDirectory, "version.dll")));
+        // 与 version.dll 成对的符号文件也应被一并清理
+        Assert.False(File.Exists(Path.Combine(harness.GameDirectory, "version.pdb")));
+    }
+
+    [Fact]
     public void ImportMod_CopiesIntoModsAndAppearsInList()
     {
         using var harness = new ModHarness("ap-mod-import");
@@ -1136,7 +1153,7 @@ public sealed class ModManagerTests
     // ============================== 联网更新：包解析 / 校验 / 安装 ==============================
 
     /// <summary>构造一个符合发布布局的内存 zip（version.dll Doorstop 式，含清单，可带/不带哈希校验）。</summary>
-    private static byte[] BuildFakePackage(string version, bool includeHashes = true, string? configSdkVersion = null)
+    private static byte[] BuildFakePackage(string version, bool includeHashes = true, string? configSdkVersion = null, bool includeSymbols = false)
     {
         using var memory = new MemoryStream();
         using (var archive = new ZipArchive(memory, ZipArchiveMode.Create, leaveOpen: true))
@@ -1157,11 +1174,23 @@ public sealed class ModManagerTests
             var mod = new byte[] { 0x4D, 0x4F, 0x44, 0x01 };          // 假 mod
             var sidecar = new byte[] { 0x7B, 0x7D };                  // 假 sidecar "{}"
 
-            Add("version.dll", loader);
-            Add("AstralParty_ModLoader/doorstop_config.json", config);
-            Add("AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll", sdk);
-            Add("AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.dll", mod);
-            Add("AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.json", sidecar);
+            var entries = new List<(string Name, byte[] Data)>
+            {
+                ("version.dll", loader),
+                ("AstralParty_ModLoader/doorstop_config.json", config),
+                ("AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll", sdk),
+                ("AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.dll", mod),
+                ("AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.json", sidecar),
+            };
+            if (includeSymbols)
+            {
+                // 与 dll 成对的 .pdb 符号文件 + bootstrap\（模拟 2.2.5 起带符号的真实发布包）
+                entries.Add(("version.pdb", new byte[] { 0x50, 0x44, 0x42, 0x01 }));
+                entries.Add(("AstralParty_ModLoader/sdk/CesiumLoader.SDK.pdb", new byte[] { 0x50, 0x53, 0x01 }));
+                entries.Add(("AstralParty_ModLoader/bootstrap/CesiumLoader.Bootstrap.dll", new byte[] { 0x42, 0x54, 0x01 }));
+                entries.Add(("AstralParty_ModLoader/bootstrap/CesiumLoader.Bootstrap.pdb", new byte[] { 0x42, 0x50, 0x01 }));
+            }
+            foreach (var (name, data) in entries) Add(name, data);
 
             string Sha(byte[] data) => Convert.ToHexString(
                 System.Security.Cryptography.SHA256.HashData(data)).ToLowerInvariant();
@@ -1171,11 +1200,11 @@ public sealed class ModManagerTests
             manifest.Append("\"files\":{");
             if (includeHashes)
             {
-                manifest.Append("\"version.dll\":\"").Append(Sha(loader)).Append("\",");
-                manifest.Append("\"AstralParty_ModLoader/doorstop_config.json\":\"").Append(Sha(config)).Append("\",");
-                manifest.Append("\"AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll\":\"").Append(Sha(sdk)).Append("\",");
-                manifest.Append("\"AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.dll\":\"").Append(Sha(mod)).Append("\",");
-                manifest.Append("\"AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.json\":\"").Append(Sha(sidecar)).Append("\"");
+                for (var i = 0; i < entries.Count; i++)
+                {
+                    if (i > 0) manifest.Append(',');
+                    manifest.Append('"').Append(entries[i].Name).Append("\":\"").Append(Sha(entries[i].Data)).Append('"');
+                }
             }
             manifest.Append("}}");
             Add(ModManager.InstalledManifestFileName, System.Text.Encoding.UTF8.GetBytes(manifest.ToString()));
@@ -1245,6 +1274,40 @@ public sealed class ModManagerTests
         var status = harness.Manager.GetStatus();
         Assert.Equal("4.0.0", status.InstalledVersion);
         Assert.True(File.Exists(Path.Combine(harness.GameDirectory, "version.dll")));
+    }
+
+    [Fact]
+    public void InstallPackage_AlsoDeploysSiblingPdbAndBootstrap()
+    {
+        using var harness = new ModHarness("ap-mod-pkg-symbols");
+        harness.Manager.SaveStoredGameDirectory(harness.GameDirectory);
+
+        var bytes = BuildFakePackage("2.5.0", includeSymbols: true);
+        harness.Manager.InstallPackage(harness.GameDirectory, bytes, overwriteDll: false);
+
+        var loaderRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
+        // version.dll 的符号文件落在游戏 exe 同目录（与 dll 成对）
+        Assert.True(File.Exists(Path.Combine(harness.GameDirectory, "version.pdb")));
+        Assert.True(File.Exists(Path.Combine(harness.GameDirectory, "version.dll")));
+        // SDK 的符号文件随 SDK dll 一起落盘
+        Assert.True(File.Exists(Path.Combine(loaderRoot, ModManager.SdkFolderName, "CesiumLoader.SDK.pdb")));
+        // bootstrap\ 整套（dll + pdb）
+        Assert.True(File.Exists(Path.Combine(loaderRoot, "bootstrap", "CesiumLoader.Bootstrap.dll")));
+        Assert.True(File.Exists(Path.Combine(loaderRoot, "bootstrap", "CesiumLoader.Bootstrap.pdb")));
+    }
+
+    [Fact]
+    public void InstallPackage_WithoutSymbols_SkipsPdbSilently()
+    {
+        using var harness = new ModHarness("ap-mod-pkg-noSymbols");
+        harness.Manager.SaveStoredGameDirectory(harness.GameDirectory);
+
+        // 老发布包没有 .pdb / bootstrap\ 目录：安装照常成功，不该因此抛错
+        harness.Manager.InstallPackage(harness.GameDirectory, BuildFakePackage("2.5.0"), overwriteDll: false);
+
+        var loaderRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
+        Assert.False(File.Exists(Path.Combine(harness.GameDirectory, "version.pdb")));
+        Assert.True(File.Exists(Path.Combine(loaderRoot, ModManager.SdkFolderName, ModManager.SdkDllName)));
     }
 
     /// <summary>重建 zip 并把指定条目内容换成别的字节（清单哈希不变 → 校验必失败）。</summary>

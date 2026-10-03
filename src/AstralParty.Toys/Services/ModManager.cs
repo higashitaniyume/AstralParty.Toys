@@ -532,6 +532,17 @@ public sealed class ModManager
                         : "请检查文件权限后重试（本次没有改动任何文件）。"), ex);
             }
             result.RemovedDll = true;
+            // version.dll 的同名符号文件（2.2.5 起才会随包安装）：随 dll 一起清理。
+            // 删不掉就留着（只是个调试符号，不影响卸载结果）。
+            var dllPdbPath = Path.ChangeExtension(dllPath, ".pdb");
+            try
+            {
+                if (File.Exists(dllPdbPath)) File.Delete(dllPdbPath);
+            }
+            catch
+            {
+                // 忽略：符号文件残留无副作用
+            }
         }
         if (loaderRootExists)
         {
@@ -789,6 +800,9 @@ public sealed class ModManager
 
             // version.dll → 游戏 exe 目录（Doorstop 代理）
             ExtractEntryToFile(archive, "version.dll", targetDll);
+            // version.dll 的同名符号文件（.pdb，与 dll 成对）：调试器在 dll 同目录自动找它，
+            // 崩溃栈能还原成文件行号。老发布包不带 .pdb → 缺失时静默跳过。
+            ExtractOptionalEntryToFile(archive, "version.pdb", Path.ChangeExtension(targetDll, ".pdb"));
             // doorstop_config.json → AstralParty_ModLoader\
             // 已存在则保留用户配置(变速/开关等), 不覆盖; 不存在才从包提取。
             var configPath = Path.Combine(loaderRoot, ConfigFileName);
@@ -803,19 +817,15 @@ public sealed class ModManager
             // SDK
             ExtractEntryToFile(archive, "AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll",
                 Path.Combine(loaderRoot, SdkFolderName, SdkDllName));
+            // SDK 的同名符号文件（同上；老发布包没有就跳过）
+            ExtractOptionalEntryToFile(archive, "AstralParty_ModLoader/sdk/CesiumLoader.SDK.pdb",
+                Path.Combine(loaderRoot, SdkFolderName, Path.ChangeExtension(SdkDllName, ".pdb")));
+            // bootstrap\：托管引导（仅 doorstop_config 的 useManagedBootstrap=true 时才加载）。
+            // 包内有就整套装（dll + 同名 pdb）；老发布包没有该目录则跳过。
+            ExtractDirectoryEntries(archive, "AstralParty_ModLoader/bootstrap/", loaderRoot);
             // mod：每 mod 一个文件夹。包里有什么就装什么（不写死 mod 列表），
             // 同时拒绝含 ".." 的条目，避免 zip 路径穿越写出 mods\ 之外。
-            foreach (var entry in archive.Entries)
-            {
-                if (!entry.FullName.StartsWith(PackageModsPrefix, StringComparison.OrdinalIgnoreCase)) continue;
-                if (string.IsNullOrEmpty(entry.Name)) continue;   // 目录条目
-                var relative = entry.FullName.Substring(PackageModsPrefix.Length).Replace('/', Path.DirectorySeparatorChar);
-                if (!IsSafeRelativePath(relative))
-                    throw new InvalidDataException($"发布包含有非法路径：{entry.FullName}");
-                var target = Path.Combine(loaderRoot, ModsFolderName, relative);
-                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-                WriteAllBytesProtected(target, ReadEntryBytes(entry));
-            }
+            ExtractDirectoryEntries(archive, PackageModsPrefix, loaderRoot);
 
             // 写入安装清单（记录版本，供 GetStatus 显示/对比）
             var manifestEntry = archive.GetEntry(InstalledManifestFileName);
@@ -840,6 +850,33 @@ public sealed class ModManager
         var entry = archive.GetEntry(entryName)
             ?? throw new InvalidDataException($"发布包缺少文件：{entryName}");
         WriteAllBytesProtected(targetPath, ReadEntryBytes(entry));
+    }
+
+    /// <summary>提取可选条目：发布包里没有该条目就静默跳过（老发布包不带 .pdb 符号文件）。</summary>
+    private static void ExtractOptionalEntryToFile(ZipArchive archive, string entryName, string targetPath)
+    {
+        var entry = archive.GetEntry(entryName);
+        if (entry is null || string.IsNullOrEmpty(entry.Name)) return;
+        WriteAllBytesProtected(targetPath, ReadEntryBytes(entry));
+    }
+
+    /// <summary>把 zip 内某个前缀（如 AstralParty_ModLoader/mods/ 或 …/bootstrap/）下的全部文件条目
+    /// 提取到 loaderRoot 下的同名相对路径，保留目录层级。包里没有该前缀下的文件时不报错（可选组件）。
+    /// 拒绝含 ".." 或绝对路径的条目，避免 zip 路径穿越写出 loaderRoot 之外。</summary>
+    private static void ExtractDirectoryEntries(ZipArchive archive, string entryPrefix, string loaderRoot)
+    {
+        var packageRootLength = LoaderFolderName.Length + 1;   // 去掉 "AstralParty_ModLoader/" 前缀
+        foreach (var entry in archive.Entries)
+        {
+            if (!entry.FullName.StartsWith(entryPrefix, StringComparison.OrdinalIgnoreCase)) continue;
+            if (string.IsNullOrEmpty(entry.Name)) continue;   // 目录条目
+            var relative = entry.FullName.Substring(packageRootLength).Replace('/', Path.DirectorySeparatorChar);
+            if (!IsSafeRelativePath(relative))
+                throw new InvalidDataException($"发布包含有非法路径：{entry.FullName}");
+            var target = Path.Combine(loaderRoot, relative);
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            WriteAllBytesProtected(target, ReadEntryBytes(entry));
+        }
     }
 
     /// <summary>发布包内的相对路径是否安全（不含 ".." 穿越、不是绝对路径）。</summary>
