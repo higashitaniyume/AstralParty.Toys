@@ -234,3 +234,20 @@ replaytool\src\AstralParty.Toys\bin\Release\net8.0-windows\win-x64\publish\Astra
 - `replaytool-assetpack`：按游戏配置和精确文件名生成素材清单
 - `scripts/pack_webp.py`：转换为无损 WebP，并进行像素级回读校验
 - 外部素材只按配置字段、文件名与分类匹配，不使用图片识别；缺失素材不会影响回放解析
+
+## 开源协议
+
+本项目以 **GNU Affero General Public License v3.0（AGPL-3.0）** 发布，协议全文见 [LICENSE](LICENSE)。
+
+Copyright (C) 2026 Yume Higashitani
+
+- 允许自由使用、修改、分发，包括商业用途。
+- 分发修改版或衍生作品时，必须以**同样的 AGPL-3.0** 开源，并保留版权与协议声明。
+- **第 13 条（Remote Network Interaction）**：如果把本项目（或它的修改版）作为**网络服务**提供给他人，
+  也必须向这些使用者提供对应的完整源代码。
+- 本软件按“现状”提供，不附带任何担保。
+
+> 本项目的 AGPL-3.0 **只覆盖本项目自身的代码**。为本地解析与展示而内嵌的《吉星派对 / Astral Party》
+> 协议程序集（`Protocol\`）、配表（`GameData\`）与解包素材（`PackedAssets\`、`WebUI\images\`）
+> 版权归原权利人（feimo games 等）所有，不在本项目的授权范围内。
+> 程序内嵌的 CesiumLoader 加载器同为 AGPL-3.0 发布。
