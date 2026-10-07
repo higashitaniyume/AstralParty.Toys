@@ -2,6 +2,13 @@
 
 本文件按版本记录 `AstralParty.Toys` 的功能变更。版本号与 GitHub 发布 tag 一一对应（如 `v0.2.0`），发布产物由 [release.yml](.github/workflows/release.yml) 在打 tag 时自动构建。
 
+## [v0.5.6] - 2026-10-07
+
+### 📦 内嵌 CesiumLoader 更新至 2.3.3
+
+- 随包内置最新 CesiumLoader 2.3.3、SDK 与内置模组。
+- CombatOddsMod 修正园林中庭失控凤凰的减伤计算错误；Debug 探针不进入 Release 产物。
+
 ## [v0.5.5] - 2026-10-03
 
 ### 🩹 修复：「从 GitHub 更新」加载器后，version.dll / SDK 的 .pdb 符号文件不见了
