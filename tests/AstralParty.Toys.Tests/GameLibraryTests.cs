@@ -113,6 +113,41 @@ public sealed class GameLibraryTests
     }
 
     [Fact]
+    public void SeedFromLegacyIfEmpty_DoesNotScanWhenProfilesExist()
+    {
+        using var sandbox = new TestSandbox("ap-gamelib-skip-scan");
+        var game = MakeFakeGame(sandbox, "Existing", "AstralParty_CN.exe");
+        var service = new GameLibraryService(sandbox.Root);
+        service.AddDirectory(game);
+
+        service.SeedFromLegacyIfEmpty(() =>
+            throw new InvalidOperationException("已有档案时不应调用目录扫描"));
+
+        Assert.Single(service.GetProfiles());
+        Assert.Equal(game, service.GetActiveDirectory());
+    }
+
+    [Fact]
+    public void SeedFromLegacyIfEmpty_InvokesScanOnlyOnceWhenEmpty()
+    {
+        using var sandbox = new TestSandbox("ap-gamelib-lazy-scan");
+        var game = MakeFakeGame(sandbox, "Detected", "AstralParty_CN.exe");
+        var service = new GameLibraryService(sandbox.Root);
+        var scans = 0;
+        IEnumerable<string?> Scan()
+        {
+            scans++;
+            return new[] { game };
+        }
+
+        service.SeedFromLegacyIfEmpty(Scan);
+        service.SeedFromLegacyIfEmpty(Scan);
+
+        Assert.Equal(1, scans);
+        Assert.Equal(game, service.GetActiveDirectory());
+    }
+
+    [Fact]
     public void SeedFromLegacyIfEmpty_ImportsLegacyDirectory()
     {
         using var sandbox = new TestSandbox("ap-gamelib-seed");
@@ -180,6 +215,22 @@ public sealed class GameLibraryTests
 
         Assert.Equal("AstralParty_TapTap.exe", GameLibraryService.DetectExe(dir));
         Assert.NotNull(SpeedhackManager.ContainsGameExe(dir)); // 安装/状态用的检测也认，不再硬编码那两个名字
+    }
+
+    [Fact]
+    public void DetectExe_AcceptsLocalizedNameInUnityDirectory()
+    {
+        using var sandbox = new TestSandbox("ap-gamelib-localized-exe");
+        var dir = MakeFakeGame(sandbox, "TapTapGame", "吉星派对.exe");
+
+        Assert.Equal("吉星派对.exe", GameLibraryService.DetectExe(dir));
+        Assert.True(GameLibraryService.ValidateUnityStructure(dir));
+        Assert.NotNull(SpeedhackManager.ContainsGameExe(dir));
+
+        var service = new GameLibraryService(sandbox.Root);
+        var profile = service.AddDirectory(dir);
+        Assert.True(profile.Valid);
+        Assert.Equal("taptap", profile.Edition);
     }
 
     [Fact]

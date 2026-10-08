@@ -613,18 +613,11 @@ public sealed class SpeedhackManager
         }
     }
 
-    /// <summary>目录里第一个匹配 <see cref="GameExeSearchPattern"/>（AstralParty*.exe）的 exe 完整路径，找不到返回 null。</summary>
+    /// <summary>返回已识别游戏主程序的完整路径，包含 Unity 结构内的非标准渠道 exe 名。</summary>
     public static string? ContainsGameExe(string directory)
     {
-        try
-        {
-            return Directory.EnumerateFiles(directory, GameExeSearchPattern)
-                .FirstOrDefault(file => !string.IsNullOrEmpty(Path.GetFileName(file)));
-        }
-        catch
-        {
-            return null;
-        }
+        var exe = GameLibraryService.DetectExe(directory);
+        return string.IsNullOrEmpty(exe) ? null : Path.Combine(directory, exe);
     }
 
     // ============================== 工具 ==============================

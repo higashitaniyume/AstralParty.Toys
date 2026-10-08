@@ -38,6 +38,8 @@ public partial class HybridWindow : Window
     private readonly GameLibraryService _gameLibrary;
     private ReplayAnalyzer? _analyzer;
     private ReplayReport? _report;
+    private static readonly Uri SpectatorUri = new("https://astralpartycards.hiynet.com/");
+    private CoreWebView2Environment? _webEnvironment;
     private bool _webReady;
     private bool _webRootIsEmbedded;
     private readonly Dictionary<string, string> _replayLibrary = new(StringComparer.Ordinal);
@@ -79,8 +81,8 @@ public partial class HybridWindow : Window
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "AstralParty.Toys", "WebView2");
             Directory.CreateDirectory(userDataDirectory);
-            var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataDirectory);
-            await WebView.EnsureCoreWebView2Async(environment);
+            _webEnvironment = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataDirectory);
+            await WebView.EnsureCoreWebView2Async(_webEnvironment);
             if (useDiskWebRoot)
             {
                 // 注意：被 SetVirtualHostNameToFolderMapping 映射过的域名不会触发 WebResourceRequested，
@@ -129,6 +131,11 @@ public partial class HybridWindow : Window
             StartupDetail.Text = $"主界面启动失败：{ex.Message}";
             ClassicButton.Visibility = Visibility.Visible;
         }
+    }
+
+    private void OpenSpectator()
+    {
+        TryOpenExternal(SpectatorUri.AbsoluteUri);
     }
 
     /// <summary>
@@ -184,18 +191,27 @@ public partial class HybridWindow : Window
             {
                 case "ready":
                     _webReady = true;
-                    StartupOverlay.Visibility = Visibility.Collapsed;
-                    // 首启把旧的单目录记忆 + Steam 自动检测结果迁进「游戏档案」，并让当前游戏在两个管理器里保持一致
-                    _gameLibrary.SeedFromLegacyIfEmpty(new[]
-                        {
-                            _modManager.GetStoredGameDirectory(),
-                            _speedhackManager.GetStoredGameDirectory()
-                        }.Concat(SpeedhackManager.EnumerateGameDirectories()));
-                    SyncActiveGameToManagers();
-                    Post(new { type = "homeData", payload = _homeDataService.GetHomeData() });
+                    // 版本来自程序集，先发送，不能排在游戏目录扫描之后。
                     PostAppVersion();
-                    PostSteamBypassSync();
-                    PushGameProfiles();
+                    StartupDetail.Text = "读取游戏档案，首次使用时检测 Steam 游戏目录";
+                    try
+                    {
+                        // 目录提供者必须延迟调用：已有档案时不扫描 Steam。
+                        // 扫描和迁移放到后台；初始化完成前保留加载层，避免操作与迁移同时写状态。
+                        await Task.Run(() => _gameLibrary.SeedFromLegacyIfEmpty(() => new[]
+                            {
+                                _modManager.GetStoredGameDirectory(),
+                                _speedhackManager.GetStoredGameDirectory()
+                            }.Concat(SpeedhackManager.EnumerateGameDirectories())));
+                        SyncActiveGameToManagers();
+                        Post(new { type = "homeData", payload = _homeDataService.GetHomeData() });
+                        _ = PostSteamBypassSyncAsync();
+                        _ = PushGameProfilesAsync();
+                    }
+                    finally
+                    {
+                        StartupOverlay.Visibility = Visibility.Collapsed;
+                    }
                     await SendReplayLibraryAsync(runMaintain: true);
                     Post(new { type = "librarySettings", payload = BuildLibrarySettingsPayload() });
                     var args = Environment.GetCommandLineArgs();
@@ -203,7 +219,7 @@ public partial class HybridWindow : Window
                     break;
                 case "getHomeData":
                     Post(new { type = "homeData", payload = _homeDataService.GetHomeData() });
-                    PostSteamBypassSync();
+                    _ = PostSteamBypassSyncAsync();
                     break;
                 case "getAppVersion":
                     PostAppVersion();
@@ -278,7 +294,7 @@ public partial class HybridWindow : Window
                     HandleLibrarySaveSettings(root);
                     break;
                 case "gameProfilesGet":
-                    PushGameProfiles();
+                    _ = PushGameProfilesAsync();
                     break;
                 case "gameProfileBrowse":
                     HandleGameProfileBrowse();
@@ -301,7 +317,7 @@ public partial class HybridWindow : Window
                         var newLabel = root.TryGetProperty("label", out var lblEl) ? lblEl.GetString() : null;
                         var newEdition = root.TryGetProperty("edition", out var edEl) ? edEl.GetString() : null;
                         _gameLibrary.UpdateProfile(updId, newLabel, newEdition);
-                        PushGameProfiles();
+                        _ = PushGameProfilesAsync();
                     }
                     break;
                 case "gameProfileRemove":
@@ -310,9 +326,9 @@ public partial class HybridWindow : Window
                     {
                         _gameLibrary.Remove(rmId);
                         SyncActiveGameToManagers();
-                        PushGameProfiles();
-                        PushModStatus();
-                        PushSpeedhackStatus();
+                        _ = PushGameProfilesAsync();
+                        _ = PushModStatusAsync();
+                        _ = PushSpeedhackStatusAsync();
                     }
                     break;
                 case "gameProfileOpen":
@@ -345,6 +361,20 @@ public partial class HybridWindow : Window
                 case "openClassic":
                     OpenClassicWindow();
                     break;
+                case "copySpectatorLink":
+                    try
+                    {
+                        Clipboard.SetText(SpectatorUri.AbsoluteUri);
+                        Post(new { type = "spectatorLinkCopied", success = true });
+                    }
+                    catch (Exception)
+                    {
+                        Post(new { type = "spectatorLinkCopied", success = false });
+                    }
+                    break;
+                case "openSpectator":
+                    OpenSpectator();
+                    break;
                 case "openBrowser":
                     if (root.TryGetProperty("url", out var urlElement) &&
                         urlElement.GetString() is { Length: > 0 } targetUrl)
@@ -365,7 +395,7 @@ public partial class HybridWindow : Window
                     }
                     break;
                 case "speedhackStatus":
-                    PushSpeedhackStatus();
+                    _ = PushSpeedhackStatusAsync();
                     break;
                 case "speedhackDetect":
                     HandleSpeedhackDetect();
@@ -405,7 +435,7 @@ public partial class HybridWindow : Window
                     HandleSpeedhackOpenGameDir();
                     break;
                 case "modStatus":
-                    PushModStatus();
+                    _ = PushModStatusAsync();
                     break;
                 case "modInstall":
                     var modOverwrite = root.TryGetProperty("overwriteDll", out var modOverwriteElement) &&
@@ -888,25 +918,39 @@ public partial class HybridWindow : Window
     /// <summary>把「当前游戏」目录写进两个管理器各自的状态文件，让模组页 / 变速器页看到的是同一个游戏。</summary>
     private void SyncActiveGameToManagers()
     {
-        var dir = _gameLibrary.GetActiveDirectory();
+        // 同步已保存的选择无需探测目录；离线网络路径的存在检查会等待系统超时。
+        var dir = _gameLibrary.GetActive()?.Directory;
         if (string.IsNullOrWhiteSpace(dir)) return;
         _modManager.SaveStoredGameDirectory(dir);
         _speedhackManager.SaveStoredGameDirectory(dir);
     }
 
-    private void PushGameProfiles()
+    private int _gameProfilesRequest;
+
+    private async Task PushGameProfilesAsync()
     {
-        var profiles = _gameLibrary.GetProfiles();
-        Post(new
+        var request = ++_gameProfilesRequest;
+        try
         {
-            type = "gameProfiles",
-            payload = new
+            // GetProfiles 会校验每个游戏位置，包含非当前的网络目录；全部移出界面线程。
+            var payload = await Task.Run(() =>
             {
-                profiles,
-                activeId = profiles.FirstOrDefault(p => p.Active)?.Id,
-                drives = GameLibraryService.FixedDriveRoots()
-            }
-        });
+                var profiles = _gameLibrary.GetProfiles();
+                return new
+                {
+                    profiles,
+                    activeId = profiles.FirstOrDefault(p => p.Active)?.Id,
+                    drives = GameLibraryService.FixedDriveRoots()
+                };
+            });
+            if (request == _gameProfilesRequest)
+                Post(new { type = "gameProfiles", payload });
+        }
+        catch (Exception ex)
+        {
+            if (request == _gameProfilesRequest)
+                Post(new { type = "error", message = $"读取游戏位置失败：{ex.Message}" });
+        }
     }
 
     private void HandleGameProfileBrowse()
@@ -921,15 +965,15 @@ public partial class HybridWindow : Window
 
         if (GameLibraryService.DetectExe(folder) is null)
         {
-            Post(new { type = "toast", message = "这个目录里没有找到 AstralParty*.exe，确认选的是游戏 exe 所在的文件夹？" });
+            Post(new { type = "toast", message = "这个目录里没有检测到游戏主程序。请确认所选目录包含游戏 exe、UnityPlayer.dll 和 *_Data 文件夹。" });
             return;
         }
         var view = _gameLibrary.AddDirectory(folder, activate: true);
         SyncActiveGameToManagers();
         Post(new { type = "toast", message = $"已添加并切换到：{view.Label}" });
-        PushGameProfiles();
-        PushModStatus();
-        PushSpeedhackStatus();
+        _ = PushGameProfilesAsync();
+        _ = PushModStatusAsync();
+        _ = PushSpeedhackStatusAsync();
     }
 
     private void HandleGameProfileAddPath(string directory, bool activate)
@@ -942,17 +986,17 @@ public partial class HybridWindow : Window
         var view = _gameLibrary.AddDirectory(directory, activate);
         if (activate) SyncActiveGameToManagers();
         Post(new { type = "toast", message = activate ? $"已添加并切换到：{view.Label}" : $"已添加：{view.Label}" });
-        PushGameProfiles();
-        if (activate) { PushModStatus(); PushSpeedhackStatus(); }
+        _ = PushGameProfilesAsync();
+        if (activate) { _ = PushModStatusAsync(); _ = PushSpeedhackStatusAsync(); }
     }
 
     private void HandleGameProfileSetActive(string id)
     {
         _gameLibrary.SetActive(id);
         SyncActiveGameToManagers();
-        PushGameProfiles();
-        PushModStatus();
-        PushSpeedhackStatus();
+        _ = PushGameProfilesAsync();
+        _ = PushModStatusAsync();
+        _ = PushSpeedhackStatusAsync();
     }
 
     private void HandleGameProfileOpen(string id)
@@ -1098,23 +1142,26 @@ public partial class HybridWindow : Window
     ///
     /// 没装加载器（没有 doorstop_config.json）时不推：那时没有"配置"可跟随，首页保留自己的默认 ——「从 Steam 启动」。
     /// 推送失败也不影响任何功能，首页会退回它自己记住的选择。</summary>
-    private void PostSteamBypassSync()
+    private int _steamBypassSyncRequest;
+
+    private async Task PostSteamBypassSyncAsync()
     {
+        var request = ++_steamBypassSyncRequest;
         try
         {
-            var gameDirectory = _modManager.ResolveGameDirectory();
-            if (string.IsNullOrEmpty(gameDirectory)) return;
-            if (!File.Exists(_modManager.LoaderConfigPath(gameDirectory))) return;
-
-            Post(new
+            var enabled = await Task.Run<bool?>(() =>
             {
-                type = "steamBypassSync",
-                payload = new { enabled = ModManager.IsSteamBypassActive(_modManager.ReadLoaderConfig(gameDirectory)) }
+                var gameDirectory = _modManager.GetStoredGameDirectory();
+                if (string.IsNullOrEmpty(gameDirectory)) return null;
+                if (!File.Exists(_modManager.LoaderConfigPath(gameDirectory))) return null;
+                return ModManager.IsSteamBypassActive(_modManager.ReadLoaderConfig(gameDirectory));
             });
+            if (request == _steamBypassSyncRequest && enabled.HasValue)
+                Post(new { type = "steamBypassSync", payload = new { enabled = enabled.Value } });
         }
         catch
         {
-            // 尽力而为：读不到配置就让首页用它自己记住的选择
+            // 网络位置离线或读不到配置时，保留首页已经记住的选择。
         }
     }
 
@@ -1705,21 +1752,37 @@ public partial class HybridWindow : Window
 
     // ============================== 变速器（游戏工具） ==============================
 
-    private void PushSpeedhackStatus()
+    private int _speedhackStatusRequest;
+
+    private async Task PushSpeedhackStatusAsync()
     {
-        var status = _speedhackManager.GetStatus();
-        SpeedhackEditorModel? editor = null;
-        var configBroken = false;
+        var request = ++_speedhackStatusRequest;
         try
         {
-            editor = SpeedhackEditorMapper.MapToEditor(_speedhackManager.LoadProfileConfig());
+            var payload = await Task.Run(() =>
+            {
+                var status = _speedhackManager.GetStatus();
+                SpeedhackEditorModel? editor = null;
+                var configBroken = false;
+                try
+                {
+                    editor = SpeedhackEditorMapper.MapToEditor(_speedhackManager.LoadProfileConfig());
+                }
+                catch (Exception)
+                {
+                    configBroken = true;
+                }
+                return new { status, config = editor, configBroken };
+            });
+            // 切换游戏或刷新后，较早的读取结果不能覆盖最新状态。
+            if (request == _speedhackStatusRequest)
+                Post(new { type = "speedhackStatus", payload });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            configBroken = true;
+            if (request == _speedhackStatusRequest)
+                Post(new { type = "error", message = $"读取变速器状态失败：{ex.Message}" });
         }
-
-        Post(new { type = "speedhackStatus", payload = new { status, config = editor, configBroken } });
     }
 
     private void HandleSpeedhackDetect()
@@ -1734,9 +1797,9 @@ public partial class HybridWindow : Window
             _gameLibrary.AddDirectory(directory, activate: true);
             SyncActiveGameToManagers();
             Post(new { type = "toast", message = $"已自动定位游戏目录：{directory}" });
-            PushGameProfiles();
+            _ = PushGameProfilesAsync();
         }
-        PushSpeedhackStatus();
+        _ = PushSpeedhackStatusAsync();
     }
 
     private void HandleSpeedhackBrowse()
@@ -1752,8 +1815,8 @@ public partial class HybridWindow : Window
             _gameLibrary.AddDirectory(dialog.FolderName, activate: true);
             SyncActiveGameToManagers();
             Post(new { type = "toast", message = $"已选择游戏目录：{dialog.FolderName}" });
-            PushGameProfiles();
-            PushSpeedhackStatus();
+            _ = PushGameProfilesAsync();
+            _ = PushSpeedhackStatusAsync();
         }
     }
 
@@ -1769,14 +1832,14 @@ public partial class HybridWindow : Window
     {
         _speedhackManager.Install(RequireGameDirectory(), overwriteDll);
         Post(new { type = "toast", message = SpeedhackManager.DescribeInstalled() });
-        PushSpeedhackStatus();
+        _ = PushSpeedhackStatusAsync();
     }
 
     private void HandleSpeedhackUninstall(bool force)
     {
         var result = _speedhackManager.Uninstall(RequireGameDirectory(), force);
         Post(new { type = "toast", message = result.Message });
-        PushSpeedhackStatus();
+        _ = PushSpeedhackStatusAsync();
     }
 
     private void HandleSpeedhackSaveConfig(string rawJson, string? afterSave, bool overwriteDll)
@@ -1792,7 +1855,7 @@ public partial class HybridWindow : Window
         {
             _speedhackManager.Install(RequireGameDirectory(), overwriteDll);
             Post(new { type = "toast", message = $"变速器已安装，每次进入游戏将自动使用 {model.BaseSpeed:0.##} 倍速。" + (SpeedhackManager.IsGameRunning() ? "游戏正在运行：本次写入要重启游戏后才会加载。" : "") });
-            PushSpeedhackStatus();
+            _ = PushSpeedhackStatusAsync();
             return;
         }
 
@@ -1807,7 +1870,7 @@ public partial class HybridWindow : Window
                 ? $"配置已保存并同步到游戏目录；下次进入游戏自动使用 {model.BaseSpeed:0.##} 倍速。"
                 : "配置已保存到本地主配置，安装变速器时会一并复制到游戏目录。"
         });
-        PushSpeedhackStatus();
+        _ = PushSpeedhackStatusAsync();
     }
 
     private void HandleSpeedhackResetConfig()
@@ -1818,7 +1881,7 @@ public partial class HybridWindow : Window
         if (!string.IsNullOrEmpty(installedDirectory)) _speedhackManager.PushConfigToGame(installedDirectory);
 
         Post(new { type = "toast", message = "已恢复默认模板（Ctrl 切换 2 倍速）。" });
-        PushSpeedhackStatus();
+        _ = PushSpeedhackStatusAsync();
     }
 
     private void HandleSpeedhackPushConfig()
@@ -1828,7 +1891,7 @@ public partial class HybridWindow : Window
             throw new InvalidOperationException("游戏目录尚未安装变速器，请先安装。");
         _speedhackManager.PushConfigToGame(directory);
         Post(new { type = "toast", message = "配置已同步到游戏目录，重启游戏后生效。" });
-        PushSpeedhackStatus();
+        _ = PushSpeedhackStatusAsync();
     }
 
     private void HandleSpeedhackEditConfig()
@@ -1845,11 +1908,22 @@ public partial class HybridWindow : Window
 
     // ============================== Mod 加载器（游戏工具） ==============================
 
-    private void PushModStatus()
+    private int _modStatusRequest;
+
+    private async Task PushModStatusAsync()
     {
-        var status = _modManager.GetStatus();
-        // builtInMods：随程序内嵌的那几个模组 id —— 前端据此给它们打「内置」标签
-        Post(new { type = "modStatus", payload = new { status, builtInMods = ModManager.EmbeddedBuiltInModIdList } });
+        var request = ++_modStatusRequest;
+        try
+        {
+            var status = await Task.Run(() => _modManager.GetStatus());
+            if (request == _modStatusRequest)
+                Post(new { type = "modStatus", payload = new { status, builtInMods = ModManager.EmbeddedBuiltInModIdList } });
+        }
+        catch (Exception ex)
+        {
+            if (request == _modStatusRequest)
+                Post(new { type = "error", message = $"读取模组状态失败：{ex.Message}" });
+        }
     }
 
     private string RequireModGameDirectory()
@@ -1872,9 +1946,9 @@ public partial class HybridWindow : Window
             _gameLibrary.AddDirectory(directory, activate: true);
             SyncActiveGameToManagers();
             Post(new { type = "toast", message = $"已自动定位游戏目录：{directory}" });
-            PushGameProfiles();
+            _ = PushGameProfilesAsync();
         }
-        PushModStatus();
+        _ = PushModStatusAsync();
     }
 
     private void HandleModBrowse()
@@ -1890,8 +1964,8 @@ public partial class HybridWindow : Window
             _gameLibrary.AddDirectory(dialog.FolderName, activate: true);
             SyncActiveGameToManagers();
             Post(new { type = "toast", message = $"已选择游戏目录：{dialog.FolderName}" });
-            PushGameProfiles();
-            PushModStatus();
+            _ = PushGameProfilesAsync();
+            _ = PushModStatusAsync();
         }
     }
 
@@ -1899,15 +1973,15 @@ public partial class HybridWindow : Window
     {
         _modManager.Install(RequireModGameDirectory(), overwriteDll, includeSample, allowDowngrade);
         Post(new { type = "toast", message = ModManager.DescribeInstalled() });
-        PushModStatus();
-        PostSteamBypassSync();   // 刚装/更新完，首页的启动方式单选框跟上新配置
+        _ = PushModStatusAsync();
+        _ = PostSteamBypassSyncAsync();   // 刚装/更新完，首页的启动方式单选框跟上新配置
     }
 
     private void HandleModUninstall(bool force)
     {
         var result = _modManager.Uninstall(RequireModGameDirectory(), force);
         Post(new { type = "toast", message = result.Message });
-        PushModStatus();
+        _ = PushModStatusAsync();
     }
 
     private void HandleModOpenFolder(string folderName)
@@ -1922,7 +1996,7 @@ public partial class HybridWindow : Window
     {
         var entry = _modManager.ImportMod(RequireModGameDirectory(), path);
         Post(new { type = "toast", message = $"已导入 mod：{entry.FileName}（{FormatBytes(entry.SizeBytes)}）" });
-        PushModStatus();
+        _ = PushModStatusAsync();
     }
 
     private void HandleModPickImport()
@@ -1950,7 +2024,7 @@ public partial class HybridWindow : Window
         }
         if (imported > 0)
             Post(new { type = "toast", message = $"已导入 {imported} 个 mod，重启游戏后生效。" });
-        PushModStatus();
+        _ = PushModStatusAsync();
     }
 
     private void HandleModDelete(string fileName)
@@ -1964,7 +2038,7 @@ public partial class HybridWindow : Window
         {
             Post(new { type = "toast", message = $"已删除 mod：{entry.FileName}" });
         }
-        PushModStatus();
+        _ = PushModStatusAsync();
     }
 
     private void HandleModToggle(string fileName, bool enabled)
@@ -1980,7 +2054,7 @@ public partial class HybridWindow : Window
         {
             Post(new { type = "toast", message = $"切换 mod 状态失败：{ex.Message}" });
         }
-        PushModStatus();
+        _ = PushModStatusAsync();
     }
 
     private void HandleModOpenConfig(string fileName)
@@ -2020,7 +2094,7 @@ public partial class HybridWindow : Window
             var bytes = await _modManager.DownloadLatestPackageAsync().ConfigureAwait(true);
             var manifest = ModManager.ParsePackageManifest(bytes);
             Post(new { type = "modUpdateCheck", payload = new { latest = manifest?.Version ?? "" } });
-            PushModStatus();
+            _ = PushModStatusAsync();
         }
         catch (Exception ex)
         {
@@ -2040,8 +2114,8 @@ public partial class HybridWindow : Window
 
             var versionText = string.IsNullOrEmpty(manifest?.Version) ? "" : $"（{manifest.Version}）";
             Post(new { type = "toast", message = $"加载器已更新{versionText}。" + (SpeedhackManager.IsGameRunning() ? "游戏正在运行，重启游戏后生效。" : "") });
-            PushModStatus();
-            PostSteamBypassSync();   // 刚更新完，首页的启动方式单选框跟上新配置
+            _ = PushModStatusAsync();
+            _ = PostSteamBypassSyncAsync();   // 刚更新完，首页的启动方式单选框跟上新配置
         }
         catch (Exception ex)
         {

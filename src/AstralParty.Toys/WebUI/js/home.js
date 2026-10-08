@@ -26,6 +26,7 @@
       $('btnMenuLaunchGame')?.addEventListener('click', () => this.launchGame());
       $('btnMenuSpeedhack')?.addEventListener('click', () => showPage('utilities'));
       $('btnMenuTools')?.addEventListener('click', () => showPage('tools'));
+      $('btnMenuSpectator')?.addEventListener('click', () => this.showSpectatorPrompt());
       $('btnMenuMods')?.addEventListener('click', () => showPage('mods'));
       $('dockBtnSettings')?.addEventListener('click', () => showPage('settings'));
       // 大厅「启动版本」下拉：选一个版本即设为当前游戏（下面两种启动方式都对它生效）。
@@ -35,6 +36,39 @@
         if (id) post({ type: 'gameProfileSetActive', id });
       });
       this.initLaunchMode();
+    },
+
+    showSpectatorPrompt() {
+      openModal('观战', `
+        <div class="spectator-prompt">
+          <div class="spectator-prompt-intro">
+            <img src="images/UT_Hero_LevelUp_104_Max.png" alt="" class="spectator-prompt-art">
+            <div><span class="spectator-prompt-tag">观战 · 看手牌</span>
+              <h3>前往观战页面</h3>
+              <p>在浏览器中打开观战页面，也可以复制链接稍后访问。</p>
+            </div>
+          </div>
+          <div class="spectator-link-card">
+            <label for="spectatorUrl">观战网址</label>
+            <div class="spectator-link-row">
+              <input id="spectatorUrl" type="url" value="https://astralpartycards.hiynet.com/" readonly spellcheck="false">
+              <button id="spectatorCopyBtn" class="secondary-btn" type="button">复制链接</button>
+            </div>
+            <span id="spectatorCopyStatus" class="spectator-copy-status" role="status" aria-live="polite"></span>
+          </div>
+          <div class="spectator-prompt-actions">
+            <button id="spectatorCancelBtn" class="secondary-btn" type="button">取消</button>
+            <button id="spectatorConfirmBtn" class="primary-btn" type="button">在浏览器中打开 ↗</button>
+          </div>
+        </div>
+      `);
+      $('spectatorUrl')?.addEventListener('click', event => event.target.select());
+      $('spectatorCopyBtn')?.addEventListener('click', () => post({ type: 'copySpectatorLink' }));
+      $('spectatorCancelBtn')?.addEventListener('click', closeModal);
+      $('spectatorConfirmBtn')?.addEventListener('click', () => {
+        closeModal();
+        post({ type: 'openSpectator' });
+      });
     },
 
     // 启动游戏：游戏要好几秒才起得来，期间进程还查不到，宿主也只会回一句 toast。

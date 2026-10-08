@@ -259,6 +259,14 @@ host?.addEventListener('message', event => {
       if (window.ReplayModule) window.ReplayModule.renderFrameDetail(msg.payload);
       break;
 
+    case 'spectatorLinkCopied': {
+      const status = $('spectatorCopyStatus');
+      if (status) status.textContent = msg.success ? '链接已复制' : '复制失败，请选中网址后按 Ctrl+C 复制';
+      const button = $('spectatorCopyBtn');
+      if (button) button.textContent = msg.success ? '已复制 ✓' : '复制链接';
+      break;
+    }
+
     case 'toast':
       toast(msg.message);
       break;

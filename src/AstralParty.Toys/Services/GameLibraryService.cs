@@ -119,12 +119,16 @@ public sealed class GameLibraryService
     // ============================== 迁移 ==============================
 
     /// <summary>档案为空时，用给定的目录（旧的单目录记忆 + Steam 自动检测结果）各播一颗种子；首个有效目录设为当前。</summary>
-    public void SeedFromLegacyIfEmpty(IEnumerable<string?> candidateDirectories)
+    public void SeedFromLegacyIfEmpty(IEnumerable<string?> candidateDirectories) =>
+        SeedFromLegacyIfEmpty(() => candidateDirectories);
+
+    /// <summary>只在档案为空时调用目录提供者，避免已有档案仍执行昂贵的 Steam 扫描。</summary>
+    public void SeedFromLegacyIfEmpty(Func<IEnumerable<string?>> candidateDirectories)
     {
         var data = Load();
         if (data.Profiles.Count > 0) return;
 
-        var seeds = candidateDirectories
+        var seeds = candidateDirectories()
             .Where(dir => !string.IsNullOrWhiteSpace(dir) && Directory.Exists(dir))
             .Select(dir => dir!)
             .ToList();
@@ -226,12 +230,23 @@ public sealed class GameLibraryService
 
     // ============================== 校验 / 识别 ==============================
 
-    /// <summary>目录里第一个匹配 AstralParty*.exe 的文件名（找不到返回 null）。</summary>
+    /// <summary>目录里的游戏主程序；优先匹配标准名，Unity 目录中回退到唯一/首个 exe。</summary>
     public static string? DetectExe(string directory)
     {
         try
         {
-            return Directory.EnumerateFiles(directory, SpeedhackManager.GameExeSearchPattern)
+            var knownExe = Directory.EnumerateFiles(directory, SpeedhackManager.GameExeSearchPattern)
+                .Select(Path.GetFileName)
+                .FirstOrDefault(name => !string.IsNullOrEmpty(name));
+            if (knownExe is not null) return knownExe;
+
+            // 玩家手动选中的渠道目录可能使用完全不同的 exe 名（例如“吉星派对.exe”）。
+            // 只有同时具备 UnityPlayer.dll 与 Unity *_Data 目录时才回退，避免把普通目录里的 exe 当游戏。
+            if (!File.Exists(Path.Combine(directory, "UnityPlayer.dll"))
+                || !Directory.EnumerateDirectories(directory, "*_Data").Any())
+                return null;
+
+            return Directory.EnumerateFiles(directory, "*.exe")
                 .Select(Path.GetFileName)
                 .FirstOrDefault(name => !string.IsNullOrEmpty(name));
         }

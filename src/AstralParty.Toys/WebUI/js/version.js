@@ -6,7 +6,6 @@
 (function () {
   // 纯浏览器里打开 index.html 预览时没有宿主：如实说"没有宿主"，而不是一直显示"读取中"
   const HOST_AVAILABLE = Boolean(window.chrome?.webview);
-  const FALLBACK_DELAY = 1500;
 
   const VersionModule = {
     info: null,
@@ -20,7 +19,7 @@
       $('lobbyWhatsNewClose')?.addEventListener('click', () => this.dismissWhatsNew());
       $('lobbyWhatsNewMore')?.addEventListener('click', () => this.requestChangelog('app'));
       if (!HOST_AVAILABLE) this.render(null);
-      else setTimeout(() => { if (!this.info) this.render(null); }, FALLBACK_DELAY);
+      // 有宿主时保留「读取中」，等待真实版本消息；初始化延迟不代表版本缺失。
     },
 
     render(payload) {
