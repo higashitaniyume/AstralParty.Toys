@@ -280,6 +280,10 @@ host?.addEventListener('message', event => {
       if (window.ModsModule) window.ModsModule.renderModStatus(msg.payload);
       break;
 
+    case 'modPackageImportResult':
+      window.ModsModule?.renderPackageImportResult(msg.payload);
+      break;
+
     case 'modUpdateCheck':
       // 「检查更新」的联网结果（最新版本号 / 错误）
       if (window.ModsModule) window.ModsModule.renderUpdateCheck(msg.payload);

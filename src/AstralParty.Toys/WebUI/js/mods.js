@@ -64,6 +64,76 @@
       post({ type: 'modSyncSpeedhack' });
     },
 
+    openUninstallConfirm() {
+      openModal('卸载加载器', `
+        <div class="cfg-form">
+          <p class="cfg-hint">卸载将删除加载器及 AstralParty_ModLoader 目录，包括模组、配置和日志。此操作无法通过工具撤销。</p>
+          <div class="cfg-actions">
+            <button class="secondary-btn" id="modUninstallCancel">取消</button>
+            <button class="danger-btn" id="modUninstallConfirm">确认卸载</button>
+          </div>
+        </div>`, 'settings');
+      $('modUninstallCancel')?.addEventListener('click', closeModal);
+      $('modUninstallConfirm')?.addEventListener('click', () => {
+        closeModal();
+        this.setBusy('modUninstallBtn', '卸载中…');
+        post({ type: 'modUninstall', force: $('modForceUninstallCheck')?.checked === true });
+      });
+    },
+
+    openPackageImport() {
+      if (this.packageImportPending) { toast('发布包正在导入，请稍候。'); return; }
+      const html = `
+        <div class="cfg-form">
+          <p class="cfg-hint">加载器发布 ZIP 将一起安装加载器、SDK、bootstrap 和包内模组，保留已有加载器配置。仅使用可信的官方发布文件，重启游戏后生效。</p>
+          <label class="cfg-row">
+            <span class="cfg-label">发布包完整路径</span>
+            <input type="text" id="modPackagePath" placeholder="粘贴下载文件的完整路径，例如 C:\\Downloads\\cesium-loader-2.3.4.zip" autocomplete="off">
+          </label>
+          <p class="cfg-hint">可在资源管理器中右键文件 → 复制文件地址，再粘贴到这里。SDK 工具包或单独 SDK DLL 仅更新 SDK。</p>
+          <label class="util-check-row"><input type="checkbox" id="modPackageOverwrite">允许覆盖不属于本工具的 version.dll</label>
+          <label class="util-check-row"><input type="checkbox" id="modPackageDowngrade">允许安装较旧版本（降级）</label>
+          <div class="cfg-hint" id="modPackageResult" role="status" aria-live="polite"></div>
+          <div class="cfg-actions">
+            <button class="secondary-btn" id="modPackageCancel">取消</button>
+            <button class="primary-btn" id="modPackageSubmit">确认并导入</button>
+          </div>
+        </div>`;
+      openModal('导入发布包', html, 'settings');
+      $('modPackageOverwrite').checked = $('modUpdateOverwriteCheck')?.checked === true;
+      $('modPackageDowngrade').checked = $('modUpdateDowngradeCheck')?.checked === true;
+      $('modPackageCancel')?.addEventListener('click', closeModal);
+      $('modPackageSubmit')?.addEventListener('click', () => {
+        const path = $('modPackagePath').value.trim().replace(/^"|"$/g, '');
+        if (!path) {
+          $('modPackageResult').textContent = '请粘贴发布包的完整路径。';
+          $('modPackagePath').focus();
+          return;
+        }
+        this.packageImportPending = true;
+        $('modPackageSubmit').disabled = true;
+        $('modPackageSubmit').textContent = '导入中…';
+        $('modPackageResult').textContent = '正在校验并安装发布包…';
+        post({ type: 'modImportPackage', path,
+          overwriteDll: $('modPackageOverwrite').checked,
+          allowDowngrade: $('modPackageDowngrade').checked });
+      });
+      $('modPackagePath')?.focus();
+    },
+
+    renderPackageImportResult(payload) {
+      this.packageImportPending = false;
+      const result = $('modPackageResult');
+      if (result) result.textContent = payload?.message || '导入结束。';
+      const button = $('modPackageSubmit');
+      if (button) {
+        button.disabled = false;
+        button.textContent = payload?.success ? '再次导入' : '重试导入';
+      }
+      const cancel = $('modPackageCancel');
+      if (cancel) cancel.textContent = '关闭';
+    },
+
     bindEvents() {
       $('modsBackHomeBtn')?.addEventListener('click', () => showPage('home'));
 
@@ -77,20 +147,13 @@
           includeSample: $('modIncludeSampleCheck')?.checked !== false
         });
       });
-      $('modUninstallBtn')?.addEventListener('click', () => {
-        this.setBusy('modUninstallBtn', '卸载中…');
-        post({ type: 'modUninstall', force: $('modForceUninstallCheck')?.checked === true });
-      });
+      $('modUninstallBtn')?.addEventListener('click', () => this.openUninstallConfirm());
       $('modDetectDirBtn')?.addEventListener('click', () => post({ type: 'modDetect' }));
       $('modBrowseDirBtn')?.addEventListener('click', () => post({ type: 'modBrowse' }));
       $('modOpenModsBtn')?.addEventListener('click', () => post({ type: 'modOpenModsFolder' }));
       $('modOpenFolderTopBtn')?.addEventListener('click', () => post({ type: 'modOpenModsFolder' }));
       $('modOpenSdkBtn')?.addEventListener('click', () => post({ type: 'modOpenSdkFolder' }));
-      $('modImportPackageBtn')?.addEventListener('click', () => post({
-        type: 'modPickPackageImport',
-        overwriteDll: $('modUpdateOverwriteCheck')?.checked === true,
-        allowDowngrade: $('modUpdateDowngradeCheck')?.checked === true
-      }));
+      $('modImportPackageBtn')?.addEventListener('click', () => this.openPackageImport());
       $('modOpenLogsBtn')?.addEventListener('click', () => post({ type: 'modOpenLogsFolder' }));
       $('modImportBtn')?.addEventListener('click', () => post({ type: 'modPickImport' }));
       $('modImportTopBtn')?.addEventListener('click', () => post({ type: 'modPickImport' }));

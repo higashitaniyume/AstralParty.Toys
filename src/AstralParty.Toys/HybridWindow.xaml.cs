@@ -472,10 +472,11 @@ public partial class HybridWindow : Window
                         HandleModImport(modPath);
                     }
                     break;
-                case "modPickPackageImport":
+                case "modImportPackage":
                     var importOverwrite = root.TryGetProperty("overwriteDll", out var importOverwriteElement) && importOverwriteElement.GetBoolean();
                     var importDowngrade = root.TryGetProperty("allowDowngrade", out var importDowngradeElement) && importDowngradeElement.GetBoolean();
-                    HandleModPickPackageImport(importOverwrite, importDowngrade);
+                    var importPath = root.TryGetProperty("path", out var importPathElement) ? importPathElement.GetString() ?? "" : "";
+                    _ = HandleModImportPackageAsync(importPath, importOverwrite, importDowngrade);
                     break;
                 case "modPickImport":
                     HandleModPickImport();
@@ -1984,12 +1985,6 @@ public partial class HybridWindow : Window
 
     private void HandleModUninstall(bool force)
     {
-        if (MessageBox.Show(this, "卸载将删除加载器及 AstralParty_ModLoader 目录，包括模组、配置和日志。确定卸载吗？",
-                "卸载加载器", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
-        {
-            _ = PushModStatusAsync();
-            return;
-        }
         var result = _modManager.Uninstall(RequireModGameDirectory(), force);
         Post(new { type = "toast", message = result.Message });
         _ = PushModStatusAsync();
@@ -2010,30 +2005,37 @@ public partial class HybridWindow : Window
         _ = PushModStatusAsync();
     }
 
-    private void HandleModPickPackageImport(bool overwriteDll, bool allowDowngrade)
+    private bool _modPackageImportRunning;
+
+    private async Task HandleModImportPackageAsync(string path, bool overwriteDll, bool allowDowngrade)
     {
-        var directory = RequireModGameDirectory();
-        var dialog = new OpenFileDialog
+        if (_modPackageImportRunning)
         {
-            Title = "选择 CesiumLoader 发布包（加载器与 SDK 整包安装）",
-            Filter = "CesiumLoader 发布包|*.zip|SDK DLL|CesiumLoader.SDK.dll",
-            CheckFileExists = true
-        };
-        if (dialog.ShowDialog(this) != true) return;
-        if (MessageBox.Show(this,
-                "加载器发布 ZIP 将安装加载器、SDK、bootstrap 与包内模组，保留已有加载器配置。SDK 工具包或 DLL 只更新 SDK。请仅选择可信的官方发布文件；重启游戏后生效。确定导入吗？",
-                "导入发布包", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
+            Post(new { type = "modPackageImportResult", payload = new { success = false, message = "已有发布包正在导入，请稍候。" } });
+            return;
+        }
+        _modPackageImportRunning = true;
         try
         {
-            var description = _modManager.ImportReleaseFile(directory, dialog.FileName, overwriteDll, allowDowngrade);
-            Post(new { type = "toast", message = $"已导入 {description}，重启游戏后生效。" });
+            var directory = RequireModGameDirectory();
+            path = path.Trim().Trim('"');
+            if (!Path.IsPathFullyQualified(path) || !File.Exists(path))
+                throw new InvalidOperationException("请填写存在的发布包完整路径。");
+            var description = await Task.Run(() => _modManager.ImportReleaseFile(directory, path, overwriteDll, allowDowngrade));
+            var message = $"已导入 {description}，重启游戏后生效。";
+            Post(new { type = "modPackageImportResult", payload = new { success = true, message } });
+            Post(new { type = "toast", message });
             _ = PostSteamBypassSyncAsync();
         }
         catch (Exception ex)
         {
-            Post(new { type = "toast", message = $"导入发布包失败：{ex.Message}" });
+            Post(new { type = "modPackageImportResult", payload = new { success = false, message = $"导入失败：{ex.Message}" } });
         }
-        _ = PushModStatusAsync();
+        finally
+        {
+            _modPackageImportRunning = false;
+            _ = PushModStatusAsync();
+        }
     }
 
     private void HandleModPickImport()
