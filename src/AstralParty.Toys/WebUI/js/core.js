@@ -280,6 +280,10 @@ host?.addEventListener('message', event => {
       if (window.ModsModule) window.ModsModule.renderModStatus(msg.payload);
       break;
 
+    case 'modPackageFileSelected':
+      window.ModsModule?.applyPackageFile(msg.payload);
+      break;
+
     case 'modPackageImportResult':
       window.ModsModule?.renderPackageImportResult(msg.payload);
       break;

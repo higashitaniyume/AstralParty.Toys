@@ -88,9 +88,10 @@
           <p class="cfg-hint">加载器发布 ZIP 将一起安装加载器、SDK、bootstrap 和包内模组，保留已有加载器配置。仅使用可信的官方发布文件，重启游戏后生效。</p>
           <label class="cfg-row">
             <span class="cfg-label">发布包完整路径</span>
-            <input type="text" id="modPackagePath" placeholder="粘贴下载文件的完整路径，例如 C:\\Downloads\\cesium-loader-2.3.4.zip" autocomplete="off">
+            <input type="text" id="modPackagePath" placeholder="选择发布包或粘贴完整路径" autocomplete="off">
           </label>
-          <p class="cfg-hint">可在资源管理器中右键文件 → 复制文件地址，再粘贴到这里。SDK 工具包或单独 SDK DLL 仅更新 SDK。</p>
+          <div class="cfg-actions"><button class="secondary-btn" id="modPackageBrowse">选择文件…</button></div>
+          <p class="cfg-hint">选择文件后，点击「确认并导入」才会安装。SDK 工具包或单独 SDK DLL 仅更新 SDK。</p>
           <label class="util-check-row"><input type="checkbox" id="modPackageOverwrite">允许覆盖不属于本工具的 version.dll</label>
           <label class="util-check-row"><input type="checkbox" id="modPackageDowngrade">允许安装较旧版本（降级）</label>
           <div class="cfg-hint" id="modPackageResult" role="status" aria-live="polite"></div>
@@ -103,14 +104,17 @@
       $('modPackageOverwrite').checked = $('modUpdateOverwriteCheck')?.checked === true;
       $('modPackageDowngrade').checked = $('modUpdateDowngradeCheck')?.checked === true;
       $('modPackageCancel')?.addEventListener('click', closeModal);
+      $('modPackageBrowse')?.addEventListener('click', () => post({ type: 'modPickPackageFile' }));
       $('modPackageSubmit')?.addEventListener('click', () => {
         const path = $('modPackagePath').value.trim().replace(/^"|"$/g, '');
         if (!path) {
-          $('modPackageResult').textContent = '请粘贴发布包的完整路径。';
+          $('modPackageResult').textContent = '请选择发布包或粘贴完整路径。';
           $('modPackagePath').focus();
           return;
         }
         this.packageImportPending = true;
+        $('modPackageBrowse').disabled = true;
+        $('modPackagePath').readOnly = true;
         $('modPackageSubmit').disabled = true;
         $('modPackageSubmit').textContent = '导入中…';
         $('modPackageResult').textContent = '正在校验并安装发布包…';
@@ -121,8 +125,18 @@
       $('modPackagePath')?.focus();
     },
 
+    applyPackageFile(payload) {
+      const input = $('modPackagePath');
+      if (input && payload?.path && !this.packageImportPending) {
+        input.value = payload.path;
+        $('modPackageResult').textContent = '文件已选择，确认上方安装说明后点击「确认并导入」。';
+      }
+    },
+
     renderPackageImportResult(payload) {
       this.packageImportPending = false;
+      if ($('modPackageBrowse')) $('modPackageBrowse').disabled = false;
+      if ($('modPackagePath')) $('modPackagePath').readOnly = false;
       const result = $('modPackageResult');
       if (result) result.textContent = payload?.message || '导入结束。';
       const button = $('modPackageSubmit');

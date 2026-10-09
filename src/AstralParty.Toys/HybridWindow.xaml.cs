@@ -472,6 +472,9 @@ public partial class HybridWindow : Window
                         HandleModImport(modPath);
                     }
                     break;
+                case "modPickPackageFile":
+                    HandleModPickPackageFile();
+                    break;
                 case "modImportPackage":
                     var importOverwrite = root.TryGetProperty("overwriteDll", out var importOverwriteElement) && importOverwriteElement.GetBoolean();
                     var importDowngrade = root.TryGetProperty("allowDowngrade", out var importDowngradeElement) && importDowngradeElement.GetBoolean();
@@ -2003,6 +2006,19 @@ public partial class HybridWindow : Window
         var entry = _modManager.ImportMod(RequireModGameDirectory(), path);
         Post(new { type = "toast", message = $"已导入 mod：{entry.FileName}（{FormatBytes(entry.SizeBytes)}）" });
         _ = PushModStatusAsync();
+    }
+
+    private void HandleModPickPackageFile()
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "选择 CesiumLoader 发布包",
+            Filter = "CesiumLoader 发布包|*.zip|SDK DLL|CesiumLoader.SDK.dll",
+            CheckFileExists = true,
+            Multiselect = false
+        };
+        if (dialog.ShowDialog(this) == true)
+            Post(new { type = "modPackageFileSelected", payload = new { path = dialog.FileName } });
     }
 
     private bool _modPackageImportRunning;
