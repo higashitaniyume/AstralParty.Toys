@@ -18,7 +18,7 @@ namespace AstralParty.Toys.Services;
 /// AstralParty_ModLoader\{sdk,mods,logs} 目录结构 + 写入 doorstop_config.json；
 /// 卸载前校验 DLL 哈希，避免误删他人文件。
 /// </summary>
-public sealed class ModManager
+public sealed partial class ModManager
 {
     public const string LoaderDllName = "version.dll";
     public const string LoaderFolderName = "AstralParty_ModLoader";
@@ -376,14 +376,6 @@ public sealed class ModManager
             throw new InvalidOperationException(
                 "游戏目录里的 version.dll 不是本工具装的（来源不明，可能是旧版独立变速器或第三方文件）——" +
                 "如确定要覆盖，请勾选「允许覆盖其它 version.dll」。");
-
-        // 互斥检测: 已安装旧版独立变速器(speedhack-rs)? 两者都写 version.dll, 会互相覆盖。
-        if (HasSpeedhackInstalled(gameDirectory))
-            throw new InvalidOperationException(
-                "检测到已安装独立变速器（游戏目录存在 speedhack_config.json）。" +
-                "加载器与变速器共用 version.dll，不能同时安装：装加载器会覆盖变速器，变速热键配置将失效。" +
-                "提示：CesiumLoader 已内置变速引擎——装加载器后改 AstralParty_ModLoader\\doorstop_config.json " +
-                "里的 speedhackBaseSpeed 即可变速（无需独立变速器）。");
 
         try
         {
@@ -779,14 +771,6 @@ public sealed class ModManager
             throw new InvalidOperationException(
                 "游戏目录里的 version.dll 不是本工具装的（来源不明，可能是旧版独立变速器或第三方文件）——" +
                 "如确定要覆盖，请勾选「允许覆盖其它 version.dll」。");
-
-        // 互斥检测: 已安装旧版独立变速器
-        if (HasSpeedhackInstalled(gameDirectory))
-            throw new InvalidOperationException(
-                "检测到已安装独立变速器（游戏目录存在 speedhack_config.json）。" +
-                "加载器与变速器共用 version.dll，不能同时安装：装加载器会覆盖变速器，变速热键配置将失效。" +
-                "提示：CesiumLoader 已内置变速引擎——装加载器后改 AstralParty_ModLoader\\doorstop_config.json " +
-                "里的 speedhackBaseSpeed 即可变速（无需独立变速器）。");
 
         try
         {

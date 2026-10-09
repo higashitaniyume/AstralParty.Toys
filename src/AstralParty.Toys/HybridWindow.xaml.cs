@@ -472,6 +472,11 @@ public partial class HybridWindow : Window
                         HandleModImport(modPath);
                     }
                     break;
+                case "modPickPackageImport":
+                    var importOverwrite = root.TryGetProperty("overwriteDll", out var importOverwriteElement) && importOverwriteElement.GetBoolean();
+                    var importDowngrade = root.TryGetProperty("allowDowngrade", out var importDowngradeElement) && importDowngradeElement.GetBoolean();
+                    HandleModPickPackageImport(importOverwrite, importDowngrade);
+                    break;
                 case "modPickImport":
                     HandleModPickImport();
                     break;
@@ -1979,6 +1984,12 @@ public partial class HybridWindow : Window
 
     private void HandleModUninstall(bool force)
     {
+        if (MessageBox.Show(this, "卸载将删除加载器及 AstralParty_ModLoader 目录，包括模组、配置和日志。确定卸载吗？",
+                "卸载加载器", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+        {
+            _ = PushModStatusAsync();
+            return;
+        }
         var result = _modManager.Uninstall(RequireModGameDirectory(), force);
         Post(new { type = "toast", message = result.Message });
         _ = PushModStatusAsync();
@@ -1996,6 +2007,32 @@ public partial class HybridWindow : Window
     {
         var entry = _modManager.ImportMod(RequireModGameDirectory(), path);
         Post(new { type = "toast", message = $"已导入 mod：{entry.FileName}（{FormatBytes(entry.SizeBytes)}）" });
+        _ = PushModStatusAsync();
+    }
+
+    private void HandleModPickPackageImport(bool overwriteDll, bool allowDowngrade)
+    {
+        var directory = RequireModGameDirectory();
+        var dialog = new OpenFileDialog
+        {
+            Title = "选择 CesiumLoader 发布包（加载器与 SDK 整包安装）",
+            Filter = "CesiumLoader 发布包|*.zip|SDK DLL|CesiumLoader.SDK.dll",
+            CheckFileExists = true
+        };
+        if (dialog.ShowDialog(this) != true) return;
+        if (MessageBox.Show(this,
+                "加载器发布 ZIP 将安装加载器、SDK、bootstrap 与包内模组，保留已有加载器配置。SDK 工具包或 DLL 只更新 SDK。请仅选择可信的官方发布文件；重启游戏后生效。确定导入吗？",
+                "导入发布包", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
+        try
+        {
+            var description = _modManager.ImportReleaseFile(directory, dialog.FileName, overwriteDll, allowDowngrade);
+            Post(new { type = "toast", message = $"已导入 {description}，重启游戏后生效。" });
+            _ = PostSteamBypassSyncAsync();
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = $"导入发布包失败：{ex.Message}" });
+        }
         _ = PushModStatusAsync();
     }
 

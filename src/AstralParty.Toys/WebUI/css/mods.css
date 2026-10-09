@@ -208,7 +208,8 @@ body:not(.reduce-motion) #modsView:not(.page-entering) .mods-advanced {
   gap: 10px;
 }
 .loader-actions .primary-btn,
-.loader-actions .secondary-btn {
+.loader-actions .secondary-btn,
+.loader-actions .danger-btn {
   padding: 8px 18px;
   font-size: 13px;
 }

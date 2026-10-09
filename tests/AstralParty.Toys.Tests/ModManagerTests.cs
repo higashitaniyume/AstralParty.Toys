@@ -413,7 +413,7 @@ public sealed class ModManagerTests
     }
 
     [Fact]
-    public void Install_DetectsSpeedhackConflict()
+    public void Install_IgnoresLeftoverSpeedhackConfig()
     {
         using var harness = new ModHarness("ap-mod-conflict");
         harness.Manager.SaveStoredGameDirectory(harness.GameDirectory);
@@ -422,10 +422,96 @@ public sealed class ModManagerTests
         File.WriteAllText(Path.Combine(harness.GameDirectory, "speedhack_config.json"), "{}");
 
         Assert.True(ModManager.HasSpeedhackInstalled(harness.GameDirectory), "应检测到变速器");
-        var ex = Assert.Throws<InvalidOperationException>(
-            () => harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: true));
-        Assert.Contains("变速器", ex.Message);
-        Assert.Contains("speedhackBaseSpeed", ex.Message);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: true);
+        Assert.True(harness.Manager.GetStatus().Installed);
+        Assert.Equal("{}", File.ReadAllText(Path.Combine(harness.GameDirectory, "speedhack_config.json")));
+    }
+
+    [Fact]
+    public void InstallPackage_IgnoresLeftoverSpeedhackConfig()
+    {
+        using var harness = new ModHarness("ap-mod-json-package");
+        var config = Path.Combine(harness.GameDirectory, "speedhack_config.json");
+        File.WriteAllText(config, "legacy settings");
+        harness.Manager.InstallPackage(harness.GameDirectory, BuildFakePackage("9.0.0"), overwriteDll: false);
+        Assert.Equal("legacy settings", File.ReadAllText(config));
+        Assert.True(File.Exists(Path.Combine(harness.GameDirectory, ModManager.LoaderDllName)));
+    }
+
+    [Theory]
+    [InlineData("CesiumLoader.SDK.dll")]
+    [InlineData("AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll")]
+    public void ImportSdk_ImportsReleaseLayoutsWithoutTools(string sdkEntry)
+    {
+        using var harness = new ModHarness("ap-sdk-import");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var sdkPath = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, "sdk", ModManager.SdkDllName);
+        var sdk = File.ReadAllBytes(sdkPath);
+        var zip = Path.Combine(harness.GameDirectory, "sdk.zip");
+        using (var archive = ZipFile.Open(zip, ZipArchiveMode.Create))
+        {
+            using (var stream = archive.CreateEntry(sdkEntry).Open()) stream.Write(sdk);
+            using (var stream = archive.CreateEntry("cesium.exe").Open()) stream.Write(new byte[] { 1 });
+        }
+        Assert.NotEmpty(harness.Manager.ImportSdk(harness.GameDirectory, zip));
+        Assert.Equal(sdk, File.ReadAllBytes(sdkPath));
+        Assert.False(File.Exists(Path.Combine(harness.GameDirectory, "cesium.exe")));
+    }
+
+    [Theory]
+    [InlineData("../CesiumLoader.SDK.dll")]
+    [InlineData("CesiumLoader.SDK.dll")]
+    public void ImportSdk_InvalidArchiveDoesNotReplaceSdk(string entry)
+    {
+        using var harness = new ModHarness("ap-sdk-invalid");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var sdkPath = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, "sdk", ModManager.SdkDllName);
+        var before = File.ReadAllBytes(sdkPath);
+        var zip = Path.Combine(harness.GameDirectory, "invalid.zip");
+        using (var archive = ZipFile.Open(zip, ZipArchiveMode.Create))
+        using (var stream = archive.CreateEntry(entry).Open()) stream.Write(new byte[] { 1, 2, 3 });
+        Assert.ThrowsAny<Exception>(() => harness.Manager.ImportSdk(harness.GameDirectory, zip));
+        Assert.Equal(before, File.ReadAllBytes(sdkPath));
+    }
+
+    [Fact]
+    public void ImportSdk_DuplicateEntriesAreRejectedBeforeWriting()
+    {
+        using var harness = new ModHarness("ap-sdk-dupes");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var sdkPath = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, "sdk", ModManager.SdkDllName);
+        var before = File.ReadAllBytes(sdkPath);
+        var zip = Path.Combine(harness.GameDirectory, "duplicate.zip");
+        using (var archive = ZipFile.Open(zip, ZipArchiveMode.Create))
+        {
+            using (var stream = archive.CreateEntry(ModManager.SdkDllName).Open()) stream.Write(before);
+            using (var stream = archive.CreateEntry(ModManager.SdkDllName.ToUpperInvariant()).Open()) stream.Write(before);
+        }
+        Assert.Throws<InvalidOperationException>(() => harness.Manager.ImportSdk(harness.GameDirectory, zip));
+        Assert.Equal(before, File.ReadAllBytes(sdkPath));
+    }
+
+    [Fact]
+    public void ImportSdk_RequiresLoader()
+    {
+        using var harness = new ModHarness("ap-sdk-no-loader");
+        Assert.Throws<InvalidOperationException>(() => harness.Manager.ImportSdk(harness.GameDirectory, "unused.zip"));
+        Assert.False(Directory.Exists(Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName)));
+    }
+
+    [Fact]
+    public void ImportSdk_DirectDllPreservesModsAndConfig()
+    {
+        using var harness = new ModHarness("ap-sdk-direct");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: true);
+        var sdkPath = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, "sdk", ModManager.SdkDllName);
+        var configPath = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ConfigFileName);
+        var before = File.ReadAllBytes(configPath);
+        var mods = harness.Manager.GetStatus().Mods.Count;
+        Assert.NotEmpty(harness.Manager.ImportSdk(harness.GameDirectory, sdkPath));
+        Assert.Equal(mods, harness.Manager.GetStatus().Mods.Count);
+        // 同一 SDK 的导入不改变已有配置。
+        Assert.Equal(before, File.ReadAllBytes(configPath));
     }
 
     [Fact]
@@ -1308,6 +1394,37 @@ public sealed class ModManagerTests
         var loaderRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
         Assert.False(File.Exists(Path.Combine(harness.GameDirectory, "version.pdb")));
         Assert.True(File.Exists(Path.Combine(loaderRoot, ModManager.SdkFolderName, ModManager.SdkDllName)));
+    }
+
+    [Fact]
+    public void ImportReleaseFile_LoaderZipInstallsWholePackageWithoutExistingLoader()
+    {
+        using var harness = new ModHarness("ap-local-loader");
+        harness.Manager.SaveStoredGameDirectory(harness.GameDirectory);
+        var zip = Path.Combine(harness.GameDirectory, "cesium-loader.zip");
+        File.WriteAllBytes(zip, BuildFakePackage("9.0.0", includeSymbols: true));
+        File.WriteAllText(Path.Combine(harness.GameDirectory, "speedhack_config.json"), "legacy");
+        Assert.Contains("9.0.0", harness.Manager.ImportReleaseFile(harness.GameDirectory, zip, overwriteDll: false));
+        var root = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
+        Assert.Equal("9.0.0", harness.Manager.GetStatus().InstalledVersion);
+        Assert.True(File.Exists(Path.Combine(harness.GameDirectory, "version.dll")));
+        Assert.True(File.Exists(Path.Combine(harness.GameDirectory, "version.pdb")));
+        Assert.True(File.Exists(Path.Combine(root, "sdk", ModManager.SdkDllName)));
+        Assert.True(File.Exists(Path.Combine(root, "bootstrap", "CesiumLoader.Bootstrap.dll")));
+        Assert.NotEmpty(harness.Manager.GetStatus().Mods);
+        Assert.Equal("legacy", File.ReadAllText(Path.Combine(harness.GameDirectory, "speedhack_config.json")));
+    }
+
+    [Fact]
+    public void ImportReleaseFile_InvalidPathsWriteNothing()
+    {
+        using var harness = new ModHarness("ap-local-loader-bad");
+        var zip = Path.Combine(harness.GameDirectory, "loader.zip");
+        File.WriteAllBytes(zip, BuildFakePackage("9.0.0"));
+        using (var archive = ZipFile.Open(zip, ZipArchiveMode.Update)) archive.CreateEntry("../escape.dll");
+        Assert.Throws<InvalidOperationException>(() => harness.Manager.ImportReleaseFile(harness.GameDirectory, zip, overwriteDll: true));
+        Assert.False(File.Exists(Path.Combine(harness.GameDirectory, "version.dll")));
+        Assert.False(Directory.Exists(Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName)));
     }
 
     /// <summary>重建 zip 并把指定条目内容换成别的字节（清单哈希不变 → 校验必失败）。</summary>

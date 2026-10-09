@@ -86,6 +86,11 @@
       $('modOpenModsBtn')?.addEventListener('click', () => post({ type: 'modOpenModsFolder' }));
       $('modOpenFolderTopBtn')?.addEventListener('click', () => post({ type: 'modOpenModsFolder' }));
       $('modOpenSdkBtn')?.addEventListener('click', () => post({ type: 'modOpenSdkFolder' }));
+      $('modImportPackageBtn')?.addEventListener('click', () => post({
+        type: 'modPickPackageImport',
+        overwriteDll: $('modUpdateOverwriteCheck')?.checked === true,
+        allowDowngrade: $('modUpdateDowngradeCheck')?.checked === true
+      }));
       $('modOpenLogsBtn')?.addEventListener('click', () => post({ type: 'modOpenLogsFolder' }));
       $('modImportBtn')?.addEventListener('click', () => post({ type: 'modPickImport' }));
       $('modImportTopBtn')?.addEventListener('click', () => post({ type: 'modPickImport' }));
