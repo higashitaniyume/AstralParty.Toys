@@ -34,6 +34,7 @@ public partial class HybridWindow : Window
     private readonly HomeDataService _homeDataService;
     private readonly SpeedhackManager _speedhackManager;
     private readonly ModManager _modManager;
+    private readonly SkinManager _skinManager;
     private readonly ReplayLibraryService _libraryService;
     private readonly GameLibraryService _gameLibrary;
     private ReplayAnalyzer? _analyzer;
@@ -55,6 +56,7 @@ public partial class HybridWindow : Window
         _homeDataService = new HomeDataService(_appDirectory);
         _speedhackManager = new SpeedhackManager(_appDirectory);
         _modManager = new ModManager(_appDirectory);
+        _skinManager = new SkinManager(_appDirectory);
         _libraryService = new ReplayLibraryService(_appDirectory);
         _gameLibrary = new GameLibraryService();
     }
@@ -104,6 +106,8 @@ public partial class HybridWindow : Window
             // 导航直接失败并落到 Chromium 错误页）。
             WebView.CoreWebView2.AddWebResourceRequestedFilter(
                 "https://assets.astral.local/*", CoreWebView2WebResourceContext.Image);
+            WebView.CoreWebView2.AddWebResourceRequestedFilter(
+                "https://skins.astral.local/*", CoreWebView2WebResourceContext.Image);
             WebView.CoreWebView2.WebResourceRequested += EmbeddedRequested;
             for (var index = 0; index < _materialDirectories.Count; index++)
                 WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
@@ -149,6 +153,56 @@ public partial class HybridWindow : Window
             e.Response = CreatePageResponse(uri);
         else if (uri.Host.Equals("assets.astral.local", StringComparison.OrdinalIgnoreCase))
             e.Response = CreateAssetResponse(uri);
+        else if (uri.Host.Equals("skins.astral.local", StringComparison.OrdinalIgnoreCase))
+            e.Response = CreateSkinResponse(uri);
+    }
+
+    private CoreWebView2WebResourceResponse CreateSkinResponse(Uri uri)
+    {
+        try
+        {
+            var gameDirectory = _modManager.GetStatus().GameDirectory;
+            if (string.IsNullOrWhiteSpace(gameDirectory) || !Directory.Exists(gameDirectory))
+                return WebView.CoreWebView2.Environment.CreateWebResourceResponse(Stream.Null, 404, "Not Found", "Content-Type: text/plain");
+
+            var parts = uri.AbsolutePath.TrimStart('/').Split(['/'], 2);
+            if (parts.Length != 2)
+                return WebView.CoreWebView2.Environment.CreateWebResourceResponse(Stream.Null, 404, "Not Found", "Content-Type: text/plain");
+
+            var skinName = Uri.UnescapeDataString(parts[0]);
+            var fileName = Uri.UnescapeDataString(parts[1]);
+            var skinsDir = _skinManager.GetSkinsDirectory(gameDirectory);
+            var filePath = Path.Combine(skinsDir, skinName, fileName);
+
+            if (!File.Exists(filePath))
+            {
+                var fallbackPath = Path.Combine(skinsDir, "default", fileName);
+                if (File.Exists(fallbackPath))
+                {
+                    filePath = fallbackPath;
+                }
+                else
+                {
+                    return WebView.CoreWebView2.Environment.CreateWebResourceResponse(Stream.Null, 404, "Not Found", "Content-Type: text/plain");
+                }
+            }
+
+            var contentType = Path.GetExtension(filePath).ToLowerInvariant() switch
+            {
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".bmp" => "image/bmp",
+                _ => "image/png"
+            };
+
+            var stream = File.OpenRead(filePath);
+            return WebView.CoreWebView2.Environment.CreateWebResourceResponse(
+                new WebResourceStream(stream), 200, "OK",
+                $"Content-Type: {contentType}\r\nCache-Control: no-store\r\nAccess-Control-Allow-Origin: *");
+        }
+        catch
+        {
+            return WebView.CoreWebView2.Environment.CreateWebResourceResponse(Stream.Null, 500, "Internal Error", "Content-Type: text/plain");
+        }
     }
 
     /// <summary>提供页面本体（Document、CSS、JS、图片、fetch 的 JSON）——全部来自程序集资源。</summary>
@@ -594,6 +648,101 @@ public partial class HybridWindow : Window
                     var updateAllowDowngrade = root.TryGetProperty("allowDowngrade", out var updateDowngradeElement) &&
                                                updateDowngradeElement.GetBoolean();
                     _ = HandleModDownloadUpdateAsync(updateOverwrite, updateAllowDowngrade);
+                    break;
+                case "skinsGetProfiles":
+                    PushSkinProfiles();
+                    break;
+                case "skinsSetActive":
+                    if (root.TryGetProperty("name", out var sActiveElem) && sActiveElem.GetString() is { Length: > 0 } targetSkin)
+                    {
+                        try
+                        {
+                            var gDir = RequireModGameDirectory();
+                            _skinManager.SetActiveSkin(gDir, targetSkin);
+                            Post(new { type = "toast", message = $"已选择卡面方案：{(targetSkin == SkinManager.GameDefault ? "游戏默认" : targetSkin)}，完全退出并重启游戏后生效。" });
+                            PushSkinProfiles();
+                        }
+                        catch (Exception ex)
+                        {
+                            Post(new { type = "toast", message = $"切换方案失败：{ex.Message}" });
+                        }
+                    }
+                    break;
+                case "skinsDownloadDefault":
+                    await DownloadDefaultSkinsAsync(root.TryGetProperty("overwrite", out var skinOverwrite) && skinOverwrite.GetBoolean());
+                    break;
+                case "skinsExportZip":
+                    HandleExportSkin(root, false);
+                    break;
+                case "skinsExportConfirmed":
+                    HandleExportSkin(root, true);
+                    break;                case "skinsImportZip":
+                    HandleSkinImportZip();
+                    break;
+                case "skinsRestoreDefault":
+                    try {
+                        _skinManager.RestoreDefaultProfile(RequireModGameDirectory());
+                        PushSkinProfiles();
+                        Post(new { type = "toast", message = "已从应用内置默认包恢复 default，重启游戏后生效。" });
+                    } catch (Exception ex) { Post(new { type = "toast", message = "恢复默认包失败：" + ex.Message }); }
+                    break;
+                case "skinsDuplicate":
+                    HandleSkinDuplicate(root);
+                    break;
+                case "skinsDelete":
+                    if (root.TryGetProperty("name", out var sDelElem) && sDelElem.GetString() is { Length: > 0 } delSkin)
+                    {
+                        try
+                        {
+                            var gDir = RequireModGameDirectory();
+                            _skinManager.DeleteProfile(gDir, delSkin);
+                            Post(new { type = "toast", message = $"已删除方案: {delSkin}" });
+                            PushSkinProfiles();
+                        }
+                        catch (Exception ex)
+                        {
+                            Post(new { type = "toast", message = $"删除方案失败：{ex.Message}" });
+                        }
+                    }
+                    break;
+                case "skinsOpenFolder":
+                    try
+                    {
+                        var sOpenName = root.TryGetProperty("name", out var sOpenElem) ? sOpenElem.GetString() : null;
+                        var gDir = RequireModGameDirectory();
+                        _skinManager.OpenFolder(gDir, sOpenName);
+                    }
+                    catch (Exception ex)
+                    {
+                        Post(new { type = "toast", message = $"打开目录失败：{ex.Message}" });
+                    }
+                    break;
+                case "skinsGetCards":
+                    if (root.TryGetProperty("name", out var sQueryElem) && sQueryElem.GetString() is { Length: > 0 } querySkin)
+                    {
+                        try
+                        {
+                            var gDir = RequireModGameDirectory();
+                            var cards = _skinManager.GetCards(gDir, querySkin);
+                            Post(new { type = "skinsCards", payload = new { skinName = querySkin, cards } });
+                        }
+                        catch (Exception ex)
+                        {
+                            Post(new { type = "toast", message = $"获取卡面失败：{ex.Message}" });
+                        }
+                    }
+                    break;
+                case "skinsCropSave":
+                    HandleSaveSkinCrop(root);
+                    break;
+                case "skinsCropCancel":
+                    if (_pendingSkinCrop is { } pending && root.TryGetProperty("token", out var cropToken) && cropToken.GetString() == pending.Token) _pendingSkinCrop = null;
+                    break;
+                case "skinsPickAndReplaceCard":
+                    HandlePickAndReplaceCard(root);
+                    break;
+                case "skinsRevertCard":
+                    HandleRevertCard(root);
                     break;
                 case "closeWindow":
                     Close();
@@ -2175,6 +2324,245 @@ public partial class HybridWindow : Window
         catch (Exception ex)
         {
             Post(new { type = "toast", message = $"更新失败：{ex.Message}" });
+        }
+    }
+
+    private void PushSkinProfiles()
+    {
+        try
+        {
+            var directory = _modManager.GetStatus().GameDirectory;
+            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+            {
+                Post(new { type = "skinsProfiles", payload = new { installed = false, activeSkin = "default", profiles = Array.Empty<SkinProfile>() } });
+                return;
+            }
+
+            var profiles = _skinManager.GetProfiles(directory);
+            var activeSkin = _skinManager.GetActiveSkin(directory);
+            Post(new { type = "skinsProfiles", payload = new { installed = true, activeSkin, profiles } });
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = $"读取皮肤方案失败: {ex.Message}" });
+        }
+    }
+
+    private void HandleSkinImportZip()
+    {
+        try
+        {
+            var directory = RequireModGameDirectory();
+            var dialog = new OpenFileDialog
+            {
+                Title = "选择皮肤压缩包 (支持 cesium-default-skins 或自定义皮肤 ZIP)",
+                Filter = "皮肤压缩包 (*.zip)|*.zip|所有文件 (*.*)|*.*",
+                CheckFileExists = true
+            };
+
+            if (dialog.ShowDialog(this) == true)
+            {
+                var importedName = _skinManager.ImportSkinZip(directory, dialog.FileName);
+                Post(new { type = "toast", message = $"成功导入皮肤方案: {importedName}" });
+                PushSkinProfiles();
+            }
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = $"导入皮肤失败: {ex.Message}" });
+        }
+    }
+
+    private void HandleSkinDuplicate(JsonElement root)
+    {
+        try
+        {
+            var directory = RequireModGameDirectory();
+            var source = root.TryGetProperty("source", out var srcElem) ? srcElem.GetString() : "default";
+            var newName = root.TryGetProperty("newName", out var nameElem) ? nameElem.GetString() : null;
+            var displayName = root.TryGetProperty("displayName", out var dispElem) ? dispElem.GetString() : newName;
+            var author = root.TryGetProperty("author", out var authElem) ? authElem.GetString() : "";
+            var desc = root.TryGetProperty("description", out var descElem) ? descElem.GetString() : "";
+
+            if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(newName))
+            {
+                Post(new { type = "toast", message = "方案名称不能为空" });
+                return;
+            }
+
+            var created = _skinManager.DuplicateProfile(directory, source, newName, displayName ?? newName, author ?? "", desc ?? "");
+            Post(new { type = "toast", message = $"已创建新皮肤方案: {created}" });
+            PushSkinProfiles();
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = $"新建方案失败: {ex.Message}" });
+        }
+    }
+
+    private (string Token, string Directory, string Name, string Path)? _pendingSkinExport;
+    private void HandleExportSkin(JsonElement root, bool confirmed)
+    {
+        try
+        {
+            string directory, name, path;
+            if (confirmed)
+            {
+                if (_pendingSkinExport is not { } pending || root.GetProperty("token").GetString() != pending.Token) throw new InvalidOperationException("导出确认已过期，请重新导出。");
+                _pendingSkinExport = null;
+                directory = pending.Directory; name = pending.Name; path = pending.Path;
+                if (!directory.Equals(RequireModGameDirectory(), StringComparison.OrdinalIgnoreCase)) throw new InvalidOperationException("当前游戏已切换，请重新导出。");
+            }
+            else
+            {
+                _pendingSkinExport = null;
+                name = root.GetProperty("name").GetString() ?? "";
+                if (name == SkinManager.GameDefault) throw new InvalidOperationException("游戏默认方案没有外部图片可导出。");
+                directory = RequireModGameDirectory();
+                var save = new SaveFileDialog { Title = "导出皮肤方案 ZIP", Filter = "ZIP 压缩包 (*.zip)|*.zip", DefaultExt = ".zip", AddExtension = true, FileName = name + ".zip", OverwritePrompt = false };
+                if (save.ShowDialog(this) != true) return;
+                path = save.FileName;
+                if (File.Exists(path)) {
+                    var token = Guid.NewGuid().ToString("N");
+                    _pendingSkinExport = (token, directory, name, path);
+                    Post(new { type = "skinsExportConfirm", payload = new { token, fileName = Path.GetFileName(path) } });
+                    return;
+                }
+            }
+            _skinManager.ExportSkinZip(directory, name, path);
+            Post(new { type = "toast", message = "皮肤方案已导出为 ZIP，可通过导入 ZIP 使用。" });
+        }
+        catch (Exception ex) { Post(new { type = "toast", message = "导出失败：" + ex.Message }); }
+    }
+    private bool _skinDownloadRunning;
+    private async Task DownloadDefaultSkinsAsync(bool overwrite)
+    {
+        if (_skinDownloadRunning) return;
+        string? temporary = null;
+        try
+        {
+            var directory = RequireModGameDirectory();
+            var defaultDirectory = Path.Combine(_skinManager.GetSkinsDirectory(directory), "default");
+            if (Directory.Exists(defaultDirectory) && Directory.EnumerateFiles(defaultDirectory).Any()
+                && !overwrite) { Post(new { type = "skinsDownloadConfirm" }); return; }
+            _skinDownloadRunning = true;
+            Post(new { type = "skinsDownloadState", payload = new { running = true } });
+            temporary = Path.Combine(Path.GetTempPath(), "cesium-default-skins-" + Guid.NewGuid().ToString("N") + ".zip");
+            using var client = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromMinutes(5) };
+            using var response = await client.GetAsync("https://github.com/higashitaniyume/CesiumLoader/releases/latest/download/cesium-default-skins.zip", System.Net.Http.HttpCompletionOption.ResponseHeadersRead);
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                throw new InvalidOperationException("最新 Release 尚未提供默认皮肤包，请先发布包含 cesium-default-skins.zip 的版本。");
+            response.EnsureSuccessStatusCode();
+            using (var input = await response.Content.ReadAsStreamAsync())
+            using (var output = File.Create(temporary))
+            {
+                var buffer = new byte[81920]; long total = 0; int count;
+                while ((count = await input.ReadAsync(buffer)) > 0)
+                {
+                    total += count;
+                    if (total > 256L * 1024 * 1024) throw new InvalidOperationException("默认皮肤包超过 256 MB");
+                    await output.WriteAsync(buffer.AsMemory(0, count));
+                }
+            }
+            // 下载完整后再导入，只允许 default 下的图片和元数据。
+            using (var archive = System.IO.Compression.ZipFile.OpenRead(temporary))
+            {
+                var entries = archive.Entries.Where(e => !string.IsNullOrEmpty(e.Name)).ToArray();
+                if (!entries.Any(e => Path.GetExtension(e.Name).Equals(".png", StringComparison.OrdinalIgnoreCase))) throw new InvalidOperationException("默认包中没有卡面图片");
+                foreach (var entry in entries)
+                {
+                    var relative = entry.FullName.Replace('\\', '/');
+                    if (!relative.StartsWith("AstralParty_ModLoader/skins/default/", StringComparison.Ordinal)
+                        || entry.Length > 32L * 1024 * 1024) throw new InvalidOperationException("默认包内容不符合预期");
+                }
+                if (entries.Sum(e => e.Length) > 512L * 1024 * 1024) throw new InvalidOperationException("默认包解压体积过大");
+            }
+            _skinManager.ImportSkinZip(directory, temporary);
+            PushSkinProfiles();
+            Post(new { type = "toast", message = "默认皮肤包已下载并安装，可选择 default 方案使用。" });
+        }
+        catch (Exception ex) { Post(new { type = "toast", message = "下载默认包失败：" + ex.Message }); }
+        finally
+        {
+            _skinDownloadRunning = false;
+            Post(new { type = "skinsDownloadState", payload = new { running = false } });
+            if (temporary != null && File.Exists(temporary)) File.Delete(temporary);
+        }
+    }
+    private (string Token, string Directory, string Skin, string File, System.Windows.Media.Imaging.BitmapSource Image)? _pendingSkinCrop;
+    private void HandleSaveSkinCrop(JsonElement root)
+    {
+        var token = root.TryGetProperty("token", out var value) ? value.GetString() : null;
+        try
+        {
+            if (_pendingSkinCrop is not { } pending || pending.Token != token) throw new InvalidOperationException("裁剪已取消或过期，请重新选择图片。");
+            if (!string.Equals(pending.Directory, RequireModGameDirectory(), StringComparison.OrdinalIgnoreCase)) throw new InvalidOperationException("当前游戏已切换，请重新选择图片。");
+            var x = root.GetProperty("x").GetInt32(); var y = root.GetProperty("y").GetInt32(); var size = root.GetProperty("size").GetInt32();
+            var image = SkinCropImage.RenderSquare(pending.Image, new System.Windows.Int32Rect(x, y, size, size));
+            var updated = _skinManager.SaveCroppedCard(pending.Directory, pending.Skin, pending.File, image);
+            _pendingSkinCrop = null;
+            Post(new { type = "skinsCropSaved", payload = new { token, success = true } });
+            Post(new { type = "skinsCardUpdated", payload = new { skinName = pending.Skin, card = updated } });
+            PushSkinProfiles();
+            Post(new { type = "toast", message = "裁剪卡面已保存，重启游戏后生效。" });
+        }
+        catch (Exception ex) { Post(new { type = "skinsCropSaved", payload = new { token, success = false, error = ex.Message } }); }
+    }
+    private void HandlePickAndReplaceCard(JsonElement root)
+    {
+        try
+        {
+            var skinName = root.TryGetProperty("skinName", out var sElem) ? sElem.GetString() : null;
+            var fileName = root.TryGetProperty("fileName", out var fElem) ? fElem.GetString() : null;
+            if (string.IsNullOrWhiteSpace(skinName) || string.IsNullOrWhiteSpace(fileName))
+            {
+                Post(new { type = "toast", message = "参数缺失" });
+                return;
+            }
+
+            var directory = RequireModGameDirectory();
+            var dialog = new OpenFileDialog
+            {
+                Title = $"选择替换卡面图片 ({fileName})",
+                Filter = "图片文件 (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp|所有文件 (*.*)|*.*",
+                CheckFileExists = true
+            };
+
+            if (dialog.ShowDialog(this) == true)
+            {
+                var image = SkinCropImage.Load(dialog.FileName);
+                var token = Guid.NewGuid().ToString("N");
+                _pendingSkinCrop = (token, directory, skinName, fileName, image);
+                Post(new { type = "skinsCropSource", payload = new { token, fileName, width = image.PixelWidth, height = image.PixelHeight, previewUrl = SkinCropImage.Preview(image) } });
+            }
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = $"替换卡面失败：{ex.Message}" });
+        }
+    }
+
+    private void HandleRevertCard(JsonElement root)
+    {
+        try
+        {
+            var skinName = root.TryGetProperty("skinName", out var sElem) ? sElem.GetString() : null;
+            var fileName = root.TryGetProperty("fileName", out var fElem) ? fElem.GetString() : null;
+            if (string.IsNullOrWhiteSpace(skinName) || string.IsNullOrWhiteSpace(fileName))
+            {
+                Post(new { type = "toast", message = "参数缺失" });
+                return;
+            }
+
+            var directory = RequireModGameDirectory();
+            var updated = _skinManager.RevertCardImage(directory, skinName, fileName);
+            Post(new { type = "toast", message = $"已还原卡面为默认：{updated.CardName} ({fileName})" });
+            Post(new { type = "skinsCardUpdated", payload = new { skinName, card = updated } });
+            PushSkinProfiles();
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = $"还原卡面失败：{ex.Message}" });
         }
     }
 

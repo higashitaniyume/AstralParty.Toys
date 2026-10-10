@@ -35,6 +35,11 @@
         if (id) post({ type: 'gameProfileSetActive', id });
       });
 
+      skinGameSelect?.addEventListener('change', event => {
+        const id = event.target.value;
+        if (id) post({ type: 'gameProfileSetActive', id });
+      });
+
       // 档案列表用事件委托（行是动态生成的）
       $('gameProfileList')?.addEventListener('click', event => this.onListClick(event));
       $('gameProfileList')?.addEventListener('change', event => this.onListChange(event));
@@ -46,6 +51,7 @@
       this.data = payload || { profiles: [], activeId: null, drives: [] };
       this.renderList();
       this.renderModSelect();
+      this.renderSkinSelect();
       this.renderLobbySelect();
       this.renderDriveSelect();
     },
@@ -134,6 +140,23 @@
     },
 
     // ---------- 大厅「启动版本」下拉（首页启动区，选中即设为当前游戏） ----------
+    renderSkinSelect() {
+      const select = $('skinGameSelect');
+      const profiles = this.data.profiles || [];
+      if (select) {
+        select.disabled = !profiles.length;
+        select.innerHTML = profiles.length
+          ? profiles.map(p => `<option value="${esc(p.id)}"${p.active ? ' selected' : ''}>[${esc(p.editionLabel)}] ${esc(p.label)}</option>`).join('')
+          : '<option value="">未添加游戏 —— 去设置页添加</option>';
+      }
+      const pathEl = $('skinGamePickerPath');
+      const active = profiles.find(p => p.active);
+      if (pathEl) {
+        pathEl.textContent = active ? active.directory : '';
+        pathEl.title = active ? active.directory : '';
+      }
+      if (window.AppState?.currentPage === 'skins') post({ type: 'skinsGetProfiles' });
+    },
     renderLobbySelect() {
       const select = $('lobbyGameSelect');
       if (!select) return;

@@ -26,6 +26,7 @@
       $('btnMenuLaunchGame')?.addEventListener('click', () => this.launchGame());
       $('btnMenuSpeedhack')?.addEventListener('click', () => showPage('utilities'));
       $('btnMenuTools')?.addEventListener('click', () => showPage('tools'));
+      $('btnMenuSkins')?.addEventListener('click', () => showPage('skins'));
       $('btnMenuSpectator')?.addEventListener('click', () => this.showSpectatorPrompt());
       $('btnMenuMods')?.addEventListener('click', () => showPage('mods'));
       $('dockBtnSettings')?.addEventListener('click', () => showPage('settings'));

@@ -36,6 +36,9 @@
     <!-- 内置 mod: 按通配吃进 Resources\ModLoader 下所有 *Mod.dll / *Mod.json —— 新增内置 mod
          (如 CombatOddsMod) 不必再改这里, CI 的 fetch 步骤把包内 mods 展平到此目录后自动内嵌。
          内置 mod 命名约定必须以 "Mod" 结尾(见 CesiumLoader tools\builtin-mods.json)。 -->
+    <EmbeddedResource Include="Resources\Skins\default-skins.zip">
+      <LogicalName>AstralParty.Toys.DefaultSkins.zip</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="Resources\ModLoader\*Mod.dll;Resources\ModLoader\*Mod.json">
       <LogicalName>AstralParty.Toys.ModLoader.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>

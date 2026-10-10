@@ -120,6 +120,24 @@ jobs:
 
           Get-ChildItem "src/AstralParty.Toys/Resources/ModLoader" | Select-Object Name, Length
 
+      - name: Fetch default skins for embedded template
+        shell: pwsh
+        run: |
+          $destination = "src/AstralParty.Toys/Resources/Skins/default-skins.zip"
+          New-Item -ItemType Directory -Path (Split-Path $destination) -Force | Out-Null
+          Invoke-WebRequest -Uri "https://github.com/higashitaniyume/CesiumLoader/releases/latest/download/cesium-default-skins.zip" -OutFile $destination
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $archive = [IO.Compression.ZipFile]::OpenRead((Resolve-Path $destination))
+          try {
+            $files = @($archive.Entries | Where-Object { $_.Name })
+            if ($files.Count -eq 0) { throw "默认皮肤包为空" }
+            foreach ($entry in $files) {
+              $path = $entry.FullName.Replace('\', '/')
+              if ($path -notmatch '^AstralParty_ModLoader/skins/default/[^/:]+$' -or $path.Split('/')[-1] -in '.', '..') { throw "默认皮肤包路径不正确: $path" }
+            }
+            if (-not ($files | Where-Object { $_.Name -like '*.png' })) { throw "默认皮肤包没有图片" }
+          } finally { $archive.Dispose() }
+
       - name: Resolve package metadata
         id: metadata
         shell: pwsh

@@ -49,6 +49,7 @@ function openModal(title, contentHtml, iconName) {
 }
 
 function closeModal() {
+  window.SkinCropModule?.cancel();
   const modal = $('globalModal');
   if (!modal) return;
   const wasOpen = modal.classList.contains('open');
@@ -81,6 +82,8 @@ function runPageHook(pageName) {
     window.UtilitiesModule?.onShowUtilities?.();
   } else if (pageName === 'mods') {
     window.ModsModule?.onShowMods?.();
+  } else if (pageName === 'skins') {
+    window.SkinsModule?.onShowSkins?.();
   }
 }
 
@@ -235,6 +238,14 @@ host?.addEventListener('message', event => {
       }
       break;
 
+    case 'skinsProfiles':
+      window.SkinsModule?.renderProfiles?.(msg.payload);
+      break;
+
+    case 'skinsCards':
+      window.SkinsModule?.renderCards?.(msg.payload);
+      break;
+
     case 'loading':
       const loading = $('loadingOverlay');
       if (loading) {
@@ -321,6 +332,35 @@ host?.addEventListener('message', event => {
 
     case 'modConfigFields':
       if (window.ModsModule) window.ModsModule.renderConfigFields(msg.payload);
+      break;
+
+    case 'skinsProfiles':
+      if (window.SkinsModule) window.SkinsModule.renderProfiles(msg.payload);
+      break;
+
+    case 'skinsCards':
+      if (window.SkinsModule) window.SkinsModule.renderCards(msg.payload);
+      break;
+
+    case 'skinsExportConfirm':
+      window.SkinsModule?.confirmAction('覆盖已有 ZIP？', `文件 ${msg.payload.fileName} 已存在，继续将覆盖它。`, { type: 'skinsExportConfirmed', token: msg.payload.token });
+      break;
+    case 'skinsDownloadConfirm':
+      window.SkinsModule?.confirmDownloadDefault();
+      break;
+    case 'skinsCropSource':
+      window.SkinCropModule?.open(msg.payload);
+      break;
+    case 'skinsCropSaved':
+      window.SkinCropModule?.saved(msg.payload);
+      break;
+    case 'skinsDownloadState': {
+      const button = $('skinDownloadDefaultBtn');
+      if (button) { button.disabled = !!msg.payload?.running; button.textContent = msg.payload?.running ? '正在下载…' : '下载默认包'; }
+      break;
+    }
+    case 'skinsCardUpdated':
+      if (window.SkinsModule) window.SkinsModule.onCardUpdated(msg.payload);
       break;
 
     case 'error':
