@@ -24,7 +24,7 @@
       if (this.eventsBound) return;
       this.eventsBound = true;
       $('btnMenuLaunchGame')?.addEventListener('click', () => this.launchGame());
-      $('btnMenuSpeedhack')?.addEventListener('click', () => showPage('utilities'));
+      $('btnMenuSpeedhack')?.addEventListener('click', () => showPage('mods'));
       $('btnMenuTools')?.addEventListener('click', () => showPage('tools'));
       $('btnMenuSkins')?.addEventListener('click', () => showPage('skins'));
       $('btnMenuSpectator')?.addEventListener('click', () => this.showSpectatorPrompt());
