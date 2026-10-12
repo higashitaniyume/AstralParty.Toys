@@ -1,937 +1,1916 @@
 <!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>AstralParty.Toys · 吉星派对工具箱</title>
-  <link rel="stylesheet" href="css/base.css">
-  <link rel="stylesheet" href="css/home.css">
-  <link rel="stylesheet" href="css/tools.css">
-  <link rel="stylesheet" href="css/wiki.css">
-  <link rel="stylesheet" href="css/settings.css">
-  <link rel="stylesheet" href="css/utilities.css">
-  <link rel="stylesheet" href="css/mods.css">
-  <link rel="stylesheet" href="css/skins.css">
-</head>
-<body>
-  <div class="app-shell">
-    <!-- Global Header (Appears on subpages, styled to match Astral Party game UI) -->
-    <header class="global-header">
-      <div class="brand-section" id="brandLogoBtn" role="button" tabindex="0" aria-label="返回吉星派对大厅" title="返回吉星派对大厅">
-        <div class="brand-logo"><span class="mi" data-icon="auto_awesome"></span></div>
-        <div class="brand-text">
-          <h1>ASTRAL PARTY TOYS</h1>
-          <small>REPLAY &amp; COMPANION TOOLBOX</small>
-        </div>
-      </div>
-
-      <nav class="nav-breadcrumbs">
-        <button class="nav-crumb-btn active" data-page="home"><svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true"><path d="M240-200h120v-240h240v240h120v-360L480-740 240-560v360Zm-80 80v-480l320-240 320 240v480H520v-240h-80v240H160Zm320-350Z"/></svg>游戏大厅</button>
-        <button class="nav-crumb-btn" data-page="tools"><svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true"><path d="M342.5-257.5Q360-275 360-300t-17.5-42.5Q325-360 300-360t-42.5 17.5Q240-325 240-300t17.5 42.5Q275-240 300-240t42.5-17.5Zm0-360Q360-635 360-660t-17.5-42.5Q325-720 300-720t-42.5 17.5Q240-685 240-660t17.5 42.5Q275-600 300-600t42.5-17.5Zm180 180Q540-455 540-480t-17.5-42.5Q505-540 480-540t-42.5 17.5Q420-505 420-480t17.5 42.5Q455-420 480-420t42.5-17.5Zm180 180Q720-275 720-300t-17.5-42.5Q685-360 660-360t-42.5 17.5Q600-325 600-300t17.5 42.5Q635-240 660-240t42.5-17.5Zm0-360Q720-635 720-660t-17.5-42.5Q685-720 660-720t-42.5 17.5Q600-685 600-660t17.5 42.5Q635-600 660-600t42.5-17.5ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0-560v560-560Z"/></svg>对局回放</button>
-        <button class="nav-crumb-btn" data-page="utilities"><svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true"><path d="M686-132 444-376q-20 8-40.5 12t-43.5 4q-100 0-170-70t-70-170q0-36 10-68.5t28-61.5l146 146 72-72-146-146q29-18 61.5-28t68.5-10q100 0 170 70t70 170q0 23-4 43.5T584-516l244 242q12 12 12 29t-12 29l-84 84q-12 12-29 12t-29-12Zm29-85 27-27-256-256q18-20 26-46.5t8-53.5q0-60-38.5-104.5T386-758l74 74q12 12 12 28t-12 28L332-500q-12 12-28 12t-28-12l-74-74q9 57 53.5 95.5T360-440q26 0 52-8t47-25l256 256ZM472-488Z"/></svg>游戏工具</button>
-        <button class="nav-crumb-btn" data-page="mods"><svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true"><path d="M200-200h520v-184l45-22q16-8 25.5-22t9.5-32q0-17-9.5-31.5T765-514l-45-21v-185H528l-10-68q-3-22-19.5-37T460-840q-23 0-39.5 15T401-788l-10 68H200v86q56 21 88 68t32 106q0 60-32 107t-88 68v85Zm0 80q-34 0-57-23t-23-57v-152q48 0 84-30.5t36-77.5q0-46-36-76t-84-32v-152q0-33 23.5-56.5T200-800h122q7-51 46-85.5t92-34.5q52 0 91 34.5t47 85.5h122q33 0 56.5 23.5T800-720v134q36 18 58 52t22 74q0 41-22 75t-58 51v134q0 34-23.5 57T720-120H200Zm300-340Z"/></svg>模组</button>
-        <button class="nav-crumb-btn" data-page="skins"><svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true"><path d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Z"/></svg>卡面皮肤</button>
-        <button class="nav-crumb-btn" data-page="wiki"><svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true"><path d="M560-564v-68q33-14 67.5-21t72.5-7q26 0 51 4t49 10v64q-24-9-48.5-13.5T700-600q-38 0-73 9.5T560-564Zm0 220v-68q33-14 67.5-21t72.5-7q26 0 51 4t49 10v64q-24-9-48.5-13.5T700-380q-38 0-73 9t-67 27Zm0-110v-68q33-14 67.5-21t72.5-7q26 0 51 4t49 10v64q-24-9-48.5-13.5T700-490q-38 0-73 9.5T560-454ZM260-320q47 0 91.5 10.5T440-278v-394q-41-24-87-36t-93-12q-36 0-71.5 7T120-692v396q35-12 69.5-18t70.5-6Zm260 42q44-21 88.5-31.5T700-320q36 0 70.5 6t69.5 18v-396q-33-14-68.5-21t-71.5-7q-47 0-93 12t-87 36v394Zm-40 118q-48-38-104-59t-116-21q-42 0-82.5 11T100-198q-21 11-40.5-1T40-234v-482q0-11 5.5-21T62-752q46-24 96-36t102-12q58 0 113.5 15T480-740q51-30 106.5-45T700-800q52 0 102 12t96 36q11 5 16.5 15t5.5 21v482q0 23-19.5 35t-40.5 1q-37-20-77.5-31T700-240q-60 0-116 21t-104 59ZM280-494Z"/></svg>维基攻略</button>
-        <button class="nav-crumb-btn" data-page="settings"><svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true"><path d="m370-80-16-128q-13-5-24.5-12T307-235l-119 50L78-375l103-78q-1-7-1-13.5v-27q0-6.5 1-13.5L78-585l110-190 119 50q11-8 23-15t24-12l16-128h220l16 128q13 5 24.5 12t22.5 15l119-50 110 190-103 78q1 7 1 13.5v27q0 6.5-2 13.5l103 78-110 190-118-50q-11 8-23 15t-24 12L590-80H370Zm70-80h79l14-106q31-8 57.5-23.5T639-327l99 41 39-68-86-65q5-14 7-29.5t2-31.5q0-16-2-31.5t-7-29.5l86-65-39-68-99 42q-22-23-48.5-38.5T533-694l-13-106h-79l-14 106q-31 8-57.5 23.5T321-633l-99-41-39 68 86 64q-5 15-7 30t-2 32q0 16 2 31t7 30l-86 65 39 68 99-42q22 23 48.5 38.5T427-266l13 106Zm42-180q58 0 99-41t41-99q0-58-41-99t-99-41q-59 0-99.5 41T342-480q0 58 40.5 99t99.5 41Zm-2-140Z"/></svg>系统设置</button>
-      </nav>
-
-      <!-- Version badge: the top bar only appears on subpages, so this is "the version you see
-           whenever you leave the lobby". Self-built binaries still show commit/config context. -->
-      <button class="app-version-chip" id="appVersionChip" type="button" title="查看详细版本信息">
-        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20.6 13.4 12.6 21.4a2 2 0 0 1-2.8 0l-7.2-7.2a2 2 0 0 1-.6-1.6l.4-6.2A2 2 0 0 1 4.4 4.4l6.2-.4a2 2 0 0 1 1.6.6l7.2 7.2a2 2 0 0 1 0 2.8Z"/>
-          <circle cx="7.5" cy="7.5" r="1.3" fill="currentColor" stroke="none"/>
-        </svg>
-        <span class="app-version-chip-value" id="appVersionChipValue">版本读取中…</span>
-        <span class="app-version-chip-commit" id="appVersionChipCommit"></span>
-      </button>
-    </header>
-
-    <!-- Main Views Container -->
-    <main class="page-container">
-      <!-- 1. HOME VIEW (In-Game Aesthetic Main Lobby) -->
-      <section id="homeView" class="page-view home-page in-game-lobby">
-        <img class="lobby-game-logo" src="images/astral-party-logo.png" alt="Astral Party">
-
-        <!-- 「公告位」：工具箱更新提示卡（js/version.js）。默认隐藏，仅当检测到有未读过的新版本时出现；
-             点「知道了」记住这一版不再提示，更新到新版本后再自动出现一次。 -->
-        <article class="lobby-whatsnew hidden" id="lobbyWhatsNew" aria-live="polite">
-          <div class="lobby-whatsnew-head">
-            <span class="lobby-whatsnew-label"><span class="mi" data-icon="auto_awesome"></span> 工具箱已更新</span>
-            <button class="lobby-whatsnew-close" id="lobbyWhatsNewClose" type="button" aria-label="知道了，这一版不再提示"><span class="mi" data-icon="close"></span></button>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>AstralParty.Toys · 吉星派对工具箱</title>
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/home.css" />
+    <link rel="stylesheet" href="css/tools.css" />
+    <link rel="stylesheet" href="css/wiki.css" />
+    <link rel="stylesheet" href="css/settings.css" />
+    <link rel="stylesheet" href="css/utilities.css" />
+    <link rel="stylesheet" href="css/mods.css" />
+    <link rel="stylesheet" href="css/skins.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <!-- Global Header (Appears on subpages, styled to match Astral Party game UI) -->
+      <header class="global-header">
+        <div
+          class="brand-section"
+          id="brandLogoBtn"
+          role="button"
+          tabindex="0"
+          aria-label="返回吉星派对大厅"
+          title="返回吉星派对大厅"
+        >
+          <div class="brand-logo">
+            <span class="mi" data-icon="auto_awesome"></span>
           </div>
-          <h3 class="lobby-whatsnew-title" id="lobbyWhatsNewTitle">新版本</h3>
-          <ul class="lobby-whatsnew-list" id="lobbyWhatsNewList"></ul>
-          <button class="lobby-whatsnew-more" id="lobbyWhatsNewMore" type="button">查看完整更新日志 ›</button>
-        </article>
-
-        <!-- Hero Character Stage on Left -->
-        <div class="lobby-hero-stage stage-left" id="heroPortraitWrapper">
-          <div class="lobby-stage-glow"></div>
-          <img id="heroPortraitImg" class="lobby-hero-art" src="https://assets.astral.local/Portraits/UT_Hero_Card_306.png" alt="橘雪莉">
+          <div class="brand-text">
+            <h1>ASTRAL PARTY TOYS</h1>
+            <small>REPLAY &amp; COMPANION TOOLBOX</small>
+          </div>
         </div>
 
-        <!-- Right Side Primary Functional Buttons: 变速器、回放与维基 -->
-        <div class="lobby-action-stack">
-        <div class="lobby-right-menu">
-          <!-- 1. 游戏变速器 -->
-          <button class="lobby-card-btn card-speedhack" id="btnMenuSpeedhack" title="游戏加速与变速器设置">
-            <div class="card-btn-text">变速器</div>
-            <img class="card-btn-chibi" src="https://assets.astral.local/UI/UT_Hero_LevelUp_107_01.webp" alt="变速器">
+        <nav class="nav-breadcrumbs">
+          <button class="nav-crumb-btn active" data-page="home">
+            <svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true">
+              <path
+                d="M240-200h120v-240h240v240h120v-360L480-740 240-560v360Zm-80 80v-480l320-240 320 240v480H520v-240h-80v240H160Zm320-350Z"
+              /></svg
+            >游戏大厅
           </button>
-
-          <!-- 2. 回放分析 -->
-          <button class="lobby-card-btn card-tools" id="btnMenuTools" title="对局回放分析工具">
-            <div class="card-btn-text">回放</div>
-            <img class="card-btn-chibi" src="https://assets.astral.local/UI/UT_Hero_LevelUp_108_01.webp" alt="回放">
+          <button class="nav-crumb-btn" data-page="tools">
+            <svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true">
+              <path
+                d="M342.5-257.5Q360-275 360-300t-17.5-42.5Q325-360 300-360t-42.5 17.5Q240-325 240-300t17.5 42.5Q275-240 300-240t42.5-17.5Zm0-360Q360-635 360-660t-17.5-42.5Q325-720 300-720t-42.5 17.5Q240-685 240-660t17.5 42.5Q275-600 300-600t42.5-17.5Zm180 180Q540-455 540-480t-17.5-42.5Q505-540 480-540t-42.5 17.5Q420-505 420-480t17.5 42.5Q455-420 480-420t42.5-17.5Zm180 180Q720-275 720-300t-17.5-42.5Q685-360 660-360t-42.5 17.5Q600-325 600-300t17.5 42.5Q635-240 660-240t42.5-17.5Zm0-360Q720-635 720-660t-17.5-42.5Q685-720 660-720t-42.5 17.5Q600-685 600-660t17.5 42.5Q635-600 660-600t42.5-17.5ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0-560v560-560Z"
+              /></svg
+            >对局回放
           </button>
-
-          <!-- 3. 卡面皮肤 -->
-          <button class="lobby-card-btn card-skins" id="btnMenuSkins" title="卡面皮肤方案管理与切换">
-            <div class="card-btn-text">皮肤</div>
-            <img class="card-btn-chibi" src="images/UT_Hero_LevelUp_104_Max.png" alt="皮肤">
+          <button class="nav-crumb-btn" data-page="utilities">
+            <svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true">
+              <path
+                d="M686-132 444-376q-20 8-40.5 12t-43.5 4q-100 0-170-70t-70-170q0-36 10-68.5t28-61.5l146 146 72-72-146-146q29-18 61.5-28t68.5-10q100 0 170 70t70 170q0 23-4 43.5T584-516l244 242q12 12 12 29t-12 29l-84 84q-12 12-29 12t-29-12Zm29-85 27-27-256-256q18-20 26-46.5t8-53.5q0-60-38.5-104.5T386-758l74 74q12 12 12 28t-12 28L332-500q-12 12-28 12t-28-12l-74-74q9 57 53.5 95.5T360-440q26 0 52-8t47-25l256 256ZM472-488Z"
+              /></svg
+            >游戏工具
           </button>
-
-          <!-- 4. 模组管理 -->
-          <button class="lobby-card-btn card-mods" id="btnMenuMods" title="Mod 加载器与模组管理">
-            <div class="card-btn-text">模组</div>
-            <img class="card-btn-chibi" src="https://assets.astral.local/UI/UT_Hero_LevelUp_102_01.webp" alt="">
+          <button class="nav-crumb-btn" data-page="mods">
+            <svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true">
+              <path
+                d="M200-200h520v-184l45-22q16-8 25.5-22t9.5-32q0-17-9.5-31.5T765-514l-45-21v-185H528l-10-68q-3-22-19.5-37T460-840q-23 0-39.5 15T401-788l-10 68H200v86q56 21 88 68t32 106q0 60-32 107t-88 68v85Zm0 80q-34 0-57-23t-23-57v-152q48 0 84-30.5t36-77.5q0-46-36-76t-84-32v-152q0-33 23.5-56.5T200-800h122q7-51 46-85.5t92-34.5q52 0 91 34.5t47 85.5h122q33 0 56.5 23.5T800-720v134q36 18 58 52t22 74q0 41-22 75t-58 51v134q0 34-23.5 57T720-120H200Zm300-340Z"
+              /></svg
+            >模组
           </button>
-        </div>
+          <button class="nav-crumb-btn" data-page="skins">
+            <svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true">
+              <path
+                d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Z"
+              /></svg
+            >卡面皮肤
+          </button>
+          <button class="nav-crumb-btn" data-page="wiki">
+            <svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true">
+              <path
+                d="M560-564v-68q33-14 67.5-21t72.5-7q26 0 51 4t49 10v64q-24-9-48.5-13.5T700-600q-38 0-73 9.5T560-564Zm0 220v-68q33-14 67.5-21t72.5-7q26 0 51 4t49 10v64q-24-9-48.5-13.5T700-380q-38 0-73 9t-67 27Zm0-110v-68q33-14 67.5-21t72.5-7q26 0 51 4t49 10v64q-24-9-48.5-13.5T700-490q-38 0-73 9.5T560-454ZM260-320q47 0 91.5 10.5T440-278v-394q-41-24-87-36t-93-12q-36 0-71.5 7T120-692v396q35-12 69.5-18t70.5-6Zm260 42q44-21 88.5-31.5T700-320q36 0 70.5 6t69.5 18v-396q-33-14-68.5-21t-71.5-7q-47 0-93 12t-87 36v394Zm-40 118q-48-38-104-59t-116-21q-42 0-82.5 11T100-198q-21 11-40.5-1T40-234v-482q0-11 5.5-21T62-752q46-24 96-36t102-12q58 0 113.5 15T480-740q51-30 106.5-45T700-800q52 0 102 12t96 36q11 5 16.5 15t5.5 21v482q0 23-19.5 35t-40.5 1q-37-20-77.5-31T700-240q-60 0-116 21t-104 59ZM280-494Z"
+              /></svg
+            >维基攻略
+          </button>
+          <button class="nav-crumb-btn" data-page="settings">
+            <svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true">
+              <path
+                d="m370-80-16-128q-13-5-24.5-12T307-235l-119 50L78-375l103-78q-1-7-1-13.5v-27q0-6.5 1-13.5L78-585l110-190 119 50q11-8 23-15t24-12l16-128h220l16 128q13 5 24.5 12t22.5 15l119-50 110 190-103 78q1 7 1 13.5v27q0 6.5-2 13.5l103 78-110 190-118-50q-11 8-23 15t-24 12L590-80H370Zm70-80h79l14-106q31-8 57.5-23.5T639-327l99 41 39-68-86-65q5-14 7-29.5t2-31.5q0-16-2-31.5t-7-29.5l86-65-39-68-99 42q-22-23-48.5-38.5T533-694l-13-106h-79l-14 106q-31 8-57.5 23.5T321-633l-99-41-39 68 86 64q-5 15-7 30t-2 32q0 16 2 31t7 30l-86 65 39 68 99-42q22 23 48.5 38.5T427-266l13 106Zm42-180q58 0 99-41t41-99q0-58-41-99t-99-41q-59 0-99.5 41T342-480q0 58 40.5 99t99.5 41Zm-2-140Z"
+              /></svg
+            >系统设置
+          </button>
+        </nav>
 
-        <!-- 大厅右侧菜单不再放「维基」入口；维基仍可从顶部菜单栏的「📖 维基攻略」进入。 -->
+        <!-- Version badge: the top bar only appears on subpages, so this is "the version you see
+           whenever you leave the lobby". Self-built binaries still show commit/config context. -->
+        <button
+          class="app-version-chip"
+          id="appVersionChip"
+          type="button"
+          title="查看详细版本信息"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M20.6 13.4 12.6 21.4a2 2 0 0 1-2.8 0l-7.2-7.2a2 2 0 0 1-.6-1.6l.4-6.2A2 2 0 0 1 4.4 4.4l6.2-.4a2 2 0 0 1 1.6.6l7.2 7.2a2 2 0 0 1 0 2.8Z"
+            />
+            <circle
+              cx="7.5"
+              cy="7.5"
+              r="1.3"
+              fill="currentColor"
+              stroke="none"
+            />
+          </svg>
+          <span class="app-version-chip-value" id="appVersionChipValue"
+            >版本读取中…</span
+          >
+          <span
+            class="app-version-chip-commit"
+            id="appVersionChipCommit"
+          ></span>
+        </button>
+      </header>
 
-        <!-- 右下角：启动游戏（Steam AppID 2622000），比其他入口大一圈。
+      <!-- Main Views Container -->
+      <main class="page-container">
+        <!-- 1. HOME VIEW (In-Game Aesthetic Main Lobby) -->
+        <section id="homeView" class="page-view home-page in-game-lobby">
+          <img
+            class="lobby-game-logo"
+            src="images/astral-party-logo.png"
+            alt="Astral Party"
+          />
+
+          <!-- 「公告位」：工具箱更新提示卡（js/version.js）。默认隐藏，仅当检测到有未读过的新版本时出现；
+             点「知道了」记住这一版不再提示，更新到新版本后再自动出现一次。 -->
+          <article
+            class="lobby-whatsnew hidden"
+            id="lobbyWhatsNew"
+            aria-live="polite"
+          >
+            <div class="lobby-whatsnew-head">
+              <span class="lobby-whatsnew-label"
+                ><span class="mi" data-icon="auto_awesome"></span>
+                工具箱已更新</span
+              >
+              <button
+                class="lobby-whatsnew-close"
+                id="lobbyWhatsNewClose"
+                type="button"
+                aria-label="知道了，这一版不再提示"
+              >
+                <span class="mi" data-icon="close"></span>
+              </button>
+            </div>
+            <h3 class="lobby-whatsnew-title" id="lobbyWhatsNewTitle">新版本</h3>
+            <ul class="lobby-whatsnew-list" id="lobbyWhatsNewList"></ul>
+            <button
+              class="lobby-whatsnew-more"
+              id="lobbyWhatsNewMore"
+              type="button"
+            >
+              查看完整更新日志 ›
+            </button>
+          </article>
+
+          <!-- Hero Character Stage on Left -->
+          <div class="lobby-hero-stage stage-left" id="heroPortraitWrapper">
+            <div class="lobby-stage-glow"></div>
+            <img
+              id="heroPortraitImg"
+              class="lobby-hero-art"
+              src="https://assets.astral.local/Portraits/UT_Hero_Card_306.png"
+              alt="橘雪莉"
+            />
+          </div>
+
+          <!-- Right Side Primary Functional Buttons: 变速器、回放与维基 -->
+          <div class="lobby-action-stack">
+            <div class="lobby-right-menu">
+              <!-- 1. 游戏变速器 -->
+              <button
+                class="lobby-card-btn card-speedhack"
+                id="btnMenuSpeedhack"
+                title="游戏加速与变速器设置"
+              >
+                <div class="card-btn-text">变速器</div>
+                <img
+                  class="card-btn-chibi"
+                  src="https://assets.astral.local/UI/UT_Hero_LevelUp_107_01.webp"
+                  alt="变速器"
+                />
+              </button>
+
+              <!-- 2. 回放分析 -->
+              <button
+                class="lobby-card-btn card-tools"
+                id="btnMenuTools"
+                title="对局回放分析工具"
+              >
+                <div class="card-btn-text">回放</div>
+                <img
+                  class="card-btn-chibi"
+                  src="https://assets.astral.local/UI/UT_Hero_LevelUp_108_01.webp"
+                  alt="回放"
+                />
+              </button>
+
+              <!-- 3. 卡面皮肤 -->
+              <button
+                class="lobby-card-btn card-skins"
+                id="btnMenuSkins"
+                title="卡面皮肤方案管理与切换"
+              >
+                <div class="card-btn-text">皮肤</div>
+                <img
+                  class="card-btn-chibi"
+                  src="images/UT_Hero_LevelUp_104_Max.png"
+                  alt="皮肤"
+                />
+              </button>
+
+              <!-- 4. 模组管理 -->
+              <button
+                class="lobby-card-btn card-mods"
+                id="btnMenuMods"
+                title="Mod 加载器与模组管理"
+              >
+                <div class="card-btn-text">模组</div>
+                <img
+                  class="card-btn-chibi"
+                  src="https://assets.astral.local/UI/UT_Hero_LevelUp_102_01.webp"
+                  alt=""
+                />
+              </button>
+            </div>
+
+            <!-- 大厅右侧菜单不再放「维基」入口；维基仍可从顶部菜单栏的「📖 维基攻略」进入。 -->
+
+            <!-- 右下角：启动游戏（Steam AppID 2622000），比其他入口大一圈。
              按钮下面一组单选框二选一：从 Steam 启动（默认）/ 绕过 Steam 启动 —— 后者直接拉起游戏主程序，
              并把加载器的 Steam 绕过开关一起打开（两者是同一个配置，见 doorstop_config.json）。 -->
-        <div class="lobby-corner-launch">
-          <button class="lobby-card-btn card-launch" id="btnMenuLaunchGame" title="启动 Astral Party（吉星派对）">
-            <div class="card-btn-text">启动游戏</div>
-            <img class="card-btn-logo" src="images/astral-party-logo.png" alt="Astral Party">
-          </button>
-          <!-- 启动版本：从游戏库里选一个版本（国服 / 国际服 / TapTap / 自定义），选中即设为当前游戏。
+            <div class="lobby-corner-launch">
+              <button
+                class="lobby-card-btn card-launch"
+                id="btnMenuLaunchGame"
+                title="启动 Astral Party（吉星派对）"
+              >
+                <div class="card-btn-text">启动游戏</div>
+                <img
+                  class="card-btn-logo"
+                  src="images/astral-party-logo.png"
+                  alt="Astral Party"
+                />
+              </button>
+              <!-- 启动版本：从游戏库里选一个版本（国服 / 国际服 / TapTap / 自定义），选中即设为当前游戏。
                下面两种启动方式都对这个选中的版本生效。 -->
-          <div class="lobby-launch-version">
-            <span class="lobby-launch-version-label">启动版本</span>
-            <select class="lobby-game-select" id="lobbyGameSelect" aria-label="选择要启动的游戏版本"></select>
+              <div class="lobby-launch-version">
+                <span class="lobby-launch-version-label">启动版本</span>
+                <select
+                  class="lobby-game-select"
+                  id="lobbyGameSelect"
+                  aria-label="选择要启动的游戏版本"
+                ></select>
+              </div>
+              <div
+                class="launch-mode-options"
+                role="radiogroup"
+                aria-label="启动方式"
+              >
+                <label
+                  class="launch-mode-item"
+                  id="launchModeSteam"
+                  title="交给 Steam 启动（DRM / 云存档 / 更新检查都走 Steam），并关闭加载器的 Steam 绕过 —— Steam 大厅 / 好友邀请进房恢复正常（默认）"
+                >
+                  <input
+                    type="radio"
+                    name="launchMode"
+                    id="launchViaSteam"
+                    checked
+                  />
+                  <span>从 Steam 启动</span>
+                </label>
+                <label
+                  class="launch-mode-item"
+                  id="launchModeBypass"
+                  title="直接启动游戏主程序，完全不经过 Steam；会打开加载器的 Steam 绕过（没装 Steam 也能进游戏），代价是 Steam 大厅 / 好友邀请进房失效"
+                >
+                  <input
+                    type="radio"
+                    name="launchMode"
+                    id="launchBypassSteam"
+                  />
+                  <span>绕过 Steam 启动</span>
+                </label>
+              </div>
+            </div>
           </div>
-          <div class="launch-mode-options" role="radiogroup" aria-label="启动方式">
-            <label class="launch-mode-item" id="launchModeSteam"
-                   title="交给 Steam 启动（DRM / 云存档 / 更新检查都走 Steam），并关闭加载器的 Steam 绕过 —— Steam 大厅 / 好友邀请进房恢复正常（默认）">
-              <input type="radio" name="launchMode" id="launchViaSteam" checked>
-              <span>从 Steam 启动</span>
-            </label>
-            <label class="launch-mode-item" id="launchModeBypass"
-                   title="直接启动游戏主程序，完全不经过 Steam；会打开加载器的 Steam 绕过（没装 Steam 也能进游戏），代价是 Steam 大厅 / 好友邀请进房失效">
-              <input type="radio" name="launchMode" id="launchBypassSteam">
-              <span>绕过 Steam 启动</span>
-            </label>
-          </div>
-        </div>
 
-        </div>
-
-        <!-- Bottom Dock Bar -->
-        <footer class="lobby-bottom-dock">
-          <!-- Left: version status. The lobby hides the global header, so this dock is the only
+          <!-- Bottom Dock Bar -->
+          <footer class="lobby-bottom-dock">
+            <!-- Left: version status. The lobby hides the global header, so this dock is the only
                place a version can live on this page. -->
-          <button class="dock-version" id="dockVersionBtn" type="button" title="查看详细版本信息">
-            <span class="dock-version-dot" aria-hidden="true"></span>
-            <span class="dock-version-name">AstralParty.Toys</span>
-            <span class="dock-version-value" id="dockVersionValue">版本读取中…</span>
-          </button>
-
-          <nav class="dock-actions-nav">
-            <button class="dock-nav-item" id="dockBtnSettings" title="系统设置">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-              <span>设置</span>
+            <button
+              class="dock-version"
+              id="dockVersionBtn"
+              type="button"
+              title="查看详细版本信息"
+            >
+              <span class="dock-version-dot" aria-hidden="true"></span>
+              <span class="dock-version-name">AstralParty.Toys</span>
+              <span class="dock-version-value" id="dockVersionValue"
+                >版本读取中…</span
+              >
             </button>
-          </nav>
-        </footer>
-      </section>
 
-      <!-- 2. TOOLS VIEW (Replay Tool Integrated) -->
-      <section id="toolsView" class="page-view tools-page hidden">
-        <div class="tools-header">
-          <div class="tools-title-group">
-            <button class="back-btn" id="toolsBackHomeBtn">‹ 返回大厅</button>
-            <h2>对局回放分析工具</h2>
-            <span class="tools-file-info" id="toolFileMeta">尚未打开回放文件</span>
-          </div>
-          <div class="tools-header-actions">
-            <button class="secondary-btn hidden" id="toolLibraryBtn">回放列表</button>
-            <button class="secondary-btn" id="toolExportBtn" disabled>导出 JSON</button>
-            <button class="primary-btn" id="toolOpenBtn">＋ 打开回放</button>
-          </div>
-        </div>
+            <nav class="dock-actions-nav">
+              <button
+                class="dock-nav-item"
+                id="dockBtnSettings"
+                title="系统设置"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="22"
+                  height="22"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"
+                  />
+                </svg>
+                <span>设置</span>
+              </button>
+            </nav>
+          </footer>
+        </section>
 
-        <!-- Replay Sub Navigation Tabs (Visible when replay is active) -->
-        <div class="replay-subnav hidden" id="replaySubnav">
-          <button class="subnav-tab active" data-tab="summary"><svg class="subnav-ico" viewBox="0 -960 960 960" aria-hidden="true"><path d="M348.5-611.5Q360-623 360-640t-11.5-28.5Q337-680 320-680t-28.5 11.5Q280-657 280-640t11.5 28.5Q303-600 320-600t28.5-11.5Zm0 160Q360-463 360-480t-11.5-28.5Q337-520 320-520t-28.5 11.5Q280-497 280-480t11.5 28.5Q303-440 320-440t28.5-11.5Zm0 160Q360-303 360-320t-11.5-28.5Q337-360 320-360t-28.5 11.5Q280-337 280-320t11.5 28.5Q303-280 320-280t28.5-11.5ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h440l200 200v440q0 33-23.5 56.5T760-120H200Zm0-80h560v-400H600v-160H200v560Zm0-560v160-160 560-560Z"/></svg>对局摘要</button>
-          <button class="subnav-tab" data-tab="players"><svg class="subnav-ico" viewBox="0 -960 960 960" aria-hidden="true"><path d="M40-160v-112q0-34 17.5-62.5T104-378q62-31 126-46.5T360-440q66 0 130 15.5T616-378q29 15 46.5 43.5T680-272v112H40Zm720 0v-120q0-44-24.5-84.5T666-434q51 6 96 20.5t84 35.5q36 20 55 44.5t19 53.5v120H760ZM247-527q-47-47-47-113t47-113q47-47 113-47t113 47q47 47 47 113t-47 113q-47 47-113 47t-113-47Zm466 0q-47 47-113 47-11 0-28-2.5t-28-5.5q27-32 41.5-71t14.5-81q0-42-14.5-81T544-792q14-5 28-6.5t28-1.5q66 0 113 47t47 113q0 66-47 113ZM120-240h480v-32q0-11-5.5-20T580-306q-54-27-109-40.5T360-360q-56 0-111 13.5T140-306q-9 5-14.5 14t-5.5 20v32Zm240-320Zm0-80Z"/></svg>玩家表现</button>
-          <button class="subnav-tab" data-tab="timeline"><svg class="subnav-ico" viewBox="0 -960 960 960" aria-hidden="true"><path d="M120-240q-33 0-56.5-23.5T40-320q0-33 23.5-56.5T120-400h10.5q4.5 0 9.5 2l182-182q-2-5-2-9.5V-600q0-33 23.5-56.5T400-680q33 0 56.5 23.5T480-600q0 2-2 20l102 102q5-2 9.5-2h21q4.5 0 9.5 2l142-142q-2-5-2-9.5V-640q0-33 23.5-56.5T840-720q33 0 56.5 23.5T920-640q0 33-23.5 56.5T840-560h-10.5q-4.5 0-9.5-2L678-420q2 5 2 9.5v10.5q0 33-23.5 56.5T600-320q-33 0-56.5-23.5T520-400v-10.5q0-4.5 2-9.5L420-522q-5 2-9.5 2H400q-2 0-20-2L198-340q2 5 2 9.5v10.5q0 33-23.5 56.5T120-240Z"/></svg>事件时间线</button>
-          <button class="subnav-tab" data-tab="relics"><svg class="subnav-ico" viewBox="0 -960 960 960" aria-hidden="true"><path d="M480-120 80-600l120-240h560l120 240-400 480Zm-95-520h190l-60-120h-70l-60 120Zm55 347v-267H218l222 267Zm80 0 222-267H520v267Zm144-347h106l-60-120H604l60 120Zm-474 0h106l60-120H250l-60 120Z"/></svg>筹码记录</button>
-          <button class="subnav-tab" data-tab="shops"><svg class="subnav-ico" viewBox="0 -960 960 960" aria-hidden="true"><path d="M223.5-103.5Q200-127 200-160t23.5-56.5Q247-240 280-240t56.5 23.5Q360-193 360-160t-23.5 56.5Q313-80 280-80t-56.5-23.5Zm400 0Q600-127 600-160t23.5-56.5Q647-240 680-240t56.5 23.5Q760-193 760-160t-23.5 56.5Q713-80 680-80t-56.5-23.5ZM246-720l96 200h280l110-200H246Zm-38-80h590q23 0 35 20.5t1 41.5L692-482q-11 20-29.5 31T622-440H324l-44 80h480v80H280q-45 0-68-39.5t-2-78.5l54-98-144-304H40v-80h130l38 80Zm134 280h280-280Z"/></svg>商店记录</button>
-          <button class="subnav-tab" data-tab="technical"><svg class="subnav-ico" viewBox="0 -960 960 960" aria-hidden="true"><path d="M560-160v-80h120q17 0 28.5-11.5T720-280v-80q0-38 22-69t58-44v-14q-36-13-58-44t-22-69v-80q0-17-11.5-28.5T680-720H560v-80h120q50 0 85 35t35 85v80q0 17 11.5 28.5T840-560h40v160h-40q-17 0-28.5 11.5T800-360v80q0 50-35 85t-85 35H560Zm-280 0q-50 0-85-35t-35-85v-80q0-17-11.5-28.5T120-400H80v-160h40q17 0 28.5-11.5T160-600v-80q0-50 35-85t85-35h120v80H280q-17 0-28.5 11.5T240-680v80q0 38-22 69t-58 44v14q36 13 58 44t22 69v80q0 17 11.5 28.5T280-240h120v80H280Z"/></svg>专业信息</button>
-        </div>
-
-        <div class="tools-workspace">
-          <!-- Empty State / Recent Replays List -->
-          <div class="replay-empty-state" id="replayEmptyBox">
-            <section class="replay-picker-panel">
-              <div class="empty-icon-orbit"><span class="mi mi-lg" data-icon="casino"></span></div>
-              <h3>选择回放文件</h3>
-              <p>手动打开任意回放文件，本地解析玩家、回合、动作、筹码流转与底层协议帧。</p>
-              <button class="primary-btn" id="emptySelectReplayBtn">＋ 选择回放文件</button>
-              <small class="replay-local-note">所有数据均在本地安全离线处理</small>
-            </section>
-
-            <section class="recent-replays-box">
-              <div class="recent-head">
-                <div>
-                  <h4>回放列表</h4>
-                  <small id="libraryDirectoryText">正在检测回放目录…</small>
-                </div>
-                <div class="recent-head-actions">
-                  <button class="secondary-btn" id="libraryDownloadBtn"
-                          title="知道回放 ID（游戏战绩里那一串数字）时，直接从官方回放服务器下载进回放库">按 ID 下载</button>
-                  <button class="secondary-btn" id="libraryImportBtn">导入回放</button>
-                  <button class="secondary-btn" id="refreshLibraryBtn">刷新列表</button>
-                </div>
-              </div>
-
-              <div class="library-status" id="libraryStatus">
-                <div class="library-status-cell">
-                  <span class="library-status-label">游戏内席位</span>
-                  <strong id="libraryGameSlots">—</strong>
-                  <div class="library-slot-bar"><i id="librarySlotBar"></i></div>
-                  <small class="library-status-hint" id="libraryGameRunningHint"></small>
-                </div>
-                <div class="library-status-cell">
-                  <span class="library-status-label">回放库</span>
-                  <strong id="libraryCountText">—</strong>
-                  <button class="link-btn" id="libraryOpenFolderBtn">打开库目录</button>
-                </div>
-              </div>
-
-              <div class="library-banner hidden" id="libraryBanner">
-                <div class="library-banner-main">
-                  <strong id="libraryBannerTitle">游戏内回放席位已满</strong>
-                  <p id="libraryBannerText"></p>
-                </div>
-                <div class="library-banner-actions">
-                  <button class="primary-btn" id="libraryBannerArchiveBtn">归档最旧的 3 局</button>
-                  <button class="secondary-btn" id="libraryBannerAutoBtn">以后自动保持最近 10 局</button>
-                  <button class="link-btn" id="libraryBannerDismissBtn">稍后再说</button>
-                </div>
-              </div>
-
-              <div class="library-warning hidden" id="libraryWarningBox"></div>
-
-              <div class="library-filter-bar">
-                <input type="search" class="library-input" id="librarySearchInput" placeholder="搜索回放 ID / 地图 / 玩家…" aria-label="搜索回放">
-                <select class="library-select" id="libraryFilterSelect" aria-label="按来源筛选">
-                  <option value="all">全部来源</option>
-                  <option value="game">仅游戏内</option>
-                  <option value="library">仅回放库</option>
-                </select>
-                <select class="library-select" id="librarySortSelect" aria-label="排序方式">
-                  <option value="time">按对局时间</option>
-                  <option value="size">按文件大小</option>
-                  <option value="id">按回放 ID</option>
-                </select>
-                <span class="library-list-count" id="libraryListCount"></span>
-              </div>
-
-              <div class="replay-entry-list" id="recentReplayList"></div>
-            </section>
-          </div>
-
-          <!-- Active Replay Detail Workspace -->
-          <div class="hidden" id="replayWorkspaceBox" style="height:100%">
-            <div id="summaryView" class="replay-view"></div>
-            <div id="playersView" class="replay-view hidden"></div>
-            <div id="timelineView" class="replay-view hidden"></div>
-            <div id="relicsView" class="replay-view hidden"></div>
-            <div id="shopsView" class="replay-view hidden"></div>
-            <div id="technicalView" class="replay-view hidden">
-              <div style="display:flex;gap:10px;margin-bottom:18px">
-                <button class="subnav-tab active" id="techTabStatistics">数据统计</button>
-                <button class="subnav-tab" id="techTabProtocol">原始协议帧</button>
-              </div>
-              <div id="techStatsPane"></div>
-              <div id="techProtocolPane" class="hidden"></div>
+        <!-- 2. TOOLS VIEW (Replay Tool Integrated) -->
+        <section id="toolsView" class="page-view tools-page hidden">
+          <div class="tools-header">
+            <div class="tools-title-group">
+              <button class="back-btn" id="toolsBackHomeBtn">‹ 返回大厅</button>
+              <h2>对局回放分析工具</h2>
+              <span class="tools-file-info" id="toolFileMeta"
+                >尚未打开回放文件</span
+              >
+            </div>
+            <div class="tools-header-actions">
+              <button class="secondary-btn hidden" id="toolLibraryBtn">
+                回放列表
+              </button>
+              <button class="secondary-btn" id="toolExportBtn" disabled>
+                导出 JSON
+              </button>
+              <button class="primary-btn" id="toolOpenBtn">＋ 打开回放</button>
             </div>
           </div>
-        </div>
-      </section>
 
-      <!-- 3. UTILITIES VIEW (Game Companion Tools: Speedhack Installer) -->
-      <section id="utilitiesView" class="page-view utilities-page hidden">
-        <div class="utilities-header">
-          <div class="utilities-title-group">
-            <button class="back-btn" id="utilsBackHomeBtn">‹ 返回大厅</button>
-            <h2>游戏工具</h2>
+          <!-- Replay Sub Navigation Tabs (Visible when replay is active) -->
+          <div class="replay-subnav hidden" id="replaySubnav">
+            <button class="subnav-tab active" data-tab="summary">
+              <svg
+                class="subnav-ico"
+                viewBox="0 -960 960 960"
+                aria-hidden="true"
+              >
+                <path
+                  d="M348.5-611.5Q360-623 360-640t-11.5-28.5Q337-680 320-680t-28.5 11.5Q280-657 280-640t11.5 28.5Q303-600 320-600t28.5-11.5Zm0 160Q360-463 360-480t-11.5-28.5Q337-520 320-520t-28.5 11.5Q280-497 280-480t11.5 28.5Q303-440 320-440t28.5-11.5Zm0 160Q360-303 360-320t-11.5-28.5Q337-360 320-360t-28.5 11.5Q280-337 280-320t11.5 28.5Q303-280 320-280t28.5-11.5ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h440l200 200v440q0 33-23.5 56.5T760-120H200Zm0-80h560v-400H600v-160H200v560Zm0-560v160-160 560-560Z"
+                /></svg
+              >对局摘要
+            </button>
+            <button class="subnav-tab" data-tab="players">
+              <svg
+                class="subnav-ico"
+                viewBox="0 -960 960 960"
+                aria-hidden="true"
+              >
+                <path
+                  d="M40-160v-112q0-34 17.5-62.5T104-378q62-31 126-46.5T360-440q66 0 130 15.5T616-378q29 15 46.5 43.5T680-272v112H40Zm720 0v-120q0-44-24.5-84.5T666-434q51 6 96 20.5t84 35.5q36 20 55 44.5t19 53.5v120H760ZM247-527q-47-47-47-113t47-113q47-47 113-47t113 47q47 47 47 113t-47 113q-47 47-113 47t-113-47Zm466 0q-47 47-113 47-11 0-28-2.5t-28-5.5q27-32 41.5-71t14.5-81q0-42-14.5-81T544-792q14-5 28-6.5t28-1.5q66 0 113 47t47 113q0 66-47 113ZM120-240h480v-32q0-11-5.5-20T580-306q-54-27-109-40.5T360-360q-56 0-111 13.5T140-306q-9 5-14.5 14t-5.5 20v32Zm240-320Zm0-80Z"
+                /></svg
+              >玩家表现
+            </button>
+            <button class="subnav-tab" data-tab="timeline">
+              <svg
+                class="subnav-ico"
+                viewBox="0 -960 960 960"
+                aria-hidden="true"
+              >
+                <path
+                  d="M120-240q-33 0-56.5-23.5T40-320q0-33 23.5-56.5T120-400h10.5q4.5 0 9.5 2l182-182q-2-5-2-9.5V-600q0-33 23.5-56.5T400-680q33 0 56.5 23.5T480-600q0 2-2 20l102 102q5-2 9.5-2h21q4.5 0 9.5 2l142-142q-2-5-2-9.5V-640q0-33 23.5-56.5T840-720q33 0 56.5 23.5T920-640q0 33-23.5 56.5T840-560h-10.5q-4.5 0-9.5-2L678-420q2 5 2 9.5v10.5q0 33-23.5 56.5T600-320q-33 0-56.5-23.5T520-400v-10.5q0-4.5 2-9.5L420-522q-5 2-9.5 2H400q-2 0-20-2L198-340q2 5 2 9.5v10.5q0 33-23.5 56.5T120-240Z"
+                /></svg
+              >事件时间线
+            </button>
+            <button class="subnav-tab" data-tab="relics">
+              <svg
+                class="subnav-ico"
+                viewBox="0 -960 960 960"
+                aria-hidden="true"
+              >
+                <path
+                  d="M480-120 80-600l120-240h560l120 240-400 480Zm-95-520h190l-60-120h-70l-60 120Zm55 347v-267H218l222 267Zm80 0 222-267H520v267Zm144-347h106l-60-120H604l60 120Zm-474 0h106l60-120H250l-60 120Z"
+                /></svg
+              >筹码记录
+            </button>
+            <button class="subnav-tab" data-tab="shops">
+              <svg
+                class="subnav-ico"
+                viewBox="0 -960 960 960"
+                aria-hidden="true"
+              >
+                <path
+                  d="M223.5-103.5Q200-127 200-160t23.5-56.5Q247-240 280-240t56.5 23.5Q360-193 360-160t-23.5 56.5Q313-80 280-80t-56.5-23.5Zm400 0Q600-127 600-160t23.5-56.5Q647-240 680-240t56.5 23.5Q760-193 760-160t-23.5 56.5Q713-80 680-80t-56.5-23.5ZM246-720l96 200h280l110-200H246Zm-38-80h590q23 0 35 20.5t1 41.5L692-482q-11 20-29.5 31T622-440H324l-44 80h480v80H280q-45 0-68-39.5t-2-78.5l54-98-144-304H40v-80h130l38 80Zm134 280h280-280Z"
+                /></svg
+              >商店记录
+            </button>
+            <button class="subnav-tab" data-tab="technical">
+              <svg
+                class="subnav-ico"
+                viewBox="0 -960 960 960"
+                aria-hidden="true"
+              >
+                <path
+                  d="M560-160v-80h120q17 0 28.5-11.5T720-280v-80q0-38 22-69t58-44v-14q-36-13-58-44t-22-69v-80q0-17-11.5-28.5T680-720H560v-80h120q50 0 85 35t35 85v80q0 17 11.5 28.5T840-560h40v160h-40q-17 0-28.5 11.5T800-360v80q0 50-35 85t-85 35H560Zm-280 0q-50 0-85-35t-35-85v-80q0-17-11.5-28.5T120-400H80v-160h40q17 0 28.5-11.5T160-600v-80q0-50 35-85t85-35h120v80H280q-17 0-28.5 11.5T240-680v80q0 38-22 69t-58 44v14q36 13 58 44t22 69v80q0 17 11.5 28.5T280-240h120v80H280Z"
+                /></svg
+              >专业信息
+            </button>
           </div>
-          <div class="utilities-header-actions">
-            <button class="secondary-btn" id="utilsEditJsonBtn"><span class="mi" data-icon="edit"></span> 编辑配置 JSON</button>
-          </div>
-        </div>
 
-        <div class="utilities-body">
-          <!-- 兼容性大警告: 本页是旧版独立变速器, 与模组加载器互斥 -->
-          <section class="util-compat-warning" id="utilsCompatWarning">
-            <div class="util-compat-icon"><span class="mi" data-icon="warning"></span></div>
-            <div class="util-compat-main">
-              <h3>注意：这个「变速器」和模组系统<strong>不兼容</strong>，两个只能装一个</h3>
-              <p class="util-compat-lead">
-                本页安装的是<strong>旧版独立变速器</strong>（<span class="util-mono">speedhack-rs</span>），
-                模组加载器用的也是同一个文件名 <span class="util-mono">version.dll</span> ——
-                同时安装会互相覆盖，游戏只会加载其中一个。
-              </p>
-              <div class="util-compat-choice">
-                <div class="util-compat-option">
-                  <span class="util-compat-tag tag-old">只想要变速</span>
-                  <p>不装任何 mod、只用加速 → 就留在本页，按下面卡片里的「<span class="mi" data-icon="bolt"></span> 安装」即可。
-                     <br><small>（本页的旧版变速器自带独立的配置与热键，功能到此为止。）</small></p>
+          <div class="tools-workspace">
+            <!-- Empty State / Recent Replays List -->
+            <div class="replay-empty-state" id="replayEmptyBox">
+              <section class="replay-picker-panel">
+                <div class="empty-icon-orbit">
+                  <span class="mi mi-lg" data-icon="casino"></span>
                 </div>
-                <div class="util-compat-option">
-                  <span class="util-compat-tag tag-new">想要新功能</span>
-                  <p>相机工具 / 活动日志 / 模组管理 / 权限声明 / 游戏内热键变速…
-                     <strong>也包括变速本身</strong> → 请到「<span class="mi" data-icon="extension"></span> 模组」页面。
-                     <br><small>模组页面内置换速开关：<span class="util-mono">1.0</span> = 正常，
-                     <span class="util-mono">2.0</span> = 全程 2 倍速；进游戏后还能用
-                     <span class="util-mono">Alt</span>+<span class="util-mono">=</span> /
-                     <span class="util-mono">Alt</span>+<span class="util-mono">-</span> 实时调整（最低 1 倍，不支持减速）。</small></p>
-                </div>
-              </div>
-              <div class="util-compat-actions">
-                <button class="primary-btn" id="utilsGoModsBtn"><span class="mi" data-icon="extension"></span> 去模组页面（推荐）</button>
-                <span class="util-compat-keep">只想用旧版变速器？忽略这段，照下面操作即可。</span>
-              </div>
-            </div>
-          </section>
+                <h3>选择回放文件</h3>
+                <p>
+                  手动打开任意回放文件，本地解析玩家、回合、动作、筹码流转与底层协议帧。
+                </p>
+                <button class="primary-btn" id="emptySelectReplayBtn">
+                  ＋ 选择回放文件
+                </button>
+                <small class="replay-local-note"
+                  >所有数据均在本地安全离线处理</small
+                >
+              </section>
 
-          <div class="util-grid">
-            <!-- 左：安装管理 -->
-            <article class="util-card">
-              <div class="util-card-head">
-                <h3><span class="mi" data-icon="bolt"></span> 游戏加速（变速器）</h3>
-                <span class="badge badge-notice" id="utilsStatusBadge">未检测</span>
-              </div>
-
-              <div class="util-status-line">
-                <span class="status-icon" id="utilsStatusIcon"><span class="mi" data-icon="search"></span></span>
-                <div class="util-status-texts">
-                  <strong id="utilsStatusTitle">正在检测安装状态…</strong>
-                  <p id="utilsStatusText">请稍候</p>
-                </div>
-              </div>
-
-              <span class="util-section-label">游戏目录（version.dll 的安装位置）</span>
-              <div class="util-path-box">
-                <span class="path-value placeholder" id="utilsGameDirText">尚未选择游戏目录</span>
-                <button class="secondary-btn" id="utilsDetectDirBtn" style="padding:5px 12px;font-size:12px">自动检测</button>
-                <button class="secondary-btn" id="utilsBrowseDirBtn" style="padding:5px 12px;font-size:12px">选择…</button>
-                <button class="primary-btn" id="utilsInstallBtn" style="padding:5px 13px;font-size:12px;white-space:nowrap"><span class="mi" data-icon="bolt"></span> 安装</button>
-              </div>
-
-              <ul class="util-meta-list" id="utilsMetaList"></ul>
-
-              <div class="util-check-row">
-                <input type="checkbox" id="utilsOverwriteCheck">
-                <label for="utilsOverwriteCheck">允许覆盖游戏目录里其它 version.dll（用于强行更新安装）</label>
-              </div>
-              <div class="util-check-row">
-                <input type="checkbox" id="utilsForceUninstallCheck">
-                <label for="utilsForceUninstallCheck">强制卸载（version.dll 与内置不一致时也删除）</label>
-              </div>
-
-              <div class="util-btn-row">
-                <button class="secondary-btn" id="utilsSyncConfigBtn"><span class="mi" data-icon="refresh"></span> 同步配置到游戏</button>
-                <button class="danger-btn" id="utilsUninstallBtn"><span class="mi" data-icon="delete"></span> 卸载变速器</button>
-              </div>
-
-              <div class="util-note-box">
-                <span class="util-note-title"><span class="mi" data-icon="warning"></span> 使用须知</span>
-                <ul>
-                  <li>原理：把内置 <span class="util-mono">version.dll</span> 放到游戏 exe 旁边，游戏启动时自动加载。游戏运行中也允许安装/卸载，只是本次写入要<strong>重启游戏</strong>才生效，而且 DLL 被占用时写入/删除会失败——那种情况先完全退出游戏再操作即可。</li>
-                  <li>倍速基于修改进程时间函数，需在游戏设置里<strong>关闭垂直同步</strong>才生效；修改配置后<strong>重启游戏</strong>，或在游戏内按重载热键（默认 Ctrl+Shift+R）。</li>
-                  <li>工具来源：<a href="https://github.com/Hirtol/speedhack-rs" target="_blank" rel="noopener" style="color:var(--gp-blue)">github.com/Hirtol/speedhack-rs</a>（构建于 2024-04-13）。</li>
-                </ul>
-              </div>
-            </article>
-
-            <!-- 右：配置编辑器 -->
-            <article class="util-card">
-              <div class="util-card-head">
-                <h3><span class="mi" data-icon="settings"></span> speedhack_config.json 配置</h3>
-                <span class="badge badge-update" id="utilsConfigStateBadge">已同步</span>
-              </div>
-
-              <div class="util-form-row">
-                <div class="util-form-label">
-                  <strong>进入游戏自动倍速</strong>
-                  <small>启用后无需按快捷键，游戏加载完成就持续使用下方倍速</small>
-                </div>
-                <label class="util-switch" title="每次进入游戏自动启用设定倍速">
-                  <input type="checkbox" id="utilsAutoSpeedToggle" aria-label="进入游戏自动倍速">
-                  <span class="switch-track"></span>
-                </label>
-              </div>
-
-              <div class="util-form-row">
-                <div class="util-form-label">
-                  <strong>自动倍速</strong>
-                  <small>关闭自动倍速时固定为 1.0；快捷键档位仍可临时切换速度</small>
-                </div>
-                <div style="display:flex;align-items:center;gap:8px">
-                  <div class="speed-presets">
-                    <button class="speed-preset-btn auto-speed-preset" data-speed="2">×2</button>
-                    <button class="speed-preset-btn auto-speed-preset" data-speed="5">×5</button>
-                    <button class="speed-preset-btn auto-speed-preset" data-speed="10">×10</button>
+              <section class="recent-replays-box">
+                <div class="recent-head">
+                  <div>
+                    <h4>回放列表</h4>
+                    <small id="libraryDirectoryText">正在检测回放目录…</small>
                   </div>
-                  <input type="number" class="util-input" id="utilsBaseSpeed" min="0.1" step="0.5" value="2" aria-label="自动倍速倍率">
+                  <div class="recent-head-actions">
+                    <button
+                      class="secondary-btn"
+                      id="libraryDownloadBtn"
+                      title="知道回放 ID（游戏战绩里那一串数字）时，直接从官方回放服务器下载进回放库"
+                    >
+                      按 ID 下载
+                    </button>
+                    <button class="secondary-btn" id="libraryImportBtn">
+                      导入回放
+                    </button>
+                    <button class="secondary-btn" id="refreshLibraryBtn">
+                      刷新列表
+                    </button>
+                  </div>
+                </div>
+
+                <div class="library-status" id="libraryStatus">
+                  <div class="library-status-cell">
+                    <span class="library-status-label">游戏内席位</span>
+                    <strong id="libraryGameSlots">—</strong>
+                    <div class="library-slot-bar">
+                      <i id="librarySlotBar"></i>
+                    </div>
+                    <small
+                      class="library-status-hint"
+                      id="libraryGameRunningHint"
+                    ></small>
+                  </div>
+                  <div class="library-status-cell">
+                    <span class="library-status-label">回放库</span>
+                    <strong id="libraryCountText">—</strong>
+                    <button class="link-btn" id="libraryOpenFolderBtn">
+                      打开库目录
+                    </button>
+                  </div>
+                </div>
+
+                <div class="library-banner hidden" id="libraryBanner">
+                  <div class="library-banner-main">
+                    <strong id="libraryBannerTitle">游戏内回放席位已满</strong>
+                    <p id="libraryBannerText"></p>
+                  </div>
+                  <div class="library-banner-actions">
+                    <button class="primary-btn" id="libraryBannerArchiveBtn">
+                      归档最旧的 3 局
+                    </button>
+                    <button class="secondary-btn" id="libraryBannerAutoBtn">
+                      以后自动保持最近 10 局
+                    </button>
+                    <button class="link-btn" id="libraryBannerDismissBtn">
+                      稍后再说
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  class="library-warning hidden"
+                  id="libraryWarningBox"
+                ></div>
+
+                <div class="library-filter-bar">
+                  <input
+                    type="search"
+                    class="library-input"
+                    id="librarySearchInput"
+                    placeholder="搜索回放 ID / 地图 / 玩家…"
+                    aria-label="搜索回放"
+                  />
+                  <select
+                    class="library-select"
+                    id="libraryFilterSelect"
+                    aria-label="按来源筛选"
+                  >
+                    <option value="all">全部来源</option>
+                    <option value="game">仅游戏内</option>
+                    <option value="library">仅回放库</option>
+                  </select>
+                  <select
+                    class="library-select"
+                    id="librarySortSelect"
+                    aria-label="排序方式"
+                  >
+                    <option value="time">按对局时间</option>
+                    <option value="size">按文件大小</option>
+                    <option value="id">按回放 ID</option>
+                  </select>
+                  <span class="library-list-count" id="libraryListCount"></span>
+                </div>
+
+                <div class="replay-entry-list" id="recentReplayList"></div>
+              </section>
+            </div>
+
+            <!-- Active Replay Detail Workspace -->
+            <div class="hidden" id="replayWorkspaceBox" style="height: 100%">
+              <div id="summaryView" class="replay-view"></div>
+              <div id="playersView" class="replay-view hidden"></div>
+              <div id="timelineView" class="replay-view hidden"></div>
+              <div id="relicsView" class="replay-view hidden"></div>
+              <div id="shopsView" class="replay-view hidden"></div>
+              <div id="technicalView" class="replay-view hidden">
+                <div style="display: flex; gap: 10px; margin-bottom: 18px">
+                  <button class="subnav-tab active" id="techTabStatistics">
+                    数据统计
+                  </button>
+                  <button class="subnav-tab" id="techTabProtocol">
+                    原始协议帧
+                  </button>
+                </div>
+                <div id="techStatsPane"></div>
+                <div id="techProtocolPane" class="hidden"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. UTILITIES VIEW (Game Companion Tools: Speedhack Installer) -->
+        <section id="utilitiesView" class="page-view utilities-page hidden">
+          <div class="utilities-header">
+            <div class="utilities-title-group">
+              <button class="back-btn" id="utilsBackHomeBtn">‹ 返回大厅</button>
+              <h2>游戏工具</h2>
+            </div>
+            <div class="utilities-header-actions">
+              <button class="secondary-btn" id="utilsEditJsonBtn">
+                <span class="mi" data-icon="edit"></span> 编辑配置 JSON
+              </button>
+            </div>
+          </div>
+
+          <div class="utilities-body">
+            <!-- 兼容性大警告: 本页是旧版独立变速器, 与模组加载器互斥 -->
+            <section class="util-compat-warning" id="utilsCompatWarning">
+              <div class="util-compat-icon">
+                <span class="mi" data-icon="warning"></span>
+              </div>
+              <div class="util-compat-main">
+                <h3>
+                  注意：这个「变速器」和模组系统<strong>不兼容</strong>，两个只能装一个
+                </h3>
+                <p class="util-compat-lead">
+                  本页安装的是<strong>旧版独立变速器</strong>（<span
+                    class="util-mono"
+                    >speedhack-rs</span
+                  >）， 模组加载器用的也是同一个文件名
+                  <span class="util-mono">version.dll</span> ——
+                  同时安装会互相覆盖，游戏只会加载其中一个。
+                </p>
+                <div class="util-compat-choice">
+                  <div class="util-compat-option">
+                    <span class="util-compat-tag tag-old">只想要变速</span>
+                    <p>
+                      不装任何 mod、只用加速 → 就留在本页，按下面卡片里的「<span
+                        class="mi"
+                        data-icon="bolt"
+                      ></span>
+                      安装」即可。 <br /><small
+                        >（本页的旧版变速器自带独立的配置与热键，功能到此为止。）</small
+                      >
+                    </p>
+                  </div>
+                  <div class="util-compat-option">
+                    <span class="util-compat-tag tag-new">想要新功能</span>
+                    <p>
+                      相机工具 / 活动日志 / 模组管理 / 权限声明 /
+                      游戏内热键变速… <strong>也包括变速本身</strong> →
+                      请到「<span class="mi" data-icon="extension"></span>
+                      模组」页面。 <br /><small
+                        >模组页面内置换速开关：<span class="util-mono"
+                          >1.0</span
+                        >
+                        = 正常， <span class="util-mono">2.0</span> = 全程 2
+                        倍速；进游戏后还能用
+                        <span class="util-mono">Alt</span>+<span
+                          class="util-mono"
+                          >=</span
+                        >
+                        / <span class="util-mono">Alt</span>+<span
+                          class="util-mono"
+                          >-</span
+                        >
+                        实时调整（最低 1 倍，不支持减速）。</small
+                      >
+                    </p>
+                  </div>
+                </div>
+                <div class="util-compat-actions">
+                  <button class="primary-btn" id="utilsGoModsBtn">
+                    <span class="mi" data-icon="extension"></span>
+                    去模组页面（推荐）
+                  </button>
+                  <span class="util-compat-keep"
+                    >只想用旧版变速器？忽略这段，照下面操作即可。</span
+                  >
                 </div>
               </div>
+            </section>
 
-              <div class="util-form-row">
-                <div class="util-form-label">
-                  <strong>调试控制台 console</strong>
-                  <small>打开变速器自带的日志控制台窗口</small>
+            <div class="util-grid">
+              <!-- 左：安装管理 -->
+              <article class="util-card">
+                <div class="util-card-head">
+                  <h3>
+                    <span class="mi" data-icon="bolt"></span> 游戏加速（变速器）
+                  </h3>
+                  <span class="badge badge-notice" id="utilsStatusBadge"
+                    >未检测</span
+                  >
                 </div>
-                <label class="util-switch" title="调试控制台">
-                  <input type="checkbox" id="utilsConsoleToggle" aria-label="调试控制台">
-                  <span class="switch-track"></span>
-                </label>
-              </div>
 
-              <div class="util-form-row">
-                <div class="util-form-label">
-                  <strong>挂接延迟 wait_with_hook</strong>
-                  <small>进游戏后等待再挂接时间函数的毫秒数（防崩溃）</small>
+                <div class="util-status-line">
+                  <span class="status-icon" id="utilsStatusIcon"
+                    ><span class="mi" data-icon="search"></span
+                  ></span>
+                  <div class="util-status-texts">
+                    <strong id="utilsStatusTitle">正在检测安装状态…</strong>
+                    <p id="utilsStatusText">请稍候</p>
+                  </div>
                 </div>
-                <input type="number" class="util-input" id="utilsWaitMs" min="0" step="100" value="250" aria-label="挂接延迟（毫秒）">
-              </div>
 
-              <div class="util-form-row">
-                <div class="util-form-label">
-                  <strong>启动加速 startup_state</strong>
-                  <small>游戏启动后自动以指定倍速加速一段时长（跳过开场动画）</small>
+                <span class="util-section-label"
+                  >游戏目录（version.dll 的安装位置）</span
+                >
+                <div class="util-path-box">
+                  <span class="path-value placeholder" id="utilsGameDirText"
+                    >尚未选择游戏目录</span
+                  >
+                  <button
+                    class="secondary-btn"
+                    id="utilsDetectDirBtn"
+                    style="padding: 5px 12px; font-size: 12px"
+                  >
+                    自动检测
+                  </button>
+                  <button
+                    class="secondary-btn"
+                    id="utilsBrowseDirBtn"
+                    style="padding: 5px 12px; font-size: 12px"
+                  >
+                    选择…
+                  </button>
+                  <button
+                    class="primary-btn"
+                    id="utilsInstallBtn"
+                    style="
+                      padding: 5px 13px;
+                      font-size: 12px;
+                      white-space: nowrap;
+                    "
+                  >
+                    <span class="mi" data-icon="bolt"></span> 安装
+                  </button>
                 </div>
-                <div style="display:flex;align-items:center;gap:8px">
-                  <input type="number" class="util-input" id="utilsStartupSpeed" min="0.1" step="0.5" disabled style="width:74px" aria-label="启动加速倍率">
-                  <input type="number" class="util-input" id="utilsStartupDuration" min="1" step="1" disabled style="width:74px" title="时长(秒)" aria-label="启动加速时长（秒）">
-                  <label class="util-switch" title="启用启动加速">
-                    <input type="checkbox" id="utilsStartupToggle" aria-label="启用启动加速">
+
+                <ul class="util-meta-list" id="utilsMetaList"></ul>
+
+                <div class="util-check-row">
+                  <input type="checkbox" id="utilsOverwriteCheck" />
+                  <label for="utilsOverwriteCheck"
+                    >允许覆盖游戏目录里其它
+                    version.dll（用于强行更新安装）</label
+                  >
+                </div>
+                <div class="util-check-row">
+                  <input type="checkbox" id="utilsForceUninstallCheck" />
+                  <label for="utilsForceUninstallCheck"
+                    >强制卸载（version.dll 与内置不一致时也删除）</label
+                  >
+                </div>
+
+                <div class="util-btn-row">
+                  <button class="secondary-btn" id="utilsSyncConfigBtn">
+                    <span class="mi" data-icon="refresh"></span> 同步配置到游戏
+                  </button>
+                  <button class="danger-btn" id="utilsUninstallBtn">
+                    <span class="mi" data-icon="delete"></span> 卸载变速器
+                  </button>
+                </div>
+
+                <div class="util-note-box">
+                  <span class="util-note-title"
+                    ><span class="mi" data-icon="warning"></span> 使用须知</span
+                  >
+                  <ul>
+                    <li>
+                      原理：把内置
+                      <span class="util-mono">version.dll</span> 放到游戏 exe
+                      旁边，游戏启动时自动加载。游戏运行中也允许安装/卸载，只是本次写入要<strong>重启游戏</strong>才生效，而且
+                      DLL
+                      被占用时写入/删除会失败——那种情况先完全退出游戏再操作即可。
+                    </li>
+                    <li>
+                      倍速基于修改进程时间函数，需在游戏设置里<strong>关闭垂直同步</strong>才生效；修改配置后<strong>重启游戏</strong>，或在游戏内按重载热键（默认
+                      Ctrl+Shift+R）。
+                    </li>
+                    <li>
+                      工具来源：<a
+                        href="https://github.com/Hirtol/speedhack-rs"
+                        target="_blank"
+                        rel="noopener"
+                        style="color: var(--gp-blue)"
+                        >github.com/Hirtol/speedhack-rs</a
+                      >（构建于 2024-04-13）。
+                    </li>
+                  </ul>
+                </div>
+              </article>
+
+              <!-- 右：配置编辑器 -->
+              <article class="util-card">
+                <div class="util-card-head">
+                  <h3>
+                    <span class="mi" data-icon="settings"></span>
+                    speedhack_config.json 配置
+                  </h3>
+                  <span class="badge badge-update" id="utilsConfigStateBadge"
+                    >已同步</span
+                  >
+                </div>
+
+                <div class="util-form-row">
+                  <div class="util-form-label">
+                    <strong>进入游戏自动倍速</strong>
+                    <small
+                      >启用后无需按快捷键，游戏加载完成就持续使用下方倍速</small
+                    >
+                  </div>
+                  <label
+                    class="util-switch"
+                    title="每次进入游戏自动启用设定倍速"
+                  >
+                    <input
+                      type="checkbox"
+                      id="utilsAutoSpeedToggle"
+                      aria-label="进入游戏自动倍速"
+                    />
                     <span class="switch-track"></span>
                   </label>
                 </div>
-              </div>
 
-              <span class="util-section-label">倍速档位（满足按键组合时切换速度）</span>
-              <div id="utilsStateRows"></div>
-              <button class="util-add-chip-btn" id="utilsAddStateBtn" style="margin-top:12px">＋ 添加倍速档位</button>
-
-              <span class="util-section-label">重载配置热键 reload_config_keys</span>
-              <div class="util-keys-area" id="utilsReloadKeysArea">
-                <button class="util-add-chip-btn" id="utilsReloadKeysAddBtn">＋ 按键</button>
-              </div>
-
-              <div class="util-config-foot">
-                <span class="util-config-path" id="utilsConfigPathText"></span>
-                <div style="display:flex;gap:10px;flex-wrap:wrap">
-                  <button class="secondary-btn" id="utilsRestoreConfigBtn">恢复默认模板</button>
-                  <button class="primary-btn" id="utilsSaveConfigBtn"><span class="mi" data-icon="save"></span> 保存配置</button>
+                <div class="util-form-row">
+                  <div class="util-form-label">
+                    <strong>自动倍速</strong>
+                    <small
+                      >关闭自动倍速时固定为
+                      1.0；快捷键档位仍可临时切换速度</small
+                    >
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <div class="speed-presets">
+                      <button
+                        class="speed-preset-btn auto-speed-preset"
+                        data-speed="2"
+                      >
+                        ×2
+                      </button>
+                      <button
+                        class="speed-preset-btn auto-speed-preset"
+                        data-speed="5"
+                      >
+                        ×5
+                      </button>
+                      <button
+                        class="speed-preset-btn auto-speed-preset"
+                        data-speed="10"
+                      >
+                        ×10
+                      </button>
+                    </div>
+                    <input
+                      type="number"
+                      class="util-input"
+                      id="utilsBaseSpeed"
+                      min="0.1"
+                      step="0.5"
+                      value="2"
+                      aria-label="自动倍速倍率"
+                    />
+                  </div>
                 </div>
-              </div>
-            </article>
-          </div>
-        </div>
-      </section>
 
-      <!-- 4. MODS VIEW (Mod Loader & Mod Management)
+                <div class="util-form-row">
+                  <div class="util-form-label">
+                    <strong>调试控制台 console</strong>
+                    <small>打开变速器自带的日志控制台窗口</small>
+                  </div>
+                  <label class="util-switch" title="调试控制台">
+                    <input
+                      type="checkbox"
+                      id="utilsConsoleToggle"
+                      aria-label="调试控制台"
+                    />
+                    <span class="switch-track"></span>
+                  </label>
+                </div>
+
+                <div class="util-form-row">
+                  <div class="util-form-label">
+                    <strong>挂接延迟 wait_with_hook</strong>
+                    <small>进游戏后等待再挂接时间函数的毫秒数（防崩溃）</small>
+                  </div>
+                  <input
+                    type="number"
+                    class="util-input"
+                    id="utilsWaitMs"
+                    min="0"
+                    step="100"
+                    value="250"
+                    aria-label="挂接延迟（毫秒）"
+                  />
+                </div>
+
+                <div class="util-form-row">
+                  <div class="util-form-label">
+                    <strong>启动加速 startup_state</strong>
+                    <small
+                      >游戏启动后自动以指定倍速加速一段时长（跳过开场动画）</small
+                    >
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <input
+                      type="number"
+                      class="util-input"
+                      id="utilsStartupSpeed"
+                      min="0.1"
+                      step="0.5"
+                      disabled
+                      style="width: 74px"
+                      aria-label="启动加速倍率"
+                    />
+                    <input
+                      type="number"
+                      class="util-input"
+                      id="utilsStartupDuration"
+                      min="1"
+                      step="1"
+                      disabled
+                      style="width: 74px"
+                      title="时长(秒)"
+                      aria-label="启动加速时长（秒）"
+                    />
+                    <label class="util-switch" title="启用启动加速">
+                      <input
+                        type="checkbox"
+                        id="utilsStartupToggle"
+                        aria-label="启用启动加速"
+                      />
+                      <span class="switch-track"></span>
+                    </label>
+                  </div>
+                </div>
+
+                <span class="util-section-label"
+                  >倍速档位（满足按键组合时切换速度）</span
+                >
+                <div id="utilsStateRows"></div>
+                <button
+                  class="util-add-chip-btn"
+                  id="utilsAddStateBtn"
+                  style="margin-top: 12px"
+                >
+                  ＋ 添加倍速档位
+                </button>
+
+                <span class="util-section-label"
+                  >重载配置热键 reload_config_keys</span
+                >
+                <div class="util-keys-area" id="utilsReloadKeysArea">
+                  <button class="util-add-chip-btn" id="utilsReloadKeysAddBtn">
+                    ＋ 按键
+                  </button>
+                </div>
+
+                <div class="util-config-foot">
+                  <span
+                    class="util-config-path"
+                    id="utilsConfigPathText"
+                  ></span>
+                  <div style="display: flex; gap: 10px; flex-wrap: wrap">
+                    <button class="secondary-btn" id="utilsRestoreConfigBtn">
+                      恢复默认模板
+                    </button>
+                    <button class="primary-btn" id="utilsSaveConfigBtn">
+                      <span class="mi" data-icon="save"></span> 保存配置
+                    </button>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. MODS VIEW (Mod Loader & Mod Management)
            信息层级：① 加载器状态与版本（本页最敏感的信息）→ ② 已安装的模组（主体）
            → ③ 游戏变速 → ④ 高级 / 诊断（默认折叠）。 -->
-      <section id="modsView" class="page-view mods-page hidden">
-        <div class="utilities-header mods-header">
-          <div class="utilities-title-group">
-            <button class="back-btn" id="modsBackHomeBtn">‹ 返回大厅</button>
-            <h2>模组管理</h2>
-            <span class="utilities-tagline">CesiumLoader · 加载器 / 模组 / 变速</span>
+        <section id="modsView" class="page-view mods-page hidden">
+          <div class="utilities-header mods-header">
+            <div class="utilities-title-group">
+              <button class="back-btn" id="modsBackHomeBtn">‹ 返回大厅</button>
+              <h2>模组管理</h2>
+              <span class="utilities-tagline"
+                >CesiumLoader · 加载器 / 模组 / 变速</span
+              >
+            </div>
+            <div class="utilities-header-actions">
+              <button class="secondary-btn" id="modOpenFolderTopBtn">
+                <span class="mi" data-icon="folder_open"></span> 打开 mods 目录
+              </button>
+              <button class="primary-btn" id="modImportTopBtn">
+                ＋ 导入模组
+              </button>
+            </div>
           </div>
-          <div class="utilities-header-actions">
-            <button class="secondary-btn" id="modOpenFolderTopBtn"><span class="mi" data-icon="folder_open"></span> 打开 mods 目录</button>
-            <button class="primary-btn" id="modImportTopBtn">＋ 导入模组</button>
+
+          <div class="game-picker-bar" id="modGamePickerBar">
+            <span class="game-picker-label">当前游戏</span>
+            <select
+              class="game-picker-select"
+              id="modGameSelect"
+              aria-label="选择当前正在操作的游戏"
+            ></select>
+            <span class="game-picker-path" id="modGamePickerPath"></span>
+            <button class="link-btn" id="modGamePickerManageBtn">
+              管理游戏目录…
+            </button>
           </div>
-        </div>
 
-        <div class="game-picker-bar" id="modGamePickerBar">
-          <span class="game-picker-label">当前游戏</span>
-          <select class="game-picker-select" id="modGameSelect" aria-label="选择当前正在操作的游戏"></select>
-          <span class="game-picker-path" id="modGamePickerPath"></span>
-          <button class="link-btn" id="modGamePickerManageBtn">管理游戏目录…</button>
-        </div>
-
-        <div class="mods-body">
-          <!-- ① 加载器：状态 + 版本三栏 -->
-          <section class="loader-panel" id="modManagerCard">
-            <div class="loader-head">
-              <span class="loader-icon" id="modStatusIcon"><span class="mi" data-icon="search"></span></span>
-              <div class="loader-head-text">
-                <div class="loader-title-row">
-                  <h3>Mod 加载器</h3>
-                  <span class="badge badge-notice" id="modStatusBadge">检测中</span>
+          <div class="mods-body">
+            <!-- ① 加载器：状态 + 版本三栏 -->
+            <section class="loader-panel" id="modManagerCard">
+              <div class="loader-head">
+                <span class="loader-icon" id="modStatusIcon"
+                  ><span class="mi" data-icon="search"></span
+                ></span>
+                <div class="loader-head-text">
+                  <div class="loader-title-row">
+                    <h3>Mod 加载器</h3>
+                    <span class="badge badge-notice" id="modStatusBadge"
+                      >检测中</span
+                    >
+                  </div>
+                  <p class="loader-state" id="modStatusTitle">
+                    正在检测安装状态…
+                  </p>
+                  <p class="loader-hint" id="modStatusText">请稍候</p>
                 </div>
-                <p class="loader-state" id="modStatusTitle">正在检测安装状态…</p>
-                <p class="loader-hint" id="modStatusText">请稍候</p>
-              </div>
-            </div>
-
-            <!-- 版本三栏：已安装 / 随程序内置 / GitHub 最新，下方一句结论 -->
-            <div class="version-board">
-              <div class="version-cell" id="modInstalledCell">
-                <span class="version-label">已安装</span>
-                <strong class="version-value" id="modInstalledVersion">—</strong>
-                <span class="version-note" id="modInstalledNote">正在检测…</span>
-              </div>
-              <div class="version-cell" id="modEmbeddedCell">
-                <span class="version-label">随本程序内置</span>
-                <strong class="version-value" id="modEmbeddedVersion">—</strong>
-                <span class="version-note">点「安装加载器」装的就是这一份</span>
-              </div>
-              <div class="version-cell" id="modLatestCell">
-                <span class="version-label">GitHub 最新</span>
-                <strong class="version-value" id="modLatestVersion">未检查</strong>
-                <span class="version-note" id="modLatestNote">点「检查更新」获取</span>
-              </div>
-            </div>
-            <div class="version-verdict" id="modVersionVerdict">
-              <span class="verdict-dot"></span>
-              <span id="modVersionVerdictText">正在读取版本信息…</span>
-            </div>
-
-            <div class="loader-actions">
-              <button class="primary-btn" id="modInstallBtn"><span class="mi" data-icon="download"></span> 安装加载器</button>
-              <button class="secondary-btn" id="modCheckUpdateBtn"><span class="mi" data-icon="refresh"></span> 检查更新</button>
-              <button class="primary-btn hidden" id="modDownloadUpdateBtn"><span class="mi" data-icon="upgrade"></span> 更新到最新</button>
-              <button class="secondary-btn" id="modImportPackageBtn" title="导入本地 cesium-loader 发布 ZIP，安装加载器、SDK 与包内模组"><span class="mi" data-icon="download"></span> 导入发布包</button>
-              <button class="secondary-btn hidden" id="modDisableLoaderBtn" type="button" title="备份后只删除 version.dll，保留所有模组与配置"><span class="mi" data-icon="delete"></span> 仅删除 version.dll</button>
-              <button class="primary-btn hidden" id="modRestoreLoaderBtn" type="button" title="恢复当前版本；本地缺失时下载对应版本发布包"><span class="mi" data-icon="download"></span> 恢复 version.dll</button>
-              <button class="danger-btn" id="modUninstallBtn"><span class="mi" data-icon="delete"></span> 完整卸载加载器</button>
-              <button class="secondary-btn" id="modLoaderSettingsBtn"><span class="mi" data-icon="settings"></span> 加载器设置</button>
-              <button class="secondary-btn" id="modLoaderChangelogBtn"><span class="mi" data-icon="description"></span> 加载器更新日志</button>
-            </div>
-          </section>
-
-          <!-- ② 模组列表：本页主体 -->
-          <section class="mods-panel">
-            <div class="mods-panel-head">
-              <h3>已安装的模组 <span class="mods-count" id="modModsCount">—</span></h3>
-              <div class="mods-panel-actions">
-                <button class="secondary-btn" id="modOpenModsBtn"><span class="mi" data-icon="folder_open"></span> 打开 mods 目录</button>
-                <button class="secondary-btn" id="modOpenLogsBtn"><span class="mi" data-icon="description"></span> 打开日志目录</button>
-                <button class="primary-btn" id="modImportBtn">＋ 导入模组 DLL</button>
-              </div>
-            </div>
-            <div class="mod-cards" id="modListContainer">
-              <p class="mods-empty">尚未安装加载器 / 目录为空</p>
-            </div>
-            <p class="mods-foot-note">启用 / 禁用与配置修改都在<strong>重启游戏后</strong>生效；「<span class="mi" data-icon="settings"></span>」改这个模组自己的配置。</p>
-          </section>
-
-          <!-- ③ 游戏变速（加载器内置功能，不是 mod） -->
-          <section class="mods-panel mods-panel-compact" id="modSpeedhackBar">
-            <div class="mods-panel-head">
-              <h3>游戏变速 <span class="mods-sub-count">加载器内置功能</span></h3>
-            </div>
-            <div class="speedhack-row">
-              <label class="mod-toggle speedhack-toggle" title="启用后，启动游戏即按该倍速运行（全程保持）">
-                <input type="checkbox" id="modSpeedhackEnable">
-                <span class="switch-track"></span>
-                <span class="mod-toggle-text" id="modSpeedhackEnableLabel">变速已禁用</span>
-              </label>
-              <label class="speedhack-speed-row">
-                <span>倍速</span>
-                <input type="number" id="modSpeedhackSpeed" min="1" max="100" step="0.1" value="2.0"
-                       title="启动时基础倍速（1.0 = 正常；不支持减速，最小 1.0）">
-              </label>
-              <button class="primary-btn" id="modSpeedhackSaveBtn">应用变速</button>
-              <span class="speedhack-hint" id="modSpeedhackHint">1.0 = 正常速度</span>
-            </div>
-            <p class="mods-foot-note">
-              写入 <span class="util-mono">doorstop_config.json</span> 的
-              <span class="util-mono">speedhackBaseSpeed</span>：启用 = 启动游戏即按该倍速运行（全程保持），
-              禁用 = 恢复 1.0 正常速度。最低 1.0（加载器不支持减速），重启游戏生效。
-            </p>
-          </section>
-
-          <!-- ④ 高级 / 诊断：默认折叠，只有排障与特殊安装才需要 -->
-          <details class="mods-advanced" id="modAdvancedDetails">
-            <summary>高级与排障 <span class="mods-advanced-hint">游戏目录 · 覆盖与降级 · SDK 依赖 · 卸载</span></summary>
-
-            <div class="mods-advanced-body">
-              <span class="util-section-label">游戏目录（version.dll 的安装位置）</span>
-              <div class="util-path-box">
-                <span class="path-value placeholder" id="modGameDirText">尚未选择游戏目录</span>
-                <button class="secondary-btn" id="modDetectDirBtn">自动检测</button>
-                <button class="secondary-btn" id="modBrowseDirBtn">选择…</button>
               </div>
 
-              <div class="mods-advanced-warn hidden" id="modAdvancedWarn"></div>
+              <!-- 版本三栏：已安装 / 随程序内置 / GitHub 最新，下方一句结论 -->
+              <div class="version-board">
+                <div class="version-cell" id="modInstalledCell">
+                  <span class="version-label">已安装</span>
+                  <strong class="version-value" id="modInstalledVersion"
+                    >—</strong
+                  >
+                  <span class="version-note" id="modInstalledNote"
+                    >正在检测…</span
+                  >
+                </div>
+                <div class="version-cell" id="modEmbeddedCell">
+                  <span class="version-label">随本程序内置</span>
+                  <strong class="version-value" id="modEmbeddedVersion"
+                    >—</strong
+                  >
+                  <span class="version-note"
+                    >点「安装加载器」装的就是这一份</span
+                  >
+                </div>
+                <div class="version-cell" id="modLatestCell">
+                  <span class="version-label">GitHub 最新</span>
+                  <strong class="version-value" id="modLatestVersion"
+                    >未检查</strong
+                  >
+                  <span class="version-note" id="modLatestNote"
+                    >点「检查更新」获取</span
+                  >
+                </div>
+              </div>
+              <div class="version-verdict" id="modVersionVerdict">
+                <span class="verdict-dot"></span>
+                <span id="modVersionVerdictText">正在读取版本信息…</span>
+              </div>
 
-              <span class="util-section-label">安装与覆盖选项</span>
-              <div class="util-check-row">
-                <input type="checkbox" id="modIncludeSampleCheck" checked>
-                <label for="modIncludeSampleCheck">安装加载器时一并装上内置模组（行为日志 + 自由相机 + 变速）</label>
+              <div class="loader-actions">
+                <button class="primary-btn" id="modInstallBtn">
+                  <span class="mi" data-icon="download"></span> 安装加载器
+                </button>
+                <button class="secondary-btn" id="modCheckUpdateBtn">
+                  <span class="mi" data-icon="refresh"></span> 检查更新
+                </button>
+                <button class="primary-btn hidden" id="modDownloadUpdateBtn">
+                  <span class="mi" data-icon="upgrade"></span> 更新到最新
+                </button>
+                <button
+                  class="secondary-btn"
+                  id="modImportPackageBtn"
+                  title="导入本地 cesium-loader 发布 ZIP，安装加载器、SDK 与包内模组"
+                >
+                  <span class="mi" data-icon="download"></span> 导入发布包
+                </button>
+                <button
+                  class="secondary-btn hidden"
+                  id="modDisableLoaderBtn"
+                  type="button"
+                  title="备份后只删除 version.dll，保留所有模组与配置"
+                >
+                  <span class="mi" data-icon="delete"></span> 仅删除 version.dll
+                </button>
+                <button
+                  class="primary-btn hidden"
+                  id="modRestoreLoaderBtn"
+                  type="button"
+                  title="恢复当前版本；本地缺失时下载对应版本发布包"
+                >
+                  <span class="mi" data-icon="download"></span> 恢复 version.dll
+                </button>
+                <button class="danger-btn" id="modUninstallBtn">
+                  <span class="mi" data-icon="delete"></span> 完整卸载加载器
+                </button>
+                <button class="secondary-btn" id="modLoaderSettingsBtn">
+                  <span class="mi" data-icon="settings"></span> 加载器设置
+                </button>
+                <button class="secondary-btn" id="modLoaderChangelogBtn">
+                  <span class="mi" data-icon="description"></span>
+                  加载器更新日志
+                </button>
               </div>
-              <div class="util-check-row">
-                <input type="checkbox" id="modOverwriteCheck">
-                <label for="modOverwriteCheck">允许覆盖游戏目录里不属于本工具的 version.dll</label>
-              </div>
-              <div class="util-check-row">
-                <input type="checkbox" id="modDowngradeCheck">
-                <label for="modDowngradeCheck">允许把已装的加载器降级成内置的较旧版本</label>
-              </div>
-              <div class="util-check-row">
-                <input type="checkbox" id="modUpdateOverwriteCheck">
-                <label for="modUpdateOverwriteCheck">更新时允许覆盖游戏目录里不属于本工具的 version.dll</label>
-              </div>
-              <div class="util-check-row">
-                <input type="checkbox" id="modUpdateDowngradeCheck">
-                <label for="modUpdateDowngradeCheck">更新时允许降级（仅在发布包比已装版本旧时才需要）</label>
-              </div>
-              <div class="util-check-row">
-                <input type="checkbox" id="modForceUninstallCheck">
-                <label for="modForceUninstallCheck">强制卸载（version.dll 不属于本工具时也删除）</label>
-              </div>
+            </section>
 
-              <div class="util-btn-row">
-                <button class="secondary-btn" id="modOpenSdkBtn"><span class="mi" data-icon="folder_open"></span> 打开 sdk 目录</button>
+            <!-- ② 模组列表：本页主体 -->
+            <section class="mods-panel">
+              <div class="mods-panel-head">
+                <h3>
+                  已安装的模组
+                  <span class="mods-count" id="modModsCount">—</span>
+                </h3>
+                <div class="mods-panel-actions">
+                  <button class="secondary-btn" id="modOpenModsBtn">
+                    <span class="mi" data-icon="folder_open"></span> 打开 mods
+                    目录
+                  </button>
+                  <button class="secondary-btn" id="modOpenLogsBtn">
+                    <span class="mi" data-icon="description"></span>
+                    打开日志目录
+                  </button>
+                  <button class="primary-btn" id="modImportBtn">
+                    ＋ 导入模组 DLL
+                  </button>
+                </div>
               </div>
-
-              <span class="util-section-label">SDK 依赖（sdk\ 目录）</span>
-              <div class="mod-cards mod-cards-sdk" id="modSdkContainer">
+              <div class="mod-cards" id="modListContainer">
                 <p class="mods-empty">尚未安装加载器 / 目录为空</p>
               </div>
+              <p class="mods-foot-note">
+                启用 /
+                禁用与配置修改都在<strong>重启游戏后</strong>生效；「<span
+                  class="mi"
+                  data-icon="settings"
+                ></span
+                >」改这个模组自己的配置。
+              </p>
+            </section>
 
-              <details class="mods-help">
-                <summary>它是怎么工作的？</summary>
-                <ul>
-                  <li>把内置 <span class="util-mono">version.dll</span>（CesiumLoader，Doorstop 式代理）放到游戏 exe 旁边；游戏启动时由 UnityPlayer 自动加载，再读取 <span class="util-mono">AstralParty_ModLoader\doorstop_config.json</span>，按 <span class="util-mono">mods\</span> 下每个模组的 sidecar（同名 <span class="util-mono">.json</span>）做依赖排序与 SDK 版本协商，然后逐个加载，并在控制台窗口按颜色分级打印加载报告。不会修改游戏文件本身。</li>
-                  <li>每个模组是引用 CesiumLoader.SDK 的 .NET DLL，一个模组一个文件夹：<span class="util-mono">mods\{ModId}\{ModId}.dll</span>，sidecar 与配置（<span class="util-mono">config.json</span>）都在同一个文件夹里。</li>
-                  <li>版本信息只以<strong>安装清单</strong>（<span class="util-mono">AstralParty_ModLoader\cesium-loader.json</span>）为准：安装或更新时写入，界面读它显示「已安装」。看不出（0.4.7 之前的老安装、或清单被删）时界面会如实显示「版本未知」——重新安装一次即可纳入版本管理。</li>
-                  <li>加载器与旧版独立变速器（「游戏工具」页）共用 <span class="util-mono">version.dll</span>，<strong>只能装一个</strong>；加载器本身已内置变速，装它就够了。</li>
-                  <li>游戏运行中也能安装 / 卸载，但 <span class="util-mono">version.dll</span> 被占用时写入或删除会失败——那种情况先完全退出游戏再操作。</li>
-                </ul>
-              </details>
-            </div>
-          </details>
-        </div>
-      </section>
+            <!-- ③ 游戏变速（加载器内置功能，不是 mod） -->
+            <section class="mods-panel mods-panel-compact" id="modSpeedhackBar">
+              <div class="mods-panel-head">
+                <h3>
+                  游戏变速 <span class="mods-sub-count">加载器内置功能</span>
+                </h3>
+              </div>
+              <div class="speedhack-row">
+                <label
+                  class="mod-toggle speedhack-toggle"
+                  title="启用后，启动游戏即按该倍速运行（全程保持）"
+                >
+                  <input type="checkbox" id="modSpeedhackEnable" />
+                  <span class="switch-track"></span>
+                  <span class="mod-toggle-text" id="modSpeedhackEnableLabel"
+                    >变速已禁用</span
+                  >
+                </label>
+                <label class="speedhack-speed-row">
+                  <span>倍速</span>
+                  <input
+                    type="number"
+                    id="modSpeedhackSpeed"
+                    min="1"
+                    max="100"
+                    step="0.1"
+                    value="2.0"
+                    title="启动时基础倍速（1.0 = 正常；不支持减速，最小 1.0）"
+                  />
+                </label>
+                <button class="primary-btn" id="modSpeedhackSaveBtn">
+                  应用变速
+                </button>
+                <span class="speedhack-hint" id="modSpeedhackHint"
+                  >1.0 = 正常速度</span
+                >
+              </div>
+              <p class="mods-foot-note">
+                写入 <span class="util-mono">doorstop_config.json</span> 的
+                <span class="util-mono">speedhackBaseSpeed</span>：启用 =
+                启动游戏即按该倍速运行（全程保持）， 禁用 = 恢复 1.0
+                正常速度。最低 1.0（加载器不支持减速），重启游戏生效。
+              </p>
+            </section>
 
-      <!-- 4.5. SKINS VIEW (Card Skin Profiles & Management) -->
-      <section id="skinsView" class="page-view skins-page hidden">
-        <div class="utilities-header skins-header">
-          <div class="utilities-title-group">
-            <button class="back-btn" id="skinsBackHomeBtn">‹ 返回大厅</button>
-            <h2>皮肤</h2>
-            <span class="utilities-tagline">CardSkinMod · 方案管理 / 导入 / 单卡可视化替换</span>
-          </div>
-          <div class="utilities-header-actions">
-            <button class="secondary-btn" id="skinOpenFolderTopBtn"><span class="mi" data-icon="folder_open"></span> 打开皮肤目录</button>
-            <button class="secondary-btn" id="skinDownloadDefaultBtn">下载默认包</button>
-             <button class="secondary-btn" id="skinRestoreDefaultBtn">恢复内置默认包</button>
-             <button class="secondary-btn" id="skinNewProfileTopBtn">＋ 新建方案</button>
-            <button class="primary-btn" id="skinImportZipTopBtn"><span class="mi" data-icon="download"></span> 导入皮肤包 (.zip)</button>
-          </div>
-        </div>
+            <!-- ④ 高级 / 诊断：默认折叠，只有排障与特殊安装才需要 -->
+            <details class="mods-advanced" id="modAdvancedDetails">
+              <summary>
+                高级与排障
+                <span class="mods-advanced-hint"
+                  >游戏目录 · 覆盖与降级 · SDK 依赖 · 卸载</span
+                >
+              </summary>
 
-        <div class="game-picker-bar" id="skinGamePickerBar">
-          <span class="game-picker-label">当前游戏</span>
-          <select class="game-picker-select" id="skinGameSelect" aria-label="选择当前正在操作的游戏"></select>
-          <span class="game-picker-path" id="skinGamePickerPath"></span>
-          <button class="link-btn" id="skinGamePickerManageBtn">管理游戏目录…</button>
-        </div>
+              <div class="mods-advanced-body">
+                <span class="util-section-label"
+                  >游戏目录（version.dll 的安装位置）</span
+                >
+                <div class="util-path-box">
+                  <span class="path-value placeholder" id="modGameDirText"
+                    >尚未选择游戏目录</span
+                  >
+                  <button class="secondary-btn" id="modDetectDirBtn">
+                    自动检测
+                  </button>
+                  <button class="secondary-btn" id="modBrowseDirBtn">
+                    选择…
+                  </button>
+                </div>
 
-        <div class="character-skin-tabs" role="tablist" aria-label="皮肤类型">
-          <button id="cardSkinTab" role="tab" aria-selected="true" aria-controls="cardSkinPanel" class="active">卡牌皮肤</button>
-          <button id="characterSkinTab" role="tab" aria-selected="false" aria-controls="characterSkinPanel" tabindex="-1">角色皮肤</button>
-        </div>
-        <section id="characterSkinPanel" class="hidden" role="tabpanel" aria-labelledby="characterSkinTab">
-          <div class="character-toolbar">
-            <button class="primary-btn" id="characterNew">新建角色皮肤</button>
-            <button class="secondary-btn" id="characterImport">导入 ZIP</button>
-            <button class="secondary-btn" id="characterFolder">打开皮肤目录</button>
-            <button class="secondary-btn" id="characterInstall">安装角色皮肤模组</button>
-            <span id="characterStatus" role="status"></span>
+                <div
+                  class="mods-advanced-warn hidden"
+                  id="modAdvancedWarn"
+                ></div>
+
+                <span class="util-section-label">安装与覆盖选项</span>
+                <div class="util-check-row">
+                  <input type="checkbox" id="modIncludeSampleCheck" checked />
+                  <label for="modIncludeSampleCheck"
+                    >安装加载器时一并装上内置模组（行为日志 + 自由相机 +
+                    变速）</label
+                  >
+                </div>
+                <div class="util-check-row">
+                  <input type="checkbox" id="modOverwriteCheck" />
+                  <label for="modOverwriteCheck"
+                    >允许覆盖游戏目录里不属于本工具的 version.dll</label
+                  >
+                </div>
+                <div class="util-check-row">
+                  <input type="checkbox" id="modDowngradeCheck" />
+                  <label for="modDowngradeCheck"
+                    >允许把已装的加载器降级成内置的较旧版本</label
+                  >
+                </div>
+                <div class="util-check-row">
+                  <input type="checkbox" id="modUpdateOverwriteCheck" />
+                  <label for="modUpdateOverwriteCheck"
+                    >更新时允许覆盖游戏目录里不属于本工具的 version.dll</label
+                  >
+                </div>
+                <div class="util-check-row">
+                  <input type="checkbox" id="modUpdateDowngradeCheck" />
+                  <label for="modUpdateDowngradeCheck"
+                    >更新时允许降级（仅在发布包比已装版本旧时才需要）</label
+                  >
+                </div>
+                <div class="util-check-row">
+                  <input type="checkbox" id="modForceUninstallCheck" />
+                  <label for="modForceUninstallCheck"
+                    >强制卸载（version.dll 不属于本工具时也删除）</label
+                  >
+                </div>
+
+                <div class="util-btn-row">
+                  <button class="secondary-btn" id="modOpenSdkBtn">
+                    <span class="mi" data-icon="folder_open"></span> 打开 sdk
+                    目录
+                  </button>
+                </div>
+
+                <span class="util-section-label">SDK 依赖（sdk\ 目录）</span>
+                <div class="mod-cards mod-cards-sdk" id="modSdkContainer">
+                  <p class="mods-empty">尚未安装加载器 / 目录为空</p>
+                </div>
+
+                <details class="mods-help">
+                  <summary>它是怎么工作的？</summary>
+                  <ul>
+                    <li>
+                      把内置
+                      <span class="util-mono">version.dll</span
+                      >（CesiumLoader，Doorstop 式代理）放到游戏 exe
+                      旁边；游戏启动时由 UnityPlayer 自动加载，再读取
+                      <span class="util-mono"
+                        >AstralParty_ModLoader\doorstop_config.json</span
+                      >，按 <span class="util-mono">mods\</span> 下每个模组的
+                      sidecar（同名
+                      <span class="util-mono">.json</span>）做依赖排序与 SDK
+                      版本协商，然后逐个加载，并在控制台窗口按颜色分级打印加载报告。不会修改游戏文件本身。
+                    </li>
+                    <li>
+                      每个模组是引用 CesiumLoader.SDK 的 .NET
+                      DLL，一个模组一个文件夹：<span class="util-mono"
+                        >mods\{ModId}\{ModId}.dll</span
+                      >，sidecar 与配置（<span class="util-mono"
+                        >config.json</span
+                      >）都在同一个文件夹里。
+                    </li>
+                    <li>
+                      版本信息只以<strong>安装清单</strong>（<span
+                        class="util-mono"
+                        >AstralParty_ModLoader\cesium-loader.json</span
+                      >）为准：安装或更新时写入，界面读它显示「已安装」。看不出（0.4.7
+                      之前的老安装、或清单被删）时界面会如实显示「版本未知」——重新安装一次即可纳入版本管理。
+                    </li>
+                    <li>
+                      加载器与旧版独立变速器（「游戏工具」页）共用
+                      <span class="util-mono">version.dll</span
+                      >，<strong>只能装一个</strong>；加载器本身已内置变速，装它就够了。
+                    </li>
+                    <li>
+                      游戏运行中也能安装 / 卸载，但
+                      <span class="util-mono">version.dll</span>
+                      被占用时写入或删除会失败——那种情况先完全退出游戏再操作。
+                    </li>
+                  </ul>
+                </details>
+              </div>
+            </details>
           </div>
-          <p class="character-note">修改后完全退出并重启游戏生效。图片、文案和地图动画已提供；媒体、特效及特殊演出保留原版，运行时效果待游戏验证。</p>
-          <div class="character-workspace">
-            <aside class="character-list-panel"><label for="characterSearch">搜索角色 / 方案</label><input id="characterSearch" type="search" placeholder="输入角色名或皮肤名"><div id="characterList"></div></aside>
-            <div id="characterDetail" class="character-detail"><p>选择一个皮肤包，或新建方案开始制作。</p></div>
-          </div>
-          <dialog id="characterCreateDialog"><form id="characterCreateForm"><h3>新建角色皮肤</h3>
-            <label>方案标识<input name="id" required pattern="[A-Za-z0-9_-]{1,80}" placeholder="my-character-skin"></label>
-            <label>显示名称<input name="name" required maxlength="100"></label>
-            <label>目标角色<select name="heroId" id="characterCreateHero" required></select></label>
-            <label>适用原皮肤<select name="skinItemId" id="characterCreateSkin" required><option value="0">该角色全部原皮肤</option></select></label><p>可以为各套原皮肤分别启用不同的自制包。</p>
-            <label class="character-template-toggle"><input type="checkbox" id="characterCreateFromGame" name="fromGame">从游戏导出所选角色的默认皮肤</label>
-            <div id="characterTemplateOptions" class="hidden"><label>热更新资源缓存<input id="characterTemplateCache" name="cache" placeholder="com.unity.addressables 目录"></label><p>同时读取当前游戏安装目录与此缓存，导出默认图片和完整二维动画，适用原皮肤将设为默认皮肤。需要本机 Python 3、UnityPy 和 Pillow。</p></div>
-            <p id="characterTemplateProgress" role="status" aria-live="polite"></p>
-            <div class="character-toolbar"><button type="submit" id="characterCreateSubmit" class="primary-btn">创建</button><button type="button" id="characterCreateCancel" class="secondary-btn">取消</button></div>
-          </form></dialog>
         </section>
-        <div class="skins-body" id="cardSkinPanel" role="tabpanel" aria-labelledby="cardSkinTab">
-          <!-- 当前方案控制面板 -->
-          <section class="skin-active-panel">
-            <div class="skin-active-left">
-              <div class="skin-select-row">
-                <label for="skinProfileSelect" class="skin-select-label">选择皮肤方案：</label>
-                <select id="skinProfileSelect" class="skin-profile-dropdown"></select>
-                <span id="skinActiveBadge" class="badge badge-success">当前生效中</span>
+
+        <!-- 4.5. SKINS VIEW (Card Skin Profiles & Management) -->
+        <section id="skinsView" class="page-view skins-page hidden">
+          <div class="utilities-header skins-header">
+            <div class="utilities-title-group">
+              <button class="back-btn" id="skinsBackHomeBtn">‹ 返回大厅</button>
+              <h2>皮肤</h2>
+              <span class="utilities-tagline"
+                >CardSkinMod · 方案管理 / 导入 / 单卡可视化替换</span
+              >
+            </div>
+            <div class="utilities-header-actions">
+              <button class="secondary-btn" id="skinOpenFolderTopBtn">
+                <span class="mi" data-icon="folder_open"></span> 打开皮肤目录
+              </button>
+              <button class="secondary-btn" id="skinDownloadDefaultBtn">
+                下载默认包
+              </button>
+              <button class="secondary-btn" id="skinRestoreDefaultBtn">
+                恢复内置默认包
+              </button>
+              <button class="secondary-btn" id="skinNewProfileTopBtn">
+                ＋ 新建方案
+              </button>
+              <button class="primary-btn" id="skinImportZipTopBtn">
+                <span class="mi" data-icon="download"></span> 导入皮肤包 (.zip)
+              </button>
+            </div>
+          </div>
+
+          <div class="game-picker-bar" id="skinGamePickerBar">
+            <span class="game-picker-label">当前游戏</span>
+            <select
+              class="game-picker-select"
+              id="skinGameSelect"
+              aria-label="选择当前正在操作的游戏"
+            ></select>
+            <span class="game-picker-path" id="skinGamePickerPath"></span>
+            <button class="link-btn" id="skinGamePickerManageBtn">
+              管理游戏目录…
+            </button>
+          </div>
+
+          <div class="character-skin-tabs" role="tablist" aria-label="皮肤类型">
+            <button
+              id="cardSkinTab"
+              role="tab"
+              aria-selected="true"
+              aria-controls="cardSkinPanel"
+              class="active"
+            >
+              卡牌皮肤
+            </button>
+            <button
+              id="characterSkinTab"
+              role="tab"
+              aria-selected="false"
+              aria-controls="characterSkinPanel"
+              tabindex="-1"
+            >
+              角色皮肤
+            </button>
+          </div>
+          <section
+            id="characterSkinPanel"
+            class="hidden"
+            role="tabpanel"
+            aria-labelledby="characterSkinTab"
+          >
+            <div class="character-toolbar">
+              <button class="primary-btn" id="characterNew">
+                新建角色皮肤
+              </button>
+              <button class="secondary-btn" id="characterImport">
+                导入 ZIP
+              </button>
+              <button class="secondary-btn" id="characterFolder">
+                打开皮肤目录
+              </button>
+              <button class="secondary-btn" id="characterInstall">
+                安装角色皮肤模组
+              </button>
+              <span id="characterStatus" role="status"></span>
+            </div>
+            <p class="character-note">
+              修改后完全退出并重启游戏生效。图片、文案和地图动画已提供；媒体、特效及特殊演出保留原版，运行时效果待游戏验证。
+            </p>
+            <div class="character-workspace">
+              <aside class="character-list-panel">
+                <label for="characterSearch">搜索角色 / 方案</label
+                ><input
+                  id="characterSearch"
+                  type="search"
+                  placeholder="输入角色名或皮肤名"
+                />
+                <div id="characterList"></div>
+              </aside>
+              <div id="characterDetail" class="character-detail">
+                <p>选择一个皮肤包，或新建方案开始制作。</p>
               </div>
-              <div class="skin-meta-info" id="skinMetaInfo">
-                <h3 id="skinDisplayName" class="skin-name">—</h3>
-                <p id="skinDescription" class="skin-desc">暂无方案描述</p>
-                <div class="skin-meta-badges">
-                  <span class="skin-meta-tag" id="skinCardCountTag">0 张卡面</span>
-                  <span class="skin-meta-tag" id="skinAuthorTag">作者: —</span>
-                  <span class="skin-meta-tag" id="skinDateTag">更新: —</span>
+            </div>
+            <dialog id="characterCreateDialog">
+              <form id="characterCreateForm">
+                <h3>新建角色皮肤</h3>
+                <label
+                  >方案标识<input
+                    name="id"
+                    required
+                    pattern="[A-Za-z0-9_-]{1,80}"
+                    placeholder="my-character-skin"
+                /></label>
+                <label
+                  >显示名称<input name="name" required maxlength="100"
+                /></label>
+                <label
+                  >目标角色<select
+                    name="heroId"
+                    id="characterCreateHero"
+                    required
+                  ></select
+                ></label>
+                <label
+                  >适用原皮肤<select
+                    name="skinItemId"
+                    id="characterCreateSkin"
+                    required
+                  >
+                    <option value="0">该角色全部原皮肤</option>
+                  </select></label
+                >
+                <p>可以为各套原皮肤分别启用不同的自制包。</p>
+                <label class="character-template-toggle"
+                  ><input
+                    type="checkbox"
+                    id="characterCreateFromGame"
+                    name="fromGame"
+                    checked
+                  />从游戏导出所选角色的默认皮肤</label
+                >
+                <div id="characterTemplateOptions" class="hidden">
+                  <label
+                    >热更新资源缓存<input
+                      id="characterTemplateCache"
+                      name="cache"
+                      placeholder="com.unity.addressables 目录"
+                  /></label>
+                  <p>
+                    同时读取当前游戏安装目录与此缓存，导出默认图片和完整二维动画，适用原皮肤将设为默认皮肤。由内置 C# 提取器处理，无需安装额外工具。
+                  </p>
+                </div>
+                <p
+                  id="characterTemplateProgress"
+                  role="status"
+                  aria-live="polite"
+                ></p>
+                <div class="character-toolbar">
+                  <button
+                    type="submit"
+                    id="characterCreateSubmit"
+                    class="primary-btn"
+                  >
+                    创建</button
+                  ><button
+                    type="button"
+                    id="characterCreateCancel"
+                    class="secondary-btn"
+                  >
+                    取消
+                  </button>
+                </div>
+              </form>
+            </dialog>
+          </section>
+          <div
+            class="skins-body"
+            id="cardSkinPanel"
+            role="tabpanel"
+            aria-labelledby="cardSkinTab"
+          >
+            <!-- 当前方案控制面板 -->
+            <section class="skin-active-panel">
+              <div class="skin-active-left">
+                <div class="skin-select-row">
+                  <label for="skinProfileSelect" class="skin-select-label"
+                    >选择皮肤方案：</label
+                  >
+                  <select
+                    id="skinProfileSelect"
+                    class="skin-profile-dropdown"
+                  ></select>
+                  <span id="skinActiveBadge" class="badge badge-success"
+                    >当前生效中</span
+                  >
+                </div>
+                <div class="skin-meta-info" id="skinMetaInfo">
+                  <h3 id="skinDisplayName" class="skin-name">—</h3>
+                  <p id="skinDescription" class="skin-desc">暂无方案描述</p>
+                  <div class="skin-meta-badges">
+                    <span class="skin-meta-tag" id="skinCardCountTag"
+                      >0 张卡面</span
+                    >
+                    <span class="skin-meta-tag" id="skinAuthorTag"
+                      >作者: —</span
+                    >
+                    <span class="skin-meta-tag" id="skinDateTag">更新: —</span>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div class="skin-active-right">
-              <button class="primary-btn" id="skinApplyActiveBtn">设为当前皮肤</button>
-              <button class="secondary-btn" id="skinDuplicateProfileBtn">从内置模板新建…</button>
-              <button class="secondary-btn" id="skinOpenProfileFolderBtn"><span class="mi" data-icon="folder"></span> 打开本方案目录</button>
-              <button class="secondary-btn" id="skinExportZipBtn">导出 ZIP</button>
-               <button class="danger-btn" id="skinDeleteProfileBtn">删除此方案</button>
-            </div>
-          </section>
+              <div class="skin-active-right">
+                <button class="primary-btn" id="skinApplyActiveBtn">
+                  设为当前皮肤
+                </button>
+                <button class="secondary-btn" id="skinDuplicateProfileBtn">
+                  从内置模板新建…
+                </button>
+                <button class="secondary-btn" id="skinOpenProfileFolderBtn">
+                  <span class="mi" data-icon="folder"></span> 打开本方案目录
+                </button>
+                <button class="secondary-btn" id="skinExportZipBtn">
+                  导出 ZIP
+                </button>
+                <button class="danger-btn" id="skinDeleteProfileBtn">
+                  删除此方案
+                </button>
+              </div>
+            </section>
 
-          <!-- 卡面网格与分类筛选 -->
-          <section class="skin-gallery-panel">
-            <div class="gallery-toolbar">
-              <span class="skin-gallery-count" id="skinGalleryCount">共 0 张卡面</span>
+            <!-- 卡面网格与分类筛选 -->
+            <section class="skin-gallery-panel">
+              <div class="gallery-toolbar">
+                <span class="skin-gallery-count" id="skinGalleryCount"
+                  >共 0 张卡面</span
+                >
 
-              <div class="gallery-filter-tabs">
-                <button class="gallery-tab active" data-category="all">全部类别</button>
-                <button class="gallery-tab" data-category="手牌卡">手牌卡 (<span id="countHand">0</span>)</button>
-                <button class="gallery-tab" data-category="命运卡">命运卡 (<span id="countDestiny">0</span>)</button>
-                <button class="gallery-tab" data-category="事件卡">事件卡 (<span id="countEvent">0</span>)</button>
-                <button class="gallery-tab" data-category="地图事件">地图事件 (<span id="countMapEvent">0</span>)</button>
-                <button class="gallery-tab" data-category="异画道具">异画道具 (<span id="countAltArt">0</span>)</button>
+                <div class="gallery-filter-tabs">
+                  <button class="gallery-tab active" data-category="all">
+                    全部类别
+                  </button>
+                  <button class="gallery-tab" data-category="手牌卡">
+                    手牌卡 (<span id="countHand">0</span>)
+                  </button>
+                  <button class="gallery-tab" data-category="命运卡">
+                    命运卡 (<span id="countDestiny">0</span>)
+                  </button>
+                  <button class="gallery-tab" data-category="事件卡">
+                    事件卡 (<span id="countEvent">0</span>)
+                  </button>
+                  <button class="gallery-tab" data-category="地图事件">
+                    地图事件 (<span id="countMapEvent">0</span>)
+                  </button>
+                  <button class="gallery-tab" data-category="异画道具">
+                    异画道具 (<span id="countAltArt">0</span>)
+                  </button>
+                </div>
+
+                <div class="gallery-search-box">
+                  <svg viewBox="0 0 24 24" class="search-ico">
+                    <path
+                      d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
+                    />
+                  </svg>
+                  <input
+                    type="text"
+                    id="skinCardSearchInput"
+                    placeholder="搜索卡名、卡号 #101 或标识…"
+                    spellcheck="false"
+                  />
+                  <button
+                    class="search-clear-btn hidden"
+                    id="skinCardSearchClear"
+                    title="清空搜索"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
 
-              <div class="gallery-search-box">
-                <svg viewBox="0 0 24 24" class="search-ico"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                <input type="text" id="skinCardSearchInput" placeholder="搜索卡名、卡号 #101 或标识…" spellcheck="false">
-                <button class="search-clear-btn hidden" id="skinCardSearchClear" title="清空搜索">✕</button>
+              <div class="skin-card-grid" id="skinCardGrid">
+                <!-- 卡牌由 JS 渲染 -->
+              </div>
+              <div class="skin-empty-state hidden" id="skinEmptyState">
+                <div class="empty-icon-wrap">🎨</div>
+                <p id="skinEmptyMsg">未找到匹配的卡牌</p>
+                <button class="secondary-btn" id="skinEmptyResetBtn">
+                  重置筛选条件
+                </button>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <!-- 5. WIKI VIEW (Direct BWiki Webpage) -->
+        <section id="wikiView" class="page-view wiki-page hidden">
+          <div class="wiki-top-toolbar">
+            <div class="wiki-toolbar-left">
+              <button class="back-btn" id="wikiBackHomeBtn">‹ 返回大厅</button>
+              <div class="wiki-title-info">
+                <h2>吉星派对 · BWiki 维基攻略</h2>
+                <span class="wiki-url-badge">wiki.biligame.com/starengine</span>
               </div>
             </div>
-
-            <div class="skin-card-grid" id="skinCardGrid">
-              <!-- 卡牌由 JS 渲染 -->
-            </div>
-            <div class="skin-empty-state hidden" id="skinEmptyState">
-              <div class="empty-icon-wrap">🎨</div>
-              <p id="skinEmptyMsg">未找到匹配的卡牌</p>
-              <button class="secondary-btn" id="skinEmptyResetBtn">重置筛选条件</button>
-            </div>
-          </section>
-        </div>
-      </section>
-
-      <!-- 5. WIKI VIEW (Direct BWiki Webpage) -->
-      <section id="wikiView" class="page-view wiki-page hidden">
-        <div class="wiki-top-toolbar">
-          <div class="wiki-toolbar-left">
-            <button class="back-btn" id="wikiBackHomeBtn">‹ 返回大厅</button>
-            <div class="wiki-title-info">
-              <h2>吉星派对 · BWiki 维基攻略</h2>
-              <span class="wiki-url-badge">wiki.biligame.com/starengine</span>
+            <div class="wiki-toolbar-right">
+              <button
+                class="secondary-btn"
+                id="wikiRefreshBtn"
+                title="重新载入维基页面"
+              >
+                <span class="mi" data-icon="refresh"></span> 刷新
+              </button>
+              <button
+                class="primary-btn"
+                id="wikiExternalBtn"
+                title="在系统默认浏览器中打开"
+              >
+                <span class="mi" data-icon="open_in_new"></span> 浏览器打开
+              </button>
             </div>
           </div>
-          <div class="wiki-toolbar-right">
-            <button class="secondary-btn" id="wikiRefreshBtn" title="重新载入维基页面">
-              <span class="mi" data-icon="refresh"></span> 刷新
-            </button>
-            <button class="primary-btn" id="wikiExternalBtn" title="在系统默认浏览器中打开">
-              <span class="mi" data-icon="open_in_new"></span> 浏览器打开
-            </button>
-          </div>
-        </div>
 
-        <div class="wiki-frame-container">
-          <!-- 不放 src：这一页 hidden 时 iframe 照样会加载，等于每次启动都去拉一整个第三方维基。
+          <div class="wiki-frame-container">
+            <!-- 不放 src：这一页 hidden 时 iframe 照样会加载，等于每次启动都去拉一整个第三方维基。
                首次进入维基页时由 wiki.js 懒加载 -->
-          <iframe
-            id="wikiIframe"
-            class="wiki-iframe"
-            title="游戏维基（Starengine Wiki）"
-            frameborder="0"
-            allowfullscreen>
-          </iframe>
-        </div>
-      </section>
+            <iframe
+              id="wikiIframe"
+              class="wiki-iframe"
+              title="游戏维基（Starengine Wiki）"
+              frameborder="0"
+              allowfullscreen
+            >
+            </iframe>
+          </div>
+        </section>
 
-      <!-- 5. SETTINGS VIEW -->
-      <section id="settingsView" class="page-view settings-page hidden">
-        <div class="settings-header">
-          <h2>系统设置</h2>
-          <p>调整界面偏好并查看应用信息</p>
-        </div>
+        <!-- 5. SETTINGS VIEW -->
+        <section id="settingsView" class="page-view settings-page hidden">
+          <div class="settings-header">
+            <h2>系统设置</h2>
+            <p>调整界面偏好并查看应用信息</p>
+          </div>
 
-        <div class="settings-grid">
-          <article class="settings-card">
-            <div class="settings-card-head">
-              <h3><span class="mi" data-icon="auto_awesome"></span> 动画偏好</h3>
-            </div>
-            <div class="toggle-switch-row">
-              <div class="toggle-info">
-                <h4 id="animToggleLabel">界面动态效果</h4>
-                <p id="animToggleDesc">开启看板立绘与页面切换动画</p>
+          <div class="settings-grid">
+            <article class="settings-card">
+              <div class="settings-card-head">
+                <h3>
+                  <span class="mi" data-icon="auto_awesome"></span> 动画偏好
+                </h3>
               </div>
-              <input type="checkbox" class="switch-input" id="animToggle" checked aria-labelledby="animToggleLabel" aria-describedby="animToggleDesc">
-            </div>
-          </article>
-
-          <article class="settings-card game-dir-card">
-            <div class="settings-card-head">
-              <h3><span class="mi" data-icon="sports_esports"></span> 游戏目录（多个位置）</h3>
-              <span class="settings-card-count" id="gameProfileCount"></span>
-            </div>
-            <p class="settings-card-note">保存多个游戏位置（国服 / 国际服 / TapTap 端…）。在「模组」页顶部可切换<strong>当前正在操作的游戏</strong>——安装加载器、变速、导入模组都作用于当前这个。</p>
-            <div class="game-dir-body">
-              <div class="game-dir-col-main">
-                <div class="game-profile-list" id="gameProfileList"></div>
-              </div>
-              <div class="game-dir-col-side">
-                <div class="game-dir-actions">
-                  <button class="secondary-btn" id="gameProfileBrowseBtn"><span class="mi" data-icon="folder_open"></span> 浏览添加…</button>
-                  <button class="primary-btn" id="gameScanBtn"><span class="mi" data-icon="search"></span> 扫描系统</button>
+              <div class="toggle-switch-row">
+                <div class="toggle-info">
+                  <h4 id="animToggleLabel">界面动态效果</h4>
+                  <p id="animToggleDesc">开启看板立绘与页面切换动画</p>
                 </div>
-                <div class="game-scan-panel hidden" id="gameScanPanel">
-                  <div class="game-scan-status" id="gameScanStatus"></div>
-                  <div class="game-scan-results" id="gameScanResults"></div>
-                  <div class="game-scan-deep">
-                    <span class="game-scan-deep-label">上面没有你的游戏？深度扫描某个盘（较慢，可取消）：</span>
-                    <div class="game-scan-deep-row">
-                      <select id="gameScanDriveSelect" class="library-input" aria-label="选择要深度扫描的盘符"></select>
-                      <button class="secondary-btn" id="gameScanDeepBtn">开始深扫</button>
-                      <button class="secondary-btn hidden" id="gameScanCancelBtn">取消</button>
+                <input
+                  type="checkbox"
+                  class="switch-input"
+                  id="animToggle"
+                  checked
+                  aria-labelledby="animToggleLabel"
+                  aria-describedby="animToggleDesc"
+                />
+              </div>
+            </article>
+
+            <article class="settings-card game-dir-card">
+              <div class="settings-card-head">
+                <h3>
+                  <span class="mi" data-icon="sports_esports"></span>
+                  游戏目录（多个位置）
+                </h3>
+                <span class="settings-card-count" id="gameProfileCount"></span>
+              </div>
+              <p class="settings-card-note">
+                保存多个游戏位置（国服 / 国际服 / TapTap
+                端…）。在「模组」页顶部可切换<strong>当前正在操作的游戏</strong>——安装加载器、变速、导入模组都作用于当前这个。
+              </p>
+              <div class="game-dir-body">
+                <div class="game-dir-col-main">
+                  <div class="game-profile-list" id="gameProfileList"></div>
+                </div>
+                <div class="game-dir-col-side">
+                  <div class="game-dir-actions">
+                    <button class="secondary-btn" id="gameProfileBrowseBtn">
+                      <span class="mi" data-icon="folder_open"></span> 浏览添加…
+                    </button>
+                    <button class="primary-btn" id="gameScanBtn">
+                      <span class="mi" data-icon="search"></span> 扫描系统
+                    </button>
+                  </div>
+                  <div class="game-scan-panel hidden" id="gameScanPanel">
+                    <div class="game-scan-status" id="gameScanStatus"></div>
+                    <div class="game-scan-results" id="gameScanResults"></div>
+                    <div class="game-scan-deep">
+                      <span class="game-scan-deep-label"
+                        >上面没有你的游戏？深度扫描某个盘（较慢，可取消）：</span
+                      >
+                      <div class="game-scan-deep-row">
+                        <select
+                          id="gameScanDriveSelect"
+                          class="library-input"
+                          aria-label="选择要深度扫描的盘符"
+                        ></select>
+                        <button class="secondary-btn" id="gameScanDeepBtn">
+                          开始深扫
+                        </button>
+                        <button
+                          class="secondary-btn hidden"
+                          id="gameScanCancelBtn"
+                        >
+                          取消
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </article>
+            </article>
 
-          <article class="settings-card">
-            <div class="settings-card-head">
-              <h3><span class="mi" data-icon="inventory_2"></span> 回放库</h3>
-            </div>
-            <p class="settings-card-note">游戏自带的「本地回放」只有 <strong>10 个席位</strong>——这是客户端写死的上限，和服务器无关：超了只是游戏拒绝保存新回放。把回放归档到下面的库目录即可腾出席位，需要时再一键放回游戏。</p>
-            <div class="settings-field">
-              <label for="libraryRootInput">库目录</label>
-              <div class="settings-field-row">
-                <input type="text" class="library-input wide" id="libraryRootInput" spellcheck="false" placeholder="正在读取…">
-                <button class="secondary-btn" id="libraryRootBrowseBtn">浏览…</button>
-                <button class="secondary-btn" id="libraryRootOpenBtn">打开</button>
+            <article class="settings-card">
+              <div class="settings-card-head">
+                <h3><span class="mi" data-icon="inventory_2"></span> 回放库</h3>
               </div>
-              <p class="settings-field-hint">默认目录 <code>文档\AstralPartyReplays</code> 同时也是工具箱的<strong>配置文件夹</strong>：游戏库（多游戏目录 / 当前游戏）、变速器与加载器状态、回放库设置都存在这里。把库目录改到别处只会移动回放归档，上述配置文件仍留在默认目录。</p>
-            </div>
-            <div class="toggle-switch-row">
-              <div class="toggle-info">
-                <h4 id="libraryAutoMaintainLabel">自动保持游戏内最近 10 局</h4>
-                <p id="libraryAutoMaintainDesc">每次打开本工具时，把超出保留名额的旧回放自动归档进库；最新的几局永远不会被动。</p>
+              <p class="settings-card-note">
+                游戏自带的「本地回放」只有
+                <strong>10 个席位</strong
+                >——这是客户端写死的上限，和服务器无关：超了只是游戏拒绝保存新回放。把回放归档到下面的库目录即可腾出席位，需要时再一键放回游戏。
+              </p>
+              <div class="settings-field">
+                <label for="libraryRootInput">库目录</label>
+                <div class="settings-field-row">
+                  <input
+                    type="text"
+                    class="library-input wide"
+                    id="libraryRootInput"
+                    spellcheck="false"
+                    placeholder="正在读取…"
+                  />
+                  <button class="secondary-btn" id="libraryRootBrowseBtn">
+                    浏览…
+                  </button>
+                  <button class="secondary-btn" id="libraryRootOpenBtn">
+                    打开
+                  </button>
+                </div>
+                <p class="settings-field-hint">
+                  默认目录
+                  <code>文档\AstralPartyReplays</code>
+                  同时也是工具箱的<strong>配置文件夹</strong>：游戏库（多游戏目录
+                  /
+                  当前游戏）、变速器与加载器状态、回放库设置都存在这里。把库目录改到别处只会移动回放归档，上述配置文件仍留在默认目录。
+                </p>
               </div>
-              <input type="checkbox" class="switch-input" id="libraryAutoMaintainToggle" aria-labelledby="libraryAutoMaintainLabel" aria-describedby="libraryAutoMaintainDesc">
-            </div>
-            <div class="settings-field">
-              <label for="libraryKeepInput">游戏内保留局数</label>
-              <div class="settings-field-row">
-                <input type="number" class="library-input" id="libraryKeepInput" min="1" max="10" step="1">
-                <button class="secondary-btn" id="libraryMaintainNowBtn">立即整理一次</button>
+              <div class="toggle-switch-row">
+                <div class="toggle-info">
+                  <h4 id="libraryAutoMaintainLabel">
+                    自动保持游戏内最近 10 局
+                  </h4>
+                  <p id="libraryAutoMaintainDesc">
+                    每次打开本工具时，把超出保留名额的旧回放自动归档进库；最新的几局永远不会被动。
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  class="switch-input"
+                  id="libraryAutoMaintainToggle"
+                  aria-labelledby="libraryAutoMaintainLabel"
+                  aria-describedby="libraryAutoMaintainDesc"
+                />
               </div>
-            </div>
-          </article>
+              <div class="settings-field">
+                <label for="libraryKeepInput">游戏内保留局数</label>
+                <div class="settings-field-row">
+                  <input
+                    type="number"
+                    class="library-input"
+                    id="libraryKeepInput"
+                    min="1"
+                    max="10"
+                    step="1"
+                  />
+                  <button class="secondary-btn" id="libraryMaintainNowBtn">
+                    立即整理一次
+                  </button>
+                </div>
+              </div>
+            </article>
 
-          <article class="settings-card settings-about-card">
-            <div class="settings-card-head">
-              <h3><span class="mi" data-icon="info"></span> 关于</h3>
-            </div>
-            <div class="about-app-heading">
-              <img src="images/astral-party-logo.png" alt="Astral Party" class="about-game-logo">
-              <div>
-                <h4>AstralParty.Toys</h4>
-                <p>吉星派对回放与游戏工具箱</p>
+            <article class="settings-card settings-about-card">
+              <div class="settings-card-head">
+                <h3><span class="mi" data-icon="info"></span> 关于</h3>
               </div>
-            </div>
-            <p class="about-description">集成回放分析、协议帧查看、维基浏览和游戏变速器管理，数据均在本地处理。</p>
-            <dl class="about-details">
-              <div><dt>应用版本</dt><dd id="aboutVersion">正在读取…</dd></div>
-              <div><dt>源码提交</dt><dd id="aboutCommit">正在读取…</dd></div>
-              <div><dt>运行环境</dt><dd id="aboutRuntime">正在读取…</dd></div>
-              <div><dt>内置加载器</dt><dd id="aboutLoader">正在读取…</dd></div>
-              <div><dt>项目主页</dt><dd>github.com/higashitaniyume/AstralParty.Toys</dd></div>
-            </dl>
-            <div class="about-actions">
-              <button class="secondary-btn" id="aboutVersionDetailBtn">版本详情</button>
-              <button class="secondary-btn" id="aboutChangelogBtn"><span class="mi" data-icon="description"></span> 更新日志</button>
-              <button class="secondary-btn" id="aboutRepositoryBtn"><span class="mi" data-icon="open_in_new"></span> 项目主页</button>
-              <button class="secondary-btn" id="aboutSpeedhackBtn"><span class="mi" data-icon="open_in_new"></span> speedhack-rs</button>
-            </div>
-          </article>
+              <div class="about-app-heading">
+                <img
+                  src="images/astral-party-logo.png"
+                  alt="Astral Party"
+                  class="about-game-logo"
+                />
+                <div>
+                  <h4>AstralParty.Toys</h4>
+                  <p>吉星派对回放与游戏工具箱</p>
+                </div>
+              </div>
+              <p class="about-description">
+                集成回放分析、协议帧查看、维基浏览和游戏变速器管理，数据均在本地处理。
+              </p>
+              <dl class="about-details">
+                <div>
+                  <dt>应用版本</dt>
+                  <dd id="aboutVersion">正在读取…</dd>
+                </div>
+                <div>
+                  <dt>源码提交</dt>
+                  <dd id="aboutCommit">正在读取…</dd>
+                </div>
+                <div>
+                  <dt>运行环境</dt>
+                  <dd id="aboutRuntime">正在读取…</dd>
+                </div>
+                <div>
+                  <dt>内置加载器</dt>
+                  <dd id="aboutLoader">正在读取…</dd>
+                </div>
+                <div>
+                  <dt>项目主页</dt>
+                  <dd>github.com/higashitaniyume/AstralParty.Toys</dd>
+                </div>
+              </dl>
+              <div class="about-actions">
+                <button class="secondary-btn" id="aboutVersionDetailBtn">
+                  版本详情
+                </button>
+                <button class="secondary-btn" id="aboutChangelogBtn">
+                  <span class="mi" data-icon="description"></span> 更新日志
+                </button>
+                <button class="secondary-btn" id="aboutRepositoryBtn">
+                  <span class="mi" data-icon="open_in_new"></span> 项目主页
+                </button>
+                <button class="secondary-btn" id="aboutSpeedhackBtn">
+                  <span class="mi" data-icon="open_in_new"></span> speedhack-rs
+                </button>
+              </div>
+            </article>
+          </div>
+        </section>
+      </main>
+
+      <!-- Global Modal Window (Game Themed) -->
+      <div class="modal-backdrop" id="globalModal">
+        <div
+          class="modal-content"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modalTitle"
+        >
+          <div class="modal-header">
+            <h3 id="modalTitle">详情</h3>
+            <button
+              class="modal-close-btn"
+              id="modalCloseBtn"
+              aria-label="关闭"
+            >
+              ×
+            </button>
+          </div>
+          <div class="modal-body" id="modalBody"></div>
         </div>
-      </section>
-    </main>
-
-    <!-- Global Modal Window (Game Themed) -->
-    <div class="modal-backdrop" id="globalModal">
-      <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-        <div class="modal-header">
-          <h3 id="modalTitle">详情</h3>
-          <button class="modal-close-btn" id="modalCloseBtn" aria-label="关闭">×</button>
-        </div>
-        <div class="modal-body" id="modalBody"></div>
       </div>
+
+      <!-- Loading Overlay (Game Themed) -->
+      <div class="modal-backdrop hidden loading-backdrop" id="loadingOverlay">
+        <div class="loading-card">
+          <div
+            style="
+              width: 40px;
+              height: 40px;
+              border: 4px solid rgba(255, 255, 255, 0.1);
+              border-top-color: var(--gp-pink);
+              border-radius: 50%;
+              animation: spin 0.8s linear infinite;
+            "
+          ></div>
+          <strong
+            id="loadingText"
+            style="font-size: 16px; font-weight: 800; letter-spacing: 0.5px"
+            >正在解析回放…</strong
+          >
+          <span style="font-size: 12px; color: var(--gp-text-sub)"
+            >正在处理，请稍候</span
+          >
+        </div>
+      </div>
+
+      <!-- Toast -->
+      <div
+        class="toast-container"
+        id="toast"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      ></div>
     </div>
 
-    <!-- Loading Overlay (Game Themed) -->
-    <div class="modal-backdrop hidden loading-backdrop" id="loadingOverlay">
-      <div class="loading-card">
-        <div style="width:40px;height:40px;border:4px solid rgba(255,255,255,0.1);border-top-color:var(--gp-pink);border-radius:50%;animation:spin 0.8s linear infinite"></div>
-        <strong id="loadingText" style="font-size:16px;font-weight:800;letter-spacing:0.5px">正在解析回放…</strong>
-        <span style="font-size:12px;color:var(--gp-text-sub)">正在处理，请稍候</span>
-      </div>
-    </div>
+    <style>
+      /* Spinner keyframes live in css/base.css with the rest of the motion system. */
+    </style>
 
-    <!-- Toast -->
-    <div class="toast-container" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
-  </div>
-
-  <style>
-    /* Spinner keyframes live in css/base.css with the rest of the motion system. */
-  </style>
-
-  <!-- Modular Scripts -->
-  <script src="js/icons.js"></script>
-  <script src="js/core.js"></script>
-  <script src="js/version.js"></script>
-  <script src="js/gamelib.js"></script>
-  <script src="js/home.js"></script>
-  <script src="js/replay.js"></script>
-  <script src="js/wiki.js"></script>
-  <script src="js/settings.js"></script>
-  <script src="js/utilities.js"></script>
-  <script src="js/mods.js"></script>
-  <script src="js/skins.js"></script>
-  <script src="js/skin-crop.js"></script>
-  <script src="js/app.js"></script>
-</body>
-  <link rel="stylesheet" href="css/character-skins.css">
-  <script src="js/character-skins.js"></script>
-  <script src="js/character-crop.js"></script>
+    <!-- Modular Scripts -->
+    <script src="js/icons.js"></script>
+    <script src="js/core.js"></script>
+    <script src="js/version.js"></script>
+    <script src="js/gamelib.js"></script>
+    <script src="js/home.js"></script>
+    <script src="js/replay.js"></script>
+    <script src="js/wiki.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/utilities.js"></script>
+    <script src="js/mods.js"></script>
+    <link rel="stylesheet" href="css/character-skins.css" />
+    <script src="js/character-skins.js"></script>
+    <script src="js/character-crop.js"></script>
+    <script src="js/skins.js"></script>
+    <script src="js/skin-crop.js"></script>
+    <script src="js/app.js"></script>
+  </body>
 </html>

@@ -242,12 +242,9 @@ host?.addEventListener('message', event => {
       }
       break;
 
-    case 'skinsProfiles':
-      window.SkinsModule?.renderProfiles?.(msg.payload);
+    case 'characterExportTasks':
+      window.CharacterSkinsModule?.exportTasks(msg.payload);
       break;
-
-    case 'skinsCards':
-      window.SkinsModule?.renderCards?.(msg.payload);
     case 'characterTemplateState':
       window.CharacterSkinsModule?.templateState(msg.payload);
       break;
@@ -260,6 +257,12 @@ host?.addEventListener('message', event => {
     case 'characterSkins':
       window.CharacterSkinsModule?.render(msg.payload);
       break;
+    case 'skinsProfiles':
+      window.SkinsModule?.renderProfiles?.(msg.payload);
+      break;
+
+    case 'skinsCards':
+      window.SkinsModule?.renderCards?.(msg.payload);
       break;
 
     case 'loading':
@@ -350,12 +353,9 @@ host?.addEventListener('message', event => {
       if (window.ModsModule) window.ModsModule.renderConfigFields(msg.payload);
       break;
 
-    case 'skinsProfiles':
-      if (window.SkinsModule) window.SkinsModule.renderProfiles(msg.payload);
+    case 'characterExportTasks':
+      window.CharacterSkinsModule?.exportTasks(msg.payload);
       break;
-
-    case 'skinsCards':
-      if (window.SkinsModule) window.SkinsModule.renderCards(msg.payload);
     case 'characterTemplateState':
       window.CharacterSkinsModule?.templateState(msg.payload);
       break;
@@ -368,6 +368,12 @@ host?.addEventListener('message', event => {
     case 'characterSkins':
       window.CharacterSkinsModule?.render(msg.payload);
       break;
+    case 'skinsProfiles':
+      if (window.SkinsModule) window.SkinsModule.renderProfiles(msg.payload);
+      break;
+
+    case 'skinsCards':
+      if (window.SkinsModule) window.SkinsModule.renderCards(msg.payload);
       break;
 
     case 'skinsExportConfirm':

@@ -17,6 +17,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AssetsTools.NET" Version="3.0.5" />
+    <PackageReference Include="AssetsTools.NET.Texture" Version="3.0.2" />
+    <PackageReference Include="Magick.NET-Q8-AnyCPU" Version="15.0.0" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
   </ItemGroup>
 
@@ -36,9 +39,8 @@
     <!-- 内置 mod: 按通配吃进 Resources\ModLoader 下所有 *Mod.dll / *Mod.json —— 新增内置 mod
          (如 CombatOddsMod) 不必再改这里, CI 的 fetch 步骤把包内 mods 展平到此目录后自动内嵌。
          内置 mod 命名约定必须以 "Mod" 结尾(见 CesiumLoader tools\builtin-mods.json)。 -->
-    <EmbeddedResource Include="Resources\Skins\default-skins.zip">
-    <EmbeddedResource Include="Resources\Skins\extract-character-template.py" LogicalName="AstralParty.Toys.CharacterTemplateExporter.py" />
     <EmbeddedResource Include="Resources\Skins\character-image-sizes.json" LogicalName="AstralParty.Toys.CharacterImageSizes.json" />
+    <EmbeddedResource Include="Resources\Skins\default-skins.zip">
       <LogicalName>AstralParty.Toys.DefaultSkins.zip</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="Resources\ModLoader\*Mod.dll;Resources\ModLoader\*Mod.json">

@@ -441,19 +441,16 @@ public partial class HybridWindow
                                                updateDowngradeElement.GetBoolean();
                     _ = HandleModDownloadUpdateAsync(updateOverwrite, updateAllowDowngrade);
                     break;
-                case "skinsGetProfiles":
-                    PushSkinProfiles();
-                    break;
-                case "skinsSetActive":
-                    if (root.TryGetProperty("name", out var sActiveElem) && sActiveElem.GetString() is { Length: > 0 } targetSkin)
-                    {
-                        try
                 case "characterCropSave":
                     SaveCharacterCrop(root);
                     break;
                 case "characterCropCancel":
                     if (_characterCrop?.Token == root.GetProperty("token").GetString()) _characterCrop = null;
                     break;
+                case "characterExportsGet":
+                case "characterExportCancel":
+                case "characterExportDismiss":
+                case "characterSkinsGif":
                 case "characterSkinsGet":
                 case "characterSkinsCreate":
                 case "characterSkinsActive":
@@ -469,6 +466,13 @@ public partial class HybridWindow
                 case "characterSkinsInstall":
                     HandleCharacterSkins(root);
                     break;
+                case "skinsGetProfiles":
+                    PushSkinProfiles();
+                    break;
+                case "skinsSetActive":
+                    if (root.TryGetProperty("name", out var sActiveElem) && sActiveElem.GetString() is { Length: > 0 } targetSkin)
+                    {
+                        try
                         {
                             var gDir = RequireModGameDirectory();
                             _skinManager.SetActiveSkin(gDir, targetSkin);

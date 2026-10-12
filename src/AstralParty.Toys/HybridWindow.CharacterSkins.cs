@@ -7,27 +7,28 @@ using Microsoft.Win32;
 using Microsoft.Web.WebView2.Core;
 
 namespace AstralParty.Toys;
+
 public partial class HybridWindow
 {
     private readonly CharacterSkinManager _characterSkins = new();
-    private sealed record CharacterCrop(string Token,string Game,string Id,string Slot,System.Windows.Media.Imaging.BitmapSource Image,CharacterImageTarget Target,string? Action=null,int FrameIndex=-1,string? ExpectedPath=null);
+    private sealed record CharacterCrop(string Token, string Game, string Id, string Slot, System.Windows.Media.Imaging.BitmapSource Image, CharacterImageTarget Target, string? Action = null, int FrameIndex = -1, string? ExpectedPath = null);
     private CharacterCrop? _characterCrop;
     private void SaveCharacterCrop(JsonElement root)
     {
-        string token=root.GetProperty("token").GetString()??"";
+        string token = root.GetProperty("token").GetString() ?? "";
         try
         {
-            var pending=_characterCrop;
-            if(pending==null||pending.Token!=token)throw new InvalidOperationException("裁剪已过期，请重新选择图片");
-            if(pending.Game!=RequireModGameDirectory())throw new InvalidOperationException("当前游戏已切换，请重新选择素材");
-            bool contain=root.GetProperty("contain").GetBoolean();
-            var rect=contain?new System.Windows.Int32Rect(0,0,pending.Image.PixelWidth,pending.Image.PixelHeight):new System.Windows.Int32Rect(root.GetProperty("x").GetInt32(),root.GetProperty("y").GetInt32(),root.GetProperty("width").GetInt32(),root.GetProperty("height").GetInt32());
-            var rendered=SkinCropImage.RenderRegion(pending.Image,rect,pending.Target.Width,pending.Target.Height,contain);
-            if (pending.Action != null) _characterSkins.SaveFrame(pending.Game,pending.Id,pending.Action,pending.FrameIndex,rendered,pending.ExpectedPath!);
-            else _characterSkins.SaveImage(pending.Game,pending.Id,pending.Slot,rendered);
-            _characterCrop=null;Post(new{type="characterCropSaved",payload=new{token,success=true}});PushCharacterSkins();
+            var pending = _characterCrop;
+            if (pending == null || pending.Token != token) throw new InvalidOperationException("裁剪已过期，请重新选择图片");
+            if (pending.Game != RequireModGameDirectory()) throw new InvalidOperationException("当前游戏已切换，请重新选择素材");
+            bool contain = root.GetProperty("contain").GetBoolean();
+            var rect = contain ? new System.Windows.Int32Rect(0, 0, pending.Image.PixelWidth, pending.Image.PixelHeight) : new System.Windows.Int32Rect(root.GetProperty("x").GetInt32(), root.GetProperty("y").GetInt32(), root.GetProperty("width").GetInt32(), root.GetProperty("height").GetInt32());
+            var rendered = SkinCropImage.RenderRegion(pending.Image, rect, pending.Target.Width, pending.Target.Height, contain);
+            if (pending.Action != null) _characterSkins.SaveFrame(pending.Game, pending.Id, pending.Action, pending.FrameIndex, rendered, pending.ExpectedPath!);
+            else _characterSkins.SaveImage(pending.Game, pending.Id, pending.Slot, rendered);
+            _characterCrop = null; Post(new { type = "characterCropSaved", payload = new { token, success = true } }); PushCharacterSkins();
         }
-        catch(Exception ex){Post(new{type="characterCropSaved",payload=new{token,success=false,error=ex.Message}});}
+        catch (Exception ex) { Post(new { type = "characterCropSaved", payload = new { token, success = false, error = ex.Message } }); }
     }
     private void PushCharacterSkins()
     {
@@ -36,44 +37,84 @@ public partial class HybridWindow
         var catalog = new ConfigCatalog(protocol, Path.Combine(_appDirectory, "GameData"));
         var targets = CharacterSkinCatalog.Load(protocol, Path.Combine(_appDirectory, "GameData"));
         var profiles = _characterSkins.Profiles(game);
-        Post(new { type = "characterSkins", payload = new {
-            profiles, targets,
-            templateCache = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "AppData", "LocalLow", "feimo", "AstralParty_CN", "com.unity.addressables"),
-            heroes = catalog.CharacterIds.Select(id => new { id, name = catalog.Character(id) }),
-            installed = File.Exists(Path.Combine(game, "AstralParty_ModLoader", "mods", "CharacterSkinMod", "CharacterSkinMod.dll")),
-            imageSlots = CharacterSkinRules.ImageSlots, textSlots = CharacterSkinRules.TextSlots
-        } });
+        Post(new
+        {
+            type = "characterSkins",
+            payload = new
+            {
+                profiles,
+                targets,
+                templateCache = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "AppData", "LocalLow", "feimo", "AstralParty_CN", "com.unity.addressables"),
+                heroes = catalog.CharacterIds.Select(id => new { id, name = catalog.Character(id) }),
+                installed = File.Exists(Path.Combine(game, "AstralParty_ModLoader", "mods", "CharacterSkinMod", "CharacterSkinMod.dll")),
+                imageSlots = CharacterSkinRules.ImageSlots,
+                textSlots = CharacterSkinRules.TextSlots
+            }
+        });
     }
-    private bool _characterTemplateRunning;
-    private async void HandleCharacterSkins(JsonElement root)
+    private readonly CharacterExportQueue _characterExports = new();
+    private bool _characterExportsSubscribed;
+    private readonly HashSet<string> _completedCharacterExports = [];
+    private void EnsureCharacterExports()
+    {
+        if (_characterExportsSubscribed) return;
+        _characterExportsSubscribed = true;
+        _characterExports.Changed += _ => Dispatcher.BeginInvoke(new Action(() =>
+        {
+            var tasks = _characterExports.Snapshot();
+            Post(new { type = "characterExportTasks", payload = new { tasks } });
+            foreach (var task in tasks.Where(x => x.Status == "done" && _completedCharacterExports.Add(x.TaskId)))
+            {
+                try { if (task.Game == RequireModGameDirectory()) PushCharacterSkins(); }
+                catch (Exception ex) { Post(new { type = "toast", message = "导出已完成，皮肤列表刷新失败：" + ex.Message }); }
+            }
+        }));
+    }
+    private void HandleCharacterSkins(JsonElement root)
     {
         try
         {
             string type = root.GetProperty("type").GetString()!;
+            if (type == "characterExportCancel") { _characterExports.Cancel(root.GetProperty("taskId").GetString()!); return; }
+            if (type == "characterExportDismiss") { _characterExports.Dismiss(root.GetProperty("taskId").GetString()!); return; }
+            if (type == "characterExportsGet") { EnsureCharacterExports(); Post(new { type = "characterExportTasks", payload = new { tasks = _characterExports.Snapshot() } }); return; }
             string game = RequireModGameDirectory();
             string id = root.TryGetProperty("id", out var idValue) ? idValue.GetString() ?? "" : "";
             switch (type)
             {
                 case "characterSkinsGet": break;
+                case "characterSkinsGif":
+                    string gifAction = root.GetProperty("action").GetString()!;
+                    var gifManifest = _characterSkins.Load(game, id);
+                    if (!gifManifest.Animations.TryGetValue(gifAction, out var gifAnimation) || gifAnimation.Frames.Count == 0) throw new InvalidOperationException("当前动作没有动画帧");
+                    gifAnimation.Fps = root.GetProperty("fps").GetSingle();
+                    gifAnimation.Loop = root.GetProperty("loop").GetBoolean();
+                    var gifDialog = new SaveFileDialog { Title = "导出当前动作为 GIF", Filter = "GIF 动画 (*.gif)|*.gif", FileName = id + "-" + gifAction + ".gif" };
+                    if (gifDialog.ShowDialog(this) != true) return;
+                    EnsureCharacterExports();
+                    string gifPath = gifDialog.FileName;
+                    _characterExports.Enqueue(game, "gif:" + id + ":" + gifAction, gifAction + " · GIF", async (progress, cancellation) =>
+                    {
+                        await CharacterGifExporter.ExportAsync(_characterSkins.Package(game, id), gifAnimation, gifPath, progress, cancellation);
+                        return "GIF 已保存：" + gifPath;
+                    });
+                    return;
                 case "characterSkinsCreate":
-                    if (_characterTemplateRunning) throw new InvalidOperationException("正在导出模板，请等待完成");
                     if (root.TryGetProperty("fromGame", out var fromGame) && fromGame.GetBoolean())
                     {
-                        _characterTemplateRunning = true;
-                        Post(new { type = "characterTemplateState", payload = new { running = true, id, message = "开始提取默认皮肤" } });
-                        try
+                        EnsureCharacterExports();
+                        string cache = root.GetProperty("cache").GetString() ?? "";
+                        string packageName = root.GetProperty("name").GetString() ?? id;
+                        int heroId = root.GetProperty("heroId").GetInt32();
+                        if (Directory.Exists(_characterSkins.Package(game, id))) throw new InvalidOperationException("方案已存在");
+                        _characterExports.Enqueue(game, id, packageName, async (progress, cancellation) =>
                         {
-                            string cache = root.GetProperty("cache").GetString() ?? "";
-                            var result = await CharacterTemplateExporter.ExportAsync(game, cache, id, root.GetProperty("name").GetString() ?? id, root.GetProperty("heroId").GetInt32(), Path.Combine(_appDirectory,"GameData"), Path.Combine(_appDirectory,"Protocol"), message => Post(new { type = "characterTemplateState", payload = new { running = true, id, message } }));
-                            // Complete before refreshing profiles, so the UI can select the newly created package.
-                            Post(new { type = "characterTemplateState", payload = new { running = false, success = true, id, message = $"已提取 {result.Images} 个图片入口、{result.Actions} 个动作、{result.Frames} 帧", missing = result.Missing } });
-                            if(game == RequireModGameDirectory()) PushCharacterSkins();
-                            return;
-                        }
-                        catch(Exception ex) { Post(new { type = "characterTemplateState", payload = new { running = false, success = false, id, message = ex.Message } }); return; }
-                        finally { _characterTemplateRunning = false; }
-                    }
-                    _characterSkins.Create(game, id, root.GetProperty("heroId").GetInt32(), root.GetProperty("skinItemId").GetInt32(), root.GetProperty("name").GetString() ?? id);
+                            var result = await CharacterTemplateExporter.ExportAsync(game, cache, id, packageName, heroId, Path.Combine(_appDirectory, "GameData"), Path.Combine(_appDirectory, "Protocol"), _ => { }, cancellation, progress);
+                            return $"已提取 {result.Images} 个图片入口、{result.Actions} 个动作、{result.Frames} 帧" + (result.Missing.Length > 0 ? "；缺失：" + string.Join("、", result.Missing) : "");
+                        });
+                        Post(new { type = "characterTemplateState", payload = new { queued = true, id, message = "已加入后台导出队列" } });
+                        return;
+                    }                    _characterSkins.Create(game, id, root.GetProperty("heroId").GetInt32(), root.GetProperty("skinItemId").GetInt32(), root.GetProperty("name").GetString() ?? id);
                     Post(new { type = "characterTemplateState", payload = new { running = false, success = true, id, message = "空白方案已创建" } });
                     break;
                 case "characterSkinsActive": _characterSkins.SetActive(game, id, root.GetProperty("enabled").GetBoolean()); break;
@@ -100,13 +141,13 @@ public partial class HybridWindow
                 case "characterSkinsImage":
                     var image = new OpenFileDialog { Title = "选择角色图片", Filter = "透明 PNG / JPG|*.png;*.jpg;*.jpeg", CheckFileExists = true };
                     if (image.ShowDialog(this) != true) return;
-                    string slot=root.GetProperty("slot").GetString()!;
-                    var bitmap=SkinCropImage.Load(image.FileName);
-                    var protocol=new GameProtocolContext(Path.Combine(_appDirectory,"Protocol"));
-                    var targetSize=CharacterImageSize.Resolve(protocol,Path.Combine(_appDirectory,"GameData"),_characterSkins.Load(game,id),slot);
-                    string token=Guid.NewGuid().ToString("N");
-                    _characterCrop=new(token,game,id,slot,bitmap,targetSize);
-                    Post(new{type="characterCropOpen",payload=new{token,slot,fileName=Path.GetFileName(image.FileName),width=bitmap.PixelWidth,height=bitmap.PixelHeight,targetWidth=targetSize.Width,targetHeight=targetSize.Height,verified=targetSize.Verified,asset=targetSize.Asset,previewUrl=SkinCropImage.Preview(bitmap)}});
+                    string slot = root.GetProperty("slot").GetString()!;
+                    var bitmap = SkinCropImage.Load(image.FileName);
+                    var protocol = new GameProtocolContext(Path.Combine(_appDirectory, "Protocol"));
+                    var targetSize = CharacterImageSize.Resolve(protocol, Path.Combine(_appDirectory, "GameData"), _characterSkins.Load(game, id), slot);
+                    string token = Guid.NewGuid().ToString("N");
+                    _characterCrop = new(token, game, id, slot, bitmap, targetSize);
+                    Post(new { type = "characterCropOpen", payload = new { token, slot, fileName = Path.GetFileName(image.FileName), width = bitmap.PixelWidth, height = bitmap.PixelHeight, targetWidth = targetSize.Width, targetHeight = targetSize.Height, verified = targetSize.Verified, asset = targetSize.Asset, previewUrl = SkinCropImage.Preview(bitmap) } });
                     return;
                 case "characterSkinsClearAction":
                     _characterSkins.ClearAction(game, id, root.GetProperty("action").GetString()!); break;
