@@ -516,7 +516,9 @@
               <button class="secondary-btn" id="modCheckUpdateBtn"><span class="mi" data-icon="refresh"></span> 检查更新</button>
               <button class="primary-btn hidden" id="modDownloadUpdateBtn"><span class="mi" data-icon="upgrade"></span> 更新到最新</button>
               <button class="secondary-btn" id="modImportPackageBtn" title="导入本地 cesium-loader 发布 ZIP，安装加载器、SDK 与包内模组"><span class="mi" data-icon="download"></span> 导入发布包</button>
-              <button class="danger-btn" id="modUninstallBtn"><span class="mi" data-icon="delete"></span> 卸载加载器</button>
+              <button class="secondary-btn hidden" id="modDisableLoaderBtn" type="button" title="备份后只删除 version.dll，保留所有模组与配置"><span class="mi" data-icon="delete"></span> 仅删除 version.dll</button>
+              <button class="primary-btn hidden" id="modRestoreLoaderBtn" type="button" title="恢复当前版本；本地缺失时下载对应版本发布包"><span class="mi" data-icon="download"></span> 恢复 version.dll</button>
+              <button class="danger-btn" id="modUninstallBtn"><span class="mi" data-icon="delete"></span> 完整卸载加载器</button>
               <button class="secondary-btn" id="modLoaderSettingsBtn"><span class="mi" data-icon="settings"></span> 加载器设置</button>
               <button class="secondary-btn" id="modLoaderChangelogBtn"><span class="mi" data-icon="description"></span> 加载器更新日志</button>
             </div>

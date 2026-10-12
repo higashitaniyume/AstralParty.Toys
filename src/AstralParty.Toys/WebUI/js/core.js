@@ -197,6 +197,9 @@ host?.addEventListener('message', event => {
   if (!msg?.type) return;
 
   switch (msg.type) {
+    case 'modRecoveryDone':
+      window.ModsModule?.clearRecoveryBusy();
+      break;
     case 'appVersion':
       window.VersionModule?.render(msg.payload);
       break;

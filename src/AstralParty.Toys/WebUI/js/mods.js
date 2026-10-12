@@ -162,6 +162,8 @@
         });
       });
       $('modUninstallBtn')?.addEventListener('click', () => this.openUninstallConfirm());
+      $('modDisableLoaderBtn')?.addEventListener('click', () => this.startRecovery(false));
+      $('modRestoreLoaderBtn')?.addEventListener('click', () => this.startRecovery(true));
       $('modDetectDirBtn')?.addEventListener('click', () => post({ type: 'modDetect' }));
       $('modBrowseDirBtn')?.addEventListener('click', () => post({ type: 'modBrowse' }));
       $('modOpenModsBtn')?.addEventListener('click', () => post({ type: 'modOpenModsFolder' }));
@@ -248,8 +250,8 @@
       this.modStatus = status;
       if (Array.isArray(payload.builtInMods)) this.builtInMods = payload.builtInMods;
 
-      // 加载器的安装/卸载/更新都以此消息收尾（失败路径会走 error 消息），到这里就解除按钮忙碌
-      this.clearBusy();
+      // 恢复只由 modRecoveryDone 收尾，切换游戏时的状态消息不能提前解锁。
+      if (!this.recoveryBusy) this.clearBusy();
 
       this.renderStatusHeader(status);
       this.renderUpdateInfo();
@@ -261,6 +263,7 @@
       this.renderModList($('modSdkContainer'), status.sdk || [], 'sdk');
       const count = $('modModsCount');
       if (count) count.textContent = String(mods.length);
+      if (this.recoveryBusy) this.lockRecoveryButtons();
     },
 
     // ---------- 加载器状态（徽标 + 一句话 + 按钮） ----------
@@ -286,6 +289,11 @@
         badgeClass = 'badge badge-danger';
         iconText = 'cancel';
         titleText = '程序缺少内置加载器文件';
+      } else if (status.loaderMissing) {
+        badgeText = status.loaderDisabled ? '已停用' : 'DLL 缺失';
+        badgeClass = 'badge badge-event';
+        iconText = 'extension';
+        titleText = status.canRestoreLoader ? '模组与配置已保留，可恢复加载器' : '加载器缺失且版本未知';
       } else if (installed && !managed) {
         badgeText = '文件不属于本工具';
         badgeClass = 'badge badge-danger';
@@ -317,13 +325,17 @@
       if (updateBtn) {
         updateBtn.innerHTML = newer ? Icons.svg('upgrade') + ` 更新到 v${newer}` : Icons.svg('upgrade') + ' 从 GitHub 更新';
         updateBtn.className = newer ? 'primary-btn' : 'secondary-btn';
-        updateBtn.classList.toggle('hidden', !installed);
+        updateBtn.classList.toggle('hidden', !installed && !status.loaderMissing);
       }
       const settingsBtn = $('modLoaderSettingsBtn');
-      if (settingsBtn) settingsBtn.disabled = !installed;
+      if (settingsBtn) settingsBtn.disabled = !installed && !status.loaderRootExists;
+      $('modDisableLoaderBtn')?.classList.toggle('hidden', !installed || !managed);
+      $('modRestoreLoaderBtn')?.classList.toggle('hidden', !status.loaderMissing);
+      if ($('modRestoreLoaderBtn')) $('modRestoreLoaderBtn').disabled = !status.canRestoreLoader;
+      if (this.recoveryBusy) this.lockRecoveryButtons();
 
       // 没装加载器时 doorstop_config.json 还不存在，变速无处可写 → 整块禁用（而不是让保存报错）
-      this.setSpeedhackAvailable(installed);
+      this.setSpeedhackAvailable(installed || status.loaderRootExists);
     },
 
     // ---------- 版本三栏 + 结论 ----------
@@ -342,7 +354,10 @@
       // ① 已安装
       let installedState = 'is-current';
       let installedNote;
-      if (!installed) {
+      if (status.loaderMissing) {
+        installedState = 'is-unknown';
+        installedNote = status.canRestoreLoader ? '已停用或缺失，恢复时使用此版本' : 'DLL 缺失，无法确定恢复版本';
+      } else if (!installed) {
         installedState = 'is-unknown';
         installedNote = '点「安装加载器」把加载器写进游戏目录';
       } else if (!managed) {
@@ -365,7 +380,7 @@
         installedNote = '已安装（内置版本号读取失败）';
       }
       setVersionCell('modInstalledCell', 'modInstalledVersion', 'modInstalledNote', {
-        value: installed ? (installedVersion ? `v${installedVersion}` : '未知') : '未安装',
+        value: installed || status.loaderMissing ? (installedVersion ? `v${installedVersion}` : '未知') : '未安装',
         note: installedNote,
         state: installedState
       });
@@ -407,6 +422,11 @@
       } else if (!status.gameDirectory) {
         stateClass = 'is-idle';
         text = '还没找到游戏目录 —— 展开「高级与排障」点「自动检测」，或手动选择游戏 exe 所在的文件夹。';
+      } else if (status.loaderMissing) {
+        stateClass = 'is-idle';
+        text = status.canRestoreLoader
+          ? `version.dll 已停用或缺失，保留版本 ${installedVersion ? 'v' + installedVersion : '未知'}。点「恢复 version.dll」；本地文件缺失时下载对应版本发布包。`
+          : '保留的组件无法确定加载器版本，请重新安装或更新加载器。';
       } else if (!installed) {
         stateClass = 'is-idle';
         text = '尚未安装加载器 —— 点「安装加载器」，加载器与内置模组会一起装进游戏目录。';
@@ -452,6 +472,28 @@
         this.updateInfo = { state: 'done', latest: payload.latest || '', error: '' };
       }
       this.renderUpdateInfo();
+    },
+
+    recoveryBusy: false,
+    recoveryDisabledButtons: [],
+    startRecovery(restore) {
+      if (this.recoveryBusy || this.busy || this.packageImportPending) { toast('请等待当前操作完成。'); return; }
+      this.recoveryBusy = true;
+      this.setBusy(restore ? 'modRestoreLoaderBtn' : 'modDisableLoaderBtn', restore ? '恢复中…' : '备份并删除中…');
+      this.lockRecoveryButtons();
+      post({ type: restore ? 'modRestoreLoader' : 'modDisableLoader' });
+    },
+    lockRecoveryButtons() {
+      document.querySelectorAll('#modsView button, #modsView input, #modsView select').forEach(button => {
+        if (!button.disabled) { this.recoveryDisabledButtons.push(button); button.disabled = true; }
+      });
+    },
+    clearRecoveryBusy() {
+      this.recoveryBusy = false;
+      this.clearBusy();
+      this.recoveryDisabledButtons.forEach(button => { if (button.isConnected) button.disabled = false; });
+      this.recoveryDisabledButtons = [];
+      if (this.modStatus) this.renderStatusHeader(this.modStatus);
     },
 
     // ---------- 按钮忙碌态（安装/卸载/检查/更新） ----------

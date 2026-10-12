@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -19,6 +19,14 @@ public partial class HybridWindow
             using var document = JsonDocument.Parse(e.WebMessageAsJson);
             var root = document.RootElement;
             var type = root.TryGetProperty("type", out var typeElement) ? typeElement.GetString() : null;
+            if ((_loaderRecoveryBusy || _modPackageImportRunning || _modUpdateRunning)
+                && type is "modInstall" or "modUninstall" or "modDisableLoader" or "modRestoreLoader"
+                    or "modDownloadUpdate" or "modImportPackage" or "modImport" or "modPickImport" or "modDelete" or "modToggle"
+                    or "speedhackInstall" or "speedhackUninstall")
+            {
+                if (type is "modDisableLoader" or "modRestoreLoader") Post(new { type = "modRecoveryDone" });
+                throw new InvalidOperationException("加载器操作正在进行，请等待完成后再修改游戏文件。");
+            }
             switch (type)
             {
                 case "ready":
@@ -277,6 +285,12 @@ public partial class HybridWindow
                     var includeSample = root.TryGetProperty("includeSample", out var includeSampleElement) &&
                                         includeSampleElement.GetBoolean();
                     HandleModInstall(modOverwrite, includeSample, modAllowDowngrade);
+                    break;
+                case "modDisableLoader":
+                    await HandleLoaderRecoveryAsync(false);
+                    break;
+                case "modRestoreLoader":
+                    await HandleLoaderRecoveryAsync(true);
                     break;
                 case "modUninstall":
                     var modForce = root.TryGetProperty("force", out var modForceElement) && modForceElement.GetBoolean();

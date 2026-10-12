@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -410,8 +410,12 @@ public partial class HybridWindow
         }
     }
 
+    private bool _modUpdateRunning;
     private async Task HandleModDownloadUpdateAsync(bool overwriteDll, bool allowDowngrade)
     {
+        if (_modUpdateRunning || _loaderRecoveryBusy || _modPackageImportRunning)
+            throw new InvalidOperationException("加载器操作正在进行，请稍候。");
+        _modUpdateRunning = true;
         Post(new { type = "toast", message = "正在下载最新 CesiumLoader 并安装…" });
         try
         {
@@ -427,7 +431,12 @@ public partial class HybridWindow
         }
         catch (Exception ex)
         {
-            Post(new { type = "toast", message = $"更新失败：{ex.Message}" });
+            Post(new { type = "error", message = $"更新失败：{ex.Message}" });
+        }
+        finally
+        {
+            _modUpdateRunning = false;
+            _ = PushModStatusAsync();
         }
     }
 

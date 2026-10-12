@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO.Compression;
 using System.Net.Http;
 using System.Reflection;
@@ -201,11 +201,10 @@ public sealed partial class ModManager
 
             status.GameRunning = SpeedhackManager.IsGameRunning();
 
-            // 已安装版本：只认安装 / 更新时写下的清单（AstralParty_ModLoader\cesium-loader.json）。
-            // 清单缺失（0.4.7 之前的老安装，或玩家手删）时如实报「未知」，并让界面提示重新安装一次把它纳入管理 ——
-            // 不再回读加载器日志、也不再拿配置里的 sdkVersion 顶替：那两处猜出来的数字会被当成权威版本号，
-            // 而版本号正是这个工具最不该含糊的地方。
-            status.InstalledVersion = status.Installed ? ReadInstalledVersion(directory) : "";
+            // 版本来自游戏安装清单；受管理的 DLL 在清单缺失时可使用本地安装历史。
+            // 两份可靠记录都缺失时显示未知，不从日志或 SDK 版本猜加载器版本。
+            status.InstalledVersion = status.Installed
+                ? (status.LoaderManaged ? ReadCurrentInstallationVersion(directory) : ReadInstalledVersion(directory)) : "";
             status.EmbeddedVersion = EmbeddedVersion;
 
             // mod 列表 / SDK 列表（安装目录存在才扫）
@@ -218,8 +217,10 @@ public sealed partial class ModManager
                 status.Sdk = ScanMods(Path.Combine(loaderRoot, SdkFolderName));
             }
 
+            ApplyRetainedStatus(status);
             status.BundleHash = EmbeddedLoaderHash ?? "";
-            status.Message = BuildStatusMessage(status);
+            status.Message = BuildStatusMessage(status) + (status.GameRunning
+                ? " 游戏正在运行：安装、更新、停用或恢复要重启游戏才生效，version.dll 被占用时请完全退出游戏再操作。" : "");
         }
         catch (Exception ex)
         {
@@ -237,8 +238,10 @@ public sealed partial class ModManager
             return "尚未找到游戏目录：点「自动检测」，或手动选择游戏 exe 所在的文件夹。";
         if (!Directory.Exists(status.GameDirectory))
             return $"游戏目录不存在：{status.GameDirectory}";
-        if (status.GameRunning)
-            return "检测到游戏正在运行：安装 / 更新 / 卸载要完全退出游戏，否则 version.dll 会被占用。";
+        if (status.LoaderMissing)
+            return status.CanRestoreLoader
+                ? "version.dll 已停用或缺失，模组与配置已保留；点击恢复，缺少本地备份时会下载当前版本的加载器包。"
+                : "version.dll 缺失且版本未知，请重新安装或更新完整加载器。";
         if (!status.Installed)
             return "尚未安装：点「安装加载器」，把加载器和内置模组装进游戏目录。";
 
@@ -364,7 +367,7 @@ public sealed partial class ModManager
         //       点一下「安装加载器」就把新加载器静默换回旧版，功能无声退化。
         // 已装版本只认安装清单；没有清单（0.4.7 之前的老安装）时无法比较，只能放行 ——
         // 那种情况下界面上「已装版本」显示为未知，用户能看出工具并没有在装懂。
-        var installedBeforeInstall = ReadInstalledVersion(gameDirectory);
+        var installedBeforeInstall = ReadCurrentInstallationVersion(gameDirectory);
         if (!allowDowngrade && EmbeddedVersion.Length > 0 && installedBeforeInstall.Length > 0
             && CompareSemVer(EmbeddedVersion, installedBeforeInstall) < 0)
             throw new InvalidOperationException(
@@ -377,9 +380,13 @@ public sealed partial class ModManager
                 "游戏目录里的 version.dll 不是本工具装的（来源不明，可能是旧版独立变速器或第三方文件）——" +
                 "如确定要覆盖，请勾选「允许覆盖其它 version.dll」。");
 
+        var remainDisabled = IsRetainedDisabled(gameDirectory);
+        using var retained = BeginRetainedOperation(gameDirectory, "install-embedded",
+            new[] { EmbeddedLoaderDll!, EmbeddedConfig ?? Array.Empty<byte>(), EmbeddedSdkDll ?? Array.Empty<byte>() }
+                .Concat(includeSampleMod ? EmbeddedBuiltInMods.SelectMany(m => new[] { m.Dll, m.Sidecar ?? Array.Empty<byte>() }) : Array.Empty<byte[]>()).ToArray());
         try
         {
-            WriteAllBytesProtected(targetDll, EmbeddedLoaderDll!);
+            if (!remainDisabled) WriteAllBytesProtected(targetDll, EmbeddedLoaderDll!);
 
             // 目录结构
             var loaderRoot = Path.Combine(gameDirectory, LoaderFolderName);
@@ -420,6 +427,7 @@ public sealed partial class ModManager
             //   用户从旧版升级上来时界面无法显示"已装 2.1.7 / 随包 2.2.0"，也就无从判断需不需要更新。
             //   走内嵌资源安装与走 GitHub 发布包安装写的是同一份清单格式（见 tools\package-modloader.ps1）。
             WriteInstalledManifest(gameDirectory, loaderRoot);
+            if (remainDisabled) SetInstalledLoaderHash(gameDirectory, EmbeddedLoaderHash!);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -429,6 +437,7 @@ public sealed partial class ModManager
         }
 
         SaveStoredGameDirectory(gameDirectory);
+        retained.Complete(EmbeddedVersion, EmbeddedLoaderHash, remainDisabled, packageHash: "");
     }
 
     /// <summary>写安装清单（AstralParty_ModLoader\cesium-loader.json）：版本 + 各文件 SHA256。
@@ -437,7 +446,7 @@ public sealed partial class ModManager
     ///   1) 界面显示「已安装版本」；2) 与随包版本比较，判断该不该提示用户更新。
     /// 走内嵌资源安装与走 GitHub 发布包安装写的是同一份清单，所以两条安装路径的升级判断一致。
     /// 哈希取的是**落盘后**的实际内容（用户保留了旧 doorstop_config.json 时，记录的就是用户那份），
-    /// 因此清单反映真实安装状态。尽力而为：失败不影响安装结果。</summary>
+    /// 因此清单反映真实安装状态。写入失败必须报告安装未完整完成，避免恢复时使用旧版本。</summary>
     private static void WriteInstalledManifest(string gameDirectory, string loaderRoot)
     {
         if (string.IsNullOrEmpty(EmbeddedVersion)) return;   // 资源缺失/版本未知时不写，避免留下误导性清单
@@ -484,9 +493,9 @@ public sealed partial class ModManager
                 Path.Combine(loaderRoot, InstalledManifestFileName),
                 System.Text.Encoding.UTF8.GetBytes(json));
         }
-        catch
+        catch (Exception ex)
         {
-            // 清单写失败不影响安装本身
+            throw new IOException("无法保存加载器版本清单，本次安装未完整完成。", ex);
         }
     }
 
@@ -508,6 +517,7 @@ public sealed partial class ModManager
             throw new InvalidOperationException(
                 "游戏目录里的 version.dll 不是本工具装的（来源不明）——未删除任何文件。如确认要删除请勾选「强制卸载」。");
 
+        using var retained = BeginRetainedOperation(gameDirectory, "uninstall-full");
         var result = new UninstallResult();
         if (dllExists)
         {
@@ -550,6 +560,7 @@ public sealed partial class ModManager
             }
         }
 
+        retained.Complete(disabled: false, removed: true);
         result.Message = SpeedhackManager.IsGameRunning()
             ? "加载器已卸载；当前正在运行的游戏进程仍加载着加载器，重启游戏后恢复正常。"
             : "加载器已卸载（游戏恢复正常）。";
@@ -682,8 +693,9 @@ public sealed partial class ModManager
         {
             using var stream = new MemoryStream(zipBytes);
             using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
+            if (zipBytes.Length > 64 * 1024 * 1024) return null;
             var entry = archive.GetEntry(InstalledManifestFileName);
-            if (entry is null) return null;
+            if (entry is null || entry.Length > 1024 * 1024) return null;
             using var reader = new StreamReader(entry.Open());
             var json = reader.ReadToEnd();
             using var document = JsonDocument.Parse(json);
@@ -709,6 +721,17 @@ public sealed partial class ModManager
     {
         using var stream = new MemoryStream(zipBytes);
         using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
+
+        var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        long total = 0;
+        foreach (var entry in archive.Entries)
+        {
+            var path = entry.FullName.Replace('\\', '/');
+            total += entry.Length;
+            if (path.StartsWith('/') || path.Contains(':') || path.Split('/').Any(p => p is ".." or ".")
+                || !paths.Add(path) || entry.Length > 64 * 1024 * 1024 || total > 128 * 1024 * 1024 || paths.Count > 4096)
+                throw new InvalidDataException("发布包包含不安全路径、重复文件或超过大小限制。");
+        }
 
         // 必需文件：加载器 / 配置 / SDK
         var requiredRelative = new List<string>
@@ -758,7 +781,7 @@ public sealed partial class ModManager
 
         // 降级闸门（与 Install 同一条规则）：包内版本比游戏目录已装的更旧 → 默认拒绝。
         // 已装版本从安装清单读，老安装（没有清单）退回读加载器日志。
-        var installedBeforePackage = ReadInstalledVersion(gameDirectory);
+        var installedBeforePackage = ReadCurrentInstallationVersion(gameDirectory);
         var packageVersion = manifest.Version;
         if (!allowDowngrade && packageVersion.Length > 0 && installedBeforePackage.Length > 0
             && CompareSemVer(packageVersion, installedBeforePackage) < 0)
@@ -772,6 +795,15 @@ public sealed partial class ModManager
                 "游戏目录里的 version.dll 不是本工具装的（来源不明，可能是旧版独立变速器或第三方文件）——" +
                 "如确定要覆盖，请勾选「允许覆盖其它 version.dll」。");
 
+        var remainDisabled = IsRetainedDisabled(gameDirectory);
+        using var retained = BeginRetainedOperation(gameDirectory, "install-package", zipBytes);
+        // Cache individual input files before any game mutation, so even a partial install is recoverable.
+        using (var cacheArchive = new ZipArchive(new MemoryStream(zipBytes), ZipArchiveMode.Read))
+            foreach (var entry in cacheArchive.Entries.Where(e => !string.IsNullOrEmpty(e.Name)))
+            {
+                if (entry.Length > 64 * 1024 * 1024) throw new InvalidDataException("发布包文件超过大小限制。");
+                CacheBytes(ReadEntryBytes(entry));
+            }
         try
         {
             using var stream = new MemoryStream(zipBytes);
@@ -783,7 +815,7 @@ public sealed partial class ModManager
             Directory.CreateDirectory(Path.Combine(loaderRoot, LogsFolderName));
 
             // version.dll → 游戏 exe 目录（Doorstop 代理）
-            ExtractEntryToFile(archive, "version.dll", targetDll);
+            if (!remainDisabled) ExtractEntryToFile(archive, "version.dll", targetDll);
             // version.dll 的同名符号文件（.pdb，与 dll 成对）：调试器在 dll 同目录自动找它，
             // 崩溃栈能还原成文件行号。老发布包不带 .pdb → 缺失时静默跳过。
             ExtractOptionalEntryToFile(archive, "version.pdb", Path.ChangeExtension(targetDll, ".pdb"));
@@ -827,6 +859,8 @@ public sealed partial class ModManager
         }
 
         SaveStoredGameDirectory(gameDirectory);
+        using var completedZip = new ZipArchive(new MemoryStream(zipBytes), ZipArchiveMode.Read);
+        retained.Complete(manifest.Version, HashBytes(ReadEntryBytes(completedZip.GetEntry(LoaderDllName)!)), remainDisabled, packageHash: HashBytes(zipBytes));
     }
 
     private static void ExtractEntryToFile(ZipArchive archive, string entryName, string targetPath)
@@ -1616,9 +1650,12 @@ public sealed partial class ModManager
         var (existing, existingDir) = ResolveModPath(modsDir, fileName);
         var dirName = existingDir ?? stem;
         var modFolder = Path.Combine(modsDir, dirName);
+        var bytes = File.ReadAllBytes(sourcePath);
+        using var retained = BeginRetainedOperation(gameDirectory, "import-mod", bytes);
         Directory.CreateDirectory(modFolder);
         var target = Path.Combine(modFolder, fileName);
-        WriteAllBytesProtected(target, File.ReadAllBytes(sourcePath));
+        WriteAllBytesProtected(target, bytes);
+        retained.Complete();
 
         return new ModEntryInfo
         {
@@ -1707,10 +1744,10 @@ public sealed partial class ModManager
     ///   点「从 GitHub 更新」装的是比本程序内置更新的发布包，磁盘上的文件当然和内置的不同 ——
     ///   只比内置哈希，就会把本工具自己刚装上去的加载器说成"别人的文件"，小白用户看不懂，
     ///   老用户还会因此以为更新失败了。判据换成「内置哈希 **或** 清单哈希」之后，两者都算自己人。</summary>
-    private static string ClassifyLoaderOrigin(string gameDirectory, string dllPath)
+    private string ClassifyLoaderOrigin(string gameDirectory, string dllPath)
     {
         if (MatchesEmbeddedLoader(dllPath)) return "bundle";
-        var manifestHash = ReadManifestLoaderHash(gameDirectory);
+        var manifestHash = CurrentLoaderHash(gameDirectory, ReadRetainedInstallation(gameDirectory));
         return manifestHash.Length > 0 && MatchesHash(dllPath, manifestHash) ? "installed" : "";
     }
 

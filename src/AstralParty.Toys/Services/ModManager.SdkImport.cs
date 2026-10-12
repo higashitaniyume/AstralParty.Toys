@@ -43,7 +43,7 @@ public sealed partial class ModManager
     public string ImportSdk(string gameDirectory, string sourcePath)
     {
         var loaderRoot = Path.Combine(gameDirectory, LoaderFolderName);
-        if (!File.Exists(Path.Combine(gameDirectory, LoaderDllName))
+        if ((!File.Exists(Path.Combine(gameDirectory, LoaderDllName)) && !IsRetainedDisabled(gameDirectory))
             || !File.Exists(Path.Combine(loaderRoot, ConfigFileName)))
             throw new InvalidOperationException("请先安装加载器，再导入 SDK。");
         if (new FileInfo(sourcePath).Length > 64 * 1024 * 1024)
@@ -110,12 +110,14 @@ public sealed partial class ModManager
         }
 
         var sdkRoot = Path.Combine(loaderRoot, SdkFolderName);
+        using var retained = BeginRetainedOperation(gameDirectory, "import-sdk", dll, pdb ?? Array.Empty<byte>());
         Directory.CreateDirectory(sdkRoot);
         WriteAllBytesProtected(Path.Combine(sdkRoot, SdkDllName), dll);
         var targetPdb = Path.Combine(sdkRoot, "CesiumLoader.SDK.pdb");
         if (pdb is not null) WriteAllBytesProtected(targetPdb, pdb);
         else if (File.Exists(targetPdb)) File.Delete(targetPdb);
         SyncLoaderConfigSdkVersion(Path.Combine(loaderRoot, ConfigFileName), version);
+        retained.Complete();
         return version;
     }
 

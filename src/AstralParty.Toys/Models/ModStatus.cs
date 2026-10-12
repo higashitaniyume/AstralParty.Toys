@@ -13,6 +13,9 @@ public sealed class ModStatus
     public bool GameRunning { get; set; }
     public bool Installed { get; set; }
     public bool LoaderPresent { get; set; }
+    public bool LoaderDisabled { get; set; }
+    public bool LoaderMissing { get; set; }
+    public bool CanRestoreLoader { get; set; }
 
     /// <summary>磁盘上的 version.dll 是否与随程序集内置的那份逐字节一致。</summary>
     public bool LoaderMatchesBundle { get; set; }
