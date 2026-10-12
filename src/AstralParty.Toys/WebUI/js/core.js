@@ -50,6 +50,7 @@ function openModal(title, contentHtml, iconName) {
 
 function closeModal() {
   window.SkinCropModule?.cancel();
+  window.CharacterCropModule?.cancel();
   const modal = $('globalModal');
   if (!modal) return;
   const wasOpen = modal.classList.contains('open');
@@ -247,6 +248,18 @@ host?.addEventListener('message', event => {
 
     case 'skinsCards':
       window.SkinsModule?.renderCards?.(msg.payload);
+    case 'characterTemplateState':
+      window.CharacterSkinsModule?.templateState(msg.payload);
+      break;
+    case 'characterCropOpen':
+      window.CharacterCropModule?.open(msg.payload);
+      break;
+    case 'characterCropSaved':
+      window.CharacterCropModule?.saved(msg.payload);
+      break;
+    case 'characterSkins':
+      window.CharacterSkinsModule?.render(msg.payload);
+      break;
       break;
 
     case 'loading':
@@ -343,6 +356,18 @@ host?.addEventListener('message', event => {
 
     case 'skinsCards':
       if (window.SkinsModule) window.SkinsModule.renderCards(msg.payload);
+    case 'characterTemplateState':
+      window.CharacterSkinsModule?.templateState(msg.payload);
+      break;
+    case 'characterCropOpen':
+      window.CharacterCropModule?.open(msg.payload);
+      break;
+    case 'characterCropSaved':
+      window.CharacterCropModule?.saved(msg.payload);
+      break;
+    case 'characterSkins':
+      window.CharacterSkinsModule?.render(msg.payload);
+      break;
       break;
 
     case 'skinsExportConfirm':

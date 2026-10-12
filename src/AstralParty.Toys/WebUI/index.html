@@ -635,7 +635,7 @@
         <div class="utilities-header skins-header">
           <div class="utilities-title-group">
             <button class="back-btn" id="skinsBackHomeBtn">‹ 返回大厅</button>
-            <h2>卡面皮肤</h2>
+            <h2>皮肤</h2>
             <span class="utilities-tagline">CardSkinMod · 方案管理 / 导入 / 单卡可视化替换</span>
           </div>
           <div class="utilities-header-actions">
@@ -654,7 +654,35 @@
           <button class="link-btn" id="skinGamePickerManageBtn">管理游戏目录…</button>
         </div>
 
-        <div class="skins-body">
+        <div class="character-skin-tabs" role="tablist" aria-label="皮肤类型">
+          <button id="cardSkinTab" role="tab" aria-selected="true" aria-controls="cardSkinPanel" class="active">卡牌皮肤</button>
+          <button id="characterSkinTab" role="tab" aria-selected="false" aria-controls="characterSkinPanel" tabindex="-1">角色皮肤</button>
+        </div>
+        <section id="characterSkinPanel" class="hidden" role="tabpanel" aria-labelledby="characterSkinTab">
+          <div class="character-toolbar">
+            <button class="primary-btn" id="characterNew">新建角色皮肤</button>
+            <button class="secondary-btn" id="characterImport">导入 ZIP</button>
+            <button class="secondary-btn" id="characterFolder">打开皮肤目录</button>
+            <button class="secondary-btn" id="characterInstall">安装角色皮肤模组</button>
+            <span id="characterStatus" role="status"></span>
+          </div>
+          <p class="character-note">修改后完全退出并重启游戏生效。图片、文案和地图动画已提供；媒体、特效及特殊演出保留原版，运行时效果待游戏验证。</p>
+          <div class="character-workspace">
+            <aside class="character-list-panel"><label for="characterSearch">搜索角色 / 方案</label><input id="characterSearch" type="search" placeholder="输入角色名或皮肤名"><div id="characterList"></div></aside>
+            <div id="characterDetail" class="character-detail"><p>选择一个皮肤包，或新建方案开始制作。</p></div>
+          </div>
+          <dialog id="characterCreateDialog"><form id="characterCreateForm"><h3>新建角色皮肤</h3>
+            <label>方案标识<input name="id" required pattern="[A-Za-z0-9_-]{1,80}" placeholder="my-character-skin"></label>
+            <label>显示名称<input name="name" required maxlength="100"></label>
+            <label>目标角色<select name="heroId" id="characterCreateHero" required></select></label>
+            <label>适用原皮肤<select name="skinItemId" id="characterCreateSkin" required><option value="0">该角色全部原皮肤</option></select></label><p>可以为各套原皮肤分别启用不同的自制包。</p>
+            <label class="character-template-toggle"><input type="checkbox" id="characterCreateFromGame" name="fromGame">从游戏导出所选角色的默认皮肤</label>
+            <div id="characterTemplateOptions" class="hidden"><label>热更新资源缓存<input id="characterTemplateCache" name="cache" placeholder="com.unity.addressables 目录"></label><p>同时读取当前游戏安装目录与此缓存，导出默认图片和完整二维动画，适用原皮肤将设为默认皮肤。需要本机 Python 3、UnityPy 和 Pillow。</p></div>
+            <p id="characterTemplateProgress" role="status" aria-live="polite"></p>
+            <div class="character-toolbar"><button type="submit" id="characterCreateSubmit" class="primary-btn">创建</button><button type="button" id="characterCreateCancel" class="secondary-btn">取消</button></div>
+          </form></dialog>
+        </section>
+        <div class="skins-body" id="cardSkinPanel" role="tabpanel" aria-labelledby="cardSkinTab">
           <!-- 当前方案控制面板 -->
           <section class="skin-active-panel">
             <div class="skin-active-left">
@@ -903,4 +931,7 @@
   <script src="js/skin-crop.js"></script>
   <script src="js/app.js"></script>
 </body>
+  <link rel="stylesheet" href="css/character-skins.css">
+  <script src="js/character-skins.js"></script>
+  <script src="js/character-crop.js"></script>
 </html>

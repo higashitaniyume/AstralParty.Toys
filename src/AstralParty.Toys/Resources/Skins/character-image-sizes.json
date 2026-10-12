@@ -1,0 +1,6706 @@
+{
+  "UT_Hero_Bust_305_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_305_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_306_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_306_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Card2_305": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_306": [
+    420,
+    684
+  ],
+  "UT_Hero_Card_305": [
+    1224,
+    1560
+  ],
+  "UT_Hero_Card_306": [
+    928,
+    1520
+  ],
+  "UT_Hero_LevelUp_305": [
+    517,
+    780
+  ],
+  "UT_Hero_LevelUp_306": [
+    517,
+    780
+  ],
+  "UT_Hero_ProfilePhoto_305": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_306": [
+    220,
+    220
+  ],
+  "UT_Hero_RolePhoto_305": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_306": [
+    240,
+    340
+  ],
+  "UT_Hero_ThinCard_305": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_306": [
+    128,
+    308
+  ],
+  "UT_Platform_305": [
+    260,
+    260
+  ],
+  "UT_Platform_306": [
+    260,
+    260
+  ],
+  "UT_Hero_RolePhoto_101": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_101_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_101_01_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_101_02": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_101_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_102": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_102_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_102_02": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_102_03": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_102_04": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_102_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_103": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_103_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_103_02": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_103_03": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_103_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_103_Max_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_104": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_104_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_104_02": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_104_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_105": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_105_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_105_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_106": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_106_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_106_02": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_106_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_107": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_107_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_107_02": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_107_02_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_107_03": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_107_03_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_107_04": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_107_05": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_107_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_108": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_108_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_108_02": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_108_02_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_108_03": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_108_03_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_108_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_108_Max_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_108_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_109": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_109_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_109_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_110": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_110_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_111": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_111_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_112": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_112_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_112_01_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_112_02": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_112_02_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_112_03": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_112_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_112_Max_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_113": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_113_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_113_01_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_113_02": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_113_02_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_113_03": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_113_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_114": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_114_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_114_01_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_114_02": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_114_03": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_114_04": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_114_04_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_114_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_114_Max_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_114_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_115": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_115_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_115_02": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_115_03": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_115_04": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_115_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_115_Max_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_116": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_116_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_116_01_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_116_02": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_116_02_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_116_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_116_Max_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_117": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_117_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_117_01_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_117_02": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_117_02_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_117_03": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_117_03_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_117_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_117_Max_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_117_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_118": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_118_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_118_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_119": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_119_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_119_02": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_119_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_120": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_120_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_120_01_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_120_02": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_120_02_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_120_03": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_120_03_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_120_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_120_Max_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_120_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_121": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_121_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_121_01_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_121_02": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_121_03": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_121_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_122": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_122_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_122_01_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_122_02": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_122_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_123": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_123_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_123_01_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_123_02": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_123_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_123_Max_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_123_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_124": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_124_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_124_02": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_124_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_125": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_125_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_125_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_126": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_126_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_126_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_127": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_127_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_127_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_127_Max_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_128": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_128_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_128_Max_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_128_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_301": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_301_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_302": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_302_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_303": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_304": [
+    240,
+    340
+  ],
+  "UT_Hero_Story_123_02": [
+    1056,
+    1644
+  ],
+  "UT_Hero_ThinCard_101": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_101_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_101_01_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_101_02": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_101_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_102": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_102_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_102_02": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_102_03": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_102_04": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_102_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_103": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_103_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_103_02": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_103_03": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_103_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_103_Max_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_104": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_104_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_104_02": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_104_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_105": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_105_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_105_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_106": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_1061": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_106_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_106_02": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_106_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_107": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_107_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_107_02": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_107_02_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_107_03": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_107_03_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_107_04": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_107_05": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_107_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_108": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_108_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_108_01_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_108_02": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_108_02_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_108_03": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_108_03_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_108_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_108_Max_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_108_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_109": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_109_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_109_Max_2": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_110": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_110_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_111": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_111_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_112": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_112_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_112_01_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_112_02": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_112_02_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_112_03": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_112_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_112_Max_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_113": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_113_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_113_01_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_113_02": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_113_02_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_113_03": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_113_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_114": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_114_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_114_01_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_114_02": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_114_03": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_114_04": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_114_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_114_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_115": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_115_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_115_02": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_115_03": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_115_04": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_115_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_115_Max_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_116": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_116_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_116_01_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_116_02": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_116_02_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_116_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_116_Max_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_117": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_117_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_117_01_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_117_02": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_117_02_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_117_03": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_117_03_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_117_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_117_Max_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_117_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_118": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_118_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_118_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_119": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_119_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_119_02": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_119_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_120": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_120_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_120_01_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_120_02": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_120_02_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_120_03": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_120_03_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_120_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_120_Max_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_121": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_121_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_121_01_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_121_02": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_121_03": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_121_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_122": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_122_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_122_01_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_122_02": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_122_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_123": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_123_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_123_01_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_123_02": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_123_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_123_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_124": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_124_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_124_02": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_124_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_125": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_125_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_125_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_126": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_126_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_126_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_127": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_127_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_127_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_127_Max_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_128": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_128_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_128_Max_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_128_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_301": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_301_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_302": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_302_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_303": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_304": [
+    128,
+    308
+  ],
+  "UT_Hero_Card2_101": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_101_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_101_01_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_101_02": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_101_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_102": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_102_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_102_02": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_102_03": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_102_04": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_102_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_103": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_103_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_103_02": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_103_03": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_103_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_103_Max_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_104": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_104_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_104_02": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_104_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_105": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_105_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_105_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_106": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_1061": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_106_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_106_02": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_106_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_107": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_107_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_107_02": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_107_02_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_107_03": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_107_03_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_107_04": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_107_05": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_107_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_107_Max_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_108": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_108_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_108_01_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_108_02": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_108_02_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_108_03": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_108_03_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_108_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_108_Max_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_108_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_109": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_109_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_109_Max_2": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_110": [
+    400,
+    680
+  ],
+  "UT_Hero_Card2_110_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_111": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_111_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_112": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_112_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_112_01_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_112_02": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_112_02_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_112_03": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_112_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_112_Max_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_113": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_113_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_113_01_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_113_02": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_113_02_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_113_03": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_113_03_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_113_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_114": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_114_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_114_01_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_114_02": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_114_03": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_114_04": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_114_04_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_114_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_114_Max_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_114_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_115": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_115_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_115_02": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_115_03": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_115_04": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_115_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_115_Max_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_116": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_116_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_116_01_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_116_02": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_116_02_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_116_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_116_Max_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_117": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_117_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_117_01_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_117_02": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_117_02_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_117_03": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_117_03_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_117_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_117_Max_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_117_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_118": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_118_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_118_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_119": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_119_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_119_02": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_119_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_120": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_120_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_120_01_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_120_02": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_120_02_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_120_03": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_120_03_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_120_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_120_Max_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_120_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_121": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_121_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_121_01_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_121_02": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_121_03": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_121_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_122": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_122_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_122_01_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_122_02": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_122_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_123": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_123_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_123_01_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_123_02": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_123_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_123_Max_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_123_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_124": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_124_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_124_02": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_124_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_125": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_125_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_125_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_126": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_126_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_126_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_127": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_127_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_127_01_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_127_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_127_Max_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_128": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_128_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_128_Max_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_128_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_301": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_301_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_302": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_302_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_303": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_304": [
+    420,
+    684
+  ],
+  "UT_Hero_Card_101": [
+    1340,
+    1692
+  ],
+  "UT_Hero_Card_101_01": [
+    1168,
+    1956
+  ],
+  "UT_Hero_Card_101_01_sfw": [
+    1168,
+    1956
+  ],
+  "UT_Hero_Card_101_02": [
+    1520,
+    1704
+  ],
+  "UT_Hero_Card_101_Max": [
+    1196,
+    1600
+  ],
+  "UT_Hero_Card_102": [
+    908,
+    1616
+  ],
+  "UT_Hero_Card_102_01": [
+    1060,
+    1460
+  ],
+  "UT_Hero_Card_102_02": [
+    1072,
+    1648
+  ],
+  "UT_Hero_Card_102_03": [
+    1040,
+    1780
+  ],
+  "UT_Hero_Card_102_04": [
+    1228,
+    1608
+  ],
+  "UT_Hero_Card_102_Max": [
+    886,
+    1414
+  ],
+  "UT_Hero_Card_103": [
+    940,
+    1408
+  ],
+  "UT_Hero_Card_103_01": [
+    1108,
+    1616
+  ],
+  "UT_Hero_Card_103_02": [
+    1080,
+    1536
+  ],
+  "UT_Hero_Card_103_03": [
+    960,
+    1588
+  ],
+  "UT_Hero_Card_103_Max": [
+    1016,
+    1116
+  ],
+  "UT_Hero_Card_103_Max_sfw": [
+    1016,
+    1116
+  ],
+  "UT_Hero_Card_104": [
+    1156,
+    1756
+  ],
+  "UT_Hero_Card_104_01": [
+    1148,
+    1332
+  ],
+  "UT_Hero_Card_104_02": [
+    1568,
+    1352
+  ],
+  "UT_Hero_Card_104_Max": [
+    724,
+    1364
+  ],
+  "UT_Hero_Card_105": [
+    900,
+    1380
+  ],
+  "UT_Hero_Card_105_01": [
+    1080,
+    1388
+  ],
+  "UT_Hero_Card_105_Max": [
+    1004,
+    1612
+  ],
+  "UT_Hero_Card_106": [
+    808,
+    1200
+  ],
+  "UT_Hero_Card_106_01": [
+    1060,
+    1616
+  ],
+  "UT_Hero_Card_106_02": [
+    1072,
+    1500
+  ],
+  "UT_Hero_Card_106_Max": [
+    920,
+    1172
+  ],
+  "UT_Hero_Card_107": [
+    776,
+    1520
+  ],
+  "UT_Hero_Card_107_01": [
+    1364,
+    1780
+  ],
+  "UT_Hero_Card_107_02": [
+    1056,
+    1460
+  ],
+  "UT_Hero_Card_107_02_sfw": [
+    1056,
+    1460
+  ],
+  "UT_Hero_Card_107_03": [
+    1264,
+    1440
+  ],
+  "UT_Hero_Card_107_03_sfw": [
+    1264,
+    1440
+  ],
+  "UT_Hero_Card_107_04": [
+    1020,
+    1412
+  ],
+  "UT_Hero_Card_107_05": [
+    1244,
+    1392
+  ],
+  "UT_Hero_Card_107_Max": [
+    812,
+    1320
+  ],
+  "UT_Hero_Card_107_Max_sfw": [
+    812,
+    1320
+  ],
+  "UT_Hero_Card_108": [
+    876,
+    2000
+  ],
+  "UT_Hero_Card_108_01": [
+    1080,
+    2048
+  ],
+  "UT_Hero_Card_108_01_sfw": [
+    1080,
+    2048
+  ],
+  "UT_Hero_Card_108_02": [
+    1040,
+    1340
+  ],
+  "UT_Hero_Card_108_02_sfw": [
+    1040,
+    1340
+  ],
+  "UT_Hero_Card_108_03": [
+    1104,
+    1524
+  ],
+  "UT_Hero_Card_108_03_sfw": [
+    1104,
+    1524
+  ],
+  "UT_Hero_Card_108_Max": [
+    1544,
+    1680
+  ],
+  "UT_Hero_Card_108_Max_sfw": [
+    1544,
+    1680
+  ],
+  "UT_Hero_Card_108_sfw": [
+    876,
+    2000
+  ],
+  "UT_Hero_Card_109": [
+    980,
+    1400
+  ],
+  "UT_Hero_Card_109_01": [
+    1092,
+    1288
+  ],
+  "UT_Hero_Card_109_Max_2": [
+    1336,
+    1616
+  ],
+  "UT_Hero_Card_110": [
+    1040,
+    1280
+  ],
+  "UT_Hero_Card_110_Max": [
+    1340,
+    1460
+  ],
+  "UT_Hero_Card_111": [
+    968,
+    964
+  ],
+  "UT_Hero_Card_111_Max": [
+    1092,
+    1216
+  ],
+  "UT_Hero_Card_112": [
+    800,
+    1140
+  ],
+  "UT_Hero_Card_112_01": [
+    1240,
+    1260
+  ],
+  "UT_Hero_Card_112_01_sfw": [
+    1240,
+    1260
+  ],
+  "UT_Hero_Card_112_02": [
+    936,
+    1844
+  ],
+  "UT_Hero_Card_112_02_sfw": [
+    936,
+    1844
+  ],
+  "UT_Hero_Card_112_03": [
+    1404,
+    1620
+  ],
+  "UT_Hero_Card_112_Max": [
+    1448,
+    984
+  ],
+  "UT_Hero_Card_112_Max_sfw": [
+    1448,
+    984
+  ],
+  "UT_Hero_Card_113": [
+    880,
+    1436
+  ],
+  "UT_Hero_Card_113_01": [
+    828,
+    1028
+  ],
+  "UT_Hero_Card_113_01_sfw": [
+    828,
+    1028
+  ],
+  "UT_Hero_Card_113_02": [
+    1300,
+    1788
+  ],
+  "UT_Hero_Card_113_02_sfw": [
+    1300,
+    1788
+  ],
+  "UT_Hero_Card_113_03": [
+    1376,
+    1892
+  ],
+  "UT_Hero_Card_113_03_sfw": [
+    1376,
+    1892
+  ],
+  "UT_Hero_Card_113_Max": [
+    1184,
+    1260
+  ],
+  "UT_Hero_Card_114": [
+    1120,
+    1740
+  ],
+  "UT_Hero_Card_114_01": [
+    1012,
+    1356
+  ],
+  "UT_Hero_Card_114_01_sfw": [
+    1012,
+    1356
+  ],
+  "UT_Hero_Card_114_02": [
+    904,
+    1896
+  ],
+  "UT_Hero_Card_114_03": [
+    916,
+    1552
+  ],
+  "UT_Hero_Card_114_04": [
+    1352,
+    1384
+  ],
+  "UT_Hero_Card_114_04_sfw": [
+    1352,
+    1384
+  ],
+  "UT_Hero_Card_114_Max": [
+    1080,
+    1816
+  ],
+  "UT_Hero_Card_114_Max_sfw": [
+    1080,
+    1816
+  ],
+  "UT_Hero_Card_114_sfw": [
+    1120,
+    1740
+  ],
+  "UT_Hero_Card_115": [
+    1060,
+    1632
+  ],
+  "UT_Hero_Card_115_01": [
+    900,
+    1112
+  ],
+  "UT_Hero_Card_115_02": [
+    1652,
+    1680
+  ],
+  "UT_Hero_Card_115_03": [
+    1352,
+    1676
+  ],
+  "UT_Hero_Card_115_04": [
+    1556,
+    1740
+  ],
+  "UT_Hero_Card_115_Max": [
+    1676,
+    1444
+  ],
+  "UT_Hero_Card_115_Max_sfw": [
+    1676,
+    1444
+  ],
+  "UT_Hero_Card_116": [
+    852,
+    2048
+  ],
+  "UT_Hero_Card_116_01": [
+    920,
+    1476
+  ],
+  "UT_Hero_Card_116_01_sfw": [
+    920,
+    1824
+  ],
+  "UT_Hero_Card_116_02": [
+    1000,
+    1688
+  ],
+  "UT_Hero_Card_116_02_sfw": [
+    1000,
+    1688
+  ],
+  "UT_Hero_Card_116_Max": [
+    1428,
+    1252
+  ],
+  "UT_Hero_Card_116_Max_sfw": [
+    1428,
+    1252
+  ],
+  "UT_Hero_Card_117": [
+    1184,
+    1740
+  ],
+  "UT_Hero_Card_117_01": [
+    1400,
+    1800
+  ],
+  "UT_Hero_Card_117_01_sfw": [
+    1400,
+    1800
+  ],
+  "UT_Hero_Card_117_02": [
+    960,
+    1300
+  ],
+  "UT_Hero_Card_117_02_sfw": [
+    960,
+    1300
+  ],
+  "UT_Hero_Card_117_03": [
+    1472,
+    1728
+  ],
+  "UT_Hero_Card_117_03_sfw": [
+    1472,
+    1728
+  ],
+  "UT_Hero_Card_117_Max": [
+    1600,
+    1568
+  ],
+  "UT_Hero_Card_117_Max_sfw": [
+    1600,
+    1568
+  ],
+  "UT_Hero_Card_117_sfw": [
+    1184,
+    1740
+  ],
+  "UT_Hero_Card_118": [
+    1120,
+    1992
+  ],
+  "UT_Hero_Card_118_01": [
+    1336,
+    1920
+  ],
+  "UT_Hero_Card_118_Max": [
+    932,
+    2048
+  ],
+  "UT_Hero_Card_119": [
+    932,
+    1900
+  ],
+  "UT_Hero_Card_119_01": [
+    1168,
+    1640
+  ],
+  "UT_Hero_Card_119_02": [
+    1268,
+    1716
+  ],
+  "UT_Hero_Card_119_Max": [
+    1084,
+    1748
+  ],
+  "UT_Hero_Card_120": [
+    864,
+    1824
+  ],
+  "UT_Hero_Card_120_01": [
+    1607,
+    2048
+  ],
+  "UT_Hero_Card_120_01_sfw": [
+    1607,
+    2048
+  ],
+  "UT_Hero_Card_120_02": [
+    1548,
+    1412
+  ],
+  "UT_Hero_Card_120_02_sfw": [
+    1548,
+    1412
+  ],
+  "UT_Hero_Card_120_03": [
+    896,
+    1676
+  ],
+  "UT_Hero_Card_120_03_sfw": [
+    896,
+    1676
+  ],
+  "UT_Hero_Card_120_Max": [
+    1004,
+    1372
+  ],
+  "UT_Hero_Card_120_Max_sfw": [
+    1004,
+    1372
+  ],
+  "UT_Hero_Card_120_sfw": [
+    864,
+    1824
+  ],
+  "UT_Hero_Card_121": [
+    1299,
+    1788
+  ],
+  "UT_Hero_Card_121_01": [
+    748,
+    1752
+  ],
+  "UT_Hero_Card_121_01_sfw": [
+    748,
+    1752
+  ],
+  "UT_Hero_Card_121_02": [
+    1156,
+    1612
+  ],
+  "UT_Hero_Card_121_03": [
+    1660,
+    1904
+  ],
+  "UT_Hero_Card_121_Max": [
+    812,
+    1660
+  ],
+  "UT_Hero_Card_122": [
+    896,
+    1328
+  ],
+  "UT_Hero_Card_122_01": [
+    1212,
+    1668
+  ],
+  "UT_Hero_Card_122_01_sfw": [
+    1212,
+    1668
+  ],
+  "UT_Hero_Card_122_02": [
+    1484,
+    1772
+  ],
+  "UT_Hero_Card_122_Max": [
+    1080,
+    1564
+  ],
+  "UT_Hero_Card_123": [
+    1000,
+    1636
+  ],
+  "UT_Hero_Card_123_01": [
+    1344,
+    1288
+  ],
+  "UT_Hero_Card_123_01_sfw": [
+    1344,
+    1288
+  ],
+  "UT_Hero_Card_123_02": [
+    1440,
+    1924
+  ],
+  "UT_Hero_Card_123_Max": [
+    960,
+    1820
+  ],
+  "UT_Hero_Card_123_Max_sfw": [
+    960,
+    1820
+  ],
+  "UT_Hero_Card_123_sfw": [
+    1000,
+    1636
+  ],
+  "UT_Hero_Card_124": [
+    712,
+    1524
+  ],
+  "UT_Hero_Card_124_01": [
+    800,
+    1644
+  ],
+  "UT_Hero_Card_124_02": [
+    1616,
+    1640
+  ],
+  "UT_Hero_Card_124_Max": [
+    1444,
+    1792
+  ],
+  "UT_Hero_Card_125": [
+    742,
+    2048
+  ],
+  "UT_Hero_Card_125_01": [
+    771,
+    2048
+  ],
+  "UT_Hero_Card_125_Max": [
+    1164,
+    1164
+  ],
+  "UT_Hero_Card_126": [
+    1144,
+    1672
+  ],
+  "UT_Hero_Card_126_01": [
+    1388,
+    1512
+  ],
+  "UT_Hero_Card_126_Max": [
+    1112,
+    1504
+  ],
+  "UT_Hero_Card_127": [
+    880,
+    1508
+  ],
+  "UT_Hero_Card_127_01": [
+    1104,
+    1756
+  ],
+  "UT_Hero_Card_127_01_sfw": [
+    1104,
+    1756
+  ],
+  "UT_Hero_Card_127_Max": [
+    1428,
+    1744
+  ],
+  "UT_Hero_Card_127_Max_sfw": [
+    1468,
+    1784
+  ],
+  "UT_Hero_Card_128": [
+    980,
+    1680
+  ],
+  "UT_Hero_Card_128_Max": [
+    780,
+    1608
+  ],
+  "UT_Hero_Card_128_Max_sfw": [
+    780,
+    1608
+  ],
+  "UT_Hero_Card_128_sfw": [
+    980,
+    1680
+  ],
+  "UT_Hero_Card_301": [
+    976,
+    1628
+  ],
+  "UT_Hero_Card_301_01": [
+    1416,
+    1980
+  ],
+  "UT_Hero_Card_302": [
+    636,
+    1820
+  ],
+  "UT_Hero_Card_302_01": [
+    820,
+    1616
+  ],
+  "UT_Hero_Card_303": [
+    996,
+    2048
+  ],
+  "UT_Hero_Card_304": [
+    800,
+    1748
+  ],
+  "UT_Hero_Bust_101_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_101_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_101_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_101_02_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_101_02_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_101_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_101_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_101_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_102_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_102_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_102_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_102_02_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_102_02_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_102_03_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_102_03_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_102_04_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_102_04_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_102_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_102_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_102_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_103_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_103_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_103_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_103_02_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_103_02_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_103_03_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_103_03_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_103_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_103_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_103_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_104_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_104_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_104_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_104_02_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_104_02_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_104_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_104_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_104_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_105_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_105_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_105_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_105_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_105_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_105_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_106_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_106_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_106_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_106_02_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_106_02_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_106_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_106_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_106_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_107_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_107_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_107_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_107_02_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_107_02_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_107_03_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_107_03_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_107_04_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_107_04_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_107_05_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_107_05_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_107_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_107_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_107_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_108_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_108_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_108_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_108_02_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_108_02_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_108_03_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_108_03_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_108_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_108_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_108_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_109_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_109_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_109_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_109_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_109_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_109_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_110_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_110_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_110_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_110_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_111_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_111_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_111_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_111_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_112_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_112_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_112_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_112_02_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_112_02_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_112_03_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_112_03_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_112_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_112_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_112_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_113_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_113_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_113_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_113_02_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_113_02_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_113_03_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_113_03_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_113_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_113_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_113_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_114_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_114_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_114_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_114_02_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_114_02_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_114_03_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_114_03_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_114_04_0": [
+    1880,
+    1080
+  ],
+  "UT_Hero_Bust_114_04_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_114_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_114_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_114_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_115_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_115_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_115_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_115_02_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_115_02_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_115_03_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_115_03_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_115_04_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_115_04_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_115_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_115_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_115_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_116_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_116_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_116_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_116_02_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_116_02_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_116_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_116_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_116_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_117_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_117_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_117_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_117_02_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_117_02_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_117_03_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_117_03_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_117_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_117_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_117_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_118_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_118_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_118_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_118_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_118_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_118_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_119_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_119_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_119_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_119_02_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_119_02_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_119_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_119_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_119_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_120_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_120_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_120_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_120_02_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_120_02_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_120_03_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_120_03_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_120_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_120_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_120_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_121_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_121_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_121_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_121_02_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_121_02_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_121_03_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_121_03_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_121_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_121_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_121_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_122_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_122_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_122_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_122_02_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_122_02_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_122_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_122_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_122_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_123_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_123_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_123_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_123_02_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_123_02_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_123_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_123_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_123_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_124_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_124_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_124_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_124_02_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_124_02_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_124_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_124_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_124_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_125_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_125_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_125_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_125_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_125_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_125_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_126_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_126_01_0": [
+    1880,
+    1080
+  ],
+  "UT_Hero_Bust_126_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_126_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_126_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_126_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_127_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_127_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_127_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_127_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_127_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_127_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_128_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_128_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_128_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_128_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_301_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_301_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_301_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_301_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_302_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_302_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_302_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_302_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_303_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_303_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_304_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_304_1": [
+    1568,
+    900
+  ],
+  "UT_Platform_101": [
+    260,
+    260
+  ],
+  "UT_Platform_102": [
+    260,
+    260
+  ],
+  "UT_Platform_103": [
+    260,
+    260
+  ],
+  "UT_Platform_104": [
+    260,
+    260
+  ],
+  "UT_Platform_105": [
+    260,
+    260
+  ],
+  "UT_Platform_106": [
+    260,
+    260
+  ],
+  "UT_Platform_107": [
+    260,
+    260
+  ],
+  "UT_Platform_108": [
+    260,
+    260
+  ],
+  "UT_Platform_109": [
+    260,
+    260
+  ],
+  "UT_Platform_110": [
+    260,
+    260
+  ],
+  "UT_Platform_111": [
+    260,
+    260
+  ],
+  "UT_Platform_112": [
+    260,
+    260
+  ],
+  "UT_Platform_113": [
+    260,
+    260
+  ],
+  "UT_Platform_114": [
+    260,
+    260
+  ],
+  "UT_Platform_115": [
+    260,
+    260
+  ],
+  "UT_Platform_116": [
+    260,
+    260
+  ],
+  "UT_Platform_117": [
+    260,
+    260
+  ],
+  "UT_Platform_118": [
+    260,
+    260
+  ],
+  "UT_Platform_119": [
+    260,
+    260
+  ],
+  "UT_Platform_120": [
+    260,
+    260
+  ],
+  "UT_Platform_121": [
+    260,
+    260
+  ],
+  "UT_Platform_122": [
+    260,
+    260
+  ],
+  "UT_Platform_123": [
+    260,
+    260
+  ],
+  "UT_Platform_124": [
+    260,
+    260
+  ],
+  "UT_Platform_125": [
+    260,
+    260
+  ],
+  "UT_Platform_126": [
+    260,
+    260
+  ],
+  "UT_Platform_127": [
+    260,
+    260
+  ],
+  "UT_Platform_128": [
+    260,
+    260
+  ],
+  "UT_Platform_301": [
+    260,
+    260
+  ],
+  "UT_Platform_302": [
+    260,
+    260
+  ],
+  "UT_Platform_303": [
+    260,
+    260
+  ],
+  "UT_Platform_304": [
+    260,
+    260
+  ],
+  "UT_Platform_CandyGhost": [
+    260,
+    260
+  ],
+  "UT_Platform_Card": [
+    260,
+    260
+  ],
+  "UT_Platform_Damage": [
+    260,
+    260
+  ],
+  "UT_Platform_Destiny": [
+    260,
+    260
+  ],
+  "UT_Platform_Divine": [
+    260,
+    260
+  ],
+  "UT_Platform_Event": [
+    260,
+    260
+  ],
+  "UT_Platform_Fire": [
+    260,
+    260
+  ],
+  "UT_Platform_Gamble": [
+    260,
+    260
+  ],
+  "UT_Platform_Gift": [
+    260,
+    260
+  ],
+  "UT_Platform_Gimmick": [
+    260,
+    260
+  ],
+  "UT_Platform_Gold": [
+    260,
+    260
+  ],
+  "UT_Platform_Heal": [
+    260,
+    260
+  ],
+  "UT_Platform_Hospital": [
+    260,
+    260
+  ],
+  "UT_Platform_Jump": [
+    260,
+    260
+  ],
+  "UT_Platform_Lottery": [
+    260,
+    260
+  ],
+  "UT_Platform_MindTraining": [
+    260,
+    260
+  ],
+  "UT_Platform_Monster": [
+    260,
+    260
+  ],
+  "UT_Platform_MoveAgain": [
+    260,
+    260
+  ],
+  "UT_Platform_Relic": [
+    260,
+    260
+  ],
+  "UT_Platform_Shop": [
+    260,
+    260
+  ],
+  "UT_Platform_Start": [
+    260,
+    260
+  ],
+  "UT_Platform_Teleport": [
+    260,
+    260
+  ],
+  "UT_Platform_TeleportPoint": [
+    260,
+    260
+  ],
+  "UT_AccountHeadShot_70001": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70002": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70003": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70004": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70005": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70006": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70007": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70008": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70009": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70010": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70011": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70012": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70013": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70014": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70015": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70016": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70024": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70025": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70026": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70028": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70029": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70030": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70037": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70038": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70039": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70040": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70041": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70042": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70043": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70044": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70045": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70045_sfw": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70046": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70047": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70048": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70049": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70050": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70051": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70052": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70053": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70054": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70055": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70056": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70057": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70058": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70059": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70060": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70061": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70062": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70063": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70064": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70065": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70066": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70067": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70068": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70069": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70070": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70071": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70072": [
+    160,
+    160
+  ],
+  "UT_AccountHeadShot_70073": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70074": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70075": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70076": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70077": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70078": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70079": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70080": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70081": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70082": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70083": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70084": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70085": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70086": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70087": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70088": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70089": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70090": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70091": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70092": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70093": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70094": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70095": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70096": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70097": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70098": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70101": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70102": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70103": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70104": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70105": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70106": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70107": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70108": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70109": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70110": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70111": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70112": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70113": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70114": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70115": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70116": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70117": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70118": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70119": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70120": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70121": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70122": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70123": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70124": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70125": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70126": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70127": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70128": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70894": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70895": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70896": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70897": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70898": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70899": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70901": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70902": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70903": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70904": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70905": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70906": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70907": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70908": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70909": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70910": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70911": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70912": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70913": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70914": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70915": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70916": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70917": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70918": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70919": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70920": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70921": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70922": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70923": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70924": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70925": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70926": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70927": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70928": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_709301": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_709302": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_709303": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_709304": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70991": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70992": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Boss_01": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Boss_02": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Boss_03": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Boss_04": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Boss_05": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Boss_06": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Boss_07": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Boss_08": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Boss_09": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Boss_10": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Boss_11": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Boss_12": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Boss_13": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Emoji_01": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Emoji_02": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_01": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_02": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_03": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_04": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_05": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_06": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_07": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_08": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_09": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_10": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_11": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_12": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_13": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_14": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_15": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_16": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_17": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_18": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_19": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_20": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_21": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_22": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_23": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_24": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_25": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_26": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_27": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_28": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_29": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_30": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_31": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_32": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_33": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_34": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_35": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_36": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_37": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_38": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_39": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_40": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_41": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_42": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_43": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_44": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_45": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Npc_01": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Npc_02": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Npc_03": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Npc_04": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Npc_05": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Npc_06": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Npc_07": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Zhongchou": [
+    200,
+    200
+  ],
+  "UT_Hero_ProfilePhoto_1001": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1002": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1003": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1004": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1005": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1007": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1008": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1009": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_101": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1010": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1011": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1013": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1014": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1015": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1016": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1017": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1018": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1019": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_101_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_101_02": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_101_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_102": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1020": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1021": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1022": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1023": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1024": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1025": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1026": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1027": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1028": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1029": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_102_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_102_02": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_102_03": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_102_04": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_102_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_103": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1030": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1031": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1032": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1033": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1034": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1035": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1036": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1037": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1038": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1039": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_103_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_103_02": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_103_03": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_103_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_104": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1040": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1041": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1042": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1043": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1044": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1045": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1046": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1047": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1048": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_104_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_104_02": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_104_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_105": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1050_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1053": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1054": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1055": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1056": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1057": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1058": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1059": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_105_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_105_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_106": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1061": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1062": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1063": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1064": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1065": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1066": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_106_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_106_02": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_106_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_107": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_107_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_107_02": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_107_03": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_107_04": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_107_05": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_107_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_108": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_108_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_108_02": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_108_03": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_108_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_109": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_109_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_109_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_110": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_110_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_111": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_111_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_112": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_112_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_112_02": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_112_03": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_112_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_113": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_113_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_113_02": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_113_03": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_113_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_114": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_114_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_114_02": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_114_03": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_114_04": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_114_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_115": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_115_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_115_02": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_115_03": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_115_04": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_115_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_116": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_116_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_116_02": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_116_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_117": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_117_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_117_02": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_117_03": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_117_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_118": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_118_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_118_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_119": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_119_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_119_02": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_119_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_120": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_120_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_120_02": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_120_03": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_120_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_121": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_121_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_121_02": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_121_03": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_121_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_122": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_122_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_122_02": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_122_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_123": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_123_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_123_02": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_123_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_124": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_124_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_124_02": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_124_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_125": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_125_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_125_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_126": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_126_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_126_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_127": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_127_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_127_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_128": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_128_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_301": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_301_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_302": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_302_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_303": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_304": [
+    220,
+    220
+  ],
+  "UT_Hero_LevelUp_101": [
+    536,
+    868
+  ],
+  "UT_Hero_LevelUp_101_01": [
+    716,
+    892
+  ],
+  "UT_Hero_LevelUp_101_02": [
+    680,
+    872
+  ],
+  "UT_Hero_LevelUp_101_Max": [
+    564,
+    864
+  ],
+  "UT_Hero_LevelUp_102": [
+    640,
+    824
+  ],
+  "UT_Hero_LevelUp_102_01": [
+    620,
+    864
+  ],
+  "UT_Hero_LevelUp_102_02": [
+    600,
+    936
+  ],
+  "UT_Hero_LevelUp_102_03": [
+    600,
+    960
+  ],
+  "UT_Hero_LevelUp_102_04": [
+    596,
+    864
+  ],
+  "UT_Hero_LevelUp_102_Max": [
+    744,
+    856
+  ],
+  "UT_Hero_LevelUp_103": [
+    568,
+    836
+  ],
+  "UT_Hero_LevelUp_103_01": [
+    532,
+    784
+  ],
+  "UT_Hero_LevelUp_103_02": [
+    528,
+    784
+  ],
+  "UT_Hero_LevelUp_103_03": [
+    592,
+    784
+  ],
+  "UT_Hero_LevelUp_103_Max": [
+    532,
+    832
+  ],
+  "UT_Hero_LevelUp_104": [
+    524,
+    856
+  ],
+  "UT_Hero_LevelUp_104_01": [
+    520,
+    836
+  ],
+  "UT_Hero_LevelUp_104_02": [
+    708,
+    860
+  ],
+  "UT_Hero_LevelUp_104_Max": [
+    592,
+    876
+  ],
+  "UT_Hero_LevelUp_105": [
+    624,
+    788
+  ],
+  "UT_Hero_LevelUp_105_01": [
+    712,
+    952
+  ],
+  "UT_Hero_LevelUp_105_Max": [
+    628,
+    928
+  ],
+  "UT_Hero_LevelUp_106": [
+    868,
+    852
+  ],
+  "UT_Hero_LevelUp_106_01": [
+    596,
+    848
+  ],
+  "UT_Hero_LevelUp_106_02": [
+    652,
+    860
+  ],
+  "UT_Hero_LevelUp_106_Max": [
+    720,
+    840
+  ],
+  "UT_Hero_LevelUp_107": [
+    556,
+    872
+  ],
+  "UT_Hero_LevelUp_107_01": [
+    580,
+    808
+  ],
+  "UT_Hero_LevelUp_107_02": [
+    648,
+    828
+  ],
+  "UT_Hero_LevelUp_107_03": [
+    508,
+    852
+  ],
+  "UT_Hero_LevelUp_107_04": [
+    460,
+    768
+  ],
+  "UT_Hero_LevelUp_107_05": [
+    600,
+    840
+  ],
+  "UT_Hero_LevelUp_107_Max": [
+    664,
+    972
+  ],
+  "UT_Hero_LevelUp_108": [
+    504,
+    1000
+  ],
+  "UT_Hero_LevelUp_108_01": [
+    616,
+    1000
+  ],
+  "UT_Hero_LevelUp_108_02": [
+    500,
+    1040
+  ],
+  "UT_Hero_LevelUp_108_03": [
+    696,
+    1084
+  ],
+  "UT_Hero_LevelUp_108_Max": [
+    564,
+    1004
+  ],
+  "UT_Hero_LevelUp_109": [
+    452,
+    772
+  ],
+  "UT_Hero_LevelUp_109_01": [
+    836,
+    1024
+  ],
+  "UT_Hero_LevelUp_109_Max": [
+    1040,
+    988
+  ],
+  "UT_Hero_LevelUp_110": [
+    760,
+    768
+  ],
+  "UT_Hero_LevelUp_110_Max": [
+    676,
+    752
+  ],
+  "UT_Hero_LevelUp_111": [
+    744,
+    716
+  ],
+  "UT_Hero_LevelUp_111_Max": [
+    512,
+    624
+  ],
+  "UT_Hero_LevelUp_112": [
+    552,
+    908
+  ],
+  "UT_Hero_LevelUp_112_01": [
+    684,
+    864
+  ],
+  "UT_Hero_LevelUp_112_02": [
+    540,
+    836
+  ],
+  "UT_Hero_LevelUp_112_03": [
+    700,
+    824
+  ],
+  "UT_Hero_LevelUp_112_Max": [
+    584,
+    864
+  ],
+  "UT_Hero_LevelUp_113": [
+    544,
+    872
+  ],
+  "UT_Hero_LevelUp_113_01": [
+    548,
+    872
+  ],
+  "UT_Hero_LevelUp_113_02": [
+    568,
+    840
+  ],
+  "UT_Hero_LevelUp_113_03": [
+    504,
+    900
+  ],
+  "UT_Hero_LevelUp_113_Max": [
+    548,
+    872
+  ],
+  "UT_Hero_LevelUp_114": [
+    600,
+    844
+  ],
+  "UT_Hero_LevelUp_114_01": [
+    660,
+    936
+  ],
+  "UT_Hero_LevelUp_114_02": [
+    452,
+    812
+  ],
+  "UT_Hero_LevelUp_114_03": [
+    432,
+    800
+  ],
+  "UT_Hero_LevelUp_114_04": [
+    440,
+    824
+  ],
+  "UT_Hero_LevelUp_114_Max": [
+    600,
+    844
+  ],
+  "UT_Hero_LevelUp_115": [
+    568,
+    872
+  ],
+  "UT_Hero_LevelUp_115_01": [
+    400,
+    796
+  ],
+  "UT_Hero_LevelUp_115_02": [
+    688,
+    904
+  ],
+  "UT_Hero_LevelUp_115_03": [
+    484,
+    756
+  ],
+  "UT_Hero_LevelUp_115_04": [
+    532,
+    836
+  ],
+  "UT_Hero_LevelUp_115_Max": [
+    600,
+    864
+  ],
+  "UT_Hero_LevelUp_116": [
+    440,
+    1012
+  ],
+  "UT_Hero_LevelUp_116_01": [
+    528,
+    1016
+  ],
+  "UT_Hero_LevelUp_116_02": [
+    640,
+    1008
+  ],
+  "UT_Hero_LevelUp_116_Max": [
+    560,
+    1016
+  ],
+  "UT_Hero_LevelUp_117": [
+    596,
+    920
+  ],
+  "UT_Hero_LevelUp_117_01": [
+    496,
+    844
+  ],
+  "UT_Hero_LevelUp_117_02": [
+    520,
+    844
+  ],
+  "UT_Hero_LevelUp_117_03": [
+    580,
+    844
+  ],
+  "UT_Hero_LevelUp_117_Max": [
+    600,
+    876
+  ],
+  "UT_Hero_LevelUp_118": [
+    452,
+    804
+  ],
+  "UT_Hero_LevelUp_118_01": [
+    416,
+    804
+  ],
+  "UT_Hero_LevelUp_118_Max": [
+    448,
+    812
+  ],
+  "UT_Hero_LevelUp_119": [
+    592,
+    872
+  ],
+  "UT_Hero_LevelUp_119_01": [
+    480,
+    820
+  ],
+  "UT_Hero_LevelUp_119_02": [
+    480,
+    820
+  ],
+  "UT_Hero_LevelUp_119_Max": [
+    480,
+    820
+  ],
+  "UT_Hero_LevelUp_120": [
+    768,
+    912
+  ],
+  "UT_Hero_LevelUp_120_01": [
+    636,
+    944
+  ],
+  "UT_Hero_LevelUp_120_02": [
+    488,
+    908
+  ],
+  "UT_Hero_LevelUp_120_03": [
+    468,
+    908
+  ],
+  "UT_Hero_LevelUp_120_Max": [
+    728,
+    916
+  ],
+  "UT_Hero_LevelUp_121": [
+    528,
+    812
+  ],
+  "UT_Hero_LevelUp_121_01": [
+    560,
+    816
+  ],
+  "UT_Hero_LevelUp_121_02": [
+    512,
+    812
+  ],
+  "UT_Hero_LevelUp_121_03": [
+    520,
+    832
+  ],
+  "UT_Hero_LevelUp_121_Max": [
+    520,
+    864
+  ],
+  "UT_Hero_LevelUp_122": [
+    600,
+    804
+  ],
+  "UT_Hero_LevelUp_122_01": [
+    616,
+    844
+  ],
+  "UT_Hero_LevelUp_122_02": [
+    724,
+    844
+  ],
+  "UT_Hero_LevelUp_122_Max": [
+    588,
+    992
+  ],
+  "UT_Hero_LevelUp_123": [
+    568,
+    840
+  ],
+  "UT_Hero_LevelUp_123_01": [
+    640,
+    820
+  ],
+  "UT_Hero_LevelUp_123_02": [
+    508,
+    788
+  ],
+  "UT_Hero_LevelUp_123_Max": [
+    512,
+    844
+  ],
+  "UT_Hero_LevelUp_124": [
+    540,
+    740
+  ],
+  "UT_Hero_LevelUp_124_01": [
+    540,
+    748
+  ],
+  "UT_Hero_LevelUp_124_02": [
+    508,
+    808
+  ],
+  "UT_Hero_LevelUp_124_Max": [
+    560,
+    740
+  ],
+  "UT_Hero_LevelUp_125": [
+    496,
+    796
+  ],
+  "UT_Hero_LevelUp_125_01": [
+    380,
+    860
+  ],
+  "UT_Hero_LevelUp_125_Max": [
+    444,
+    816
+  ],
+  "UT_Hero_LevelUp_126": [
+    436,
+    780
+  ],
+  "UT_Hero_LevelUp_126_01": [
+    500,
+    804
+  ],
+  "UT_Hero_LevelUp_126_Max": [
+    528,
+    780
+  ],
+  "UT_Hero_LevelUp_127": [
+    488,
+    844
+  ],
+  "UT_Hero_LevelUp_127_01": [
+    496,
+    764
+  ],
+  "UT_Hero_LevelUp_127_Max": [
+    380,
+    756
+  ],
+  "UT_Hero_LevelUp_128": [
+    500,
+    844
+  ],
+  "UT_Hero_LevelUp_128_Max": [
+    536,
+    848
+  ],
+  "UT_Hero_LevelUp_301": [
+    588,
+    748
+  ],
+  "UT_Hero_LevelUp_301_01": [
+    608,
+    772
+  ],
+  "UT_Hero_LevelUp_302": [
+    504,
+    768
+  ],
+  "UT_Hero_LevelUp_302_01": [
+    516,
+    788
+  ],
+  "UT_Hero_LevelUp_303": [
+    440,
+    764
+  ],
+  "UT_Hero_LevelUp_304": [
+    396,
+    764
+  ],
+  "UT_AccountHeadShot_70099": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70100": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70129": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70201": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70202": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70203": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70892": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70893": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_70929": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_709305": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_709306": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Boss_14": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_46": [
+    200,
+    200
+  ],
+  "UT_AccountHeadShot_Monster_47": [
+    160,
+    160
+  ],
+  "UT_AccountHeadShot_Monster_48": [
+    160,
+    160
+  ],
+  "UT_Hero_Bust_108_02_1_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_108_04_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_108_04_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_108_04_1_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_108_Max_0_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_108_Max_1_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_112_01_1_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_112_02_0_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_112_02_1_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_112_03_0_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_112_03_1_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_112_Max_1_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_113_01_1_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_114_01_0_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_114_01_1_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_114_02_0_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_114_0_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_114_Max_0_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_114_Max_1_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_116_01_0_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_116_01_1_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_116_02_0_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_120_02_0_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_120_02_1_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_120_04_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_120_04_0_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_120_04_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_120_04_1_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_120_0_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_120_1_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_120_Max_0_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_120_Max_1_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_121_01_0_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_121_01_1_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_123_01_0_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_123_1_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_123_Max_1_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_127_02_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_127_02_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_128_01_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_128_01_0_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_128_01_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_128_01_1_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_129_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_129_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_129_Max_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_129_Max_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_129_Max_1_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Card2_102_01_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_103_01_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_103_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_104_01_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_104_02_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_106_02_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_106_Max_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_108_04": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_108_04_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_112_03_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_113_Max_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_114_03_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_120_04": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_120_04_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_121_03_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_121_Max_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_121_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_127_02": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_128_01": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_128_01_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_129": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_129_Max": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_129_Max_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_129_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card_102_01_sfw": [
+    1060,
+    1460
+  ],
+  "UT_Hero_Card_103_01_sfw": [
+    1108,
+    1616
+  ],
+  "UT_Hero_Card_103_sfw": [
+    940,
+    1408
+  ],
+  "UT_Hero_Card_104_01_sfw": [
+    1148,
+    1332
+  ],
+  "UT_Hero_Card_104_02_sfw": [
+    1568,
+    1352
+  ],
+  "UT_Hero_Card_106_02_sfw": [
+    1072,
+    1500
+  ],
+  "UT_Hero_Card_106_Max_sfw": [
+    920,
+    1172
+  ],
+  "UT_Hero_Card_107_02_sfw (1)": [
+    1056,
+    1460
+  ],
+  "UT_Hero_Card_108_04": [
+    1176,
+    1692
+  ],
+  "UT_Hero_Card_108_04_sfw": [
+    1176,
+    1692
+  ],
+  "UT_Hero_Card_112_03_sfw": [
+    1404,
+    1620
+  ],
+  "UT_Hero_Card_113_Max_sfw": [
+    1184,
+    1260
+  ],
+  "UT_Hero_Card_114_03_sfw": [
+    916,
+    1552
+  ],
+  "UT_Hero_Card_115_Max_sfw (1)": [
+    1676,
+    1444
+  ],
+  "UT_Hero_Card_120_04": [
+    1238,
+    2048
+  ],
+  "UT_Hero_Card_120_04_sfw": [
+    1238,
+    2048
+  ],
+  "UT_Hero_Card_121_03_sfw": [
+    1640,
+    1896
+  ],
+  "UT_Hero_Card_121_Max_sfw": [
+    812,
+    1660
+  ],
+  "UT_Hero_Card_121_sfw": [
+    1299,
+    1788
+  ],
+  "UT_Hero_Card_127_02": [
+    916,
+    1392
+  ],
+  "UT_Hero_Card_128_01": [
+    860,
+    1572
+  ],
+  "UT_Hero_Card_128_01_sfw": [
+    860,
+    1572
+  ],
+  "UT_Hero_Card_129": [
+    800,
+    1472
+  ],
+  "UT_Hero_Card_129_Max": [
+    960,
+    964
+  ],
+  "UT_Hero_Card_129_Max_sfw": [
+    960,
+    964
+  ],
+  "UT_Hero_Card_129_sfw": [
+    800,
+    1472
+  ],
+  "UT_Hero_InGameCard_120_04": [
+    500,
+    1164
+  ],
+  "UT_Hero_InGameCard_120_04_sfw": [
+    500,
+    1164
+  ],
+  "UT_Hero_LevelUp_108_04": [
+    536,
+    1080
+  ],
+  "UT_Hero_LevelUp_120_04": [
+    560,
+    896
+  ],
+  "UT_Hero_LevelUp_127_02": [
+    508,
+    812
+  ],
+  "UT_Hero_LevelUp_128_01": [
+    512,
+    812
+  ],
+  "UT_Hero_LevelUp_129": [
+    588,
+    817
+  ],
+  "UT_Hero_LevelUp_129_Max": [
+    500,
+    780
+  ],
+  "UT_Hero_ProfilePhoto_1067": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1068": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1069": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_1070": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_108_04": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_120_04": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_127_02": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_128_01": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_129": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_129_Max": [
+    220,
+    220
+  ],
+  "UT_Hero_RolePhoto_102_01_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_103_01_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_103_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_104_01_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_104_02_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_106_02_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_106_Max_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_107_Max_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_108_04": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_108_04_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_112_03_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_113_Max_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_114_03_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_120_04": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_120_04_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_121_03_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_121_Max_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_121_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_127_02": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_128_01": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_128_01_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_129": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_129_Max": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_129_Max_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_129_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_ThinCard_102_01_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_103_01_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_103_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_104_01_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_104_02_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_106_02_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_106_Max_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_107_Max_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_108_04": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_108_04_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_112_03_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_113_Max_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_114_03_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_120_04": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_120_04_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_121_03_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_121_Max_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_121_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_127_02": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_128_01": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_128_01_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_129": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_129_Max": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_129_Max_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_129_sfw": [
+    128,
+    308
+  ],
+  "UT_Platform_129": [
+    260,
+    260
+  ]
+}

@@ -448,6 +448,27 @@ public partial class HybridWindow
                     if (root.TryGetProperty("name", out var sActiveElem) && sActiveElem.GetString() is { Length: > 0 } targetSkin)
                     {
                         try
+                case "characterCropSave":
+                    SaveCharacterCrop(root);
+                    break;
+                case "characterCropCancel":
+                    if (_characterCrop?.Token == root.GetProperty("token").GetString()) _characterCrop = null;
+                    break;
+                case "characterSkinsGet":
+                case "characterSkinsCreate":
+                case "characterSkinsActive":
+                case "characterSkinsDelete":
+                case "characterSkinsSave":
+                case "characterSkinsOpen":
+                case "characterSkinsImport":
+                case "characterSkinsExport":
+                case "characterSkinsImage":
+                case "characterSkinsFrames":
+                case "characterSkinsFrame":
+                case "characterSkinsClearAction":
+                case "characterSkinsInstall":
+                    HandleCharacterSkins(root);
+                    break;
                         {
                             var gDir = RequireModGameDirectory();
                             _skinManager.SetActiveSkin(gDir, targetSkin);

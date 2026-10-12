@@ -37,6 +37,8 @@
          (如 CombatOddsMod) 不必再改这里, CI 的 fetch 步骤把包内 mods 展平到此目录后自动内嵌。
          内置 mod 命名约定必须以 "Mod" 结尾(见 CesiumLoader tools\builtin-mods.json)。 -->
     <EmbeddedResource Include="Resources\Skins\default-skins.zip">
+    <EmbeddedResource Include="Resources\Skins\extract-character-template.py" LogicalName="AstralParty.Toys.CharacterTemplateExporter.py" />
+    <EmbeddedResource Include="Resources\Skins\character-image-sizes.json" LogicalName="AstralParty.Toys.CharacterImageSizes.json" />
       <LogicalName>AstralParty.Toys.DefaultSkins.zip</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="Resources\ModLoader\*Mod.dll;Resources\ModLoader\*Mod.json">
@@ -45,7 +47,7 @@
     <Content Include="Protocol\*.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="GameData\Character.bin;GameData\STRCharacter.bin;GameData\Map.bin;GameData\STRMap.bin;GameData\Monster.bin;GameData\STRMonster.bin;GameData\Relic.bin;GameData\STRRelic.bin;GameData\Item.bin;GameData\STRItem.bin;GameData\Card.bin;GameData\STRCard.bin">
+    <Content Include="GameData\Skin.bin;GameData\STRSkin.bin;GameData\Character.bin;GameData\STRCharacter.bin;GameData\Map.bin;GameData\STRMap.bin;GameData\Monster.bin;GameData\STRMonster.bin;GameData\Relic.bin;GameData\STRRelic.bin;GameData\Item.bin;GameData\STRItem.bin;GameData\Card.bin;GameData\STRCard.bin">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="WebUI\images\UT_AccountHeadShot_70902.ico" />

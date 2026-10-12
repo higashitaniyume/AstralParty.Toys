@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -18,6 +18,8 @@ public partial class HybridWindow
             e.Response = CreatePageResponse(uri);
         else if (uri.Host.Equals("assets.astral.local", StringComparison.OrdinalIgnoreCase))
             e.Response = CreateAssetResponse(uri);
+        else if (uri.Host.Equals("characters.astral.local", StringComparison.OrdinalIgnoreCase))
+            e.Response = CreateCharacterSkinResponse(uri);
         else if (uri.Host.Equals("skins.astral.local", StringComparison.OrdinalIgnoreCase))
             e.Response = CreateSkinResponse(uri);
     }

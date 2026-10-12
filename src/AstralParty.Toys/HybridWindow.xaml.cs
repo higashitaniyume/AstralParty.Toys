@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Windows;
@@ -108,6 +108,8 @@ public partial class HybridWindow : Window
                 "https://assets.astral.local/*", CoreWebView2WebResourceContext.Image);
             WebView.CoreWebView2.AddWebResourceRequestedFilter(
                 "https://skins.astral.local/*", CoreWebView2WebResourceContext.Image);
+            WebView.CoreWebView2.AddWebResourceRequestedFilter(
+                "https://characters.astral.local/*", CoreWebView2WebResourceContext.Image);
             WebView.CoreWebView2.WebResourceRequested += EmbeddedRequested;
             for (var index = 0; index < _materialDirectories.Count; index++)
                 WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(

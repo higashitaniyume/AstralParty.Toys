@@ -155,7 +155,13 @@
         pathEl.textContent = active ? active.directory : '';
         pathEl.title = active ? active.directory : '';
       }
-      if (window.AppState?.currentPage === 'skins') post({ type: 'skinsGetProfiles' });
+      if (window.AppState?.currentPage === 'skins') {
+        post({ type: 'skinsGetProfiles' });
+        if (window.CharacterSkinsModule?.tab === 'characters') {
+          window.CharacterSkinsModule.stop();
+          post({ type: 'characterSkinsGet' });
+        }
+      }
     },
     renderLobbySelect() {
       const select = $('lobbyGameSelect');
