@@ -27,6 +27,8 @@ public partial class HybridWindow
                 if (type is "modDisableLoader" or "modRestoreLoader") Post(new { type = "modRecoveryDone" });
                 throw new InvalidOperationException("加载器操作正在进行，请等待完成后再修改游戏文件。");
             }
+            if (_cardAnimationConversion != null && type is "skinsDelete" or "skinsImportZip" or "skinsRestoreDefault" or "skinsDownloadDefault" or "skinsImportLegacyZip" or "skinsCropSave" or "skinsExportZip" or "skinsExportConfirmed")
+                throw new InvalidOperationException("请先等待或取消当前动态卡面转换，再修改或导出皮肤方案。");
             switch (type)
             {
                 case "ready":
@@ -570,6 +572,21 @@ public partial class HybridWindow
                     break;
                 case "skinsCropCancel":
                     if (_pendingSkinCrop is { } pending && root.TryGetProperty("token", out var cropToken) && cropToken.GetString() == pending.Token) _pendingSkinCrop = null;
+                    break;
+                case "skinsPickCardAnimation":
+                    HandlePickCardAnimation(root);
+                    break;
+                case "skinsAnimationCropSave":
+                    HandleSaveCardAnimationCrop(root);
+                    break;
+                case "skinsAnimationCropCancel":
+                    if (_pendingCardAnimation is { } animationPending && root.TryGetProperty("token", out var animationToken) && animationToken.GetString() == animationPending.Token) _pendingCardAnimation = null;
+                    break;
+                case "skinsAnimationCancel":
+                    _cardAnimationConversion?.Cancel();
+                    break;
+                case "skinsRemoveCardAnimation":
+                    HandleRemoveCardAnimation(root);
                     break;
                 case "skinsPickAndReplaceCard":
                     HandlePickAndReplaceCard(root);

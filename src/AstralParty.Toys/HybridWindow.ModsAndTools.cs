@@ -626,6 +626,7 @@ public partial class HybridWindow
     {
         try
         {
+            if (_cardAnimationConversion != null) throw new InvalidOperationException("请先等待或取消当前动态卡面转换。");
             var skinName = root.TryGetProperty("skinName", out var sElem) ? sElem.GetString() : null;
             var fileName = root.TryGetProperty("fileName", out var fElem) ? fElem.GetString() : null;
             if (string.IsNullOrWhiteSpace(skinName) || string.IsNullOrWhiteSpace(fileName))
@@ -660,6 +661,7 @@ public partial class HybridWindow
     {
         try
         {
+            if (_cardAnimationConversion != null) throw new InvalidOperationException("请先等待或取消当前动态卡面转换。");
             var skinName = root.TryGetProperty("skinName", out var sElem) ? sElem.GetString() : null;
             var fileName = root.TryGetProperty("fileName", out var fElem) ? fElem.GetString() : null;
             if (string.IsNullOrWhiteSpace(skinName) || string.IsNullOrWhiteSpace(fileName))

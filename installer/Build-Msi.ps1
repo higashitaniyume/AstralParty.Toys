@@ -2,7 +2,7 @@
 param(
     [Parameter(Mandatory)][string]$PublishDirectory,
     [Parameter(Mandatory)][string]$OutputPath,
-    [string]$ProductVersion = '1.0.1'
+    [string]$ProductVersion = '1.1.0'
 )
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent

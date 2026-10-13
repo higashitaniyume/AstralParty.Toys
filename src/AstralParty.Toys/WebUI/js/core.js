@@ -402,6 +402,9 @@ host?.addEventListener('message', event => {
     case 'skinsDownloadConfirm':
       window.SkinsModule?.confirmDownloadDefault();
       break;
+    case 'skinsAnimationCropSource':
+      window.SkinCropModule?.open(msg.payload);
+      break;
     case 'skinsCropSource':
       window.SkinCropModule?.open(msg.payload);
       break;
@@ -413,6 +416,9 @@ host?.addEventListener('message', event => {
       if (button) { button.disabled = !!msg.payload?.running; button.textContent = msg.payload?.running ? '正在下载…' : '下载默认包'; }
       break;
     }
+    case 'skinsAnimationState':
+      window.SkinsModule?.onAnimationState(msg.payload);
+      break;
     case 'skinsCardUpdated':
       if (window.SkinsModule) window.SkinsModule.onCardUpdated(msg.payload);
       break;

@@ -18,6 +18,7 @@
       $('skinDownloadDefaultBtn')?.addEventListener('click', () => this.confirmDownloadDefault());
       $('skinRestoreDefaultBtn')?.addEventListener('click', () => this.confirmRestoreDefault());
       $('skinExportZipBtn')?.addEventListener('click', () => { if (this.selectedSkin && this.selectedSkin !== '__game_default__') post({ type: 'skinsExportZip', name: this.selectedSkin }); });
+      $('skinAnimationBindingBtn')?.addEventListener('click', () => this.openAnimationBinding());
       // 顶部操作按钮
       $('skinOpenFolderTopBtn')?.addEventListener('click', () => post({ type: 'skinsOpenFolder' }));
       $('skinNewProfileTopBtn')?.addEventListener('click', () => this.openDuplicateModal(this.selectedSkin || 'default'));
@@ -249,6 +250,8 @@
 
         // 卡片下方的常驻操作
         let overlayBtns = `<button class="skin-card-overlay-btn" data-action="replace" data-filename="${esc(c.fileName)}">更换图片</button>`;
+        overlayBtns += `<button class="skin-card-overlay-btn" data-action="animation" data-filename="${esc(c.fileName)}">导入视频 / GIF</button>`;
+        if (c.isAnimated) overlayBtns += `<button class="skin-card-overlay-btn" data-action="remove-animation" data-filename="${esc(c.fileName)}">移除动态覆盖</button>`;
         overlayBtns += `<button class="skin-card-overlay-btn btn-preview" data-action="preview" data-filename="${esc(c.fileName)}">查看详情</button>`;
         if (c.canRestore) {
           overlayBtns += `<button class="skin-card-overlay-btn btn-revert" data-action="revert" data-filename="${esc(c.fileName)}">恢复内置卡面</button>`;
@@ -259,7 +262,7 @@
             <div class="skin-card-thumb-wrap">
               <img class="skin-card-thumb" src="${esc(c.previewUrl)}" loading="lazy" alt="${esc(c.fileName)}"
                    onerror="this.style.opacity='0.15'">
-              <div class="skin-card-badge-row">${idBadge}${sfwBadge}</div>
+              <div class="skin-card-badge-row">${idBadge}${sfwBadge}${c.isAnimated ? '<span class="skin-badge-sfw">动态</span>' : ''}</div>
             </div>
             <div class="skin-card-footer">
               <div class="skin-card-title" title="${esc(c.fileName)}">${esc(displayName)}</div>
@@ -278,6 +281,12 @@
           const fileName = btn.dataset.filename;
           if (action === 'replace') {
             post({ type: 'skinsPickAndReplaceCard', skinName: this.selectedSkin, fileName });
+          } else if (action === 'animation') {
+            const card = this.cards.find(c => c.fileName === fileName);
+            post({ type: 'skinsPickCardAnimation', skinName: this.selectedSkin, fileName: card?.animationBinding ? card.animationBinding + '.png' : fileName });
+          } else if (action === 'remove-animation') {
+            const card = this.cards.find(c => c.fileName === fileName);
+            post({ type: 'skinsRemoveCardAnimation', skinName: this.selectedSkin, fileName: card?.animationBinding ? card.animationBinding + '.png' : fileName });
           } else if (action === 'revert') {
             this.confirmRevertCard(fileName);
           } else if (action === 'preview') {
@@ -286,6 +295,35 @@
           }
         });
       });
+    },
+
+    openAnimationBinding() {
+      if (!this.selectedSkin || this.selectedSkin === '__game_default__') { toast('请先选择外部皮肤方案'); return; }
+      if (this.animationRunning) { toast('请先等待或取消当前转换'); return; }
+      openModal('按编号导入动态卡面', `<div class="skin-confirm"><p>填写普通卡牌编号，或异画自己的编号。普通卡牌绑定只替换普通版；异画需要单独指定。</p><label for="skinAnimationBinding">卡牌 / 异画编号</label><input id="skinAnimationBinding" class="skin-meta-input" inputmode="numeric" placeholder="例如 10001" aria-describedby="skinAnimationHelp"><p id="skinAnimationHelp">支持 MP4、WebM、MOV、AVI、MKV 和 GIF，最多 20 秒。先裁剪为 404 × 400，再在普通卡框中循环播放。</p><div class="skin-modal-actions"><button class="secondary-btn" id="skinAnimationBindingCancel">取消</button><button class="primary-btn" id="skinAnimationBindingChoose">选择视频 / GIF</button></div></div>`, 'info');
+      $('skinAnimationBindingCancel')?.addEventListener('click', closeModal);
+      $('skinAnimationBindingChoose')?.addEventListener('click', () => {
+        const binding = $('skinAnimationBinding').value.trim();
+        if (!/^[1-9][0-9]{0,8}$/.test(binding)) { toast('请输入有效的数字编号'); return; }
+        post({ type: 'skinsPickCardAnimation', skinName: this.selectedSkin, fileName: binding + '.png' });
+        closeModal();
+      });
+      $('skinAnimationBinding')?.focus();
+    },
+
+    onAnimationState(payload) {
+      const running = !!payload?.running;
+      this.animationRunning = running;
+      if (running) {
+        if (window.SkinCropModule?.state?.isAnimation) window.SkinCropModule.dispose();
+        if (!$('skinAnimationProgress')) {
+          openModal('转换动态卡面', `<div class="skin-confirm"><p id="skinAnimationProgress" role="status" aria-live="polite"></p><p>视频 / GIF 按选定区域裁剪为普通卡面的 404 × 400，所有帧使用同一选区。首次使用可能下载 FFmpeg。</p><div class="skin-modal-actions"><button class="secondary-btn" id="skinAnimationCancel">取消转换</button></div></div>`, 'info');
+          $('skinAnimationCancel')?.addEventListener('click', () => { post({ type: 'skinsAnimationCancel' }); $('skinAnimationCancel').disabled = true; });
+        }
+        $('skinAnimationProgress').textContent = payload.message || '正在转换…';
+      } else if ($('skinAnimationProgress')) {
+        closeModal();
+      }
     },
 
     // 后端推送的单卡更新
@@ -314,7 +352,7 @@
       this.confirmAction('下载默认皮肤包', '将从最新 Release 下载默认包并安装到当前游戏，覆盖 default 中的同名图片。下载不会自动切换当前方案。', { type: 'skinsDownloadDefault', overwrite: true });
     },
     confirmRestoreDefault() {
-      this.confirmAction('恢复内置默认包', '将从应用内置资源恢复当前游戏的 default 方案，覆盖同名图片。不会改动其他方案，也不会自动切换当前选择。', { type: 'skinsRestoreDefault' });
+      this.confirmAction('恢复内置默认包', '将从应用内置资源恢复当前游戏的 default 方案，覆盖同名图片并移除 default 中的动态覆盖。不会改动其他方案，也不会自动切换当前选择。', { type: 'skinsRestoreDefault' });
     },
     confirmRevertCard(fileName) {
       const card = this.cards.find(c => c.fileName === fileName);
@@ -344,7 +382,7 @@
 
     showCardPreview(card) {
       const isDefaultSkin = this.selectedSkin.toLowerCase() === 'default';
-      const statusLabel = card.isCustomized ? '方案内图片' : '默认方案预览';
+      const statusLabel = card.isAnimated ? `动态卡面 · ${card.animationFps} 帧/秒 · ${(card.animationFrameCount / card.animationFps).toFixed(1)} 秒循环` : (card.isCustomized ? '方案内图片' : '默认方案预览');
       const statusColor = card.isCustomized ? '#10b981' : '#94a3b8';
 
       openModal('卡面详情预览', `
@@ -361,12 +399,28 @@
           <div class="skin-modal-actions">
             <button class="secondary-btn" id="previewCloseBtn">关闭</button>
             <button class="primary-btn" id="previewReplaceBtn">更换图片</button>
+            <button class="secondary-btn" id="previewAnimationBtn">导入视频 / GIF</button>
             ${card.canRestore ? '<button class="danger-btn" id="previewRevertBtn">恢复内置卡面</button>' : ''}
             <button class="secondary-btn" id="previewOpenFolderBtn">打开目录</button>
           </div>
         </div>
       `, 'image');
 
+      if (card.isAnimated && card.animationFrameUrlPrefix && card.animationFrameCount > 0) {
+        const image = document.querySelector('.card-preview-img');
+        const start = performance.now();
+        const play = () => {
+          if (!image?.isConnected) return;
+          const frame = Math.floor((performance.now() - start) / 1000 * card.animationFps) % card.animationFrameCount;
+          image.src = card.animationFrameUrlPrefix + String(frame).padStart(6, '0') + '.png?v=' + encodeURIComponent(card.lastModified || '');
+          setTimeout(play, 1000 / card.animationFps);
+        };
+        play();
+      }
+      $('previewAnimationBtn')?.addEventListener('click', () => {
+        post({ type: 'skinsPickCardAnimation', skinName: this.selectedSkin, fileName: card.animationBinding ? card.animationBinding + '.png' : card.fileName });
+        closeModal();
+      });
       $('previewCloseBtn')?.addEventListener('click', closeModal);
       $('previewReplaceBtn')?.addEventListener('click', () => {
         post({ type: 'skinsPickAndReplaceCard', skinName: this.selectedSkin, fileName: card.fileName });

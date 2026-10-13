@@ -38,8 +38,12 @@ public partial class HybridWindow
 
             var skinName = Uri.UnescapeDataString(parts[0]);
             var fileName = Uri.UnescapeDataString(parts[1]);
+            CardAnimationConverter.ValidateBinding(skinName);
             var skinsDir = _skinManager.GetSkinsDirectory(gameDirectory);
-            var filePath = Path.Combine(skinsDir, skinName, fileName);
+            var profilePath = Path.GetFullPath(Path.Combine(skinsDir, skinName)) + Path.DirectorySeparatorChar;
+            var filePath = Path.GetFullPath(Path.Combine(profilePath, fileName));
+            if (!filePath.StartsWith(profilePath, StringComparison.OrdinalIgnoreCase))
+                return WebView.CoreWebView2.Environment.CreateWebResourceResponse(Stream.Null, 404, "Not Found", "Content-Type: text/plain");
 
             if (!File.Exists(filePath))
             {
