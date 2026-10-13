@@ -15,16 +15,17 @@
       $('characterSkinTab').onclick=()=>this.switchTab('characters');
       for(const [id,other] of [['cardSkinTab','characterSkinTab'],['characterSkinTab','cardSkinTab']]) $(id).addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();$(other).click();$(other).focus();}});
       $('characterImport').onclick=()=>this.send('characterSkinsImport');
+      $('characterLegacyImport').onclick=()=>this.send('characterSkinsImportLegacy');
       $('characterFolder').onclick=()=>this.send('characterSkinsOpen',{id:''});
       $('characterInstall').onclick=()=>this.send('characterSkinsInstall');
       $('characterSearch').oninput=()=>this.renderList();
-      $('characterNew').onclick=()=>{if(!this.data)return;$('characterCreateFromGame').checked=true;$('characterCreateFromGame').onchange();$('characterTemplateProgress').textContent='任务加入后台队列后可继续新建；右下角查看进度或终止。';$('characterCreateDialog').showModal();};
+      $('characterNew').onclick=()=>{if(!this.data)return;const form=$('characterCreateForm');form.elements.namedItem('id').value='skin-'+crypto.randomUUID();form.elements.namedItem('name').value=this.heroName(Number($('characterCreateHero').value))+'的皮肤';$('characterCreateFromGame').checked=true;$('characterCreateFromGame').onchange();$('characterTemplateProgress').textContent='任务加入后台队列后可继续新建；右下角查看进度或终止。';$('characterCreateDialog').showModal();};
       $('characterCreateCancel').onclick=()=>$('characterCreateDialog').close();
       $('characterCreateHero').onchange=()=>{this.renderTargets();$('characterCreateFromGame').onchange();};
-      $('characterCreateFromGame').onchange=()=>{const enabled=$('characterCreateFromGame').checked;$('characterTemplateOptions').classList.toggle('hidden',!enabled);$('characterCreateSkin').disabled=enabled;if(enabled){const hero=Number($('characterCreateHero').value);const defaults=(this.data.targets||[]).filter(t=>field(t,'heroId')===hero);$('characterCreateSkin').value=String(defaults.find(t=>field(t,'itemId')===100000000+hero*1000+1)?.itemId??field(defaults[0],'itemId')??0);}$('characterCreateSubmit').textContent=enabled?'导出并创建':'创建';};
-      $('characterCreateForm').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target);const fromGame=$('characterCreateFromGame').checked;this.pendingId=f.get('id');this.send('characterSkinsCreate',{id:f.get('id'),name:f.get('name'),heroId:Number(f.get('heroId')),skinItemId:Number(f.get('skinItemId')||0),fromGame,cache:$('characterTemplateCache').value});$('characterCreateDialog').close();};
-      const tasks=document.createElement('aside');tasks.id='characterExportPanel';tasks.className='character-export-panel';tasks.hidden=true;tasks.setAttribute('aria-label','后台导出任务');
-      tasks.innerHTML='<header><strong>后台导出</strong><span id="characterExportCount"></span></header><div id="characterExportList"></div>';
+      $('characterCreateFromGame').onchange=()=>{const enabled=$('characterCreateFromGame').checked;const attached=!!window.CharacterSchemesModule?.creatingContext;$('characterTemplateOptions').classList.toggle('hidden',!enabled);$('characterTemplateSource').disabled=!enabled;$('characterCreateTargetLabel').classList.toggle('hidden',enabled||attached);$('characterCreateSkin').disabled=enabled||attached;$('characterCreateSubmit').disabled=enabled&&!$('characterTemplateSource').value;$('characterCreateSubmit').textContent=enabled?'导出所选皮肤并创建':'创建';};
+      $('characterCreateForm').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target);const fromGame=$('characterCreateFromGame').checked;this.pendingId=f.get('id');this.send('characterSkinsCreate',{id:f.get('id'),name:f.get('name'),heroId:Number($('characterCreateHero').value),skinItemId:Number($('characterCreateSkin').value||0),fromGame,sourceSkinItemId:fromGame?Number($('characterTemplateSource').value):0,cache:$('characterTemplateCache').value,...(window.CharacterSchemesModule?.attachmentForCreate(f.get('id'))||{})});$('characterCreateDialog').close();};
+      const tasks=document.createElement('aside');tasks.id='characterExportPanel';tasks.className='character-export-panel';tasks.hidden=true;tasks.setAttribute('aria-label','后台皮肤任务');
+      tasks.innerHTML='<header><strong>后台皮肤任务</strong><span id="characterExportCount"></span></header><div id="characterExportList"></div>';
       document.body.appendChild(tasks);
       this.send('characterExportsGet');
       // Stop previews as soon as this page is hidden.
@@ -43,7 +44,8 @@
       this.data={...payload,profiles:(payload.profiles||[]).map(p=>({id:field(p,'id'),manifest:field(p,'manifest'),active:field(p,'active'),error:field(p,'error')}))};
       if(!$('characterTemplateCache').value)$('characterTemplateCache').value=payload.templateCache||'';
       $('characterStatus').textContent=payload.installed?'角色皮肤模组已安装':'尚未安装角色皮肤模组';
-      $('characterInstall').disabled=!!payload.installed;
+      $('characterInstall').disabled=false;
+      $('characterInstall').textContent=payload.installed?'更新角色皮肤模组':'安装角色皮肤模组';
       const createHero=$('characterCreateHero').value;
       $('characterCreateHero').innerHTML=(payload.heroes||[]).map(h=>`<option value="${h.id}">${esc(h.name)} (${h.id})</option>`).join('');
       if([...$('characterCreateHero').options].some(o=>o.value===createHero))$('characterCreateHero').value=createHero;
@@ -53,26 +55,43 @@
     },
     templateState(p){
       $('characterTemplateProgress').textContent=p.message||'';
-      if(p.queued){$('characterCreateDialog').close();showToast(p.message);}
-      if(p.success){this.pendingId=p.id;$('characterCreateDialog').close();showToast(p.message);}
-      if(p.success===false)showToast(p.message);
+      if(p.queued){$('characterCreateDialog').close();toast(p.message);}
+      if(p.success){this.pendingId=p.id;$('characterCreateDialog').close();toast(p.message);}
+      if(p.success===false)toast(p.message);
     },
     exportTasks(payload){
-      const tasks=(payload.tasks||[]).map(normalize),states={queued:'等待中',running:'正在导出',canceling:'正在终止',done:'已完成',failed:'导出失败',canceled:'已终止'};
+      const tasks=(payload.tasks||[]).map(normalize),states={queued:'等待中',running:'正在处理',canceling:'正在终止',done:'已完成',failed:'处理失败',canceled:'已终止'};
       this.tasks=tasks;
       const panel=$('characterExportPanel');panel.hidden=!tasks.length;
       $('characterExportCount').textContent=`${tasks.filter(t=>['queued','running','canceling'].includes(t.status)).length} 个进行中`;
-      $('characterExportList').innerHTML=tasks.map(t=>`<article class="character-export-task" data-task="${esc(t.taskId)}"><div class="character-export-title"><strong>${esc(t.name)}</strong><span>${states[t.status]||esc(t.status)}</span></div><p>${esc(t.message)}</p><div class="character-export-progress"><progress max="100" value="${Number(t.percent)||0}" aria-label="${esc(t.name)}导出进度"></progress><span>${Number(t.percent)||0}%</span></div><button class="secondary-btn" data-task-command="${['queued','running'].includes(t.status)?'cancel':'dismiss'}" ${t.status==='canceling'?'disabled':''}>${t.status==='queued'?'取消排队':t.status==='running'?'终止导出':t.status==='canceling'?'正在清理…':'关闭消息'}</button></article>`).join('');
+      $('characterExportList').innerHTML=tasks.map(t=>`<article class="character-export-task" data-task="${esc(t.taskId)}"><div class="character-export-title"><strong>${esc(t.name)}</strong><span>${states[t.status]||esc(t.status)}</span></div><p ${t.status==='failed'?'role="alert"':''}>${esc(t.message)}</p><div class="character-export-progress"><progress max="100" value="${Number(t.percent)||0}" aria-label="${esc(t.name)}处理进度"></progress><span>${Number(t.percent)||0}%</span></div><button class="secondary-btn" data-task-command="${['queued','running'].includes(t.status)?'cancel':'dismiss'}" ${t.status==='canceling'?'disabled':''}>${t.status==='queued'?'取消排队':t.status==='running'?'终止任务':t.status==='canceling'?'正在清理…':'关闭消息'}</button></article>`).join('');
       panel.querySelectorAll('[data-task-command]').forEach(b=>b.onclick=()=>this.send(b.dataset.taskCommand==='cancel'?'characterExportCancel':'characterExportDismiss',{taskId:b.closest('[data-task]').dataset.task}));
-    },    renderTargets(){const hero=Number($('characterCreateHero').value);$('characterCreateSkin').innerHTML='<option value="0">该角色全部原皮肤</option>'+(this.data?.targets||[]).filter(t=>field(t,'heroId')===hero).map(t=>`<option value="${field(t,'itemId')}">${esc(field(t,'name'))} · ${esc(field(t,'label'))}</option>`).join('');},
+    },    renderTargets(){
+      const hero=Number($('characterCreateHero').value),target=$('characterCreateSkin').value,source=$('characterTemplateSource').value;
+      const skins=(this.data?.targets||[]).filter(t=>field(t,'heroId')===hero);
+      const options=skins.map(t=>`<option value="${field(t,'itemId')}">${esc(field(t,'name'))}</option>`).join('');
+      $('characterCreateSkin').innerHTML='<option value="0">该角色全部原皮肤</option>'+options;
+      if([...$('characterCreateSkin').options].some(o=>o.value===target))$('characterCreateSkin').value=target;
+      $('characterTemplateSource').innerHTML=options;
+      const preferred=skins.some(t=>String(field(t,'itemId'))===source)?source:String(field(skins.find(t=>field(t,'itemId')===100000000+hero*1000+1)||skins[0],'itemId')||'');
+      $('characterTemplateSource').value=preferred;
+    },
     heroName(id){return this.data?.heroes?.find(h=>h.id===id)?.name||`角色 ${id}`;},
     renderList(){
       const q=$('characterSearch').value.toLowerCase();
       const profiles=this.data?.profiles||[];
-      $('characterList').innerHTML=profiles.filter(p=>`${p.id} ${field(p.manifest,'name')} ${this.heroName(field(p.manifest,'heroId'))}`.toLowerCase().includes(q)).map(p=>`<button class="character-package ${p.id===this.selected?'active':''}" data-id="${esc(p.id)}"><strong>${esc(field(p.manifest,'name')||p.id)}</strong><small>${esc(this.heroName(field(p.manifest,'heroId')))} · ${field(p.manifest,'skinItemId')||'全部原皮肤'} · ${p.error?'文件有误':p.active?'已启用':'未启用'}</small></button>`).join('')||'<p>没有匹配的皮肤包。可新建方案或导入 ZIP。</p>';
+      $('characterList').innerHTML=profiles.filter(p=>`${p.id} ${field(p.manifest,'name')} ${this.heroName(field(p.manifest,'heroId'))}`.toLowerCase().includes(q)).map(p=>`<button class="character-package ${p.id===this.selected?'active':''}" data-id="${esc(p.id)}"><strong>${esc(field(p.manifest,'name')||p.id)}</strong><small>${esc(this.heroName(field(p.manifest,'heroId')))} · ${field(p.manifest,'skinItemId')||'全部原皮肤'} · ${p.error?'文件有误':p.active?'已启用':'未启用'}</small></button>`).join('')||'<p>没有匹配的皮肤包。可新建皮肤包或导入 ZIP。</p>';
       $('characterList').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{this.selected=b.dataset.id;this.renderList();this.renderDetail();});
     },
     manifest(){return this.data?.profiles.find(p=>p.id===this.selected)?.manifest;},
+    imageLabel(slot){
+      if(labels[slot])return labels[slot];
+      const asset=slot.startsWith('asset:')?slot.slice(6):slot;
+      if(asset.startsWith('UT_AccountBackground_'))return '账号背景';
+      if(asset.startsWith('UT_Item_AccountBackground_'))return '背景物品图标';
+      if(asset.startsWith('UT_Item_StandingPainting_'))return '立绘物品图标';
+      return asset;
+    },
     imageUrl(path){return 'https://characters.astral.local/'+encodeURIComponent(this.selected)+'/'+String(path).split(/[\\/]/).map(encodeURIComponent).join('/');},
     renderDetail(){
       const samePackage=this.viewPackage===this.selected;
@@ -81,16 +100,16 @@
       if(!samePackage){this.action='Idle';this.frame=0;}
       this.viewPackage=this.selected;
       this.stop();const p=this.data?.profiles.find(p=>p.id===this.selected);if(!p){$('characterDetail').innerHTML='<p>新建一个角色皮肤包，或导入 ZIP 开始制作。</p>';return;}
-      if(p.error){$('characterDetail').innerHTML=`<h3>${esc(p.id)}</h3><p class="character-error">${esc(p.error)}</p><button class="secondary-btn" id="csOpen">打开目录修复</button><button class="danger-btn" id="csDelete">删除方案</button>`;this.bindCommon(p);return;}
+      if(p.error){$('characterDetail').innerHTML=`<h3>${esc(p.id)}</h3><p class="character-error">${esc(p.error)}</p><button class="secondary-btn" id="csOpen">打开目录修复</button><button class="danger-btn" id="csDelete">删除皮肤包</button>`;this.bindCommon(p);return;}
       const m=p.manifest,images=field(m,'images')||{},texts=field(m,'texts')||{},animations=field(m,'animations')||{},layout=field(m,'layout')||{};
-      $('characterDetail').innerHTML=`<h3>${esc(field(m,'name')||p.id)} ${p.active?'<span class="character-badge">已启用</span>':''}</h3><p>${esc(this.heroName(field(m,'heroId')))} · 原皮肤 ${field(m,'skinItemId')||'全部'} · ${esc(field(m,'author')||'作者未填写')}</p><div class="character-toolbar"><button class="primary-btn" id="csEnable">${p.active?'恢复原版':'启用此皮肤'}</button><button class="secondary-btn" id="csExport">导出 ZIP</button><button class="secondary-btn" id="csOpen">打开目录</button><button class="danger-btn" id="csDelete">删除方案</button></div>
-      <h4>图片资源</h4><div class="character-image-grid">${(this.data.imageSlots||[]).map(slot=>`<div class="character-image-slot">${images[slot]?`<img src="${esc(this.imageUrl(images[slot]))}" alt="${esc(labels[slot]||slot)}预览" loading="lazy">`:''}<strong>${esc(labels[slot]||slot)}</strong><p>${images[slot]?'已自定义':'使用原版'}</p><button class="secondary-btn" data-image="${esc(slot)}">选择图片</button>${images[slot]?`<button class="link-btn" data-clear-image="${esc(slot)}">恢复</button>`:''}</div>`).join('')}</div>
+      $('characterDetail').innerHTML=`<h3>${esc(field(m,'name')||p.id)} ${p.active?'<span class="character-badge">已启用</span>':''}</h3><p>${esc(this.heroName(field(m,'heroId')))} · 编辑此人物的自定义素材${field(m,'author')?' · '+esc(field(m,'author')):''}</p><div class="character-toolbar"><button class="primary-btn" id="csEnable">${p.active?'恢复原版':'启用此皮肤'}</button><button class="secondary-btn" id="csExport">导出 ZIP</button><button class="secondary-btn" id="csOpen">打开目录</button><button class="danger-btn" id="csDelete">删除皮肤包</button></div>
+      <h4>图片资源</h4><div class="character-image-grid">${[...(this.data.imageSlots||[]),...Object.keys(images).filter(slot=>slot.startsWith('asset:'))].map(slot=>`<div class="character-image-slot">${images[slot]?`<img src="${esc(this.imageUrl(images[slot]))}" alt="${esc(this.imageLabel(slot))}预览" loading="lazy">`:''}<strong>${esc(this.imageLabel(slot))}</strong><p>${images[slot]?'已自定义':'使用原版'}</p>${slot.startsWith('asset:')?'':`<button class="secondary-btn" data-image="${esc(slot)}">选择图片</button>`}${images[slot]?`<button class="link-btn" data-clear-image="${esc(slot)}">恢复</button>`:''}</div>`).join('')}</div>
       <h4>二维精灵动画</h4><p>PNG/JPG 帧按文件名排序。待机 Idle、正向 Walk、背向 Walk-back；其余动作名以原角色为准。</p><div class="character-form-grid"><label>动作<select id="csAction">${[...new Set(['Idle','Walk','Walk-back','Show','Talent','Hit','Hit-01','Hit-02','Cheer','Cry','Die','Eat','Hospitalized','Vomit','Lose','Electricshock',...Object.keys(animations)])].map(x=>`<option>${esc(x)}</option>`).join('')}</select></label><label>FPS<input id="csFps" type="number" min="1" max="120" value="15"></label><label>循环<select id="csLoop"><option value="true">循环</option><option value="false">单次播放</option></select></label></div><div class="character-toolbar"><button class="secondary-btn" id="csFrames">导入帧序列</button><button class="secondary-btn" id="csGif">导出当前动作 GIF</button><button class="secondary-btn" id="csPlay">播放预览</button><button class="secondary-btn" id="csPrevious">上一帧</button><button class="secondary-btn" id="csStep">下一帧</button><button class="primary-btn" id="csReplaceFrame">替换选中帧</button><button class="link-btn" id="csClearAction">恢复此动作</button><span id="csFrameInfo"></span></div><div class="character-preview"><img id="csPreview" alt="动画帧预览" hidden></div><p id="csMappingInfo" class="character-animation-note"></p><label class="character-frame-seek">跳转到帧<input id="csFrameSeek" type="range" min="0" max="0" value="0" aria-label="选择动画帧"></label><div id="csFrameGrid" class="character-frame-grid" role="group" aria-label="动画逐帧图片"></div>
       <h4>地图人物布局</h4><p>锚点使用 0～1，Y 从画布底部向上计算；缩放乘在 PPU 上，不修改游戏人物碰撞或移动。</p><div class="character-form-grid">${[['PivotX','脚底锚点 X',0,1,.01,.5],['PivotY','脚底锚点 Y',0,1,.01,.1],['PixelsPerUnit','每单位像素 PPU',1,10000,1,100],['Scale','人物缩放',.01,20,.01,1]].map(([k,label,min,max,step,fallback])=>`<label>${label}<input data-layout="${k}" type="number" min="${min}" max="${max}" step="${step}" value="${esc(field(layout,k[0].toLowerCase()+k.slice(1))??fallback)}"></label>`).join('')}</div><button id="csSaveLayout" class="primary-btn">保存布局与动作参数</button>
       <details><summary>角色文案</summary>${(this.data.textSlots||[]).map(slot=>`<label>${esc(labels[slot]||slot)}<textarea data-text="${slot}" maxlength="32000" placeholder="留空使用原版">${esc(texts[slot]||'')}</textarea></label>`).join('')}<button class="primary-btn" id="csSaveTexts">保存文案</button><p>名字与角色简介使用角色共用文案，可能影响该角色的其他皮肤。</p></details>
       <details><summary>高级：编辑完整清单</summary><p>支持原精灵名映射 SpriteMappings、自定义资源地址 asset:。媒体文件可随包保存，目前不应用。</p><textarea id="csManifest" style="min-height:280px" spellcheck="false">${esc(JSON.stringify(m,null,2))}</textarea><button class="primary-btn" id="csSaveManifest">校验并保存清单</button></details>`;
       this.bindCommon(p);
-      $('csEnable').onclick=()=>this.send('characterSkinsActive',{enabled:!p.active});$('csExport').onclick=()=>this.send('characterSkinsExport');
+      $('csEnable').textContent='添加到多人物方案';$('csEnable').onclick=()=>window.CharacterSchemesModule.addPackage(p.id);$('csExport').onclick=()=>this.send('characterSkinsExport');
       document.querySelectorAll('[data-image]').forEach(b=>b.onclick=()=>this.send('characterSkinsImage',{slot:b.dataset.image}));
       document.querySelectorAll('[data-clear-image]').forEach(b=>b.onclick=()=>{delete images[b.dataset.clearImage];this.save(m);});
       $('csFrames').onclick=()=>this.send('characterSkinsFrames',{action:$('csAction').value,fps:Number($('csFps').value),loop:$('csLoop').value==='true'});
@@ -104,10 +123,45 @@
       $('csClearAction').onclick=()=>window.SkinsModule.confirmAction('恢复此动作？',`移除 ${this.action} 的自制帧和原精灵映射，重启游戏后恢复原动作。`,{type:'characterSkinsClearAction',id:this.selected,action:this.action});
       $('csSaveLayout').onclick=()=>{document.querySelectorAll('[data-layout]').forEach(i=>{const key=Object.hasOwn(layout,i.dataset.layout)?i.dataset.layout:i.dataset.layout[0].toLowerCase()+i.dataset.layout.slice(1);layout[key]=Number(i.value);});const a=animations[$('csAction').value];if(a){a[Object.hasOwn(a,'Fps')?'Fps':'fps']=Number($('csFps').value);a[Object.hasOwn(a,'Loop')?'Loop':'loop']=$('csLoop').value==='true';}this.save(m);};
       $('csSaveTexts').onclick=()=>{document.querySelectorAll('[data-text]').forEach(t=>{if(t.value)texts[t.dataset.text]=t.value;else delete texts[t.dataset.text];});this.save(m);};
-      $('csSaveManifest').onclick=()=>{try{this.save(JSON.parse($('csManifest').value));}catch(e){showToast('清单 JSON 无效：'+e.message);}};
+      $('csSaveManifest').onclick=()=>{try{this.save(JSON.parse($('csManifest').value));}catch(e){toast('清单 JSON 无效：'+e.message);}};
       if([...$('csAction').options].some(o=>o.value===this.action))$('csAction').value=this.action;
       this.selectAnimation(false);
       $('csFrameGrid').scrollTop=galleryScroll;
+      this.organizeEditor(samePackage);
+    },
+    organizeEditor(samePackage) {
+      const root=$('characterDetail');
+      const headings=[...root.children].filter(n=>n.tagName==='H4');
+      const details=[...root.children].filter(n=>n.tagName==='DETAILS');
+      const nav=document.createElement('div');nav.className='cs-editor-tabs';nav.setAttribute('role','tablist');nav.setAttribute('aria-label','人物皮肤编辑分类');
+      root.insertBefore(nav,headings[0]);
+      const panels=[];
+      for(const [index,start] of headings.entries()){
+        const section=document.createElement('section');section.id='csEditorPanel'+index;section.className='cs-editor-section';
+        root.insertBefore(section,start);
+        let node=start;
+        while(node&&node.tagName!=='DETAILS'&&(node===start||node.tagName!=='H4')){const next=node.nextSibling;section.appendChild(node);node=next;}
+        panels.push(section);
+      }
+      const texts=document.createElement('section');texts.id='csEditorPanelTexts';texts.className='cs-editor-section';
+      root.appendChild(texts);if(details[0]){details[0].open=true;texts.appendChild(details[0]);}
+      if(details[1])panels[2].appendChild(details[1]);
+      const tools=document.createElement('details');tools.className='cs-editor-tools';const summary=document.createElement('summary');summary.textContent='皮肤包操作';tools.appendChild(summary);
+      for(const id of ['csExport','csOpen','csDelete'])tools.appendChild($(id));
+      root.querySelector('.character-toolbar').appendChild(tools);
+      const entries=[['图片',panels[0]],['动画',panels[1]],['文案',texts],['高级',panels[2]]];
+      if(!samePackage)this.editorTab=0;
+      const select=index=>{
+        this.stop();this.editorTab=index;
+        entries.forEach(([,panel],i)=>{panel.hidden=i!==index;const b=nav.children[i];b.setAttribute('aria-selected',String(i===index));b.tabIndex=i===index?0:-1;});
+      };
+      entries.forEach(([label,panel],i)=>{
+        const button=document.createElement('button');button.type='button';button.id='csEditorTab'+i;button.textContent=label;button.setAttribute('role','tab');button.setAttribute('aria-controls',panel.id);panel.setAttribute('role','tabpanel');panel.setAttribute('aria-labelledby',button.id);
+        button.onclick=()=>select(i);
+        button.onkeydown=e=>{const keys=['ArrowLeft','ArrowRight','Home','End'];if(!keys.includes(e.key))return;e.preventDefault();const next=e.key==='Home'?0:e.key==='End'?3:(i+(e.key==='ArrowRight'?1:3))%4;select(next);nav.children[next].focus();};nav.appendChild(button);
+      });
+      select(this.editorTab||0);
+      const saveAnimation=document.createElement('button');saveAnimation.className='primary-btn';saveAnimation.textContent='保存动作参数';saveAnimation.onclick=()=>$('csSaveLayout').click();panels[1].appendChild(saveAnimation);
     },
     bindCommon(p){$('csOpen').onclick=()=>this.send('characterSkinsOpen');$('csDelete').onclick=()=>window.SkinsModule.confirmAction('删除角色皮肤？',`将 ${field(p.manifest,'name')||p.id} 停用并移入皮肤目录中的 .deleted 文件夹。`,{type:'characterSkinsDelete',id:p.id});},
     save(manifest){this.send('characterSkinsSave',{manifest});},

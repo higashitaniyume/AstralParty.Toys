@@ -1,3 +1,11 @@
-# CesiumLoader 2.3.4
+## CesiumLoader 2.4.7
 
-[Full Changelog](https://github.com/higashitaniyume/CesiumLoader/compare/modloader-2.3.3...modloader-2.3.4)
+CharacterSkinMod 更新至 0.2.1，新增多人物皮肤方案并修复自定义立绘布局。
+
+- 按人物与目标皮肤配置方案，支持官方外观与自定义图片、文案、精灵帧组合；精确目标优先于人物通配。
+- 官方人物动画使用来源控制器，保留当前状态、播放位置及参数；来源配置读取修改前快照，避免方案间互相污染。
+- 自定义图片私有地址继承原图的立绘偏移、HUD 偏移、缩放和翻转，修复图片像素尺寸正确但游戏显示放大或偏移的问题。
+- 应用失败或卸载时按所有权恢复配置、图片缓存和动画控制器，保留其他组件后续改动。
+- 加载器、SDK、默认配置与 CLI 版本同步至 2.4.7；现有模组最低 SDK 要求不变。
+
+验证：原生加载器 Release x64、SDK、CharacterSkinMod、Bootstrap 与 CLI 构建通过；CharacterSkinMod 测试 30 项、SDK 测试 339 项全部通过。语音、视频、特效和特殊演出仍使用原版；本轮未部署游戏，最终渲染与 HybridCLR Animator 调用仍需游戏内验证。

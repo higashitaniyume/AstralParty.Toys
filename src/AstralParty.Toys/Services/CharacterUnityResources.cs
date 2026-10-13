@@ -13,7 +13,7 @@ internal sealed class CharacterUnityResources : IDisposable
     readonly Dictionary<(AssetsFileInstance,long),CharacterUnityObject> objects=[];
     readonly Dictionary<(AssetsFileInstance,long),(int Width,int Height,byte[] Pixels)> textures=[];
     public IReadOnlyCollection<CharacterUnityObject> Objects=>objects.Values;
-    public void Load(IEnumerable<string> paths,CancellationToken cancellationToken=default)
+    public void Load(IEnumerable<string> paths,CancellationToken cancellationToken=default,bool legacyAnimation=false)
     {
         foreach(string path in paths)
         {
@@ -28,7 +28,8 @@ internal sealed class CharacterUnityResources : IDisposable
                 files[Path.GetFileName(file.path)]=file;
                 foreach(var info in file.file.AssetInfos)
                 {
-                    if(info.TypeId is not (28 or 49 or 74 or 213))continue;
+                    if(legacyAnimation && info.TypeId is not (28 or 74 or 114 or 142 or 213))throw new InvalidDataException("不支持的旧式角色资源类型："+info.TypeId);
+                    if(info.TypeId is not (28 or 49 or 74 or 213) && !(legacyAnimation && info.TypeId==114))continue;
                     var value=manager.GetBaseField(file,info);
                     objects[(file,info.PathId)]=new(file,info,value);
                 }
@@ -49,8 +50,30 @@ internal sealed class CharacterUnityResources : IDisposable
     {
         var key=(obj.File,obj.Info.PathId);if(textures.TryGetValue(key,out var cached))return cached;
         var texture=TextureFile.ReadTextureFile(obj.Value);var data=texture.FillPictureData(obj.File);
-        var pixels=texture.DecodeTextureRaw(data,true)??throw new InvalidOperationException("无法解码纹理："+obj.Value["m_Name"].AsString);
+        var pixels=DecodeTexture(texture,data)??throw new InvalidOperationException("无法解码纹理："+obj.Value["m_Name"].AsString);
         return textures[key]=(texture.m_Width,texture.m_Height,pixels);
+    }
+    internal static byte[]? DecodeTexture(TextureFile texture,byte[] data)
+    {
+        int width=texture.m_Width,height=texture.m_Height;
+        // AssetsTools' BC7 decoder writes complete 4x4 blocks into an unpadded buffer.
+        // Decode full blocks, then crop their right/top padding in Unity's bottom-up row order.
+        if(texture.m_TextureFormat!=(int)TextureFormat.BC7 || ((width|height)&3)==0)
+            return texture.DecodeTextureRaw(data,true);
+        int paddedWidth=checked((width+3)&~3),paddedHeight=checked((height+3)&~3);
+        if(width<=0||height<=0||data.LongLength<(long)paddedWidth*paddedHeight)
+            throw new InvalidDataException("BC7 纹理尺寸或块数据不完整");
+        byte[]? padded;
+        try
+        {
+            texture.m_Width=paddedWidth;texture.m_Height=paddedHeight;
+            padded=texture.DecodeTextureRaw(data,true);
+        }
+        finally { texture.m_Width=width;texture.m_Height=height; }
+        if(padded==null)return null;
+        var output=new byte[checked(width*height*4)];
+        for(int y=0;y<height;y++)Buffer.BlockCopy(padded,y*paddedWidth*4,output,y*width*4,width*4);
+        return output;
     }
     public static void SavePng(string path,int width,int height,byte[] bottomUp)
     {
@@ -106,5 +129,6 @@ internal sealed class CharacterUnityResources : IDisposable
         }
         SavePng(path,width,height,output);
     }
+    public void ReleaseTextures()=>textures.Clear();
     public void Dispose()=>manager.UnloadAll();
 }

@@ -256,6 +256,16 @@ host?.addEventListener('message', event => {
       break;
     case 'characterSkins':
       window.CharacterSkinsModule?.render(msg.payload);
+      window.CharacterSchemesModule?.render(msg.payload);
+      break;
+    case 'characterSchemePackageAttached':
+      window.CharacterSchemesModule?.packageAttached(msg.payload);
+      break;
+    case 'characterSchemesSaved':
+      window.CharacterSchemesModule?.saved(msg.payload);
+      break;
+    case 'skinsLegacyImported':
+      window.SkinsModule?.legacyImported?.(msg.payload);
       break;
     case 'skinsProfiles':
       window.SkinsModule?.renderProfiles?.(msg.payload);
@@ -367,6 +377,16 @@ host?.addEventListener('message', event => {
       break;
     case 'characterSkins':
       window.CharacterSkinsModule?.render(msg.payload);
+      window.CharacterSchemesModule?.render(msg.payload);
+      break;
+    case 'characterSchemePackageAttached':
+      window.CharacterSchemesModule?.packageAttached(msg.payload);
+      break;
+    case 'characterSchemesSaved':
+      window.CharacterSchemesModule?.saved(msg.payload);
+      break;
+    case 'skinsLegacyImported':
+      window.SkinsModule?.legacyImported?.(msg.payload);
       break;
     case 'skinsProfiles':
       if (window.SkinsModule) window.SkinsModule.renderProfiles(msg.payload);

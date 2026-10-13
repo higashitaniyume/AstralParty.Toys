@@ -6,14 +6,27 @@ namespace AstralParty.Toys.Services;
 public sealed record CharacterTemplateResult(int Images,int Actions,int Frames,string[] Missing);
 public static class CharacterTemplateExporter
 {
-    public static Task<CharacterTemplateResult> ExportAsync(string game,string cache,string id,string name,int heroId,string dataDirectory,string protocolDirectory,Action<string> progress, CancellationToken cancellationToken = default, Action<CharacterExportProgress>? detailedProgress = null)
+    public static Task<CharacterTemplateResult> ExportAsync(string game,string cache,string id,string name,int heroId,string dataDirectory,string protocolDirectory,Action<string> progress, CancellationToken cancellationToken = default, Action<CharacterExportProgress>? detailedProgress = null, int sourceSkinItemId = 0)
     {
         var manager=new CharacterSkinManager();string target=manager.Package(game,id);
         if(Directory.Exists(target))throw new InvalidOperationException("方案已存在");
         void Report(int percent,string message){cancellationToken.ThrowIfCancellationRequested();progress(message);detailedProgress?.Invoke(new(percent,message));}
-        return Task.Run(()=>Export(game,cache,id,name,heroId,dataDirectory,protocolDirectory,manager,target,Report,cancellationToken),cancellationToken);
+        return Task.Run(()=>Export(game,cache,id,name,heroId,dataDirectory,protocolDirectory,manager,target,Report,cancellationToken,sourceSkinItemId),cancellationToken);
     }
-    static CharacterTemplateResult Export(string game,string cache,string id,string name,int heroId,string dataDirectory,string protocolDirectory,CharacterSkinManager manager,string target,Action<int,string> progress,CancellationToken cancellationToken)
+    internal static object SelectSourceSkin(object hero, object skins, int sourceSkinItemId = 0)
+    {
+        int heroId=ReflectionValue.Int(hero,"Id");
+        var group=ReflectionValue.Items(ReflectionValue.Get(skins,"StandingPaintings"))
+            .FirstOrDefault(x=>ReflectionValue.Int(x,"Id")==ReflectionValue.Int(hero,"StandingPainting"));
+        var candidates=ReflectionValue.Items(ReflectionValue.Get(group,"SkinStandingPaintingConfigureItems")).ToArray();
+        if(sourceSkinItemId!=0)
+            return candidates.FirstOrDefault(x=>ReflectionValue.Int(x,"ItemID")==sourceSkinItemId)
+                ??throw new InvalidOperationException($"角色 {heroId} 中不存在指定来源皮肤 {sourceSkinItemId}，无法导出；不会回退到默认皮肤");
+        return candidates.FirstOrDefault(x=>ReflectionValue.Int(x,"ItemID")==100000000+heroId*1000+1)
+            ??candidates.FirstOrDefault()
+            ??throw new InvalidOperationException($"角色 {heroId} 没有可导出的皮肤配置");
+    }
+    static CharacterTemplateResult Export(string game,string cache,string id,string name,int heroId,string dataDirectory,string protocolDirectory,CharacterSkinManager manager,string target,Action<int,string> progress,CancellationToken cancellationToken,int sourceSkinItemId)
     {
         progress(1,"定位安装目录和热更新缓存资源");
         var catalog=new CharacterBundleCatalog(game,cache,cancellationToken);
@@ -28,8 +41,8 @@ public static class CharacterTemplateExporter
         var characters=Config("Character","CharacterConfigure");
         var hero=ReflectionValue.Items(ReflectionValue.Get(characters,"Infos")).FirstOrDefault(x=>ReflectionValue.Int(x,"Id")==heroId)??throw new InvalidOperationException("角色不存在");
         var skins=Config("Skin","SkinConfigure");
-        var group=ReflectionValue.Items(ReflectionValue.Get(skins,"StandingPaintings")).FirstOrDefault(x=>ReflectionValue.Int(x,"Id")==ReflectionValue.Int(hero,"StandingPainting"));
-        var skin=ReflectionValue.Items(ReflectionValue.Get(group,"SkinStandingPaintingConfigureItems")).FirstOrDefault(x=>ReflectionValue.Int(x,"ItemID")==100000000+heroId*1000+1)??ReflectionValue.Items(ReflectionValue.Get(group,"SkinStandingPaintingConfigureItems")).FirstOrDefault()??throw new InvalidOperationException("没有默认皮肤配置");
+        var skin=SelectSourceSkin(hero,skins,sourceSkinItemId);
+        int selectedSkinItemId=ReflectionValue.Int(skin,"ItemID");
         var assets=new Dictionary<string,string>();
         foreach(string slot in CharacterSkinRules.ImageSlots)
         {
@@ -50,9 +63,9 @@ public static class CharacterTemplateExporter
         string staging=Path.Combine(manager.Root(game),".template-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(staging);
         try
         {
-            var m=new CharacterSkinManifest{Id=id,Name=name,HeroId=heroId,SkinItemId=ReflectionValue.Int(skin,"ItemID"),Description="从本地游戏默认皮肤导出的制作模板",UseOriginalSpriteLayout=true};
+            var m=new CharacterSkinManifest{Id=id,Name=name,HeroId=heroId,SkinItemId=selectedSkinItemId,Description=$"从本地游戏皮肤 {selectedSkinItemId} 导出的制作模板",UseOriginalSpriteLayout=true};
             var missing=new List<string>();var metadata=new List<object>();
-            progress(20,"导出默认图片");
+            progress(20,$"导出所选皮肤 {selectedSkinItemId} 的图片");
             foreach(var (slot,asset) in assets)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -82,12 +95,12 @@ public static class CharacterTemplateExporter
                 }
                 if(a.Frames.Count>0)m.Animations[c["m_Name"].AsString]=a;
             }
-            if(m.Images.Count==0||m.Animations.Count==0)throw new InvalidOperationException("原图片或动画未完整定位，请先在游戏中查看默认皮肤以下载资源");
+            if(m.Images.Count==0||m.Animations.Count==0)throw new InvalidOperationException($"来源皮肤 {selectedSkinItemId} 的图片或动画未完整定位，请先在游戏中查看该皮肤以下载资源");
             progress(97,"校验并保存模板");
             CharacterSkinRules.Validate(m,staging,true);
             File.WriteAllText(Path.Combine(staging,"character-skin.json"),JsonSerializer.Serialize(m,CharacterSkinManager.JsonOptions));
-            File.WriteAllText(Path.Combine(staging,"source-metadata.json"),JsonSerializer.Serialize(new{Catalog=catalog.CatalogPath,Bundles=bundles,Missing=missing,Sprites=metadata},CharacterSkinManager.JsonOptions));
-            File.WriteAllText(Path.Combine(staging,"README.md"),"# 默认角色皮肤模板\n\n由 Toys 的 C# 提取器从本地安装目录和热更新缓存导出。保持动画帧画布、透明边缘和脚底位置。原精灵映射沿用游戏时序与锚点；语音、视频、特效保留原版。\n\n缺失资源：\n"+(missing.Count==0?"无":string.Join('\n',missing)));
+            File.WriteAllText(Path.Combine(staging,"source-metadata.json"),JsonSerializer.Serialize(new{HeroId=heroId,SourceSkinItemId=selectedSkinItemId,Catalog=catalog.CatalogPath,Bundles=bundles,Missing=missing,Sprites=metadata},CharacterSkinManager.JsonOptions));
+            File.WriteAllText(Path.Combine(staging,"README.md"),$"# 角色皮肤制作模板\n\n人物 ID：{heroId}\n来源皮肤 ID：{selectedSkinItemId}\n\n由 Toys 的 C# 提取器从本地安装目录和热更新缓存导出。保持动画帧画布、透明边缘和脚底位置。原精灵映射沿用游戏时序与锚点；语音、视频、特效保留原版。\n\n缺失资源：\n"+(missing.Count==0?"无":string.Join('\n',missing)));
             cancellationToken.ThrowIfCancellationRequested();
             if(Directory.Exists(target))throw new InvalidOperationException("方案已存在");Directory.Move(staging,target);
             return new(m.Images.Count,m.Animations.Count,m.SpriteMappings.Count,missing.ToArray());

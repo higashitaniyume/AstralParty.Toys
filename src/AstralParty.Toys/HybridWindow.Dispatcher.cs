@@ -441,6 +441,17 @@ public partial class HybridWindow
                                                updateDowngradeElement.GetBoolean();
                     _ = HandleModDownloadUpdateAsync(updateOverwrite, updateAllowDowngrade);
                     break;
+                case "characterSchemesCreate":
+                case "characterSchemesSave":
+                case "characterSchemesActive":
+                case "characterSchemesDelete":
+                case "characterSchemesRemoveRule":
+                case "characterSchemesOpen":
+                case "characterSchemesImportPackage":
+                case "characterSchemesImport":
+                case "characterSchemesExport":
+                    HandleCharacterSchemes(root);
+                    break;
                 case "characterCropSave":
                     SaveCharacterCrop(root);
                     break;
@@ -458,6 +469,7 @@ public partial class HybridWindow
                 case "characterSkinsSave":
                 case "characterSkinsOpen":
                 case "characterSkinsImport":
+                case "characterSkinsImportLegacy":
                 case "characterSkinsExport":
                 case "characterSkinsImage":
                 case "characterSkinsFrames":
@@ -493,7 +505,11 @@ public partial class HybridWindow
                     break;
                 case "skinsExportConfirmed":
                     HandleExportSkin(root, true);
-                    break;                case "skinsImportZip":
+                    break;
+                case "skinsImportLegacyZip":
+                    HandleLegacyCardSkinImport();
+                    break;
+                case "skinsImportZip":
                     HandleSkinImportZip();
                     break;
                 case "skinsRestoreDefault":

@@ -36,13 +36,48 @@ public partial class HybridWindow
         var protocol = new GameProtocolContext(Path.Combine(_appDirectory, "Protocol"));
         var catalog = new ConfigCatalog(protocol, Path.Combine(_appDirectory, "GameData"));
         var targets = CharacterSkinCatalog.Load(protocol, Path.Combine(_appDirectory, "GameData"));
+        var schemes = new CharacterSkinSchemeManager(targets);
+        var schemeProfiles = schemes.Profiles(game);
         var profiles = _characterSkins.Profiles(game);
+        JsonElement? runtimeStatus = null;
+        string statusPath = Path.Combine(game, "AstralParty_ModLoader", "mods", "CharacterSkinMod", "status.json");
+        if (File.Exists(statusPath))
+        {
+            // The running mod may be writing this file. A partial read must not block the editor.
+            try { using var status = JsonDocument.Parse(File.ReadAllText(statusPath)); runtimeStatus = status.RootElement.Clone(); }
+            catch (IOException) { }
+            catch (JsonException) { }
+        }
+        string? installedVersion = null, bundledVersion = null;
+        try
+        {
+            string manifestPath = Path.Combine(game, "AstralParty_ModLoader", "mods", "CharacterSkinMod", "CharacterSkinMod.json");
+            if (File.Exists(manifestPath))
+            {
+                using var manifest = JsonDocument.Parse(File.ReadAllText(manifestPath));
+                installedVersion = manifest.RootElement.GetProperty("version").GetString();
+            }
+        }
+        catch (Exception ex) when (ex is IOException or JsonException or KeyNotFoundException or InvalidOperationException) { }
+        using (var bundled = typeof(HybridWindow).Assembly.GetManifestResourceStream("AstralParty.Toys.ModLoader.CharacterSkinMod.json"))
+        {
+            if (bundled != null) { using var manifest = JsonDocument.Parse(bundled); bundledVersion = manifest.RootElement.GetProperty("version").GetString(); }
+        }
+        bool updateRequired = Version.TryParse(bundledVersion, out var available) && (!Version.TryParse(installedVersion, out var installedVersionValue) || installedVersionValue < available);
         Post(new
         {
             type = "characterSkins",
             payload = new
             {
+                gameDirectory = game,
                 profiles,
+                schemeProfiles,
+                migrationError = schemes.MigrationError,
+                runtimeStatus,
+                installedVersion,
+                bundledVersion,
+                updateRequired,
+                activeSchemeId = _characterSkins.Settings(game).ActiveSchemeId,
                 targets,
                 templateCache = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "AppData", "LocalLow", "feimo", "AstralParty_CN", "com.unity.addressables"),
                 heroes = catalog.CharacterIds.Select(id => new { id, name = catalog.Character(id) }),
@@ -65,8 +100,13 @@ public partial class HybridWindow
             Post(new { type = "characterExportTasks", payload = new { tasks } });
             foreach (var task in tasks.Where(x => x.Status == "done" && _completedCharacterExports.Add(x.TaskId)))
             {
-                try { if (task.Game == RequireModGameDirectory()) PushCharacterSkins(); }
-                catch (Exception ex) { Post(new { type = "toast", message = "导出已完成，皮肤列表刷新失败：" + ex.Message }); }
+                try
+                {
+                    if (task.Game != RequireModGameDirectory()) continue;
+                    if (task.PackageId.StartsWith("legacy-card-import:", StringComparison.Ordinal)) PushSkinProfiles();
+                    else PushCharacterSkins();
+                }
+                catch (Exception ex) { Post(new { type = "toast", message = "任务已完成，皮肤列表刷新失败：" + ex.Message }); }
             }
         }));
     }
@@ -100,22 +140,29 @@ public partial class HybridWindow
                     });
                     return;
                 case "characterSkinsCreate":
+                    var attachment = ReadCharacterAttachment(root, game);
+                    int heroId = root.GetProperty("heroId").GetInt32();
+                    if (attachment != null && attachment.Binding.HeroId != heroId) throw new InvalidOperationException("人物已变更，请从方案重新添加皮肤包");
                     if (root.TryGetProperty("fromGame", out var fromGame) && fromGame.GetBoolean())
                     {
                         EnsureCharacterExports();
                         string cache = root.GetProperty("cache").GetString() ?? "";
                         string packageName = root.GetProperty("name").GetString() ?? id;
-                        int heroId = root.GetProperty("heroId").GetInt32();
-                        if (Directory.Exists(_characterSkins.Package(game, id))) throw new InvalidOperationException("方案已存在");
+                        int sourceSkinItemId = root.TryGetProperty("sourceSkinItemId", out var sourceSkinValue) ? sourceSkinValue.GetInt32() : 0;
+                        if (sourceSkinItemId < 0) throw new InvalidOperationException("导出来源皮肤无效");
+                        if (Directory.Exists(_characterSkins.Package(game, id))) throw new InvalidOperationException("皮肤包已存在");
                         _characterExports.Enqueue(game, id, packageName, async (progress, cancellation) =>
                         {
-                            var result = await CharacterTemplateExporter.ExportAsync(game, cache, id, packageName, heroId, Path.Combine(_appDirectory, "GameData"), Path.Combine(_appDirectory, "Protocol"), _ => { }, cancellation, progress);
-                            return $"已提取 {result.Images} 个图片入口、{result.Actions} 个动作、{result.Frames} 帧" + (result.Missing.Length > 0 ? "；缺失：" + string.Join("、", result.Missing) : "");
+                            var result = await CharacterTemplateExporter.ExportAsync(game, cache, id, packageName, heroId, Path.Combine(_appDirectory, "GameData"), Path.Combine(_appDirectory, "Protocol"), _ => { }, cancellation, progress, sourceSkinItemId: sourceSkinItemId);
+                            AttachCreatedCharacterPackage(game, id, attachment);
+                            return $"已提取 {result.Images} 个图片入口、{result.Actions} 个动作、{result.Frames} 帧" + (attachment != null ? "，已添加到方案" : "") + (result.Missing.Length > 0 ? "；缺失：" + string.Join("、", result.Missing) : "");
                         });
-                        Post(new { type = "characterTemplateState", payload = new { queued = true, id, message = "已加入后台导出队列" } });
+                        Post(new { type = "characterTemplateState", payload = new { queued = true, id, message = attachment != null ? "已加入后台导出队列，完成后自动添加到方案" : "已加入后台导出队列" } });
                         return;
-                    }                    _characterSkins.Create(game, id, root.GetProperty("heroId").GetInt32(), root.GetProperty("skinItemId").GetInt32(), root.GetProperty("name").GetString() ?? id);
-                    Post(new { type = "characterTemplateState", payload = new { running = false, success = true, id, message = "空白方案已创建" } });
+                    }
+                    _characterSkins.Create(game, id, heroId, root.GetProperty("skinItemId").GetInt32(), root.GetProperty("name").GetString() ?? id);
+                    AttachCreatedCharacterPackage(game, id, attachment);
+                    Post(new { type = "characterTemplateState", payload = new { running = false, success = true, id, message = attachment != null ? "人物皮肤包已创建并添加到方案" : "空白皮肤包已创建" } });
                     break;
                 case "characterSkinsActive": _characterSkins.SetActive(game, id, root.GetProperty("enabled").GetBoolean()); break;
                 case "characterSkinsDelete": _characterSkins.Delete(game, id); break;
@@ -126,6 +173,9 @@ public partial class HybridWindow
                     string folder = id.Length == 0 ? _characterSkins.Root(game) : _characterSkins.Package(game, id);
                     Directory.CreateDirectory(folder);
                     Process.Start(new ProcessStartInfo("explorer.exe", folder) { UseShellExecute = true }); break;
+                case "characterSkinsImportLegacy":
+                    ImportLegacyCharacterSkin(game);
+                    return;
                 case "characterSkinsImport":
                     var import = new OpenFileDialog { Title = "导入角色皮肤包", Filter = "角色皮肤包 (*.zip)|*.zip", CheckFileExists = true };
                     if (import.ShowDialog(this) != true) return;

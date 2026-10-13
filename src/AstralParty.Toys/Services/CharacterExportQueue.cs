@@ -21,7 +21,7 @@ public sealed class CharacterExportQueue
         lock(gate)
         {
             if(entries.Any(x=>x.State.Game==game&&x.State.PackageId==packageId&&x.State.Status is "queued" or "running" or "canceling"))throw new InvalidOperationException("该方案已经在导出队列中");
-            entries.Add(new(){State=new(id,game,packageId,name,"queued",0,"等待导出"),Work=work});start=!pumping;pumping=true;
+            entries.Add(new(){State=new(id,game,packageId,name,"queued",0,"等待处理"),Work=work});start=!pumping;pumping=true;
         }
         Notify();if(start)_=Task.Run(Pump);return id;
     }
@@ -43,7 +43,7 @@ public sealed class CharacterExportQueue
             Entry entry;
             lock(gate)
             {
-                var next=entries.FirstOrDefault(x=>x.State.Status=="queued");if(next==null){pumping=false;return;}entry=next;entry.State=entry.State with{Status="running",Message="开始导出"};
+                var next=entries.FirstOrDefault(x=>x.State.Status=="queued");if(next==null){pumping=false;return;}entry=next;entry.State=entry.State with{Status="running",Message="开始处理"};
             }
             Notify();
             try
@@ -53,7 +53,7 @@ public sealed class CharacterExportQueue
                 },entry.Cancellation.Token);
                 lock(gate)entry.State=entry.State with{Status="done",Percent=100,Message=message};
             }
-            catch(OperationCanceledException){lock(gate)entry.State=entry.State with{Status="canceled",Message="已终止导出，临时文件已清理"};}
+            catch(OperationCanceledException){lock(gate)entry.State=entry.State with{Status="canceled",Message="已终止任务，临时文件已清理"};}
             catch(Exception ex){lock(gate)entry.State=entry.State with{Status="failed",Message=ex.Message};}
             finally{entry.Cancellation.Dispose();}
             Notify();

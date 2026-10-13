@@ -22,6 +22,7 @@
       $('skinOpenFolderTopBtn')?.addEventListener('click', () => post({ type: 'skinsOpenFolder' }));
       $('skinNewProfileTopBtn')?.addEventListener('click', () => this.openDuplicateModal(this.selectedSkin || 'default'));
       $('skinImportZipTopBtn')?.addEventListener('click', () => post({ type: 'skinsImportZip' }));
+      $('skinLegacyImportTopBtn')?.addEventListener('click', () => post({ type: 'skinsImportLegacyZip' }));
 
       // 方案下拉切换
       $('skinProfileSelect')?.addEventListener('change', e => {
@@ -89,12 +90,26 @@
       post({ type: 'skinsGetProfiles' });
     },
 
+    legacyImported(payload) {
+      if (!payload?.name) return;
+      this.selectedSkin = payload.name;
+      this.pendingImportedSkin = payload.name;
+      this.activeCategory = 'all';
+      this.searchQuery = '';
+      if ($('skinCardSearchInput')) $('skinCardSearchInput').value = '';
+      $('skinCardSearchClear')?.classList.add('hidden');
+      document.querySelectorAll('.gallery-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.category === 'all'));
+    },
+
     renderProfiles(payload) {
       if (!payload) return;
       const firstLoad = this.profiles.length === 0;
       this.profiles = payload.profiles || [];
       this.activeSkin = payload.activeSkin || 'default';
-      if (firstLoad) this.selectedSkin = this.activeSkin;
+      if (this.pendingImportedSkin && this.profiles.some(p => p.name === this.pendingImportedSkin)) {
+        this.selectedSkin = this.pendingImportedSkin;
+        this.pendingImportedSkin = null;
+      } else if (firstLoad) this.selectedSkin = this.activeSkin;
 
       if (!this.profiles.some(p => p.name.toLowerCase() === (this.selectedSkin || '').toLowerCase())) {
         this.selectedSkin = this.activeSkin;

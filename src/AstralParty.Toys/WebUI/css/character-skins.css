@@ -1,4 +1,10 @@
 /* Character skin editor follows Toys' existing dark theme tokens. */
+.character-binding-list { display: grid; gap: 16px; margin-top: 20px; }
+.character-binding { border: 1px solid var(--cs-border); border-radius: var(--gp-radius-md); padding: 16px; background: var(--cs-card); }
+.character-binding h4 { margin: 0 0 12px; }
+.character-binding p { overflow-wrap: anywhere; }
+.character-mode-tabs { margin-bottom: 20px; }
+#characterBindingError:empty { display: none; }
 .skins-page {
   --cs-surface: var(--gp-bg-panel);
   --cs-card: var(--gp-bg-card);
@@ -50,14 +56,14 @@
   color: var(--gp-blue);
 }
 #characterSkinPanel .primary-btn,
-#characterCreateDialog .primary-btn {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) .primary-btn {
   background: var(--cs-accent);
   border-color: transparent;
   color: white;
   box-shadow: none;
 }
 #characterSkinPanel .primary-btn:hover,
-#characterCreateDialog .primary-btn:hover {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) .primary-btn:hover {
   background: color-mix(in srgb, var(--cs-accent) 88%, black);
 }
 .character-skin-tabs {
@@ -100,14 +106,14 @@
   padding-bottom: 20px;
 }
 #characterSkinPanel .secondary-btn,
-#characterCreateDialog .secondary-btn {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) .secondary-btn {
   color: var(--cs-text);
   background: var(--cs-input);
   border: 1px solid var(--cs-border-strong);
   box-shadow: none;
 }
 #characterSkinPanel .secondary-btn:hover,
-#characterCreateDialog .secondary-btn:hover {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) .secondary-btn:hover {
   color: var(--cs-text);
   background: var(--cs-hover);
   border-color: var(--cs-border-strong);
@@ -277,7 +283,7 @@
   gap: 16px;
 }
 .character-detail label,
-#characterCreateDialog label {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) label {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -290,8 +296,8 @@
 .character-detail select,
 .character-detail textarea,
 .character-list-panel input,
-#characterCreateDialog input,
-#characterCreateDialog select {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) input,
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) select {
   width: 100%;
   max-width: 100%;
   min-height: 44px;
@@ -307,14 +313,14 @@
     box-shadow 0.18s;
 }
 .character-detail select option,
-#characterCreateDialog select option {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) select option {
   color: var(--cs-text);
   background: var(--cs-input);
 }
 .character-detail input::placeholder,
 .character-detail textarea::placeholder,
 .character-list-panel input::placeholder,
-#characterCreateDialog input::placeholder {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) input::placeholder {
   color: var(--cs-muted);
   opacity: 1;
 }
@@ -327,8 +333,8 @@
 .character-detail select:focus,
 .character-detail textarea:focus,
 .character-list-panel input:focus,
-#characterCreateDialog input:focus,
-#characterCreateDialog select:focus {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) input:focus,
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) select:focus {
   outline: 2px solid var(--gp-blue);
   outline-offset: 2px;
   border-color: var(--gp-blue);
@@ -443,7 +449,7 @@
   font-weight: 600;
   margin-left: 8px;
 }
-#characterCreateDialog {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) {
   width: min(480px, calc(100vw - 48px));
   max-height: calc(100vh - 64px);
   padding: 28px;
@@ -454,11 +460,11 @@
   box-shadow: var(--gp-shadow-lg);
   overflow: auto;
 }
-#characterCreateDialog::backdrop {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog)::backdrop {
   background: rgb(0 0 0 / 0.6);
   backdrop-filter: blur(3px);
 }
-#characterCreateDialog .character-template-toggle {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) .character-template-toggle {
   flex-direction: row;
   align-items: center;
 }
@@ -472,11 +478,11 @@
 #characterTemplateProgress {
   overflow-wrap: anywhere;
 }
-#characterCreateDialog h3 {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) h3 {
   font-size: 22px;
   margin: 0 0 24px;
 }
-#characterCreateDialog p {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) p {
   font-size: 13px;
   line-height: 1.6;
   color: var(--cs-secondary);
@@ -506,7 +512,7 @@
 .character-detail button:focus-visible,
 .character-skin-tabs button:focus-visible,
 .character-package:focus-visible,
-#characterCreateDialog button:focus-visible {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) button:focus-visible {
   outline: 2px solid var(--gp-blue);
   outline-offset: 3px;
 }
@@ -572,7 +578,7 @@
 @media (prefers-reduced-motion: reduce) {
   .character-skin-tabs *,
   #characterSkinPanel *,
-  #characterCreateDialog * {
+  :is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) * {
     transition: none !important;
   }
 }
@@ -597,3 +603,75 @@
 .character-export-progress progress {appearance:none;border:0;border-radius:5px;overflow:hidden;background:var(--gp-bg-hover);}
 .character-export-progress progress::-webkit-progress-bar {background:var(--gp-bg-hover);border-radius:5px;}
 .character-export-progress progress::-webkit-progress-value {background:var(--gp-pink);border-radius:5px;}
+
+/* Scheme library: navigation, application state, then editable people. */
+#characterSkinPanel [hidden] { display: none !important; }
+.cs-scheme-workspace { grid-template-columns: minmax(220px, 260px) minmax(0, 1fr); gap: 24px; }
+.cs-section-heading, .cs-scheme-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.cs-section-heading h3, .cs-section-heading h4 { margin: 0; padding: 0; border: 0; }
+.cs-scheme-sidebar h3 { font-size: 18px; }
+.cs-scheme-sidebar .cs-section-heading { margin-bottom: 20px; }
+.cs-search-label { color: var(--cs-secondary); font-size: 14px; }
+.cs-scheme-heading { align-items: flex-start; }
+.cs-scheme-heading > div { min-width: 0; flex: 1 1 200px; }
+.cs-scheme-heading h3 { font-size: 26px; overflow-wrap: anywhere; }
+.cs-scheme-detail .cs-eyebrow { margin: 0 0 8px; font-size: 13px; color: var(--cs-secondary); }
+.cs-scheme-state { display: inline-block; color: var(--cs-secondary); font-size: 13px; padding: 6px 10px; background: var(--cs-input); border: 1px solid var(--cs-border); border-radius: 6px; }
+.cs-scheme-state.is-active { color: var(--cs-success); border-color: color-mix(in srgb, var(--cs-success) 40%, var(--cs-border)); }
+.cs-scheme-detail .cs-scheme-help { font-size: 13px; margin: 16px 0; }
+#characterSkinPanel .cs-disclosure { margin: 16px 0 0; padding: 0 12px; background: var(--cs-card); border: 1px solid var(--cs-border); border-radius: var(--gp-radius-sm); min-width: 0; }
+#characterSkinPanel .cs-disclosure[open] { padding-bottom: 12px; }
+#characterSkinPanel .cs-disclosure summary { padding: 12px 0; color: var(--cs-secondary); cursor: pointer; font-size: 14px; font-weight: 600; }
+#characterSkinPanel .cs-disclosure summary:hover { color: var(--cs-text); }
+#characterSkinPanel summary:focus-visible, #characterSkinPanel button:focus-visible { outline: 2px solid var(--gp-blue); outline-offset: 3px; }
+.cs-menu-actions { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+.cs-menu-actions button { text-align: left; }
+.cs-scheme-actions .character-toolbar { margin: 12px 0 0; }
+.cs-members-heading { margin-top: 28px; }
+.cs-members-heading .character-toolbar { margin: 0; }
+.cs-scheme-detail .character-binding-list { grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); align-items: start; }
+.cs-scheme-detail .character-binding { min-width: 0; padding: 20px; }
+.cs-scheme-detail .character-binding h4 { border: 0; padding: 0; margin: 8px 0; font-size: 20px; }
+.cs-source-label { color: var(--cs-secondary); font-size: 12px; }
+.cs-scheme-detail .cs-source-summary { color: var(--cs-text); font-size: 15px; margin: 8px 0; }
+.cs-scheme-detail .cs-target-summary { font-size: 13px; margin: 8px 0 20px; }
+.character-binding > .primary-btn { width: 100%; }
+.cs-empty { grid-column: 1 / -1; text-align: center; padding: 36px 20px; border: 1px dashed var(--cs-border-strong); border-radius: var(--gp-radius-md); background: var(--cs-card); }
+.cs-scheme-detail .cs-empty h4 { border: 0; margin: 0; padding: 0; font-size: 20px; }
+.cs-empty p { max-width: 42em; margin: 12px auto 24px; }
+.cs-runtime-details p { font-size: 13px; overflow-wrap: anywhere; }
+#characterBindingDialog { width: min(520px, calc(100vw - 32px)); box-sizing: border-box; }
+#characterBindingDialog [hidden] { display: none !important; }
+#characterBindingDialog .cs-disclosure { margin: 20px 0; }
+#characterBindingDialog .cs-disclosure summary { padding: 14px 0; }
+#characterBindingDialog .character-error, #characterSchemeCreateDialog .character-error { color: var(--cs-error); }
+#characterSchemeCreateError:empty { display: none; }
+#characterSchemePackageEditor { min-width: 0; }
+#characterSchemeEditorContext { overflow-wrap: anywhere; }
+.cs-editor-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; padding: 6px; border: 1px solid var(--cs-border); border-radius: var(--gp-radius-sm); background: var(--cs-input); }
+.cs-editor-tabs [role="tab"] { min-height: 44px; flex: 1 1 100px; padding: 10px 16px; font: inherit; color: var(--cs-secondary); background: transparent; border: 1px solid transparent; border-radius: 6px; cursor: pointer; }
+.cs-editor-tabs [role="tab"]:hover { background: var(--cs-hover); color: var(--cs-text); }
+.cs-editor-tabs [aria-selected="true"] { color: var(--cs-text); background: var(--cs-card); border-color: var(--cs-border-strong); box-shadow: inset 0 -3px var(--cs-accent); }
+.cs-editor-section { min-width: 0; }
+.cs-editor-section[hidden] { display: none !important; }
+#characterSkinPanel button { white-space: normal; overflow-wrap: anywhere; }
+@media (max-width: 1000px) {
+  .cs-scheme-workspace { grid-template-columns: minmax(180px, 220px) minmax(0, 1fr); gap: 16px; }
+  .cs-scheme-sidebar { max-height: none; }
+}
+@media (max-width: 760px) {
+  .cs-scheme-workspace { grid-template-columns: minmax(0, 1fr); }
+  #characterSchemeList { max-height: 240px; overflow: auto; padding: 3px; }
+  .cs-scheme-heading > button { width: 100%; }
+  .cs-section-heading { gap: 12px; }
+  .cs-scheme-detail .character-binding-list { grid-template-columns: minmax(0, 1fr); }
+  .cs-empty { padding: 28px 16px; }
+}
+
+.character-detail .cs-editor-tools { margin: 16px 0; }
+.character-detail .cs-editor-tools .character-toolbar { margin-bottom: 0; }
+.cs-editor-section > h4:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+#characterSchemeCreateDialog input[type="hidden"] { display: none; }
+
+.cs-install-notice { padding: 16px; margin-bottom: 24px; border: 1px solid var(--cs-border-strong); border-radius: var(--gp-radius-sm); background: var(--cs-accent-wash); display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.cs-install-notice p { margin: 0; flex: 1 1 220px; }

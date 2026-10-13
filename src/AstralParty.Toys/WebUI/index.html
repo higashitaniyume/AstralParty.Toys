@@ -1310,6 +1310,9 @@
               <button class="primary-btn" id="skinImportZipTopBtn">
                 <span class="mi" data-icon="download"></span> 导入皮肤包 (.zip)
               </button>
+              <button class="secondary-btn" id="skinLegacyImportTopBtn" title="将含 bundle 的旧式卡面 ZIP 转换为卡牌皮肤方案">
+                导入旧式皮肤包
+              </button>
             </div>
           </div>
 
@@ -1352,12 +1355,21 @@
             role="tabpanel"
             aria-labelledby="characterSkinTab"
           >
+            <div class="character-toolbar character-mode-tabs" role="group" aria-label="角色皮肤管理">
+              <button class="primary-btn" id="characterSchemesMode" aria-pressed="true">我的方案</button>
+              <button class="secondary-btn" id="characterPackagesMode" aria-pressed="false">皮肤包素材库</button>
+            </div>
+            <div id="characterSchemesPanel"></div>
+            <div id="characterPackagesPanel" class="hidden">
             <div class="character-toolbar">
               <button class="primary-btn" id="characterNew">
-                新建角色皮肤
+                新建自定义皮肤包
               </button>
               <button class="secondary-btn" id="characterImport">
                 导入 ZIP
+              </button>
+              <button class="secondary-btn" id="characterLegacyImport" title="将含 bundle 的旧式皮肤 ZIP 转换为自定义皮肤包">
+                导入旧式皮肤包
               </button>
               <button class="secondary-btn" id="characterFolder">
                 打开皮肤目录
@@ -1372,7 +1384,7 @@
             </p>
             <div class="character-workspace">
               <aside class="character-list-panel">
-                <label for="characterSearch">搜索角色 / 方案</label
+                <label for="characterSearch">搜索角色 / 皮肤包</label
                 ><input
                   id="characterSearch"
                   type="search"
@@ -1386,14 +1398,8 @@
             </div>
             <dialog id="characterCreateDialog">
               <form id="characterCreateForm">
-                <h3>新建角色皮肤</h3>
-                <label
-                  >方案标识<input
-                    name="id"
-                    required
-                    pattern="[A-Za-z0-9_-]{1,80}"
-                    placeholder="my-character-skin"
-                /></label>
+                <h3>新建自定义皮肤包</h3>
+                <input type="hidden" name="id" />
                 <label
                   >显示名称<input name="name" required maxlength="100"
                 /></label>
@@ -1404,7 +1410,7 @@
                     required
                   ></select
                 ></label>
-                <label
+                <label id="characterCreateTargetLabel"
                   >适用原皮肤<select
                     name="skinItemId"
                     id="characterCreateSkin"
@@ -1413,16 +1419,17 @@
                     <option value="0">该角色全部原皮肤</option>
                   </select></label
                 >
-                <p>可以为各套原皮肤分别启用不同的自制包。</p>
+                <p>从方案中创建会自动加入该方案。你可以导出原版素材作为起点，也可以取消勾选，从空白皮肤开始。</p>
                 <label class="character-template-toggle"
                   ><input
                     type="checkbox"
                     id="characterCreateFromGame"
                     name="fromGame"
                     checked
-                  />从游戏导出所选角色的默认皮肤</label
+                  />从游戏导出官方皮肤素材</label
                 >
                 <div id="characterTemplateOptions" class="hidden">
+                  <label>导出哪套官方皮肤<select id="characterTemplateSource" name="sourceSkinItemId" required></select></label>
                   <label
                     >热更新资源缓存<input
                       id="characterTemplateCache"
@@ -1430,7 +1437,7 @@
                       placeholder="com.unity.addressables 目录"
                   /></label>
                   <p>
-                    同时读取当前游戏安装目录与此缓存，导出默认图片和完整二维动画，适用原皮肤将设为默认皮肤。由内置 C# 提取器处理，无需安装额外工具。
+                    导出所选皮肤的图片与二维动画作为编辑起点。方案中的替换范围保持原设置；独立创建的包默认对应所选皮肤。资源未下载时，请先在游戏中查看该皮肤。
                   </p>
                 </div>
                 <p
@@ -1455,6 +1462,7 @@
                 </div>
               </form>
             </dialog>
+            </div>
           </section>
           <div
             class="skins-body"
@@ -1900,6 +1908,7 @@
     <script src="js/utilities.js"></script>
     <script src="js/mods.js"></script>
     <link rel="stylesheet" href="css/character-skins.css" />
+    <script src="js/character-schemes.js"></script>
     <script src="js/character-skins.js"></script>
     <script src="js/character-crop.js"></script>
     <script src="js/skins.js"></script>

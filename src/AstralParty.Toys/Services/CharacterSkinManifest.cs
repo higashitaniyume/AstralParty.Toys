@@ -42,6 +42,7 @@ namespace CesiumLoader.CharacterSkins
     public sealed class CharacterSkinSettings
     {
         public bool Enabled { get; set; } = true;
+        public string ActiveSchemeId { get; set; } = "";
         public List<string> ActivePackages { get; set; } = new List<string>();
     }
     public static class CharacterSkinRules

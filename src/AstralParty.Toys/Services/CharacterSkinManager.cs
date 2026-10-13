@@ -64,6 +64,8 @@ public sealed class CharacterSkinManager
         if (enabled)
         {
             var m = Load(game, id);
+            // Explicit legacy activation remains available; editing a package never activates it.
+            settings.ActiveSchemeId = "";
             // Wildcard targets overlap every skin of that hero.
             foreach (var other in settings.ActivePackages.ToArray())
             {
@@ -78,6 +80,17 @@ public sealed class CharacterSkinManager
     public void Delete(string game, string id)
     {
         var dir = Package(game, id);
+        string schemesRoot = Path.Combine(game, "AstralParty_ModLoader", "character-skin-schemes");
+        if (Directory.Exists(schemesRoot))
+            foreach (string schemeDirectory in Directory.GetDirectories(schemesRoot))
+            {
+                if (Path.GetFileName(schemeDirectory).StartsWith('.')) continue;
+                string path = Path.Combine(schemeDirectory, "character-scheme.json");
+                if (!File.Exists(path)) continue;
+                var scheme = JsonSerializer.Deserialize<CharacterSkinScheme>(File.ReadAllText(path), JsonOptions);
+                if (scheme?.Rules?.Any(rule => rule != null && string.Equals(rule.CustomPackageId, id, StringComparison.OrdinalIgnoreCase)) == true)
+                    throw new InvalidOperationException("自定义包被皮肤方案引用，请先移除方案规则: " + scheme.Id);
+            }
         SetActive(game, id, false);
         var trash = Path.Combine(Root(game), ".deleted");
         Directory.CreateDirectory(trash);
