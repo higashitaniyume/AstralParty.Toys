@@ -16,12 +16,12 @@ winget install Hiynet.AstralParty.Toys
 
 ### 方式二：从 GitHub Releases 下载
 
-从 [GitHub Releases](https://github.com/higashitaniyume/AstralParty.Toys/releases/latest) 下载发布版。每个版本提供 **2 个 x64 中文 MSI 安装包** 以及 4 个免安装便携/单文件产物（全量 64 位 x64 架构）：
+从 [GitHub Releases](https://github.com/higashitaniyume/AstralParty.Toys/releases/latest) 下载发布版。每个版本提供 **2 个 x64 英文 Inno Setup 安装包（EXE）** 以及 4 个免安装便携/单文件产物（全量 64 位 x64 架构）：
 
 | 产物格式 | 文件名形式 | 特点与适用场景 |
 | --- | --- | --- |
-| **自包含 MSI 安装包**（推荐） | `AstralParty.Toys-<版本>-win-x64-self-contained-installer.msi` | **最推荐**；自带 .NET 8，支持自选安装目录与快捷方式，升级自动覆盖并保留配置，卸载不影响回放库与游戏模组 |
-| **框架依赖 MSI 安装包** | `AstralParty.Toys-<版本>-win-x64-framework-dependent-installer.msi` | 体积较小（~55MB），需系统已安装 .NET 8 Desktop Runtime；支持自定义快捷方式与安装目录 |
+| **自包含安装包**（推荐） | `AstralParty.Toys-<版本>-win-x64-self-contained-installer.exe` | **最推荐**；自带 .NET 8，支持自选安装目录与快捷方式，升级自动覆盖并保留配置，卸载不影响回放库与游戏模组 |
+| **框架依赖安装包** | `AstralParty.Toys-<版本>-win-x64-framework-dependent-installer.exe` | 体积较小（~55MB），需系统已安装 .NET 8 Desktop Runtime；支持自定义快捷方式与安装目录 |
 | **自包含便携版** | `...-win-x64-self-contained-portable.zip` | 解压即用，自带 .NET 8，启动直接便于排查问题 |
 | **框架依赖便携版** | `...-win-x64-framework-dependent-portable.zip` | 体积较小，需系统已安装 [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) |
 | **单文件版** | `...-single-file.exe` | 单个可执行文件分发（分别提供 self-contained 与 framework-dependent 两种版本） |
@@ -185,11 +185,14 @@ dotnet publish .\replaytool\src\AstralParty.Toys\AstralParty.Toys.csproj `
   -c Release -r win-x64 --self-contained false
 ```
 
-生成 Windows x64 自包含 MSI 安装包（自动恢复本地 WiX v5 工具并构建 `.artifacts\AstralParty.Toys-<版本>-win-x64-self-contained-installer.msi`）：
+生成 Windows x64 自包含 Inno Setup 安装包（先安装 Inno Setup 6，在仓库根目录运行；默认英语，当前用户安装不提权）：
 
 ```powershell
-.\replaytool\installer\Build-Msi.ps1
+dotnet publish .\replaytool\src\AstralParty.Toys\AstralParty.Toys.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o .\replaytool\.artifacts\inno-publish
+.\replaytool\installer\Build-Installer.ps1 -PublishDirectory .\replaytool\.artifacts\inno-publish -OutputPath .\replaytool\.artifacts\AstralParty.Toys-installer.exe
 ```
+
+安装与卸载提示说明见 [installer/README.md](installer/README.md)。
 
 默认发布入口位于：
 

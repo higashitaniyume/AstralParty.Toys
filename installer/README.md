@@ -1,37 +1,42 @@
-# x64 MSI 安装包
+# Inno Setup x64 installers
 
-GitHub Actions 每个版本提供 2 个 x64 中文 MSI 安装包（自包含 `AstralParty.Toys-<tag>-win-x64-self-contained-installer.msi` 与框架依赖 `AstralParty.Toys-<tag>-win-x64-framework-dependent-installer.msi`），以及 4 个免安装便携/单文件附件。带 `-` 后缀的 tag（例如 `v1.0.1-beta`）发布为 GitHub prerelease。
+Releases provide two English Inno Setup installers (`...-win-x64-self-contained-installer.exe` and `...-win-x64-framework-dependent-installer.exe`) plus two portable ZIPs and two single-file EXEs. The self-contained installer includes .NET 8; the framework-dependent installer requires the x64 .NET 8 Desktop Runtime. Both require WebView2.
 
-安装向导使用简体中文界面与专属主题图，支持选择安装目录，并分别勾选开始菜单和桌面快捷方式。默认按当前用户安装到 `%LocalAppData%\Programs\AstralParty.Toys`，默认添加开始菜单、不添加桌面快捷方式。自选目录需要当前用户具有写权限。自包含版本已自带 .NET 8，框架依赖版本需已安装 64 位 .NET 8 Desktop Runtime；两者均需要 WebView2 Runtime。
+## Installation and upgrades
 
-安装目录和快捷方式偏好写入 `HKCU\Software\AstralParty.Toys\Installer`，供后续 MSI 升级读取。卸载只清理安装程序管理的文件、快捷方式和安装注册信息，文档中的配置、回放以及游戏中的加载器不受影响。
+Setup installs for the current user without requesting administrator privileges by default (`PrivilegesRequired=lowest`). The default folder is `%LocalAppData%\Programs\AstralParty.Toys`; users can select another writable folder. The interactive directory page probes file creation, writing, and deletion. Protected folders require choosing another folder or explicitly launching Setup with suitable permissions.
 
-## 本地构建
+The Start menu shortcut is selected by default; the desktop shortcut is not. Both are independently selectable. Inno upgrades remember the folder and tasks. Disabling a previously selected task removes only the corresponding Toys shortcut. Downgrades are blocked. The wizard language is English regardless of the Windows display language.
 
-在仓库根目录运行（PowerShell 7）：
+The fixed AppId is `{8E9C6C61-5A60-4EF0-AD84-8F59E877A663}`. No legacy installer detection, migration, or removal is performed.
 
-```powershell
-dotnet tool install --global wix --version 5.0.2
-wix extension add -g WixToolset.UI.wixext/5.0.2
-dotnet publish src/AstralParty.Toys/AstralParty.Toys.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -p:DebugType=None -p:DebugSymbols=false -o .artifacts/msi-publish
-./installer/Build-Msi.ps1 -PublishDirectory .artifacts/msi-publish -OutputPath .artifacts/AstralParty.Toys.msi -ProductVersion 1.0.1
-```
+## Uninstall
 
-`Build-Msi.ps1` 将发布目录全部文件编入 MSI，自动合成向导立绘与顶部横幅位图，并随附仓库的 AGPL 协议。构建输出目录中的 `msi-build` 是中间产物，不应作为发布附件。
+The generated uninstaller displays an English warning before interactive removal, including when launched using its registered uninstall command from Windows Settings or Control Panel:
 
-无人值守安装可使用 MSI 公共属性（快捷方式 `1` 为开启，空值为关闭）：
+> Uninstalling AstralParty.Toys will NOT remove CesiumLoader (the Mod loader) or mods from your game folder. To remove the Mod loader, cancel now and remove it from the Mods page in Toys first. Your settings, replays, and skins will also be kept.
 
-```powershell
-msiexec /i AstralParty.Toys.msi /qn INSTALLFOLDER="D:\Apps\AstralParty.Toys" STARTMENU_SHORTCUT=1 DESKTOP_SHORTCUT=""
-```
+The default response is cancellation. Silent uninstall skips interaction. The uninstaller only removes installed files and its shortcuts; it does not search or modify game folders or delete `Documents\AstralPartyReplays`. Avoid wildcard recursive uninstall deletion rules.
 
-MSI 数字版本来自项目的 `Version`，不使用 tag 中的 beta 后缀。`1.0.1-beta` 的程序与 MSI 均为 `1.0.1`。固定 UpgradeCode 并启用 `AllowSameVersionUpgrades`，用于识别旧版或同版本重复构建并原地覆盖升级，同时阻止降级。
+## Local build (PowerShell 7)
 
-## WinGet 源更新（`Hiynet.AstralParty.Toys`）
-
-清单存档位于 `installer/winget/manifests/h/Hiynet/AstralParty/Toys/`。首次入库 PR 合并后，每次 GitHub Release 发布完成可执行以下命令同步更新 `microsoft/winget-pkgs`：
+Install Inno Setup 6 (CI uses the Windows runner's compiler, or installs 6.6.1 if absent), then run from the repository root:
 
 ```powershell
-wingetcreate update Hiynet.AstralParty.Toys --version X.Y.Z --urls https://github.com/higashitaniyume/AstralParty.Toys/releases/download/<tag>/AstralParty.Toys-<tag>-win-x64-self-contained-installer.msi --submit --token $(gh auth token)
+dotnet publish src/AstralParty.Toys/AstralParty.Toys.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -p:DebugType=None -p:DebugSymbols=false -o .artifacts/inno-publish
+./installer/Build-Installer.ps1 -PublishDirectory .artifacts/inno-publish -OutputPath .artifacts/AstralParty.Toys-installer.exe -ProductVersion 1.1.0
 ```
 
+Without `-ProductVersion`, the build script reads the application project's `Version`, so future releases do not depend on a hardcoded installer version. Pass `-CompilerPath <path-to-ISCC.exe>` if the compiler is not in PATH or a standard Inno Setup 6 directory. The script packages the published tree and repository license, and checks the compiler exit status and expected output. The license is displayed and installed as `LICENSE.txt`. Do not publish the compiler or temporary build inputs.
+
+```powershell
+# Fresh installation / upgrade, without UAC for writable folders:
+.\AstralParty.Toys-installer.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR="D:\Apps\AstralParty.Toys" /TASKS="startmenuicon,desktopicon" /LOG="install.log"
+# No shortcuts: /TASKS=""
+# Silent uninstall:
+& 'D:\Apps\AstralParty.Toys\unins000.exe' /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /LOG="uninstall.log"
+```
+
+## WinGet
+
+Existing manifests under `winget/manifests/` remain historical records. The next version needs a new manifest using `InstallerType: inno`, `Scope: user`, the EXE URL/hash, and uninstall identity `{8E9C6C61-5A60-4EF0-AD84-8F59E877A663}_is1`. Validate WinGet detection before submitting a new manifest. Building this repository does not publish assets or submit a WinGet PR.

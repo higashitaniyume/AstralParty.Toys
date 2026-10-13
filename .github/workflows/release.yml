@@ -47,8 +47,8 @@ jobs:
           - self-contained-zip
           - framework-single
           - self-contained-single
-          - framework-msi
-          - self-contained-msi
+          - framework-installer
+          - self-contained-installer
 
     steps:
       - name: Check out source
@@ -157,7 +157,7 @@ jobs:
           $selfContained = "${{ contains(matrix.kind, 'self-contained') }}".ToLowerInvariant()
           $singleFile = "${{ contains(matrix.kind, 'single') }}".ToLowerInvariant()
           $runtimeLabel = if ($selfContained -eq "true") { "self-contained" } else { "framework-dependent" }
-          $formatLabel = if ("${{ contains(matrix.kind, 'msi') }}" -eq "true") { "installer" } elseif ($singleFile -eq "true") { "single-file" } else { "portable" }
+          $formatLabel = if ("${{ contains(matrix.kind, 'installer') }}" -eq "true") { "installer" } elseif ($singleFile -eq "true") { "single-file" } else { "portable" }
           $baseName = "${{ env.APP_NAME }}-$safeVersion-${{ matrix.rid }}-$runtimeLabel-$formatLabel"
           "version=$safeVersion" >> $env:GITHUB_OUTPUT
           "self_contained=$selfContained" >> $env:GITHUB_OUTPUT
@@ -191,25 +191,28 @@ jobs:
           & dotnet @arguments
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Set up WiX for MSI
-        if: contains(matrix.kind, 'msi')
+      - name: Set up Inno Setup
+        if: contains(matrix.kind, 'installer')
         shell: pwsh
         run: |
-          dotnet tool install --global wix --version 5.0.2
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          wix extension add -g WixToolset.UI.wixext/5.0.2
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $compiler = "${env:ProgramFiles(x86)}/Inno Setup 6/ISCC.exe"
+          if (-not (Test-Path $compiler)) {
+            choco install innosetup --version=6.6.1 --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          if (-not (Test-Path $compiler)) { throw "Inno Setup compiler not found." }
+          "INNO_COMPILER=$compiler" >> $env:GITHUB_ENV
 
-      - name: Build x64 MSI
-        if: contains(matrix.kind, 'msi')
+      - name: Build x64 Inno installer
+        if: contains(matrix.kind, 'installer')
         shell: pwsh
         run: |
           [xml]$project = Get-Content $env:PROJECT -Raw
           $productVersion = [string]$project.Project.PropertyGroup.Version
-          ./installer/Build-Msi.ps1 -PublishDirectory publish -OutputPath "artifacts/${{ steps.metadata.outputs.base_name }}.msi" -ProductVersion $productVersion
+          ./installer/Build-Installer.ps1 -PublishDirectory publish -OutputPath "artifacts/${{ steps.metadata.outputs.base_name }}.exe" -ProductVersion $productVersion -CompilerPath $env:INNO_COMPILER
 
       - name: Package release asset
-        if: "!contains(matrix.kind, 'msi')"
+        if: "!contains(matrix.kind, 'installer')"
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path artifacts -Force | Out-Null
@@ -231,7 +234,6 @@ jobs:
           path: |
             artifacts/*.zip
             artifacts/*.exe
-            artifacts/*.msi
           if-no-files-found: error
           retention-days: 1
 
@@ -255,9 +257,10 @@ jobs:
           mapfile -t assets < <(find artifacts -maxdepth 1 -type f -print | sort)
           printf '%s\n' "${assets[@]}"
           test "${#assets[@]}" -eq 6
-          test "$(find artifacts -maxdepth 1 -type f -name '*.msi' | wc -l)" -eq 2
+          test "$(find artifacts -maxdepth 1 -type f -name '*.msi' | wc -l)" -eq 0
           test "$(find artifacts -maxdepth 1 -type f -name '*.zip' | wc -l)" -eq 2
-          test "$(find artifacts -maxdepth 1 -type f -name '*.exe' | wc -l)" -eq 2
+          test "$(find artifacts -maxdepth 1 -type f -name '*.exe' | wc -l)" -eq 4
+          test "$(find artifacts -maxdepth 1 -type f -name '*-installer.exe' | wc -l)" -eq 2
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
