@@ -26,3 +26,12 @@ msiexec /i AstralParty.Toys.msi /qn INSTALLFOLDER="D:\Apps\AstralParty.Toys" STA
 ```
 
 MSI 数字版本来自项目的 `Version`，不使用 tag 中的 beta 后缀。`1.0.1-beta` 的程序与 MSI 均为 `1.0.1`。固定 UpgradeCode 并启用 `AllowSameVersionUpgrades`，用于识别旧版或同版本重复构建并原地覆盖升级，同时阻止降级。
+
+## WinGet 源更新（`Hiynet.AstralParty.Toys`）
+
+清单存档位于 `installer/winget/manifests/h/Hiynet/AstralParty/Toys/`。首次入库 PR 合并后，每次 GitHub Release 发布完成可执行以下命令同步更新 `microsoft/winget-pkgs`：
+
+```powershell
+wingetcreate update Hiynet.AstralParty.Toys --version X.Y.Z --urls https://github.com/higashitaniyume/AstralParty.Toys/releases/download/<tag>/AstralParty.Toys-<tag>-win-x64-self-contained-installer.msi --submit --token $(gh auth token)
+```
+
