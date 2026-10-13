@@ -8,7 +8,6 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $publishRoot = (Resolve-Path $PublishDirectory).Path
 if (-not (Test-Path (Join-Path $publishRoot 'AstralParty.Toys.exe'))) { throw 'Publish directory must contain AstralParty.Toys.exe.' }
-if (-not (Test-Path (Join-Path $publishRoot 'coreclr.dll'))) { throw 'MSI requires a self-contained publish directory.' }
 if ($ProductVersion -notmatch '^\d+\.\d+\.\d+$') { throw 'MSI version must have three numeric parts.' }
 $outputFullPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutputPath)
 $buildRoot = Join-Path (Split-Path $outputFullPath -Parent) 'msi-build'

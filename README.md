@@ -16,14 +16,15 @@ winget install Hiynet.AstralParty.Toys
 
 ### 方式二：从 GitHub Releases 下载
 
-从 [GitHub Releases](https://github.com/higashitaniyume/AstralParty.Toys/releases/latest) 下载发布版。每个版本提供 **1 个 x64 中文 MSI 安装包** 以及 8 个免安装便携/单文件产物：
+从 [GitHub Releases](https://github.com/higashitaniyume/AstralParty.Toys/releases/latest) 下载发布版。每个版本提供 **2 个 x64 中文 MSI 安装包** 以及 4 个免安装便携/单文件产物（全量 64 位 x64 架构）：
 
 | 产物格式 | 文件名形式 | 特点与适用场景 |
 | --- | --- | --- |
-| **x64 MSI 安装包**（推荐） | `AstralParty.Toys-<版本>-win-x64-self-contained-installer.msi` | **最推荐**；自带 .NET 8，支持自选安装目录与快捷方式，升级自动覆盖并保留配置，卸载不影响回放库与游戏模组 |
+| **自包含 MSI 安装包**（推荐） | `AstralParty.Toys-<版本>-win-x64-self-contained-installer.msi` | **最推荐**；自带 .NET 8，支持自选安装目录与快捷方式，升级自动覆盖并保留配置，卸载不影响回放库与游戏模组 |
+| **框架依赖 MSI 安装包** | `AstralParty.Toys-<版本>-win-x64-framework-dependent-installer.msi` | 体积较小（~55MB），需系统已安装 .NET 8 Desktop Runtime；支持自定义快捷方式与安装目录 |
 | **自包含便携版** | `...-win-x64-self-contained-portable.zip` | 解压即用，自带 .NET 8，启动直接便于排查问题 |
-| **框架依赖便携版** | `...-win-x64-framework-dependent-portable.zip` | 体积较小，但需系统已安装 [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) |
-| **单文件版** | `...-single-file.exe` | 单个可执行文件分发，首次启动会自动解压运行环境至临时目录 |
+| **框架依赖便携版** | `...-win-x64-framework-dependent-portable.zip` | 体积较小，需系统已安装 [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) |
+| **单文件版** | `...-single-file.exe` | 单个可执行文件分发（分别提供 self-contained 与 framework-dependent 两种版本） |
 
 > 注：无论选择哪一种产物，主界面渲染均需要 Microsoft Edge WebView2 Evergreen Runtime（Windows 10/11 通常已自带）。各版本变更记录见 [CHANGELOG.md](CHANGELOG.md)。
 
@@ -135,8 +136,8 @@ winget install Hiynet.AstralParty.Toys
 
 ## 环境要求
 
-- Windows 10 或 Windows 11（发布页同时提供 `win-x64` 与 `win-x86`）
-- `framework-dependent` 版本需要 [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)；`self-contained` 版本与 MSI 安装包已自带 .NET 8
+- Windows 10 或 Windows 11（64 位，win-x64）
+- 框架依赖（`framework-dependent`）版本需要 [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)；自包含（`self-contained`）版本已自带 .NET 8
 - Microsoft Edge WebView2 Evergreen Runtime（Windows 10/11 通常已经安装）
 
 从源码构建还需要 .NET 8 SDK 或更高版本。

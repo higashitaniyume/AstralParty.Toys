@@ -41,11 +41,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rid: [win-x86, win-x64]
-        kind: [framework-zip, self-contained-zip, framework-single, self-contained-single]
-        include:
-          - rid: win-x64
-            kind: self-contained-msi
+        rid: [win-x64]
+        kind:
+          - framework-zip
+          - self-contained-zip
+          - framework-single
+          - self-contained-single
+          - framework-msi
+          - self-contained-msi
 
     steps:
       - name: Check out source
@@ -154,7 +157,7 @@ jobs:
           $selfContained = "${{ contains(matrix.kind, 'self-contained') }}".ToLowerInvariant()
           $singleFile = "${{ contains(matrix.kind, 'single') }}".ToLowerInvariant()
           $runtimeLabel = if ($selfContained -eq "true") { "self-contained" } else { "framework-dependent" }
-          $formatLabel = if ("${{ matrix.kind }}" -eq "self-contained-msi") { "installer" } elseif ($singleFile -eq "true") { "single-file" } else { "portable" }
+          $formatLabel = if ("${{ contains(matrix.kind, 'msi') }}" -eq "true") { "installer" } elseif ($singleFile -eq "true") { "single-file" } else { "portable" }
           $baseName = "${{ env.APP_NAME }}-$safeVersion-${{ matrix.rid }}-$runtimeLabel-$formatLabel"
           "version=$safeVersion" >> $env:GITHUB_OUTPUT
           "self_contained=$selfContained" >> $env:GITHUB_OUTPUT
@@ -189,7 +192,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Set up WiX for MSI
-        if: matrix.kind == 'self-contained-msi'
+        if: contains(matrix.kind, 'msi')
         shell: pwsh
         run: |
           dotnet tool install --global wix --version 5.0.2
@@ -197,8 +200,8 @@ jobs:
           wix extension add -g WixToolset.UI.wixext/5.0.2
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Build x64 self-contained MSI
-        if: matrix.kind == 'self-contained-msi'
+      - name: Build x64 MSI
+        if: contains(matrix.kind, 'msi')
         shell: pwsh
         run: |
           [xml]$project = Get-Content $env:PROJECT -Raw
@@ -206,7 +209,7 @@ jobs:
           ./installer/Build-Msi.ps1 -PublishDirectory publish -OutputPath "artifacts/${{ steps.metadata.outputs.base_name }}.msi" -ProductVersion $productVersion
 
       - name: Package release asset
-        if: matrix.kind != 'self-contained-msi'
+        if: "!contains(matrix.kind, 'msi')"
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path artifacts -Force | Out-Null
@@ -251,10 +254,10 @@ jobs:
           set -euo pipefail
           mapfile -t assets < <(find artifacts -maxdepth 1 -type f -print | sort)
           printf '%s\n' "${assets[@]}"
-          test "${#assets[@]}" -eq 9
-          test "$(find artifacts -maxdepth 1 -type f -name '*.msi' | wc -l)" -eq 1
-          test "$(find artifacts -maxdepth 1 -type f -name '*.zip' | wc -l)" -eq 4
-          test "$(find artifacts -maxdepth 1 -type f -name '*.exe' | wc -l)" -eq 4
+          test "${#assets[@]}" -eq 6
+          test "$(find artifacts -maxdepth 1 -type f -name '*.msi' | wc -l)" -eq 2
+          test "$(find artifacts -maxdepth 1 -type f -name '*.zip' | wc -l)" -eq 2
+          test "$(find artifacts -maxdepth 1 -type f -name '*.exe' | wc -l)" -eq 2
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2

@@ -1,8 +1,8 @@
-# x64 自包含 MSI
+# x64 MSI 安装包
 
-GitHub Actions 保留原有 8 个便携附件，并新增 `AstralParty.Toys-<tag>-win-x64-self-contained-installer.msi`。带 `-` 后缀的 tag（例如 `v1.0.1-beta`）发布为 GitHub prerelease。
+GitHub Actions 每个版本提供 2 个 x64 中文 MSI 安装包（自包含 `AstralParty.Toys-<tag>-win-x64-self-contained-installer.msi` 与框架依赖 `AstralParty.Toys-<tag>-win-x64-framework-dependent-installer.msi`），以及 4 个免安装便携/单文件附件。带 `-` 后缀的 tag（例如 `v1.0.1-beta`）发布为 GitHub prerelease。
 
-安装向导使用简体中文界面与专属主题图，支持选择安装目录，并分别勾选开始菜单和桌面快捷方式。默认按当前用户安装到 `%LocalAppData%\Programs\AstralParty.Toys`，默认添加开始菜单、不添加桌面快捷方式。自选目录需要当前用户具有写权限。安装不需要 .NET Desktop Runtime，但仍需要 WebView2 Runtime。
+安装向导使用简体中文界面与专属主题图，支持选择安装目录，并分别勾选开始菜单和桌面快捷方式。默认按当前用户安装到 `%LocalAppData%\Programs\AstralParty.Toys`，默认添加开始菜单、不添加桌面快捷方式。自选目录需要当前用户具有写权限。自包含版本已自带 .NET 8，框架依赖版本需已安装 64 位 .NET 8 Desktop Runtime；两者均需要 WebView2 Runtime。
 
 安装目录和快捷方式偏好写入 `HKCU\Software\AstralParty.Toys\Installer`，供后续 MSI 升级读取。卸载只清理安装程序管理的文件、快捷方式和安装注册信息，文档中的配置、回放以及游戏中的加载器不受影响。
 
