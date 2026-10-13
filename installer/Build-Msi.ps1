@@ -2,7 +2,7 @@
 param(
     [Parameter(Mandatory)][string]$PublishDirectory,
     [Parameter(Mandatory)][string]$OutputPath,
-    [string]$ProductVersion = '1.0.0'
+    [string]$ProductVersion = '1.0.1'
 )
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
@@ -57,6 +57,85 @@ $rtfText = $licenseText.Replace('\', '\\').Replace('{', '\{').Replace('}', '\}')
 $licensePath = Join-Path $buildRoot 'License.rtf'
 Set-Content $licensePath ('{\rtf1\ansi\deff0{\fonttbl{\f0 Arial;}}\f0\fs16 ' + $rtfText + '}') -Encoding ascii
 $iconPath = Join-Path $repoRoot 'src/AstralParty.Toys/WebUI/images/UT_AccountHeadShot_70902.ico'
-& wix build (Join-Path $PSScriptRoot 'Package.wxs') $payloadPath -arch x64 -ext WixToolset.UI.wixext -culture en-us -d "ProductVersion=$ProductVersion" -d "AppIcon=$iconPath" -d "LicenseRtf=$licensePath" -intermediateFolder $buildRoot -o $outputFullPath
+$logoPath = Join-Path $repoRoot 'src/AstralParty.Toys/WebUI/images/astral-party-logo.png'
+$bgPath = Join-Path $repoRoot 'src/AstralParty.Toys/WebUI/images/Anni2nd.png'
+$chibiPath = Join-Path $PSScriptRoot 'UT_Hero_LevelUp_107_04.png'
+$bannerPath = Join-Path $buildRoot 'Banner.bmp'
+$dialogPath = Join-Path $buildRoot 'Dialog.bmp'
+
+Add-Type -AssemblyName System.Drawing
+$iconBmp = [Drawing.Icon]::new($iconPath, 256, 256).ToBitmap()
+$logoBmp = [Drawing.Bitmap]::new($logoPath)
+$bgBmp = [Drawing.Bitmap]::new($bgPath)
+$chibiBmp = [Drawing.Bitmap]::new($chibiPath)
+try {
+    $banner = [Drawing.Bitmap]::new(493, 58, [Drawing.Imaging.PixelFormat]::Format24bppRgb)
+    try {
+        $g = [Drawing.Graphics]::FromImage($banner)
+        try {
+            $g.Clear([Drawing.Color]::White)
+            $g.InterpolationMode = [Drawing.Drawing2D.InterpolationMode]::NearestNeighbor
+            $g.PixelOffsetMode = [Drawing.Drawing2D.PixelOffsetMode]::Half
+            $g.DrawImage($iconBmp, [Drawing.Rectangle]::new(438, 7, 44, 44))
+        } finally {
+            $g.Dispose()
+        }
+        $banner.Save($bannerPath, [Drawing.Imaging.ImageFormat]::Bmp)
+    } finally {
+        $banner.Dispose()
+    }
+
+    $dialog = [Drawing.Bitmap]::new(493, 312, [Drawing.Imaging.PixelFormat]::Format24bppRgb)
+    try {
+        $gd = [Drawing.Graphics]::FromImage($dialog)
+        try {
+            $gd.Clear([Drawing.Color]::White)
+            $gd.SmoothingMode = [Drawing.Drawing2D.SmoothingMode]::HighQuality
+            $gd.InterpolationMode = [Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+            $gd.SetClip([Drawing.Rectangle]::new(0, 0, 164, 312))
+            $srcH = $bgBmp.Height
+            $srcW = [int]($srcH * (164.0 / 312.0))
+            $srcX = [int]($bgBmp.Width * 0.52)
+            $gd.DrawImage($bgBmp, [Drawing.Rectangle]::new(0, 0, 164, 312), [Drawing.Rectangle]::new($srcX, 0, $srcW, $srcH), [Drawing.GraphicsUnit]::Pixel)
+            $overlay = [Drawing.Drawing2D.LinearGradientBrush]::new(
+                [Drawing.Point]::new(0, 0),
+                [Drawing.Point]::new(0, 312),
+                [Drawing.Color]::FromArgb(150, 15, 17, 30),
+                [Drawing.Color]::FromArgb(210, 15, 17, 30)
+            )
+            try {
+                $gd.FillRectangle($overlay, 0, 0, 164, 312)
+            } finally {
+                $overlay.Dispose()
+            }
+            $logoW = 144
+            $logoH = [int]($logoBmp.Height * ($logoW / [double]$logoBmp.Width))
+            $gd.DrawImage($logoBmp, [Drawing.Rectangle]::new(10, 18, $logoW, $logoH))
+            $chibiH = 175
+            $chibiW = [int]($chibiBmp.Width * ($chibiH / [double]$chibiBmp.Height))
+            $chibiX = [int]((164 - $chibiW) / 2)
+            $gd.DrawImage($chibiBmp, [Drawing.Rectangle]::new($chibiX, 126, $chibiW, $chibiH))
+            $gd.ResetClip()
+            $pen = [Drawing.Pen]::new([Drawing.Color]::FromArgb(226, 232, 240), 1)
+            try {
+                $gd.DrawLine($pen, 163, 0, 163, 312)
+            } finally {
+                $pen.Dispose()
+            }
+        } finally {
+            $gd.Dispose()
+        }
+        $dialog.Save($dialogPath, [Drawing.Imaging.ImageFormat]::Bmp)
+    } finally {
+        $dialog.Dispose()
+    }
+} finally {
+    $iconBmp.Dispose()
+    $logoBmp.Dispose()
+    $bgBmp.Dispose()
+    $chibiBmp.Dispose()
+}
+
+& wix build (Join-Path $PSScriptRoot 'Package.wxs') $payloadPath -arch x64 -ext WixToolset.UI.wixext -culture zh-cn -d "ProductVersion=$ProductVersion" -d "AppIcon=$iconPath" -d "LicenseRtf=$licensePath" -d "BannerBmp=$bannerPath" -d "DialogBmp=$dialogPath" -intermediateFolder $buildRoot -o $outputFullPath
 if ($LASTEXITCODE -ne 0) { throw "WiX build failed with exit code $LASTEXITCODE" }
 Write-Host "Built $outputFullPath"

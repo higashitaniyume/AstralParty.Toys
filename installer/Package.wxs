@@ -1,6 +1,6 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
-  <Package Name="AstralParty.Toys" Manufacturer="higashitaniyume" Version="$(var.ProductVersion)" UpgradeCode="6B289420-9EE6-4D02-B437-A7AE244F904C" Scope="perUser" Language="1033">
-    <MajorUpgrade DowngradeErrorMessage="A newer version of AstralParty.Toys is already installed." />
+  <Package Name="AstralParty.Toys" Manufacturer="higashitaniyume" Version="$(var.ProductVersion)" UpgradeCode="6B289420-9EE6-4D02-B437-A7AE244F904C" Scope="perUser" Language="2052" Codepage="936">
+    <MajorUpgrade AllowSameVersionUpgrades="yes" DowngradeErrorMessage="已安装更高版本的 AstralParty.Toys。" />
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
     <Icon Id="AppIcon" SourceFile="$(var.AppIcon)" />
     <Property Id="ARPPRODUCTICON" Value="AppIcon" />
@@ -55,20 +55,24 @@
     </Feature>
     <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
     <WixVariable Id="WixUILicenseRtf" Value="$(var.LicenseRtf)" />
+    <WixVariable Id="WixUIBannerBmp" Value="$(var.BannerBmp)" />
+    <WixVariable Id="WixUIDialogBmp" Value="$(var.DialogBmp)" />
     <UI>
-      <Dialog Id="ShortcutOptionsDlg" Width="370" Height="270" Title="[ProductName] Setup">
-        <Control Id="Title" Type="Text" X="15" Y="15" Width="340" Height="25" Transparent="yes" Text="{\WixUI_Font_Title}Choose shortcuts" />
-        <Control Id="Description" Type="Text" X="20" Y="55" Width="330" Height="30" Text="Choose where Setup should add shortcuts for AstralParty.Toys." />
-        <Control Id="StartMenu" Type="CheckBox" X="25" Y="100" Width="320" Height="20" Property="STARTMENU_SHORTCUT" CheckBoxValue="1" Text="Add a Start menu shortcut" />
-        <Control Id="Desktop" Type="CheckBox" X="25" Y="135" Width="320" Height="20" Property="DESKTOP_SHORTCUT" CheckBoxValue="1" Text="Add a desktop shortcut" />
-        <Control Id="Line" Type="Line" X="0" Y="234" Width="370" Height="0" />
-        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="Back">
+      <Dialog Id="ShortcutOptionsDlg" Width="370" Height="270" Title="!(loc.InstallDirDlg_Title)">
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="!(loc.InstallDirDlgBannerBitmap)" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="200" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}快捷方式" />
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="280" Height="15" Transparent="yes" NoPrefix="yes" Text="选择需要为 AstralParty.Toys 创建的快捷方式。" />
+        <Control Id="StartMenu" Type="CheckBox" X="25" Y="80" Width="320" Height="18" Property="STARTMENU_SHORTCUT" CheckBoxValue="1" Text="添加开始菜单快捷方式" />
+        <Control Id="Desktop" Type="CheckBox" X="25" Y="108" Width="320" Height="18" Property="DESKTOP_SHORTCUT" CheckBoxValue="1" Text="添加桌面快捷方式" />
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.WixUIBack)">
           <Publish Event="NewDialog" Value="InstallDirDlg" />
         </Control>
-        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="Next">
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="!(loc.WixUINext)">
           <Publish Event="NewDialog" Value="VerifyReadyDlg" />
         </Control>
-        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="Cancel">
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="!(loc.WixUICancel)">
           <Publish Event="SpawnDialog" Value="CancelDlg" />
         </Control>
       </Dialog>
