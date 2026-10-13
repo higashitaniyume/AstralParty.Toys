@@ -2,6 +2,16 @@
 
 本文件按版本记录 `AstralParty.Toys` 的功能变更。版本号与 GitHub 发布 tag 一一对应（如 `v0.2.0`），发布产物由 [release.yml](.github/workflows/release.yml) 在打 tag 时自动构建。
 
+## [v1.0.0-beta] - 2026-10-13
+
+### MSI 安装包预发布
+
+- 新增 Windows x64 自包含 MSI 安装包，无需另装 .NET Desktop Runtime；现有便携 ZIP 和单文件 EXE 继续提供。
+- 安装向导支持自选安装目录，并可分别选择开始菜单和桌面快捷方式；默认添加开始菜单、不添加桌面快捷方式。
+- 按当前用户安装，默认位置为 `%LocalAppData%\Programs\AstralParty.Toys`；升级保留安装目录和快捷方式偏好，卸载保留文档中的配置与回放库。
+- 程序与 MSI 版本号为 `1.0.0`，GitHub 标签为 `v1.0.0-beta`，标记为 prerelease。
+- MSI 随附 AGPL-3.0 协议。WebView2 Runtime 仍需系统已有。
+
 ## [v0.7.1] - 2026-10-13
 
 ### 多人物皮肤方案

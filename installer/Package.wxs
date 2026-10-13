@@ -1,0 +1,79 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package Name="AstralParty.Toys" Manufacturer="higashitaniyume" Version="$(var.ProductVersion)" UpgradeCode="6B289420-9EE6-4D02-B437-A7AE244F904C" Scope="perUser" Language="1033">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of AstralParty.Toys is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+    <Icon Id="AppIcon" SourceFile="$(var.AppIcon)" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/higashitaniyume/AstralParty.Toys" />
+    <Property Id="INSTALLFOLDER" Secure="yes">
+      <RegistrySearch Id="PreviousInstallFolder" Root="HKCU" Key="Software\AstralParty.Toys\Installer" Name="InstallFolder" Type="raw" />
+    </Property>
+    <Property Id="STARTMENU_SHORTCUT" Value="1" Secure="yes" />
+    <Property Id="DESKTOP_SHORTCUT" Secure="yes" />
+    <!-- Store unchecked as a nonempty sentinel: AppSearch cannot restore an empty property. -->
+    <Property Id="SAVED_STARTMENU" Secure="yes">
+      <RegistrySearch Id="PreviousStartMenu" Root="HKCU" Key="Software\AstralParty.Toys\Installer" Name="StartMenu" Type="raw" />
+    </Property>
+    <Property Id="SAVED_DESKTOP" Secure="yes">
+      <RegistrySearch Id="PreviousDesktop" Root="HKCU" Key="Software\AstralParty.Toys\Installer" Name="Desktop" Type="raw" />
+    </Property>
+    <SetProperty Id="STARTMENU_SHORTCUT" Value="[ASTRAL_EMPTY_PROPERTY]" After="AppSearch" Sequence="first" Condition="SAVED_STARTMENU = &quot;0&quot;" />
+    <SetProperty Id="DESKTOP_SHORTCUT" Value="1" After="AppSearch" Sequence="first" Condition="SAVED_DESKTOP = &quot;10&quot;" />
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="UserPrograms" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="AstralParty.Toys">
+          <Component Id="InstallerSettings" Guid="*">
+            <RemoveFolder Id="RemoveInstallFolder" On="uninstall" />
+            <RemoveFolder Id="RemoveUserProgramsIfEmpty" Directory="UserPrograms" On="uninstall" />
+            <RegistryValue Root="HKCU" Key="Software\AstralParty.Toys\Installer" Name="InstallFolder" Type="string" Value="[INSTALLFOLDER]" KeyPath="yes" />
+            <RegistryValue Root="HKCU" Key="Software\AstralParty.Toys\Installer" Name="StartMenu" Type="string" Value="[STARTMENU_SHORTCUT]0" />
+            <RegistryValue Root="HKCU" Key="Software\AstralParty.Toys\Installer" Name="Desktop" Type="string" Value="[DESKTOP_SHORTCUT]0" />
+          </Component>
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="AppMenuFolder" Name="AstralParty.Toys">
+        <Component Id="StartMenuShortcut" Guid="*" Condition="STARTMENU_SHORTCUT = &quot;1&quot;">
+          <Shortcut Id="StartMenuLink" Name="AstralParty.Toys" Target="[INSTALLFOLDER]AstralParty.Toys.exe" WorkingDirectory="INSTALLFOLDER" Icon="AppIcon" />
+          <RemoveFolder Id="RemoveAppMenu" On="uninstall" />
+          <RegistryValue Root="HKCU" Key="Software\AstralParty.Toys\Installer" Name="StartMenuInstalled" Type="integer" Value="1" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="DesktopFolder">
+      <Component Id="DesktopShortcut" Guid="*" Condition="DESKTOP_SHORTCUT = &quot;1&quot;">
+        <Shortcut Id="DesktopLink" Name="AstralParty.Toys" Target="[INSTALLFOLDER]AstralParty.Toys.exe" WorkingDirectory="INSTALLFOLDER" Icon="AppIcon" />
+        <RegistryValue Root="HKCU" Key="Software\AstralParty.Toys\Installer" Name="DesktopInstalled" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+    <Feature Id="Main" Title="AstralParty.Toys" Level="1">
+      <ComponentGroupRef Id="PublishedFiles" />
+      <ComponentRef Id="InstallerSettings" />
+      <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="DesktopShortcut" />
+    </Feature>
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.LicenseRtf)" />
+    <UI>
+      <Dialog Id="ShortcutOptionsDlg" Width="370" Height="270" Title="[ProductName] Setup">
+        <Control Id="Title" Type="Text" X="15" Y="15" Width="340" Height="25" Transparent="yes" Text="{\WixUI_Font_Title}Choose shortcuts" />
+        <Control Id="Description" Type="Text" X="20" Y="55" Width="330" Height="30" Text="Choose where Setup should add shortcuts for AstralParty.Toys." />
+        <Control Id="StartMenu" Type="CheckBox" X="25" Y="100" Width="320" Height="20" Property="STARTMENU_SHORTCUT" CheckBoxValue="1" Text="Add a Start menu shortcut" />
+        <Control Id="Desktop" Type="CheckBox" X="25" Y="135" Width="320" Height="20" Property="DESKTOP_SHORTCUT" CheckBoxValue="1" Text="Add a desktop shortcut" />
+        <Control Id="Line" Type="Line" X="0" Y="234" Width="370" Height="0" />
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="Back">
+          <Publish Event="NewDialog" Value="InstallDirDlg" />
+        </Control>
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="Next">
+          <Publish Event="NewDialog" Value="VerifyReadyDlg" />
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="Cancel">
+          <Publish Event="SpawnDialog" Value="CancelDlg" />
+        </Control>
+      </Dialog>
+      <Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="ShortcutOptionsDlg" Order="5" Condition="WIXUI_DONTVALIDATEPATH OR WIXUI_INSTALLDIR_VALID = &quot;1&quot;" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="ShortcutOptionsDlg" Order="3" Condition="NOT Installed" />
+    </UI>
+  </Package>
+</Wix>
