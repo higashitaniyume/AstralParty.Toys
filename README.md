@@ -1,253 +1,120 @@
+<div align="center">
+
 # AstralParty.Toys
 
-### 企鹅：1078464597
+## 感谢您选择并使用 AstralParty.Toys！
 
-`AstralParty.Toys` 是面向《吉星派对》（Astral Party）的 Windows 本地工具箱，整合离线回放复盘、协议帧查看、筹码时间线、自定义皮肤管理、**Mod 加载器（[CesiumLoader](https://github.com/higashitaniyume/CesiumLoader)）与模组管理**和游戏变速。所有数据处理均在本地完成。
+### 反馈问题与建议：企鹅群 **1078464597**
 
-## 安装与下载
+**Astral Party 的 Windows 桌面工具箱**
 
-### 方式一：WinGet 官方源安装（推荐，自动更新）
+回放复盘 · 皮肤创作 · 模组管理 · 游戏变速
 
-在 PowerShell 或命令提示符中直接运行：
+[![Release](https://img.shields.io/github/v/release/higashitaniyume/AstralParty.Toys?include_prereleases&style=flat-square&label=release)](https://github.com/higashitaniyume/AstralParty.Toys/releases)
+[![Release CI](https://img.shields.io/github/actions/workflow/status/higashitaniyume/AstralParty.Toys/release.yml?style=flat-square&label=Release%20CI)](https://github.com/higashitaniyume/AstralParty.Toys/actions/workflows/release.yml)
+[![Platform](https://img.shields.io/badge/platform-Windows%20x64-555?style=flat-square)](#安装)
+[![License](https://img.shields.io/badge/license-AGPL--3.0-555?style=flat-square)](LICENSE)
+
+![.NET 8](https://img.shields.io/badge/.NET-8-512BD4?style=flat-square&logo=dotnet&logoColor=white)
+![WebView2](https://img.shields.io/badge/WebView2-555?style=flat-square)
+
+[下载最新版](https://github.com/higashitaniyume/AstralParty.Toys/releases/latest) · [更新记录](CHANGELOG.md) · [CesiumLoader](https://github.com/higashitaniyume/CesiumLoader)
+
+</div>
+
+---
+
+整合回放库、离线分析、角色与卡牌皮肤编辑，以及配套加载器 CesiumLoader。回放解析与素材转换在本机完成，下载回放、获取更新和部分模组功能需要联网。
+
+## 安装
+
+<!-- 通过 WinGet 安装：
 
 ```powershell
 winget install Hiynet.AstralParty.Toys
 ```
 
-### 方式二：从 GitHub Releases 下载
+更新已安装版本：
 
-从 [GitHub Releases](https://github.com/higashitaniyume/AstralParty.Toys/releases/latest) 下载发布版。每个版本提供 **2 个 x64 英文 Inno Setup 安装包（EXE）** 以及 4 个免安装便携/单文件产物（全量 64 位 x64 架构）：
+```powershell
+winget upgrade Hiynet.AstralParty.Toys
+```
 
-| 产物格式 | 文件名形式 | 特点与适用场景 |
+也可从 [Releases](https://github.com/higashitaniyume/AstralParty.Toys/releases/latest) 下载，优先选择 **x64 自包含安装包**。 -->
+
+下载时看文件名：**`self-contained` = 自包含，自带 .NET 8**；**`framework-dependent` = 框架依赖，需要另行安装 .NET 8 Desktop Runtime**。不确定选哪个时，推荐 `win-x64-self-contained-installer.exe`。
+
+所有文件名均以 `AstralParty.Toys-<版本>-` 开头，后缀对应如下：
+
+| 版本 | 文件名后缀 | 适用场景 |
 | --- | --- | --- |
-| **自包含安装包**（推荐） | `AstralParty.Toys-<版本>-win-x64-self-contained-installer.exe` | **最推荐**；自带 .NET 8，支持自选安装目录与快捷方式，升级自动覆盖并保留配置，卸载不影响回放库与游戏模组 |
-| **框架依赖安装包** | `AstralParty.Toys-<版本>-win-x64-framework-dependent-installer.exe` | 体积较小（~55MB），需系统已安装 .NET 8 Desktop Runtime；支持自定义快捷方式与安装目录 |
-| **自包含便携版** | `...-win-x64-self-contained-portable.zip` | 解压即用，自带 .NET 8，启动直接便于排查问题 |
-| **框架依赖便携版** | `...-win-x64-framework-dependent-portable.zip` | 体积较小，需系统已安装 [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) |
-| **单文件版** | `...-single-file.exe` | 单个可执行文件分发（分别提供 self-contained 与 framework-dependent 两种版本） |
+| 自包含安装包 | `win-x64-self-contained-installer.exe` | 自带 .NET 8，支持选择安装目录与快捷方式 |
+| 框架依赖安装包 | `win-x64-framework-dependent-installer.exe` | 体积更小，需要 .NET 8 Desktop Runtime |
+| 自包含便携版 | `win-x64-self-contained-portable.zip` | 自带 .NET 8，解压运行 |
+| 框架依赖便携版 | `win-x64-framework-dependent-portable.zip` | 解压运行，需要 .NET 8 Desktop Runtime |
+| 自包含单文件版 | `win-x64-self-contained-single-file.exe` | 自带 .NET 8，单个 EXE 分发 |
+| 框架依赖单文件版 | `win-x64-framework-dependent-single-file.exe` | 单个 EXE 分发，需要 .NET 8 Desktop Runtime |
 
-> 注：无论选择哪一种产物，主界面渲染均需要 Microsoft Edge WebView2 Evergreen Runtime（Windows 10/11 通常已自带）。各版本变更记录见 [CHANGELOG.md](CHANGELOG.md)。
+运行环境：Windows 10/11 x64、Microsoft Edge WebView2 Evergreen Runtime。框架依赖版本还需 [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)。安装器说明见 [安装文档](installer/README.md)。
 
 ## 功能
 
-### 回放分析与复盘
+| 模块 | 能力 |
+| --- | --- |
+| 回放库 | 扫描、归档、放回游戏、搜索与整理；按回放 ID 从官方 CDN 下载，支持区服选择 |
+| 对局复盘 | 对局摘要、玩家表现、按回合事件，以及筹码候选、刷新、选择与来源 |
+| 专业分析 | protobuf 消息、原始帧、JSON 导出与 AI 摘要 |
+| 角色皮肤 | 多人物方案、贴图裁切、精灵动画、模板与 GIF 导出、旧式 Unity bundle 皮肤包导入 |
+| 卡牌皮肤 | 自定义卡面与多方案管理；导入视频/GIF 制作动态卡面 |
+| 模组管理 | 安装、更新、卸载 CesiumLoader；导入模组、编辑配置与绑定热键 |
+| 启动与变速 | 管理多个游戏版本，选择 Steam 或绕过 Steam 启动，设置基础倍率与游戏内变速热键 |
 
-- 自动读取 `%USERPROFILE%\AppData\LocalLow\feimo\AstralParty_CN\Temp\Replay`，列出回放记录
-- 也可手动选择或拖入无扩展名回放文件
-- **按回放 ID 下载到回放库**：通过对局回放 ID 直接从官方 CDN 拉取入库，不占游戏内席位；区服可选（国服/国际服 × 正式/测试）
-- 展示对局摘要：地图、对局结果、游戏版本、时间、回合、进度、Boss 与奖励
-- 统计玩家表现：角色、生命、攻防、星币、伤害、承伤、治疗、移动、卡牌、技能与筹码
-- 按回合查看自然语言事件时间线，支持筛选玩家或事件类型
-- 记录筹码候选、刷新、选择、品质与来源
-- 逐帧查看 protobuf 消息流与原始十六进制载荷，支持导出 JSON 与 AI 摘要
+CesiumLoader 随附 8 个模组：自动感谢、手牌查看、卡牌皮肤、角色皮肤、战斗胜率助手、自由相机、变速热键与行为日志。功能与配置详见 [加载器文档](https://github.com/higashitaniyume/CesiumLoader#内置模组)。安装与模组配置变更通常需要重启游戏。
 
-### 角色与卡牌皮肤管理
+变速范围为 **1–100 倍**，建议不超过 3 倍；倍率会影响动画、演出、回合与网络超时。默认 `Delete` 切换正常速度与上次倍率，`Alt` + `=` / `Alt` + `-` 调整倍率。
 
-- **多人物皮肤方案**：按角色和目标皮肤自由组合官方外观与自定义覆盖，支持整套应用、导入与导出
-- **角色皮肤编辑器**：支持角色贴图导入、交互式裁切预览，并可将自定义方案导出为标准模板包或带预览的 GIF
-- **旧式皮肤包导入**：可一键将旧版 Unity bundle ZIP 转换为可管理的规范皮肤包，支持静态贴图与精灵帧动画，保留原始布局元数据与帧率
-- **卡牌与卡面皮肤**：通过内置 `CardSkinMod` 支持手牌、事件卡、命运卡及图鉴的卡面自定义替换
-- **动态卡面**：卡面操作中选择「导入视频 / GIF」，或按普通卡牌／异画编号指定动态素材；自动转为 PNG 序列帧，支持循环预览、取消转换、导入导出 ZIP 与移除动态覆盖。需要 CardSkinMod 1.2.0 或更新版本，选中方案并重启游戏后生效。
+### 动态卡面
 
-动态卡面先提取视频／GIF 首帧，在 Toys 内拖动、缩放固定 404:400 选区，预览满意后再转换。所有帧使用同一选区并输出普通卡面的 **404×400**，模组在普通卡框中播放，不自动切换全图布局。固定 15 帧/秒，最多 20 秒（300 帧），无音频，长素材需要先剪辑。普通卡牌绑定只替换普通版；异画用自己的编号单独绑定，未指定的异画保留游戏原版。清单 `<绑定名>.cardanim` 和对应 `<绑定名>.frames/000000.png` 起的帧目录一起存放于游戏加载器的皮肤方案中；更换静态图片会清除同绑定动画，恢复 default 方案会移除该方案的动态覆盖。
+导入视频/GIF 后，先裁切预览，再转换为 **404 × 400、15 fps** 的 PNG 序列帧；最长 20 秒，无音频。普通卡牌与异画分别绑定，动态卡面使用普通卡框。需要 CardSkinMod 1.2.0 或更新版本，应用方案后重启游戏生效。
 
-转换使用 FFmpeg，先检测 `ASTRAL_FFMPEG_PATH`、程序旁 `tools/ffmpeg.exe`、文档配置目录下 `tools/ffmpeg.exe` 和 PATH；缺失时会从 [BtbN/FFmpeg-Builds](https://github.com/BtbN/FFmpeg-Builds) 下载 GPL 版 win64 转换工具并缓存到文档配置目录。转换工具下载是联网操作，素材本身只在本机转换，不上传。32 位操作系统需要自行提供对应 FFmpeg。
+转换使用 FFmpeg，可通过 `ASTRAL_FFMPEG_PATH` 或本机 PATH 指定；未找到时从 [BtbN/FFmpeg-Builds](https://github.com/BtbN/FFmpeg-Builds) 下载并缓存，素材在本机转换。
 
-### 模组（Mod）与游戏变速
+## 数据与配置
 
-内置 **CesiumLoader** 加载器、默认皮肤包与 8 个内置 mod，一键装进游戏目录。CesiumLoader 是**本项目的配套加载器**（同一个作者维护，源码在独立仓库 [higashitaniyume/CesiumLoader](https://github.com/higashitaniyume/CesiumLoader)）。
+| 内容 | 默认位置 |
+| --- | --- |
+| 回放库与工具配置 | `%USERPROFILE%\Documents\AstralPartyReplays` |
+| 游戏回放缓存（国服） | `%USERPROFILE%\AppData\LocalLow\feimo\AstralParty_CN\Temp\Replay` |
+| WebView2 数据 | `%LOCALAPPDATA%\AstralParty.Toys\WebView2` |
+| 加载器、模组与日志 | 游戏目录下的 `version.dll` 与 `AstralParty_ModLoader\` |
 
-它是 Doorstop 思路的 `version.dll` 代理：靠 Windows 自带的 DLL 劫持在游戏启动最开始就拿到控制权，用 MinHook 挂原生 hook，等游戏的 HybridCLR 热更程序集就绪后，再用 `Assembly.Load(byte[])` 把托管 mod 拉起来。所以它能做到普通 mod 做不到的事 —— 例如在 AOT 的 `SteamManager.Awake` 之前拦下「非 Steam 客户端启动就退出游戏」。写 mod 用的 SDK（`netstandard2.0`）、示例 mod、CLI 工具与文档都在那个仓库里；Steam 绕过的原理见 [docs/steam-bypass.md](https://github.com/higashitaniyume/CesiumLoader/blob/master/docs/steam-bypass.md)。
+**归档会移动回放，放回游戏会复制并保留库内副本。** 自动整理需要在设置中开启；安装器卸载不会删除回放库或游戏目录中的模组。
 
-- 一键安装 / 更新 / 卸载加载器（`version.dll` + `AstralParty_ModLoader\`）；写入前做 SHA-256 校验。
-  来源判定分三种：**与内置那份完全一致**、**与本工具写入安装清单时记录的哈希一致**（从 GitHub 更新之后就是这一种）、
-  以及**两者都不匹配**——只有最后一种才认定为「不是本工具装的（来源不明）」，此时安装 / 卸载才需要勾选
-  「允许覆盖其它 `version.dll`」/「强制卸载」。所以**自己更新过的加载器不会再被误报成外来文件**
-- 页面顶部常驻**版本三栏**：「已安装 / 随本程序内置 / GitHub 最新」（当前内嵌 **2.4.7**），
-  带状态色（绿 = 最新、金 = 可更新、红 = 文件不属于本工具、灰 = 未知），下面一句人话结论直接告诉你该做什么；
-  主按钮随状态切换（没装时是「安装加载器」，装了以后主操作变成「更新到 vX.X.X」），可一键从 GitHub 更新到最新发布版
-- 版本**只认安装清单**（`AstralParty_ModLoader\cesium-loader.json`）：读不到就如实显示「版本未知」并提示重新安装，
-  不会拿日志或配置里的字段猜一个可能不对的版本号出来
-- 加载器设置可视化编辑（`doorstop_config.json`）：日常项直接摊开（总开关、控制台窗口与置顶、日志转发、
-  **变速基础倍速**、「允许 mod 热键变速」，以及 **Steam 绕过**主开关）；各项等待超时、引导程序集与
-  **Steam 绕过**的细节开关（`steamBypass*`：「修建房 / 加入房间没反应」「修退房 / 被踢报错」等）
-  收在弹窗内的「高级选项」里，默认折叠；
-- **启动版本 + 启动方式**：主界面「启动游戏」按钮下方先用「启动版本」下拉从游戏库里选要启动的版本
-  （国服 / 国际服 / TapTap / 自定义，选中即设为当前游戏），再二选一「从 Steam 启动」或「绕过 Steam 启动」。
-  选「绕过 Steam 启动」会直接拉起**选中版本**的游戏主程序（不经过 Steam），并把加载器的 Steam 绕过**整套**写开；
-  选「从 Steam 启动」则交给 `steam://`，并把那一整套写关 —— 完全回到原版行为，Steam 大厅 / 好友邀请进房恢复正常。
-  两种方式选了哪个就照做、不做区服识别与拦截；启动过一次后再点也不会被拦，只是刚启动那几秒会短暂锁住启动方式以免误切串味。
-  为什么绕过是"一整套"而不是一个开关：加载器的 hook 是**启动时无条件安装、各自只受自己的键控制**的，
-  所以只关主开关并不足以让 Steam 大厅恢复（`steamBypassEnabled` 只管住"非 Steam 启动会自己退出"这道门，
-  建房 / 进房与房间列表查询分别由 `steamBypassMatchmaking`、`steamBypassLobbyQuery` 控制）
-- 写入加载器配置时**只改这几个字面量**：注释（包括注释里出现的同名字面量）、其它键、缩进原样保留
-  （不走 `SaveLoaderConfig` 的白名单重写），写完先自检（仍能解析 + 读回来就是目标值）才落盘；
-  在「加载器设置」里改这些开关，首页的单选框也会跟着同步；没装加载器时选择照样记住，只是同步会提示一句
-- 游戏变速（加载器内置功能）：界面上直接开关并设定基础倍速（`1.0` = 正常，进游戏即生效），
-  不必手动改配置文件；**没装加载器时这一块和「加载器设置」是禁用的**（此时配置文件还不存在）
-- 模组管理：以卡片列出 `mods\` 下每个 mod（名称 / 版本 / 作者 / SDK 版本 / 体积 / 目录 / 依赖，
-  以及「内置」「⚠ 可操作游戏」标签），右侧一个开关可启用或禁用（重启游戏生效）、
-  一个 `⚙` 编辑该 mod 的配置、一个 `🗑` 删除；也能导入外部 mod 的 DLL
-- 安装 / 卸载 / 检查更新 / 从 GitHub 更新这几个耗时操作，按钮在等待期间**转圈并加锁**，
-  完成后自动恢复 —— 不会出现"点了没反应又点一次"
-- 破坏性与排障项（允许覆盖 / 降级 / 强制卸载、SDK 依赖列表、加载器工作原理）统一收在
-  「**高级与排障**」折叠区里，默认不展开 —— 日常操作只留在第一屏
-- 一键打开 `mods\` / `sdk\` / `logs\` 目录
-- 自带 8 个内置 mod（全部预置在 `AstralParty_ModLoader\mods\`）：
-  - **AutoThanksMod（自动感谢）**：队友治疗 / 给牌 / 转星币后延迟自动发送「感谢！」，结算时逐人自动点赞
-  - **HandViewerMod（看手牌）**：展开四人手牌条，支持单双排切换与按需查询
-  - **CardSkinMod（卡面皮肤）**：手牌、事件卡、命运卡及图鉴的卡面自定义替换
-  - **CharacterSkinMod（角色皮肤）**：角色外观、多人物皮肤方案与精灵动画替换
-  - **CombatOddsMod（胜率助手）**：战斗胜率分析与头顶攻防悬停显示
-  - **FreeCameraMod（自由相机）**：进游戏不接管镜头；**鼠标滚轮**沿当前视线拉近 / 拉远（视角完全不变），`F1`（可改键）恢复原来的视角
-  - **SpeedHackMod（变速热键）**：`Delete` 在 `1.0x` 与"刚才的倍率"之间来回切（按一次退回 `1.0x`，再按一次回到刚才的倍率），`Alt`+`=` / `Alt`+`-` 游戏内实时调倍率（默认每次 0.5，按住连调），屏幕上提示当前倍率
-  - **ActivityLogMod（行为日志）**：把出牌 / 投骰 / 回合等行为写进 `logs\activity-mod.log`，并转发到加载器控制台
+文档目录不可写时，配置回退到 `%APPDATA%\AstralParty.Toys`；首次运行会复制旧配置，不覆盖已有设置。更改回放库位置不会改变工具配置目录。
 
-上面这些热键**都能在 UI 里改**：模组页每个 mod 的 `⚙` 按钮打开配置，字段名以 `Key` 结尾的会显示成
-按键按钮 —— 点一下，再按下想绑的键即可（**键盘任意键，也包括鼠标左/右/中键与侧键**），`Esc` 取消；
-改完重启游戏生效。键位写在 mod 自己的 `config.json` 里，和手改 JSON 完全一样。
+## 开发
 
-倍率范围 `[1.0, 100]`：**低于 1 倍（减速）不允许**，界面上填小于 1 的值会被拒绝（模组页的变速栏
-与「加载器设置」里的基础倍速用的是同一条下限，不会出现"界面写 0.5 实际跑 1.0"）。倍速只改变游戏感知的时间
-（动画 / 演出 / 回合 / 网络超时），**别把倍率调太高**（建议 ≤3x）。
+技术栈：**.NET 8 · WPF · WebView2 · HTML/CSS/JavaScript**。页面、配表与展示素材内嵌分发。
 
-### 版本信息
-
-界面上随时能看到版本，**自己编译的构建也一样**：
-
-- 大厅（没有顶部栏）看**底部状态栏**左侧：`AstralParty.Toys v1.0.1 · 84f3cb8 · 加载器 2.4.7`；
-  进入任意子页面则看**顶部栏**右侧的版本胶囊（窄窗口自动省略提交号，版本号始终保留）；
-- 点开「版本信息」可以看到完整清单：程序集版本、源码提交、构建配置（Debug / Release）、
-  内置加载器、运行时与架构、操作系统、程序集文件时间、程序目录，并可**一键复制**这段信息（反馈问题时直接贴上）；
-- 「关于」还能直接打开**程序内更新日志**（`工具箱` / `加载器` 两个 Tab；加载器日志随包内置、也可点「↻ 拉取最新」去 GitHub 取），
-  更新到新版本后大厅左上角还会弹一张紧凑的更新提示卡，点「知道了」记住这一版、升级后再自动出现一次；
-- 设置页「关于」显示同一份数据的摘要；
-- 数据来源：版本号取自程序集属性，提交号取自 .NET SDK 写进 `InformationalVersion` 的
-  `SourceRevisionId`。所以本地 `dotnet build` 出来的也能对上源码；没有提交信息（例如从源码 zip 构建）
-  或没内嵌发布包时，界面如实写「本地构建」，不会编一个版本号出来。
-
-### 素材与界面
-
-- 地图、角色、怪物、筹码与常用 UI 图片以无损 WebP 形式嵌入程序集
-- 应用通过本地虚拟地址直接读取资源流，不生成素材缓存
-- 前端页面（HTML/CSS/JavaScript）同样整包内嵌进 EXE，发布目录里没有 `WebUI` 文件夹
-- 想改前端又不想重新编译：用 **Debug** 构建（Visual Studio 默认/F5），在 exe 同目录放一份 `WebUI\`，
-  改完刷新即可生效；Release 构建始终使用内嵌页面，不受同目录文件夹影响
-- 主界面不可用时可以切换至备用界面，回放分析与变速器管理均可使用
-- 维基页面可在应用内浏览，也可交给系统默认浏览器打开
-- 键盘可用：所有按钮都有可见的焦点环（鼠标点击时不出现），弹窗打开时焦点进入弹窗、
-  `Tab` 圈在弹窗内、`Esc` 关闭并把焦点还回原处；界面的动态效果跟随系统「减少动态效果」设置
-  （也可在系统设置里单独关掉）
-
-## 环境要求
-
-- Windows 10 或 Windows 11（64 位，win-x64）
-- 框架依赖（`framework-dependent`）版本需要 [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)；自包含（`self-contained`）版本已自带 .NET 8
-- Microsoft Edge WebView2 Evergreen Runtime（Windows 10/11 通常已经安装）
-
-从源码构建还需要 .NET 8 SDK 或更高版本。
-
-## 运行
-
-在工作区根目录执行：
+在本仓库根目录执行，需要 .NET 8 SDK 或更高版本：
 
 ```powershell
-dotnet run --project .\replaytool\src\AstralParty.Toys\AstralParty.Toys.csproj
+dotnet run --project src/AstralParty.Toys/AstralParty.Toys.csproj
+dotnet test tests/AstralParty.Toys.Tests/AstralParty.Toys.Tests.csproj -c Release
+dotnet publish src/AstralParty.Toys/AstralParty.Toys.csproj -c Release -r win-x64 --self-contained false
 ```
 
-也可以打开 `replaytool\AstralParty.Toys.slnx` 后从 Visual Studio 启动（解决方案里 `src\` 是应用、`tests\` 是测试）。
+测试自带合成回放；依赖真实回放或在线下载的用例默认跳过，可用 `ASTRAL_TEST_REPLAY` 或 `ASTRAL_TEST_REPLAY_ID` 启用。Debug 构建支持从程序旁的 `WebUI/` 加载页面，Release 使用内嵌资源。
 
-## 测试
+- [回放格式与解析口径](docs/replay-format.md)
+- [角色皮肤方案](docs/character-skin-schemes.md)
+- [加载器恢复与排障](docs/loader-recovery.md)
+- [安装器构建](installer/README.md)
 
-```powershell
-dotnet test .\replaytool\tests\AstralParty.Toys.Tests\AstralParty.Toys.Tests.csproj
-```
+## 交流与许可
 
-当前 343 个用例。测试自带合成回放数据（用游戏自己的 protobuf 生成类构造），**不依赖真实录像，也不需要联网**；
-`Protocol\` 与 `GameData\` 会随项目引用自动复制到测试输出目录。需要真实录像的用例在没有数据时
-报告为「已跳过」，把回放放进游戏回放目录或设置 `ASTRAL_TEST_REPLAY` 指向文件即可启用；
-「按 ID 下载」另有一条真联网用例，默认跳过，设置 `ASTRAL_TEST_REPLAY_ID=<回放ID>` 才会跑
-（下载合并逻辑本身走本地假 HTTP 管道，所以离线也能覆盖）。
-覆盖范围与合成夹具的说明见 `docs\replay-format.md` 第 8 节。
+企鹅：**1078464597**。反馈问题时可在程序「版本信息」中复制构建与环境信息。
 
-## 构建与发布
+原创代码以 [GNU AGPL-3.0](LICENSE) 发布。Copyright © 2026 Yume Higashitani。
 
-构建 Debug 版本：
-
-```powershell
-dotnet build .\replaytool\src\AstralParty.Toys\AstralParty.Toys.csproj
-```
-
-生成 Windows x64 发布目录：
-
-```powershell
-dotnet publish .\replaytool\src\AstralParty.Toys\AstralParty.Toys.csproj `
-  -c Release -r win-x64 --self-contained false
-```
-
-生成 Windows x64 自包含 Inno Setup 安装包（先安装 Inno Setup 6，在仓库根目录运行；默认英语，当前用户安装不提权）：
-
-```powershell
-dotnet publish .\replaytool\src\AstralParty.Toys\AstralParty.Toys.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o .\replaytool\.artifacts\inno-publish
-.\replaytool\installer\Build-Installer.ps1 -PublishDirectory .\replaytool\.artifacts\inno-publish -OutputPath .\replaytool\.artifacts\AstralParty.Toys-installer.exe
-```
-
-安装与卸载提示说明见 [installer/README.md](installer/README.md)。
-
-默认发布入口位于：
-
-```text
-replaytool\src\AstralParty.Toys\bin\Release\net8.0-windows\win-x64\publish\AstralParty.Toys.exe
-```
-
-## 数据与配置位置
-
-- 游戏回放：`%USERPROFILE%\AppData\LocalLow\feimo\AstralParty_CN\Temp\Replay`
-- 工具配置（全部集中在这一个文件夹）：`%USERPROFILE%\Documents\AstralPartyReplays`
-  - 变速器主配置：`speedhack\speedhack_config.json`
-  - 游戏库（多游戏位置 + 当前游戏）：`game-profiles.json`
-  - 游戏目录记忆：`speedhack-state.json`
-  - 加载器状态：`modloader-state.json`
-  - 回放库设置：`replay-library.json`（回放库目录默认就是同一个文件夹；改到别处只搬回放归档，上面这些配置仍留在默认目录）
-- WebView2 浏览器数据与缓存：`%LOCALAPPDATA%\AstralParty.Toys\WebView2`（大厅更新提示"已读"、启动方式偏好等前端 localStorage 也在这里）
-- 游戏安装目录中的变速器：`version.dll` 与 `speedhack_config.json`
-- 游戏安装目录中的加载器 / mod：`AstralParty_ModLoader\`（`doorstop_config.json`、`mods\`、`sdk\`、`logs\`）；
-  变速控制文件通道在其中的 `speed\`，并镜像一份到 `%LOCALAPPDATA%\AstralParty_ModLoader\speed`
-
-文档目录不可写时会回退到 `%APPDATA%\AstralParty.Toys`；首次运行会把旧的 `%APPDATA%` 配置迁移到文档目录，
-但**不覆盖**文档目录里已有的设置。
-
-## 回放格式
-
-回放帧使用大端序：
-
-```text
-[cmdId:int16][payloadLength:int32][payload]
-```
-
-协议类型来自游戏的 HybridCLR 热更新程序集，主要解析逻辑位于 `src/AstralParty.Toys/Services/ReplayAnalyzer.cs` 与 `src/AstralParty.Toys/Services/GameProtocolContext.cs`。
-
-## 素材开发
-
-辅助项目和脚本包括：
-
-- `replaytool-assetpack`：按游戏配置和精确文件名生成素材清单
-- `scripts/pack_webp.py`：转换为无损 WebP，并进行像素级回读校验
-- 外部素材只按配置字段、文件名与分类匹配，不使用图片识别；缺失素材不会影响回放解析
-
-## 开源协议
-
-本项目以 **GNU Affero General Public License v3.0（AGPL-3.0）** 发布，协议全文见 [LICENSE](LICENSE)。
-
-Copyright (C) 2026 Yume Higashitani
-
-- 允许自由使用、修改、分发，包括商业用途。
-- 分发修改版或衍生作品时，必须以**同样的 AGPL-3.0** 开源，并保留版权与协议声明。
-- **第 13 条（Remote Network Interaction）**：如果把本项目（或它的修改版）作为**网络服务**提供给他人，
-  也必须向这些使用者提供对应的完整源代码。
-- 本软件按“现状”提供，不附带任何担保。
-
-> 本项目的 AGPL-3.0 **只覆盖本项目自身的代码**。为本地解析与展示而内嵌的《吉星派对 / Astral Party》
-> 协议程序集（`Protocol\`）、配表（`GameData\`）与解包素材（`PackedAssets\`、`WebUI\images\`）
-> 版权归原权利人（feimo games 等）所有，不在本项目的授权范围内。
-> 程序内嵌的 CesiumLoader 加载器同为 AGPL-3.0 发布。
+内嵌的 Astral Party 协议程序集、配表与游戏素材归原权利人所有，不属于本项目的授权范围。CesiumLoader 各组件遵循其自身许可，详见 [加载器许可说明](https://github.com/higashitaniyume/CesiumLoader#许可)。
