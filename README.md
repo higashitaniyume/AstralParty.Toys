@@ -6,7 +6,8 @@
 
 ### 反馈问题与建议：企鹅群 **1078464597**
 
-**Astral Party 的 Windows 桌面工具箱**
+<img width="128" height="128" alt="UT_AccountHeadShot_70902" src="https://github.com/user-attachments/assets/5033cec1-86a9-41ef-8bda-af56f36a3a0e" />
+
 
 回放复盘 · 皮肤创作 · 模组管理 · 游戏变速
 
