@@ -2,7 +2,7 @@
 
 # AstralParty.Toys
 
-## 感谢您选择并使用 AstralParty.Toys！
+## 感谢您选择 AstralParty.Toys！
 
 ### 反馈问题与建议：企鹅群 **1078464597**
 
