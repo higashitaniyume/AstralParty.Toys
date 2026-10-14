@@ -154,15 +154,21 @@ public sealed class ReplayLibraryService
     {
         settings.KeepInGame = Math.Clamp(settings.KeepInGame, 1, GameSlotCapacity);
         if (string.IsNullOrWhiteSpace(settings.LibraryRoot)) settings.LibraryRoot = null;
+        settings.Language = AppLanguage.Normalize(settings.Language);
         return settings;
     }
 
     public void SaveSettings(ReplayLibrarySettings settings)
     {
+        var prevLang = Settings?.Language;
         Settings = Normalize(settings);
         Directory.CreateDirectory(_profileDirectory);
         WriteAtomic(SettingsPath, JsonSerializer.Serialize(Settings, StoreJson));
         LibraryRoot = ResolveLibraryRoot(Settings.LibraryRoot);
+        if (prevLang != null && Settings.Language != prevLang && _config is not null)
+        {
+            _config.Reload(Settings.Language);
+        }
     }
 
     public void EnsureLibrary()
@@ -395,7 +401,7 @@ public sealed class ReplayLibraryService
         try
         {
             _protocol = new GameProtocolContext(Path.Combine(_appDirectory, "Protocol"));
-            _config = new ConfigCatalog(_protocol, Path.Combine(_appDirectory, "GameData"));
+            _config = new ConfigCatalog(_protocol, Path.Combine(_appDirectory, "GameData"), Settings.Language);
             return true;
         }
         catch

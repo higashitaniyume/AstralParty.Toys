@@ -8,6 +8,17 @@
       this.bindLibrary();
       window.GameLibModule?.init?.();
 
+      const langSelect = $('langSelect');
+      if (langSelect) {
+        langSelect.value = window.i18n?.lang || 'zh-Hans';
+        langSelect.addEventListener('change', e => {
+          const selected = e.target.value;
+          window.i18n?.setLanguage(selected, true);
+          post({ type: 'setLanguage', language: selected });
+          toast(window.t ? window.t('common.saved') : '已切换语言');
+        });
+      }
+
       const animToggle = $('animToggle');
       if (!animToggle) return;
 
@@ -90,6 +101,13 @@
       // 标题跟随实际保留局数，不再写死"10 局"（同一张卡片下面就能把它改成别的数）
       const autoLabel = $('libraryAutoMaintainLabel');
       if (autoLabel) autoLabel.textContent = `自动保持游戏内最近 ${keep} 局`;
+
+      if (settings.language) {
+        const langSelect = $('langSelect');
+        if (langSelect && langSelect.value !== settings.language) {
+          langSelect.value = settings.language;
+        }
+      }
     }
   };
 

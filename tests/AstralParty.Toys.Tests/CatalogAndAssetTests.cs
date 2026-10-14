@@ -104,4 +104,81 @@ public sealed class CatalogAndAssetTests
         Assert.Contains(report.MapName, summary);
         Assert.Contains(options.Nicks[0], summary);
     }
+
+    [Fact]
+    public void Catalog_SupportsMultiLanguages()
+    {
+        var analyzer = TestPaths.CreateAnalyzer();
+        var config = analyzer.Config;
+
+        // Default: zh-Hans
+        Assert.Equal("zh-Hans", config.Language);
+        Assert.Equal("帕露南", config.Character(101));
+        Assert.Equal("商业之主", config.CharacterNick(101));
+        Assert.Equal("普通", config.RelicQuality(50001));
+
+        // Switch to English
+        config.Reload(AppLanguage.English);
+        Assert.Equal("en", config.Language);
+        var enHero = config.Character(101);
+        Assert.False(string.IsNullOrWhiteSpace(enHero));
+        Assert.NotEqual("角色 101", enHero);
+        Assert.NotEqual("101", enHero);
+        Assert.Equal("Common", config.RelicQuality(50001));
+        Assert.Equal("Unknown Character", config.UnknownCharacter);
+        Assert.Equal("Character 999999", config.Character(999999));
+
+        // Switch to Japanese
+        config.Reload(AppLanguage.Japanese);
+        Assert.Equal("ja", config.Language);
+        var jaHero = config.Character(101);
+        Assert.False(string.IsNullOrWhiteSpace(jaHero));
+        Assert.NotEqual("角色 101", jaHero);
+        Assert.NotEqual("101", jaHero);
+        Assert.Equal("通常", config.RelicQuality(50001));
+        Assert.Equal("未知のキャラクター", config.UnknownCharacter);
+        Assert.Equal("キャラクター 999999", config.Character(999999));
+
+        // Switch to Traditional Chinese
+        config.Reload(AppLanguage.TraditionalChinese);
+        Assert.Equal("zh-Hant", config.Language);
+        Assert.Equal("普通", config.RelicQuality(50001));
+        Assert.Equal("稀有", config.RelicQuality(50002));
+        Assert.Equal("傳說", config.RelicQuality(50003));
+        Assert.Equal("未知角色", config.UnknownCharacter);
+        Assert.Equal("未知地圖", config.UnknownMap);
+
+        // Switch to English
+        config.Reload(AppLanguage.English);
+        Assert.Equal("en", config.Language);
+        Assert.Equal("Common", config.RelicQuality(50001));
+        Assert.Equal("Rare", config.RelicQuality(50002));
+        Assert.Equal("Legendary", config.RelicQuality(50003));
+        Assert.Equal("Unknown Character", config.UnknownCharacter);
+        Assert.Equal("Unknown Map", config.UnknownMap);
+        Assert.Equal("Character 999999", config.Character(999999));
+        Assert.Equal("Relic 999999", config.Relic(999999));
+
+        // Switch to Japanese
+        config.Reload(AppLanguage.Japanese);
+        Assert.Equal("ja", config.Language);
+        Assert.Equal("通常", config.RelicQuality(50001));
+        Assert.Equal("レア", config.RelicQuality(50002));
+        Assert.Equal("レジェンド", config.RelicQuality(50003));
+        Assert.Equal("未知のキャラクター", config.UnknownCharacter);
+        Assert.Equal("未知のマップ", config.UnknownMap);
+        Assert.Equal("キャラクター 999999", config.Character(999999));
+        Assert.Equal("レリック 999999", config.Relic(999999));
+
+        // Reload back to default zh-Hans
+        config.Reload(AppLanguage.SimplifiedChinese);
+        Assert.Equal("zh-Hans", config.Language);
+        Assert.Equal("普通", config.RelicQuality(50001));
+        Assert.Equal("稀有", config.RelicQuality(50002));
+        Assert.Equal("传说", config.RelicQuality(50003));
+        Assert.Equal("未知角色", config.UnknownCharacter);
+        Assert.Equal("未知地图", config.UnknownMap);
+        Assert.Equal("角色 999999", config.Character(999999));
+        Assert.Equal("筹码 999999", config.Relic(999999));
+    }
 }

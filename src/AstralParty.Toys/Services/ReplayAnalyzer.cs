@@ -56,14 +56,20 @@ public sealed class ReplayAnalyzer
         string appDirectory,
         string? assetDirectory = null,
         IEnumerable<string>? materialDirectories = null,
-        bool useEmbeddedAssets = true)
+        bool useEmbeddedAssets = true,
+        string language = AppLanguage.SimplifiedChinese)
     {
         _protocol = new GameProtocolContext(Path.Combine(appDirectory, "Protocol"));
-        _config = new ConfigCatalog(_protocol, Path.Combine(appDirectory, "GameData"));
+        _config = new ConfigCatalog(_protocol, Path.Combine(appDirectory, "GameData"), language);
         _assets = new AssetLocator(
             assetDirectory ?? Path.Combine(appDirectory, "Assets"),
             materialDirectories ?? MaterialSource.DiscoverAll(appDirectory),
             useEmbeddedAssets);
+    }
+
+    public void Reload(string language)
+    {
+        _config.Reload(language);
     }
 
     public ReplayReport Analyze(string filePath, IProgress<string>? progress = null)
@@ -450,15 +456,15 @@ public sealed class ReplayAnalyzer
         report.ReplayId = ReflectionValue.Text(finish, "ReplayId") is { Length: > 0 } replayId ? replayId : report.FileName;
         report.GameVersion = ReflectionValue.Text(finish, "Version") is { Length: > 0 } version ? version : "—";
         var winner = ReflectionValue.Long(finish, "Winer");
-        report.WinnerText = winner > 0 ? $"获胜方 {winner}" : "未记录获胜方";
-        report.ResultText = winner > 0 ? "胜利" : "已结束";
+        report.WinnerText = LocalizeWinner(winner);
+        report.ResultText = LocalizeResult(winner);
 
         var awards = ReflectionValue.Items(ReflectionValue.Get(finish, "Awards"))
             .Select(x => (Id: ReflectionValue.Int(x, "Key"), Count: ReflectionValue.Int(x, "Value")))
             .Where(x => x.Count != 0)
             .Select(x => $"{_config.Item(x.Id)} ×{x.Count}")
             .ToList();
-        report.AwardsText = awards.Count > 0 ? string.Join(" · ", awards) : "未记录奖励";
+        report.AwardsText = awards.Count > 0 ? string.Join(" · ", awards) : LocalizeAwards("");
     }
 
     private List<PlayerSummary> FillPlayers(ReplayReport report, object initialRoom, object? finalRoom)
@@ -487,9 +493,7 @@ public sealed class ReplayAnalyzer
                 HeroId = heroId,
                 HeroName = _config.Character(heroId),
                 AvatarPath = _assets.Character(heroId, _config.CharacterAssets(heroId)),
-                FinalStatus = finalHero is null
-                    ? finalIsBot ? "机器人占位 · 无末局英雄数据" : "无末局英雄数据"
-                    : hp > 0 ? "存活至结算" : "结算时生命值为 0",
+                FinalStatus = LocalizeFinalStatus(finalHero is null, finalIsBot, hp),
                 Hp = hp,
                 MaxHp = maxHp,
                 Gold = ReflectionValue.Int(finalHero, "Gold"),
@@ -803,20 +807,145 @@ public sealed class ReplayAnalyzer
         return names.Length > 0 ? _assets.Named(names) : "";
     }
 
-    private static string RelicSource(int level, int supLv, int purchaseCost)
+    private string LocalizeWinner(long winner)
     {
-        if (purchaseCost > 0) return "筹码地块购买";
-        if (supLv > 0) return "升星";
-        return "任务";
+        if (winner <= 0)
+        {
+            return _config.Language switch
+            {
+                AppLanguage.English => "No winner recorded",
+                AppLanguage.Japanese => "勝者記録なし",
+                AppLanguage.TraditionalChinese => "未記錄獲勝方",
+                _ => "未记录获胜方"
+            };
+        }
+        return _config.Language switch
+        {
+            AppLanguage.English => $"Winner {winner}",
+            AppLanguage.Japanese => $"勝者 {winner}",
+            AppLanguage.TraditionalChinese => $"獲勝方 {winner}",
+            _ => $"获胜方 {winner}"
+        };
+    }
+
+    private string LocalizeResult(long winner)
+    {
+        if (winner > 0)
+        {
+            return _config.Language switch
+            {
+                AppLanguage.English => "Victory",
+                AppLanguage.Japanese => "勝利",
+                AppLanguage.TraditionalChinese => "勝利",
+                _ => "胜利"
+            };
+        }
+        return _config.Language switch
+        {
+            AppLanguage.English => "Finished",
+            AppLanguage.Japanese => "終了",
+            AppLanguage.TraditionalChinese => "已結束",
+            _ => "已结束"
+        };
+    }
+
+    private string LocalizeAwards(string awards)
+    {
+        if (string.IsNullOrEmpty(awards))
+        {
+            return _config.Language switch
+            {
+                AppLanguage.English => "No awards recorded",
+                AppLanguage.Japanese => "報酬記録なし",
+                AppLanguage.TraditionalChinese => "未記錄獎勵",
+                _ => "未记录奖励"
+            };
+        }
+        return awards;
+    }
+
+    private string LocalizeFinalStatus(bool isHeroNull, bool isBot, int hp)
+    {
+        if (isHeroNull)
+        {
+            if (isBot)
+            {
+                return _config.Language switch
+                {
+                    AppLanguage.English => "Bot placeholder · No final data",
+                    AppLanguage.Japanese => "BOTプレースホルダー · 最終データなし",
+                    AppLanguage.TraditionalChinese => "機器人佔位 · 無末局英雄數據",
+                    _ => "机器人占位 · 无末局英雄数据"
+                };
+            }
+            return _config.Language switch
+            {
+                AppLanguage.English => "No final hero data",
+                AppLanguage.Japanese => "最終ヒーローデータなし",
+                AppLanguage.TraditionalChinese => "無末局英雄數據",
+                _ => "无末局英雄数据"
+            };
+        }
+
+        if (hp > 0)
+        {
+            return _config.Language switch
+            {
+                AppLanguage.English => "Survived until settlement",
+                AppLanguage.Japanese => "決着まで生存",
+                AppLanguage.TraditionalChinese => "存活至結算",
+                _ => "存活至结算"
+            };
+        }
+
+        return _config.Language switch
+        {
+            AppLanguage.English => "HP reached 0 at settlement",
+            AppLanguage.Japanese => "決着時HPが0",
+            AppLanguage.TraditionalChinese => "結算時生命值為 0",
+            _ => "结算时生命值为 0"
+        };
+    }
+
+    private string RelicSource(int level, int supLv, int purchaseCost)
+    {
+        if (purchaseCost > 0)
+        {
+            return _config.Language switch
+            {
+                AppLanguage.English => "Relic Tile Purchase",
+                AppLanguage.Japanese => "レリックマス購入",
+                AppLanguage.TraditionalChinese => "籌碼地塊購買",
+                _ => "筹码地块购买"
+            };
+        }
+        if (supLv > 0)
+        {
+            return _config.Language switch
+            {
+                AppLanguage.English => "Star Up",
+                AppLanguage.Japanese => "昇格",
+                AppLanguage.TraditionalChinese => "升星",
+                _ => "升星"
+            };
+        }
+        return _config.Language switch
+        {
+            AppLanguage.English => "Mission",
+            AppLanguage.Japanese => "ミッション",
+            AppLanguage.TraditionalChinese => "任務",
+            _ => "任务"
+        };
     }
 
     private string RelicSourceIcon(string source)
     {
-        if (source.Contains("购买") || source.Contains("商店") || source.Contains("地块"))
+        if (source.Contains("购买") || source.Contains("商店") || source.Contains("地块") ||
+            source.Contains("Purchase") || source.Contains("購入"))
             return EventIcon("shop");
-        if (source.Contains("升星"))
+        if (source.Contains("升星") || source.Contains("Star") || source.Contains("昇格"))
             return EventIcon("attribute");
-        if (source.Contains("任务"))
+        if (source.Contains("任务") || source.Contains("Mission") || source.Contains("ミッション") || source.Contains("任務"))
             return EventIcon("mission");
         return EventIcon("relic");
     }

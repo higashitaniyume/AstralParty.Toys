@@ -11,6 +11,9 @@ public sealed class ReplayLibrarySettings
 
     /// <summary>游戏目录里保留的最新回放数量。游戏自身的上限是 10，这里不会超过它。</summary>
     public int KeepInGame { get; set; } = ReplayLibraryService.GameSlotCapacity;
+
+    /// <summary>应用与配表语言代码（zh-Hans, en, ja, zh-Hant）。</summary>
+    public string Language { get; set; } = AppLanguage.SimplifiedChinese;
 }
 
 /// <summary>回放下载进度。宿主用 <see cref="IProgress{T}"/> 把它回推给界面（百分比在总量未知时为 null）。</summary>

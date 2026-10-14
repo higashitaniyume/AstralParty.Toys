@@ -21,7 +21,7 @@ const $ = id => document.getElementById(id);
 const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
 }[c]));
-const fmt = value => Number(value ?? 0).toLocaleString('zh-CN');
+const fmt = value => Number(value ?? 0).toLocaleString(window.i18n?.currentLocale() || 'zh-CN');
 const post = message => host?.postMessage(message);
 
 function toast(message) {
@@ -233,6 +233,9 @@ host?.addEventListener('message', event => {
 
     case 'librarySettings':
       AppState.librarySettings = msg.payload;
+      if (msg.payload?.language && msg.payload.language !== window.i18n?.lang) {
+        window.i18n?.setLanguage(msg.payload.language, false);
+      }
       if (window.SettingsModule) {
         window.SettingsModule.init();
         window.SettingsModule.applyLibrarySettings(msg.payload);

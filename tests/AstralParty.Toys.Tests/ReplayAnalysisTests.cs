@@ -241,4 +241,44 @@ public sealed class ReplayAnalysisTests
         Assert.True(protocol.TryParseSettlement(bytes, out var finish, out _), "游戏自己的结算解析器读不出这局回放");
         Assert.NotNull(finish);
     }
+
+    [Fact]
+    public void Analyze_WithDifferentLanguages_ProducesLocalizedReports()
+    {
+        using var sandbox = new TestSandbox("ap-analysis-languages");
+        var bytes = ReplayFixture.Create(new ReplayFixtureOptions
+        {
+            ReplayId = ReplayId,
+            RoundCount = 2
+        });
+        var replayPath = sandbox.WriteFile("replay", bytes);
+
+        // 1. English
+        var enAnalyzer = new ReplayAnalyzer(TestPaths.AppDirectory, language: AppLanguage.English);
+        var enReport = enAnalyzer.Analyze(replayPath);
+        Assert.Equal("Victory", enReport.ResultText);
+        Assert.StartsWith("Winner ", enReport.WinnerText);
+        Assert.Equal("Survived until settlement", enReport.Players[0].FinalStatus);
+
+        // 2. Japanese
+        var jaAnalyzer = new ReplayAnalyzer(TestPaths.AppDirectory, language: AppLanguage.Japanese);
+        var jaReport = jaAnalyzer.Analyze(replayPath);
+        Assert.Equal("勝利", jaReport.ResultText);
+        Assert.StartsWith("勝者 ", jaReport.WinnerText);
+        Assert.Equal("決着まで生存", jaReport.Players[0].FinalStatus);
+
+        // 3. Traditional Chinese
+        var tcAnalyzer = new ReplayAnalyzer(TestPaths.AppDirectory, language: AppLanguage.TraditionalChinese);
+        var tcReport = tcAnalyzer.Analyze(replayPath);
+        Assert.Equal("勝利", tcReport.ResultText);
+        Assert.StartsWith("獲勝方 ", tcReport.WinnerText);
+        Assert.Equal("存活至結算", tcReport.Players[0].FinalStatus);
+
+        // 4. Simplified Chinese (Default)
+        var scAnalyzer = new ReplayAnalyzer(TestPaths.AppDirectory, language: AppLanguage.SimplifiedChinese);
+        var scReport = scAnalyzer.Analyze(replayPath);
+        Assert.Equal("胜利", scReport.ResultText);
+        Assert.StartsWith("获胜方 ", scReport.WinnerText);
+        Assert.Equal("存活至结算", scReport.Players[0].FinalStatus);
+    }
 }

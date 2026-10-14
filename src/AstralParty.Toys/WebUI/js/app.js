@@ -1,5 +1,8 @@
 // app.js - Main Application Bootstrap
 document.addEventListener('DOMContentLoaded', () => {
+  // Apply i18n translations to DOM
+  window.i18n?.applyDOM();
+
   // Initialize Replay Module
   if (window.ReplayModule) {
     window.ReplayModule.init();

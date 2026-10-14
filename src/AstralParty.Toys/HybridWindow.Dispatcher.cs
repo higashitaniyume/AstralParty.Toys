@@ -135,6 +135,22 @@ public partial class HybridWindow
                 case "librarySaveSettings":
                     HandleLibrarySaveSettings(root);
                     break;
+                case "setLanguage":
+                    if (root.TryGetProperty("language", out var langProp))
+                    {
+                        var targetLang = langProp.GetString();
+                        var normLang = AppLanguage.Normalize(targetLang);
+                        _libraryService.SaveSettings(new ReplayLibrarySettings
+                        {
+                            LibraryRoot = _libraryService.Settings.LibraryRoot,
+                            AutoMaintain = _libraryService.Settings.AutoMaintain,
+                            KeepInGame = _libraryService.Settings.KeepInGame,
+                            Language = normLang
+                        });
+                        _analyzer?.Reload(normLang);
+                        Post(new { type = "librarySettings", payload = BuildLibrarySettingsPayload() });
+                    }
+                    break;
                 case "gameProfilesGet":
                     _ = PushGameProfilesAsync();
                     break;

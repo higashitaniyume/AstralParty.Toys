@@ -578,3 +578,32 @@ body:not(.reduce-motion) #settingsView:not(.page-entering) .settings-card:nth-ch
 .game-scan-deep-row select { flex: 1 1 90px; min-width: 80px; }
 .game-scan-deep-row .secondary-btn { padding: 7px 14px; font-size: 12px; flex: 0 0 auto; }
 
+.settings-select-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.settings-select {
+  padding: 8px 12px;
+  background: rgba(18, 22, 36, 0.9);
+  color: #f3f5fa;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  font-size: 13.5px;
+  cursor: pointer;
+  min-width: 130px;
+}
+.settings-select:hover {
+  border-color: rgba(255, 48, 139, 0.6);
+}
+.settings-select:focus {
+  border-color: #ff308b;
+  outline: none;
+}
+.settings-select option {
+  background: #141826;
+  color: #f3f5fa;
+}
+

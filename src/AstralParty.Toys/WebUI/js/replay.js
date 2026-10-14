@@ -253,22 +253,25 @@
 
     libraryRow(item) {
       const badges = [];
-      if (item.inGame) badges.push('<span class="badge badge-game">游戏内</span>');
-      if (item.inLibrary) badges.push('<span class="badge badge-library">回放库</span>');
-      if (!item.healthy) badges.push(`<span class="badge badge-warn" title="${esc(item.error || '解析不出结算帧，文件可能已损坏或来自不兼容的版本。')}">无法解析</span>`);
+      if (item.inGame) badges.push(`<span class="badge badge-game">${esc(window.t?.('replay.badge_game') || '游戏内')}</span>`);
+      if (item.inLibrary) badges.push(`<span class="badge badge-library">${esc(window.t?.('replay.badge_library') || '回放库')}</span>`);
+      if (!item.healthy) badges.push(`<span class="badge badge-warn" title="${esc(item.error || '解析不出结算帧，文件可能已损坏或来自不兼容的版本。')}">${esc(window.t?.('replay.badge_unparseable') || '无法解析')}</span>`);
 
-      const actions = ['<button data-action="open">查看</button>'];
-      if (item.inGame) actions.push('<button data-action="archive">归档</button>');
-      if (item.inLibrary) actions.push('<button data-action="restore">放回游戏</button>');
-      actions.push('<button class="danger" data-action="delete">删除</button>');
+      const actions = [`<button data-action="open">${esc(window.t?.('replay.action_view') || '查看')}</button>`];
+      if (item.inGame) actions.push(`<button data-action="archive">${esc(window.t?.('replay.action_archive') || '归档')}</button>` );
+      if (item.inLibrary) actions.push(`<button data-action="restore">${esc(window.t?.('replay.action_restore') || '放回游戏')}</button>`);
+      actions.push(`<button class="danger" data-action="delete">${esc(window.t?.('common.delete') || '删除')}</button>`);
 
       const title = [item.mapName, item.finishText, item.durationText].filter(v => v && v !== '—').join(' · ');
+      const frameSuffix = window.t?.('replay.frames') || '帧';
+      const roundSuffix = window.t?.('replay.round') || '回合';
+      const versionPrefix = window.t?.('home.game_version') || '版本';
       const facts = [
         `ID ${item.replayId}`,
         item.sizeText,
-        item.frameCount ? `${fmt(item.frameCount)} 帧` : '',
-        item.roundCount ? `${item.roundCount} 回合` : '',
-        item.gameVersion !== '—' ? `版本 ${item.gameVersion}` : ''
+        item.frameCount ? `${fmt(item.frameCount)} ${frameSuffix}` : '',
+        item.roundCount ? `${item.roundCount} ${roundSuffix}` : '',
+        item.gameVersion !== '—' ? `${versionPrefix} ${item.gameVersion}` : ''
       ].filter(Boolean).join(' · ');
 
       return `
@@ -775,15 +778,15 @@
             <table class="light-table">
               <thead>
                 <tr>
-                  <th>回合</th>
-                  <th>玩家</th>
-                  <th>角色</th>
-                  <th>来源</th>
-                  <th>操作</th>
-                  <th>筹码名称</th>
-                  <th>品质</th>
-                  <th>刷新记录</th>
-                  <th>候选选项</th>
+                  <th>${window.t?.('replay.th_round') || '回合'}</th>
+                  <th>${window.t?.('replay.th_player') || '玩家'}</th>
+                  <th>${window.t?.('replay.th_hero') || '角色'}</th>
+                  <th>${window.t?.('replay.th_source') || '来源'}</th>
+                  <th>${window.t?.('replay.th_action') || '操作'}</th>
+                  <th>${window.t?.('replay.th_relic_name') || '筹码名称'}</th>
+                  <th>${window.t?.('replay.th_quality') || '品质'}</th>
+                  <th>${window.t?.('replay.th_rerolls') || '刷新记录'}</th>
+                  <th>${window.t?.('replay.th_options') || '候选选项'}</th>
                 </tr>
               </thead>
               <tbody id="relicTableBody"></tbody>
@@ -845,14 +848,14 @@
             <table class="light-table">
               <thead>
                 <tr>
-                  <th>回合</th>
-                  <th>玩家</th>
-                  <th>角色</th>
-                  <th>商店</th>
-                  <th>候选卡牌</th>
-                  <th>售价</th>
-                  <th>购买结果</th>
-                  <th>已售出</th>
+                  <th>${window.t?.('replay.th_round') || '回合'}</th>
+                  <th>${window.t?.('replay.th_player') || '玩家'}</th>
+                  <th>${window.t?.('replay.th_hero') || '角色'}</th>
+                  <th>${window.t?.('replay.th_shop_type') || '商店'}</th>
+                  <th>${window.t?.('replay.th_shop_cards') || '候选卡牌'}</th>
+                  <th>${window.t?.('replay.th_price') || '售价'}</th>
+                  <th>${window.t?.('replay.th_purchase_result') || '购买结果'}</th>
+                  <th>${window.t?.('replay.col_actions') || '已售出'}</th>
                 </tr>
               </thead>
               <tbody id="shopTableBody"></tbody>
@@ -1001,6 +1004,15 @@
       `;
     }
   };
+
+  window.addEventListener('appLanguageChanged', () => {
+    if (ReplayModule.libraryData) {
+      ReplayModule.renderLibraryRows();
+    }
+    if (AppState.replayReport) {
+      ReplayModule.renderReport(AppState.replayReport);
+    }
+  });
 
   window.ReplayModule = ReplayModule;
 })();

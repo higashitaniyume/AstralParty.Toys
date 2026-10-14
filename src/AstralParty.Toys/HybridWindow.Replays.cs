@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -299,15 +299,19 @@ public partial class HybridWindow
         var keepInGame = root.TryGetProperty("keepInGame", out var keepElement) && keepElement.TryGetInt32(out var parsedKeep)
             ? parsedKeep
             : ReplayLibraryService.GameSlotCapacity;
+        var lang = root.TryGetProperty("language", out var langElement)
+            ? langElement.GetString()
+            : _libraryService.Settings.Language;
 
         _libraryService.SaveSettings(new ReplayLibrarySettings
         {
             LibraryRoot = string.IsNullOrWhiteSpace(root_) ? null : root_,
             AutoMaintain = autoMaintain,
-            KeepInGame = Math.Clamp(keepInGame, 1, ReplayLibraryService.GameSlotCapacity)
+            KeepInGame = Math.Clamp(keepInGame, 1, ReplayLibraryService.GameSlotCapacity),
+            Language = AppLanguage.Normalize(lang)
         });
         Post(new { type = "librarySettings", payload = BuildLibrarySettingsPayload() });
-        Post(new { type = "toast", message = "回放库设置已保存。" });
+        Post(new { type = "toast", message = "设置已保存。" });
     }
 
     private object BuildLibrarySettingsPayload() => new
@@ -316,7 +320,8 @@ public partial class HybridWindow
         defaultLibraryRoot = ReplayLibraryService.DefaultLibraryRoot(),
         autoMaintain = _libraryService.Settings.AutoMaintain,
         keepInGame = _libraryService.Settings.KeepInGame,
-        capacity = ReplayLibraryService.GameSlotCapacity
+        capacity = ReplayLibraryService.GameSlotCapacity,
+        language = _libraryService.Settings.Language
     };
 
 
@@ -350,7 +355,8 @@ public partial class HybridWindow
             var progress = new Progress<string>(message => Post(new { type = "loading", active = true, message }));
             _report = await Task.Run(() =>
             {
-                _analyzer ??= new ReplayAnalyzer(_appDirectory, _assetDirectory, _materialDirectories);
+                _analyzer ??= new ReplayAnalyzer(_appDirectory, _assetDirectory, _materialDirectories, language: _libraryService.Settings.Language);
+                _analyzer.Reload(_libraryService.Settings.Language);
                 return _analyzer.Analyze(path, progress);
             });
             Post(new { type = "report", payload = BuildClientReport(_report) });
