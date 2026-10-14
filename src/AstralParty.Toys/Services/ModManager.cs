@@ -397,12 +397,17 @@ public sealed partial class ModManager
             // doorstop_config.json（加载器配置：enabled / 变速基础倍率 / SDK 版本等）
             // 已存在则保留用户配置(不覆盖, 避免重置变速/开关设置); 不存在才写模板。
             var configPath = Path.Combine(loaderRoot, ConfigFileName);
-            if (!File.Exists(configPath) && HasEmbeddedConfig)
+            var isNewConfig = !File.Exists(configPath);
+            if (isNewConfig && HasEmbeddedConfig)
                 WriteAllBytesProtected(configPath, EmbeddedConfig!);
             // 老配置可能停在旧 SDK 号：把 sdkVersion 抬到随包版本，否则新版内置 mod 会被加载器拒绝加载
             SyncLoaderConfigSdkVersion(configPath, EmbeddedSdkVersion);
             // 老配置里没有 Steam 绕过开关：补齐（只追加缺失的键，不动用户已有值与注释）
             SyncLoaderConfigSteamKeys(configPath);
+            // 首次安装默认从 Steam 启动；升级/重装保留已有启动方式。
+            // 模板可能默认开启绕过，须同时关闭主开关、匹配和房间列表查询。
+            if (isNewConfig && !SetSteamBypassProfile(gameDirectory, enabled: false))
+                throw new InvalidDataException("无法设置首次安装的 Steam 启动方式，加载器配置不完整。");
 
             // 内置 SDK
             if (HasEmbeddedSdk)
@@ -822,7 +827,8 @@ public sealed partial class ModManager
             // doorstop_config.json → AstralParty_ModLoader\
             // 已存在则保留用户配置(变速/开关等), 不覆盖; 不存在才从包提取。
             var configPath = Path.Combine(loaderRoot, ConfigFileName);
-            if (!File.Exists(configPath))
+            var isNewConfig = !File.Exists(configPath);
+            if (isNewConfig)
                 ExtractEntryToFile(archive, "AstralParty_ModLoader/doorstop_config.json", configPath);
             // 老配置可能停在旧 SDK 号（不覆盖用户配置）：抬到随包版本，否则新版内置 mod 会被拒绝加载
             var packageConfigEntry = archive.GetEntry("AstralParty_ModLoader/doorstop_config.json");
@@ -830,6 +836,10 @@ public sealed partial class ModManager
                 packageConfigEntry is null ? "" : ReadSdkVersionFromConfigBytes(ReadEntryBytes(packageConfigEntry)));
             // 老配置里没有 Steam 绕过开关：补齐（只追加缺失的键，不动用户已有值与注释）
             SyncLoaderConfigSteamKeys(configPath);
+            // 首次安装默认从 Steam 启动；升级/重装保留已有启动方式。
+            // 模板可能默认开启绕过，须同时关闭主开关、匹配和房间列表查询。
+            if (isNewConfig && !SetSteamBypassProfile(gameDirectory, enabled: false))
+                throw new InvalidDataException("无法设置首次安装的 Steam 启动方式，加载器配置不完整。");
             // SDK
             ExtractEntryToFile(archive, "AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll",
                 Path.Combine(loaderRoot, SdkFolderName, SdkDllName));

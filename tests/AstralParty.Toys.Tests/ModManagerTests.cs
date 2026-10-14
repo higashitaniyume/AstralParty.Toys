@@ -657,6 +657,46 @@ public sealed class ModManagerTests
         Assert.Equal(before, harness.Manager.ReadLoaderConfig(harness.GameDirectory).SdkVersion);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FirstInstall_DefaultsToSteamLaunch(bool fromPackage)
+    {
+        using var harness = new ModHarness("ap-mod-first-steam");
+        if (fromPackage)
+            harness.Manager.InstallPackage(harness.GameDirectory, BuildFakePackage("9.0.0"), overwriteDll: false);
+        else
+            harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+
+        var config = harness.Manager.ReadLoaderConfig(harness.GameDirectory);
+        Assert.False(config.SteamBypassEnabled);
+        Assert.False(config.SteamBypassMatchmaking);
+        Assert.False(config.SteamBypassLobbyQuery);
+        Assert.False(ModManager.IsSteamBypassActive(config));
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void Reinstall_PreservesSteamLaunchChoice(bool fromPackage, bool bypass)
+    {
+        using var harness = new ModHarness("ap-mod-keep-steam-choice");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        Assert.True(harness.Manager.SetSteamBypassProfile(harness.GameDirectory, bypass));
+
+        if (fromPackage)
+            harness.Manager.InstallPackage(harness.GameDirectory, BuildFakePackage("9.0.0"), overwriteDll: true);
+        else
+            harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: false);
+
+        var config = harness.Manager.ReadLoaderConfig(harness.GameDirectory);
+        Assert.Equal(bypass, config.SteamBypassEnabled);
+        Assert.Equal(bypass, config.SteamBypassMatchmaking);
+        Assert.Equal(bypass, config.SteamBypassLobbyQuery);
+    }
+
     // ============================== 老配置补齐 Steam 绕过开关 ==============================
 
     [Fact]
@@ -743,8 +783,10 @@ public sealed class ModManagerTests
         harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
         var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
 
+        // 用户主动选择绕过后，再验证切回 Steam 时整套开关关闭且保留注释。
+        Assert.True(harness.Manager.SetSteamBypassProfile(harness.GameDirectory, true));
         var before = File.ReadAllText(path);
-        // 模板默认：主开关 / 匹配 / 房间列表查询都是开
+        // 绕过启用：主开关 / 匹配 / 房间列表查询都是开
         Assert.Contains("\"steamBypassEnabled\": true", before);
         Assert.Contains("\"steamBypassMatchmaking\": true", before);
         Assert.Contains("\"steamBypassLobbyQuery\": true", before);
@@ -779,8 +821,8 @@ public sealed class ModManagerTests
         var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
         var before = File.ReadAllText(path);
 
-        // 已经是全开（模板默认）→ 无事可做，但算成功：前端不该弹"同步失败"
-        Assert.True(harness.Manager.SetSteamBypassProfile(harness.GameDirectory, true));
+        // 首次安装已经全关 → 无事可做，但算成功：前端不该弹"同步失败"
+        Assert.True(harness.Manager.SetSteamBypassProfile(harness.GameDirectory, false));
         Assert.Equal(before, File.ReadAllText(path));            // 一字未改
 
         Assert.True(harness.Manager.SetSteamBypassProfile(harness.GameDirectory, false));
@@ -808,7 +850,8 @@ public sealed class ModManagerTests
         harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
         var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
 
-        // 混合状态（用户只手动关了主开关）→ 一次「从 Steam 启动」必须把整套收拾干净
+        // 混合状态（用户启用绕过后只手动关了主开关）→ 一次「从 Steam 启动」必须把整套收拾干净
+        Assert.True(harness.Manager.SetSteamBypassProfile(harness.GameDirectory, true));
         var text = File.ReadAllText(path)
             .Replace("\"steamBypassEnabled\": true", "\"steamBypassEnabled\": false");
         File.WriteAllText(path, text);
