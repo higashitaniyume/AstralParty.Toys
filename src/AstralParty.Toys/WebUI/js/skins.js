@@ -1,5 +1,55 @@
 // skins.js - 卡面皮肤方案管理模块（含单卡可视化替换）
 (function () {
+  // 仅详情预览播放序列帧，列表和选择界面保留静态首帧。
+  const cardPlayers = new Map();
+  let playbackTimer = null;
+  const visiblePlayers = new Set();
+  const visibilityObserver = new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) visiblePlayers.add(entry.target);
+      else visiblePlayers.delete(entry.target);
+    }
+    refreshPlayback();
+  });
+  function refreshPlayback() {
+    clearTimeout(playbackTimer);
+    playbackTimer = null;
+    for (const image of cardPlayers.keys()) {
+      if (!image.isConnected) {
+        visibilityObserver.unobserve(image);
+        visiblePlayers.delete(image);
+        cardPlayers.delete(image);
+      }
+    }
+    if (document.hidden) return;
+    const now = performance.now();
+    let nextDelay = Infinity;
+    for (const image of visiblePlayers) {
+      const player = cardPlayers.get(image);
+      if (!player || image.closest('.hidden')) continue;
+      const modal = image.closest('#globalModal');
+      if (modal && !modal.classList.contains('open')) continue;
+      const elapsed = now - player.start;
+      const frame = Math.floor(elapsed / player.interval) % player.card.animationFrameCount;
+      if (frame !== player.frame) {
+        image.src = player.card.animationFrameUrlPrefix + String(frame).padStart(6, '0') + '.png?v=' + encodeURIComponent(player.card.lastModified || '');
+        player.frame = frame;
+      }
+      nextDelay = Math.min(nextDelay, player.interval - elapsed % player.interval);
+    }
+    if (Number.isFinite(nextDelay)) playbackTimer = setTimeout(refreshPlayback, Math.max(16, nextDelay));
+  }
+  function playCard(image, card) {
+    if (!image || !card.isAnimated || !card.animationFrameUrlPrefix || !(card.animationFrameCount > 0) || !(card.animationFps > 0)) return;
+    cardPlayers.set(image, { card, start: performance.now(), interval: 1000 / card.animationFps, frame: -1 });
+    visibilityObserver.observe(image);
+  }
+  document.addEventListener('visibilitychange', refreshPlayback);
+  document.addEventListener('DOMContentLoaded', () => {
+    // 页面切换、关闭弹窗和重绘网格时立即暂停或清理播放器。
+    new MutationObserver(refreshPlayback).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+  });
+
   const SkinsModule = {
     profiles: [],
     activeSkin: 'default',
@@ -406,17 +456,7 @@
         </div>
       `, 'image');
 
-      if (card.isAnimated && card.animationFrameUrlPrefix && card.animationFrameCount > 0) {
-        const image = document.querySelector('.card-preview-img');
-        const start = performance.now();
-        const play = () => {
-          if (!image?.isConnected) return;
-          const frame = Math.floor((performance.now() - start) / 1000 * card.animationFps) % card.animationFrameCount;
-          image.src = card.animationFrameUrlPrefix + String(frame).padStart(6, '0') + '.png?v=' + encodeURIComponent(card.lastModified || '');
-          setTimeout(play, 1000 / card.animationFps);
-        };
-        play();
-      }
+      playCard(document.querySelector('.card-preview-img'), card);
       $('previewAnimationBtn')?.addEventListener('click', () => {
         post({ type: 'skinsPickCardAnimation', skinName: this.selectedSkin, fileName: card.animationBinding ? card.animationBinding + '.png' : card.fileName });
         closeModal();

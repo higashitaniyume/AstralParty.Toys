@@ -169,11 +169,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Modal close handlers
   $('modalCloseBtn')?.addEventListener('click', closeModal);
-  $('globalModal')?.addEventListener('click', e => {
-    if (e.target === $('globalModal')) closeModal();
-  });
+  // 配置弹窗只能通过弹窗内的明确按钮关闭；点击遮罩和 Esc 都不关闭，避免误触丢失编辑内容。
   window.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeModal(); return; }
     // 弹窗打开时把 Tab 圈在弹窗内（焦点不跑到弹窗背后的页面上）
     const modal = $('globalModal');
     if (e.key !== 'Tab' || !modal?.classList.contains('open')) return;
