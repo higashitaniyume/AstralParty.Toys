@@ -219,20 +219,6 @@ public partial class HybridWindow
                 case "openClassic":
                     OpenClassicWindow();
                     break;
-                case "copySpectatorLink":
-                    try
-                    {
-                        Clipboard.SetText(SpectatorUri.AbsoluteUri);
-                        Post(new { type = "spectatorLinkCopied", success = true });
-                    }
-                    catch (Exception)
-                    {
-                        Post(new { type = "spectatorLinkCopied", success = false });
-                    }
-                    break;
-                case "openSpectator":
-                    OpenSpectator();
-                    break;
                 case "openBrowser":
                     if (root.TryGetProperty("url", out var urlElement) &&
                         urlElement.GetString() is { Length: > 0 } targetUrl)

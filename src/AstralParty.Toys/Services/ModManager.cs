@@ -39,13 +39,12 @@ public sealed partial class ModManager
     /// <summary>
     /// 随程序集内置的 mod（ModId，顺序即安装顺序）。资源名 = {ModId}.dll / {ModId}.json。
     ///
-    /// ★ <b>从内嵌资源里扫出来, 不写死清单</b>：csproj 用通配符把 <c>Resources\ModLoader\*Mod.dll</c>
-    ///   全部编进程序集, 这里就必须按同一份来源枚举。曾经写死成三个, 结果新增 CombatOddsMod 时
-    ///   资源明明打进去了、安装却漏了它（0.5.3 的真机 bug）。
+    /// 从按 BuiltInMods.props 公开分发清单编入的资源中枚举，
+    /// 内嵌安装、发布包安装与 CI 同步均遵循这份清单。
     /// </summary>
     public static readonly IReadOnlyList<string> BuiltInModIds = DiscoverBuiltInModIds();
 
-    /// <summary>扫内嵌资源名, 认出所有 "<c>*Mod.dll</c>"（内置 mod 的命名约定, 与 csproj 的通配符一致）。</summary>
+    /// <summary>扫内嵌资源名, 认出所有 "<c>*Mod.dll</c>"（与公开分发清单中的资源一致）。</summary>
     private static string[] DiscoverBuiltInModIds()
     {
         try
@@ -74,6 +73,15 @@ public sealed partial class ModManager
 
     /// <summary>发布包（cesium-loader.zip）内 mod 条目的前缀；zip 内路径统一用正斜杠。</summary>
     private const string PackageModsPrefix = "AstralParty_ModLoader/mods/";
+
+    /// <summary>发布包中的模组文件必须属于程序集的公开分发清单。</summary>
+    private static bool IsDistributedPackageMod(string path)
+    {
+        if (!path.StartsWith(PackageModsPrefix, StringComparison.OrdinalIgnoreCase)) return false;
+        var relative = path.Substring(PackageModsPrefix.Length);
+        var separator = relative.IndexOf('/');
+        return separator > 0 && BuiltInModIds.Contains(relative.Substring(0, separator), StringComparer.Ordinal);
+    }
 
     /// <summary>内嵌加载器版本号；来源：构建时下载的 cesium-loader.json 里 version 字段（CI 自动更新），本地开发构建为 dev-local。</summary>
     private static readonly string EmbeddedVersion = ReadEmbeddedVersion();
@@ -748,7 +756,7 @@ public sealed partial class ModManager
         // 包内 mod：不写死具体 mod —— mods\{ModId}\ 下的文件一律纳入校验，
         // 这样发布包新增/移除内置 mod（如后来的自由相机）时这里无需改动。
         requiredRelative.AddRange(archive.Entries
-            .Where(e => e.FullName.StartsWith(PackageModsPrefix, StringComparison.OrdinalIgnoreCase)
+            .Where(e => IsDistributedPackageMod(e.FullName)
                         && !string.IsNullOrEmpty(e.Name))
             .Select(e => e.FullName));
         if (requiredRelative.Count == 3)
@@ -849,7 +857,7 @@ public sealed partial class ModManager
             // bootstrap\：托管引导（仅 doorstop_config 的 useManagedBootstrap=true 时才加载）。
             // 包内有就整套装（dll + 同名 pdb）；老发布包没有该目录则跳过。
             ExtractDirectoryEntries(archive, "AstralParty_ModLoader/bootstrap/", loaderRoot);
-            // mod：每 mod 一个文件夹。包里有什么就装什么（不写死 mod 列表），
+            // mod：每 mod 一个文件夹，仅安装公开分发清单中的模组，
             // 同时拒绝含 ".." 的条目，避免 zip 路径穿越写出 mods\ 之外。
             ExtractDirectoryEntries(archive, PackageModsPrefix, loaderRoot);
 
@@ -898,6 +906,7 @@ public sealed partial class ModManager
         {
             if (!entry.FullName.StartsWith(entryPrefix, StringComparison.OrdinalIgnoreCase)) continue;
             if (string.IsNullOrEmpty(entry.Name)) continue;   // 目录条目
+            if (entryPrefix == PackageModsPrefix && !IsDistributedPackageMod(entry.FullName)) continue;
             var relative = entry.FullName.Substring(packageRootLength).Replace('/', Path.DirectorySeparatorChar);
             if (!IsSafeRelativePath(relative))
                 throw new InvalidDataException($"发布包含有非法路径：{entry.FullName}");

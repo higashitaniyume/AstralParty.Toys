@@ -70,7 +70,7 @@ winget upgrade Hiynet.AstralParty.Toys
 | 模组管理 | 安装、更新、卸载 CesiumLoader；导入模组、编辑配置与绑定热键 |
 | 启动与变速 | 管理多个游戏版本，选择 Steam 或绕过 Steam 启动，设置基础倍率与游戏内变速热键 |
 
-CesiumLoader 随附 8 个模组：自动感谢、手牌查看、卡牌皮肤、角色皮肤、战斗胜率助手、自由相机、变速热键与行为日志。功能与配置详见 [加载器文档](https://github.com/higashitaniyume/CesiumLoader#内置模组)。安装与模组配置变更通常需要重启游戏。
+CesiumLoader 随附 7 个模组：自动感谢、卡牌皮肤、角色皮肤、战斗胜率助手、自由相机、变速热键与行为日志。功能与配置详见 [加载器文档](https://github.com/higashitaniyume/CesiumLoader#内置模组)。安装与模组配置变更通常需要重启游戏。
 
 变速范围为 **1–100 倍**，建议不超过 3 倍；倍率会影响动画、演出、回合与网络超时。默认 `Delete` 切换正常速度与上次倍率，`Alt` + `=` / `Alt` + `-` 调整倍率。
 

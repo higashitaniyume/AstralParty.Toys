@@ -132,7 +132,7 @@ body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-game-logo {
 }
 
 /* ==========================================================================
-   2. RIGHT-SIDE ACTION BUTTONS: 变速器、回放、观战与模组（右下角另有启动游戏）
+   2. RIGHT-SIDE ACTION BUTTONS: 变速器、回放与模组（右下角另有启动游戏）
    ========================================================================== */
 .lobby-action-stack {
   position: absolute;
@@ -249,15 +249,6 @@ body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-game-logo {
 }
 .card-skins:hover {
   box-shadow: 0 18px 42px rgba(13, 148, 136, 0.75), inset 0 2px 6px rgba(255, 255, 255, 0.6);
-}
-
-/* 观战 (保留兼容) */
-.card-spectator {
-  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
-  box-shadow: 0 12px 30px rgba(15, 118, 110, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.4);
-}
-.card-spectator:hover {
-  box-shadow: 0 18px 42px rgba(15, 118, 110, 0.75), inset 0 2px 6px rgba(255, 255, 255, 0.6);
 }
 
 /* 模组 (Amber-Orange Energy Gradient) */
@@ -640,46 +631,3 @@ body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-whatsnew:not(.hidd
   color: var(--gp-pink);
 }
 .lobby-whatsnew-more:hover { color: #fff; text-decoration: underline; }
-
-/* 观战跳转提示：沿用全局弹窗，网址可选中、可复制。 */
-.spectator-prompt { display: grid; gap: 24px; }
-.spectator-prompt-intro {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 20px;
-  border: 1px solid rgba(13, 148, 136, 0.18);
-  border-radius: 20px;
-  background: linear-gradient(135deg, rgba(13, 148, 136, 0.10), rgba(13, 148, 136, 0.02));
-}
-.spectator-prompt-art { width: 88px; height: 100px; object-fit: contain; flex-shrink: 0; }
-.spectator-prompt-tag { color: #5eead4; font-size: 12px; font-weight: 800; letter-spacing: 1px; }
-.spectator-prompt-intro h3 { margin: 8px 0; font-size: 22px; color: var(--gp-text-main); }
-.spectator-prompt-intro p { margin: 0; color: var(--gp-text-sub); font-size: 14px; line-height: 1.7; }
-.spectator-link-card { padding: 18px 20px; border: 1px solid rgba(13, 148, 136, 0.20); border-radius: 16px; }
-.spectator-link-card label { display: block; margin-bottom: 10px; font-size: 12px; font-weight: 800; color: var(--gp-text-sub); }
-.spectator-link-row { display: flex; align-items: center; gap: 12px; }
-.spectator-link-row input {
-  flex: 1;
-  min-width: 0;
-  padding: 10px 0;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--gp-text-main);
-  font-family: Consolas, monospace;
-  font-size: 14px;
-  user-select: text;
-}
-.spectator-link-row button { flex-shrink: 0; }
-.spectator-copy-status { display: block; min-height: 18px; margin-top: 6px; color: #5eead4; font-size: 12px; }
-.spectator-prompt-actions { display: flex; justify-content: flex-end; gap: 12px; }
-.spectator-prompt-actions .primary-btn { background: #0f766e; color: #fff; }
-.spectator-prompt-actions .primary-btn:hover { background: #115e59; }
-.spectator-prompt :is(button, input):focus-visible { outline: 3px solid #0d9488; outline-offset: 3px; }
-@media (max-width: 600px) {
-  .spectator-prompt-intro { gap: 12px; padding: 16px; }
-  .spectator-prompt-art { width: 64px; height: 80px; }
-  .spectator-link-row { flex-wrap: wrap; }
-  .spectator-link-row input { flex-basis: 100%; }
-}

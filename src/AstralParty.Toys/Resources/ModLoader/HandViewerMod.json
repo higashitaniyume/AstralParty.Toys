@@ -1,9 +1,0 @@
-{
-  "id": "HandViewerMod",
-  "name": "手牌查看",
-  "version": "1.0.8",
-  "author": "CesiumLoader",
-  "description": "PVE 升星右侧三角展开独立手牌条，仅展开可见时查询整房手牌，可配置自动收回，同牌右上角计数；实验性，待真机验证",
-  "permissions": 641,
-  "sdkVersion": "2.3.2"
-}

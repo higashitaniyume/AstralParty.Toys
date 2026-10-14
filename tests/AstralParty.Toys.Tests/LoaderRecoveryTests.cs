@@ -46,8 +46,8 @@ public sealed class LoaderRecoveryTests
             ["version.pdb"] = [9, 1, 5],
             ["AstralParty_ModLoader/doorstop_config.json"] = Encoding.UTF8.GetBytes("{\"sdkVersion\":\"9.0.0\"}"),
             ["AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll"] = [1, 2, 3],
-            ["AstralParty_ModLoader/mods/ExampleMod/ExampleMod.dll"] = Encoding.UTF8.GetBytes("mod " + version),
-            ["AstralParty_ModLoader/mods/ExampleMod/ExampleMod.json"] = Encoding.UTF8.GetBytes("{}")
+            ["AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.dll"] = Encoding.UTF8.GetBytes("mod " + version),
+            ["AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.json"] = Encoding.UTF8.GetBytes("{}")
         };
         var hashes = files.ToDictionary(p => p.Key, p => Hash(p.Value));
         if (badHash) hashes["version.dll"] = new string('0', 64);

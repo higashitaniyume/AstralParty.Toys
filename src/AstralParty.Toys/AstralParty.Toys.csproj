@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="BuiltInMods.props" />
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
@@ -36,14 +37,12 @@
     <EmbeddedResource Include="Resources\ModLoader\version.dll;Resources\ModLoader\doorstop_config.json;Resources\ModLoader\CesiumLoader.SDK.dll;Resources\ModLoader\loader-version.json;Resources\ModLoader\loader-changelog.md">
       <LogicalName>AstralParty.Toys.ModLoader.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
-    <!-- 内置 mod: 按通配吃进 Resources\ModLoader 下所有 *Mod.dll / *Mod.json —— 新增内置 mod
-         (如 CombatOddsMod) 不必再改这里, CI 的 fetch 步骤把包内 mods 展平到此目录后自动内嵌。
-         内置 mod 命名约定必须以 "Mod" 结尾(见 CesiumLoader tools\builtin-mods.json)。 -->
+    <!-- 内置资源仅来自 BuiltInMods.props 中的公开分发清单。 -->
     <EmbeddedResource Include="Resources\Skins\character-image-sizes.json" LogicalName="AstralParty.Toys.CharacterImageSizes.json" />
     <EmbeddedResource Include="Resources\Skins\default-skins.zip">
       <LogicalName>AstralParty.Toys.DefaultSkins.zip</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="Resources\ModLoader\*Mod.dll;Resources\ModLoader\*Mod.json">
+    <EmbeddedResource Include="@(BuiltInMod->'Resources\ModLoader\%(Identity).dll');@(BuiltInMod->'Resources\ModLoader\%(Identity).json')">
       <LogicalName>AstralParty.Toys.ModLoader.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
     <Content Include="Protocol\*.dll">

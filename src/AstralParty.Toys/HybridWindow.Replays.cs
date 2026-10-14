@@ -11,11 +11,6 @@ namespace AstralParty.Toys;
 
 public partial class HybridWindow
 {
-    private void OpenSpectator()
-    {
-        TryOpenExternal(SpectatorUri.AbsoluteUri);
-    }
-
     /// <summary>
     /// 内嵌资源的唯一入口。必须保持"只有一个处理器"——见 <see cref="InitializeWebViewAsync"/> 里的说明：
     /// 多个 filter 共用一个事件，处理器要自己按 host 判断该不该接管，否则会互相覆盖响应。

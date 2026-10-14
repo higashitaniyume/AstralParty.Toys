@@ -39,7 +39,6 @@ public partial class HybridWindow : Window
     private readonly GameLibraryService _gameLibrary;
     private ReplayAnalyzer? _analyzer;
     private ReplayReport? _report;
-    private static readonly Uri SpectatorUri = new("https://astralpartycards.hiynet.com/");
     private CoreWebView2Environment? _webEnvironment;
     private bool _webReady;
     private bool _webRootIsEmbedded;

@@ -1283,7 +1283,7 @@ public sealed class ModManagerTests
     // ============================== 联网更新：包解析 / 校验 / 安装 ==============================
 
     /// <summary>构造一个符合发布布局的内存 zip（version.dll Doorstop 式，含清单，可带/不带哈希校验）。</summary>
-    private static byte[] BuildFakePackage(string version, bool includeHashes = true, string? configSdkVersion = null, bool includeSymbols = false)
+    private static byte[] BuildFakePackage(string version, bool includeHashes = true, string? configSdkVersion = null, bool includeSymbols = false, bool includeOptionalMod = false)
     {
         using var memory = new MemoryStream();
         using (var archive = new ZipArchive(memory, ZipArchiveMode.Create, leaveOpen: true))
@@ -1312,6 +1312,12 @@ public sealed class ModManagerTests
                 ("AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.dll", mod),
                 ("AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.json", sidecar),
             };
+            if (includeOptionalMod)
+            {
+                entries.Add(("AstralParty_ModLoader/mods/OptionalMod/OptionalMod.dll", mod));
+                entries.Add(("AstralParty_ModLoader/mods/OptionalMod/OptionalMod.json", sidecar));
+                entries.Add(("AstralParty_ModLoader/mods/OptionalMod/OptionalMod.pdb", mod));
+            }
             if (includeSymbols)
             {
                 // 与 dll 成对的 .pdb 符号文件 + bootstrap\（模拟 2.2.5 起带符号的真实发布包）
@@ -1376,6 +1382,21 @@ public sealed class ModManagerTests
         // 已装版本被 GetStatus 读出
         var status = harness.Manager.GetStatus();
         Assert.Equal("2.0.0", status.InstalledVersion);
+    }
+
+    [Fact]
+    public void InstallPackage_OnlyInstallsPublicDistributionMods()
+    {
+        using var harness = new ModHarness("ap-mod-public-distribution");
+        harness.Manager.InstallPackage(harness.GameDirectory,
+            BuildFakePackage("9.0.0", includeSymbols: true, includeOptionalMod: true), overwriteDll: false);
+
+        var modsRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
+        Assert.True(File.Exists(Path.Combine(modsRoot, "ActivityLogMod", "ActivityLogMod.dll")));
+        Assert.False(Directory.Exists(Path.Combine(modsRoot, "OptionalMod")));
+        Assert.Equal(7, ModManager.EmbeddedBuiltInModIdList.Count);
+        Assert.Equal(new[] { "ActivityLogMod", "AutoThanksMod", "CardSkinMod", "CharacterSkinMod",
+            "CombatOddsMod", "FreeCameraMod", "SpeedHackMod" }, ModManager.EmbeddedBuiltInModIdList);
     }
 
     [Fact]
