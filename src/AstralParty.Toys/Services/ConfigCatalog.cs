@@ -11,6 +11,7 @@ public sealed class ConfigCatalog
     private readonly Dictionary<int, string> _items = [];
     private readonly Dictionary<int, string> _cards = [];
     private readonly Dictionary<int, (string Name, string Quality)> _relics = [];
+    private readonly Dictionary<int, string[]> _cardAssets = [];
     private readonly Dictionary<int, string[]> _characterAssets = [];
     private readonly Dictionary<int, string[]> _mapAssets = [];
     private readonly Dictionary<int, string[]> _monsterAssets = [];
@@ -38,6 +39,7 @@ public sealed class ConfigCatalog
         _items.Clear();
         _cards.Clear();
         _relics.Clear();
+        _cardAssets.Clear();
         _characterAssets.Clear();
         _mapAssets.Clear();
         _monsterAssets.Clear();
@@ -129,6 +131,7 @@ public sealed class ConfigCatalog
     public IEnumerable<int> RelicIds => _relics.Keys.OrderBy(id => id);
     public IEnumerable<int> ItemIds => _items.Keys.OrderBy(id => id);
     public IEnumerable<int> CardIds => _cards.Keys.OrderBy(id => id);
+    public IEnumerable<string> CardAssetKeys => _cardAssets.Values.SelectMany(keys => keys).Distinct(StringComparer.OrdinalIgnoreCase);
 
     private void Load()
     {
@@ -138,7 +141,14 @@ public sealed class ConfigCatalog
         LoadNamed("MonsterConfigure", "Monster.bin", "STRMonsterConfigure", "STRMonster.bin", "NameID", _monsters);
         LoadNamed("ItemConfigure", "Item.bin", "STRItemConfigure", "STRItem.bin", "NameID", _items);
         LoadNamed("CardConfigure", "Card.bin", "STRCardConfigure", "STRCard.bin", "NameID", _cards);
+        LoadNamed("EventConfigure", "Event.bin", "STREventConfigure", "STREvent.bin", "NameID", _cards);
+        LoadNamed("DestinyConfigure", "Destiny.bin", "STRDestinyConfigure", "STRDestiny.bin", "NameID", _cards);
+        LoadNamed("MapEventConfigure", "MapEvent.bin", "STRMapEventConfigure", "STRMapEvent.bin", "NameID", _cards);
 
+        LoadAssets("CardConfigure", "Card.bin", _cardAssets, "Image", "ImageSfw");
+        LoadAssets("EventConfigure", "Event.bin", _cardAssets, "Image", "ImageSfw");
+        LoadAssets("DestinyConfigure", "Destiny.bin", _cardAssets, "Image");
+        LoadAssets("MapEventConfigure", "MapEvent.bin", _cardAssets, "Image", "ImageSfw");
         LoadAssets("CharacterConfigure", "Character.bin", _characterAssets, "CharacterMap");
         LoadAssets("MapConfigure", "Map.bin", _mapAssets, "MapImage", "MapSceneImage");
         LoadAssets("MonsterConfigure", "Monster.bin", _monsterAssets, "CharacterMap");
@@ -152,7 +162,7 @@ public sealed class ConfigCatalog
             AppLanguage.TraditionalChinese => "籌碼",
             _ => "筹码"
         };
-        foreach (var info in ReflectionValue.Items(ReflectionValue.Get(config, "Infos")))
+        foreach (var info in ReflectionValue.Items(ReflectionValue.Get(config, "MapEventCards") ?? ReflectionValue.Get(config, "Infos")))
         {
             var id = ReflectionValue.Int(info, "Id");
             var nameId = ReflectionValue.Int(info, "NameID");
@@ -164,7 +174,7 @@ public sealed class ConfigCatalog
     private void LoadAssets(string configType, string fileName, Dictionary<int, string[]> target, params string[] properties)
     {
         var config = DecodeFile(configType, fileName);
-        foreach (var info in ReflectionValue.Items(ReflectionValue.Get(config, "Infos")))
+        foreach (var info in ReflectionValue.Items(ReflectionValue.Get(config, "MapEventCards") ?? ReflectionValue.Get(config, "Infos")))
         {
             var id = ReflectionValue.Int(info, "Id");
             target[id] = properties.Select(property => ReflectionValue.Text(info, property))
@@ -177,7 +187,7 @@ public sealed class ConfigCatalog
     {
         var local = LoadLocalization(stringType, stringFile);
         var config = DecodeFile(configType, fileName);
-        foreach (var info in ReflectionValue.Items(ReflectionValue.Get(config, "Infos")))
+        foreach (var info in ReflectionValue.Items(ReflectionValue.Get(config, "MapEventCards") ?? ReflectionValue.Get(config, "Infos")))
         {
             var id = ReflectionValue.Int(info, "Id");
             var nameId = ReflectionValue.Int(info, nameProperty);

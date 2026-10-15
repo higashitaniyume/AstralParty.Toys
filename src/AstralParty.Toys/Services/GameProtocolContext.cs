@@ -21,6 +21,9 @@ public sealed class GameProtocolContext
         [1112] = "party.protocol.SyncRelicsS2C",
         [1113] = "party.protocol.ReplaySnapshotS2C",
         [1115] = "party.protocol.ReplayDieS2C",
+        // 3.3.0 建筑与地块变更推送；命令号来自游戏 RPCMsgManager。
+        [1118] = "party.protocol.BuildingChangeS2C",
+        [1119] = "party.protocol.LandTypeChangeS2C",
         [5030] = "party.protocol.ShopBuyS2C",
         [5212] = "party.protocol.SelectRelicS2C",
         [5214] = "party.protocol.MonsterPursuitS2C",

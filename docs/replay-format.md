@@ -6,6 +6,10 @@
 - 反编译 `AstralParty.Runtime.dll` 得到的 `GameLogic.Replay.*` / `GameLogic.ReplayLogic` / `UI.AccountInfoWindow`（Unity 2021.3.45f2，IL2CPP + HybridCLR，逻辑在热更 DLL 里）；
 - 本工具的实现：`replaytool/Services/ReplayAnalyzer.cs`、`GameProtocolContext.cs`、`ReplayLibraryService.cs`。
 
+2026-10-15 随包基线已更新至国服 3.3.0 / Unity 2022.3.62f3：`Protocol/` 包含 18 份程序集（新增 Spine 运行时），`GameData/` 的 14 份核心配置同步更新，并补入事件、命运和地图事件的配置/文本表，共 20 份。回放帧格式与主要结算、快照、筹码及商店消息保持兼容；地图配表在 tag 16 插入 `PreloadBuildIds`，因此协议程序集和配表必须成套替换。专业信息新增解码 `1118 BuildingChangeS2C` 和 `1119 LandTypeChangeS2C`，命令号已核对当前游戏的 RPC 分发代码。建筑消息目前提供原始协议展示，尚未转换成玩家向文字事件。
+
+同步内嵌加载器时须使用基于新游戏程序集**强制重编**的 SDK 与 Mod；`UIStringType.Build` 插入使后续枚举整数值变化，单纯复制游戏 DLL 后进行增量构建可能仍保留旧常量。CesiumLoader 的打包脚本已强制重编，并直接检查分发 DLL 内的枚举参数及 DLL/PDB 配对。Toys 发布流水线会从 CesiumLoader 最新 Release 覆盖内嵌产物，正式发布时仍须先发布适配后的 CesiumLoader。
+
 一句话概括：
 
 > **回放文件 = 服务端把一局游戏期间下发给客户端的 S2C 网络消息，按顺序原样落盘。**

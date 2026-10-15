@@ -12,7 +12,9 @@ internal sealed class CharacterBundleCatalog
     public string CatalogPath {get;}
     public CharacterBundleCatalog(string game,string cache,CancellationToken cancellationToken=default)
     {
-        var roots=Directory.GetDirectories(game,"*_Data").Select(x=>Path.Combine(x,"StreamingAssets","aa")).Append(cache).Where(Directory.Exists).Distinct().ToArray();
+        // Unity 2022 also ships preloaded Addressables under *_Data/com.unity.addressables.
+        // Index both install layouts as well as the downloaded cache.
+        var roots=Directory.GetDirectories(game,"*_Data").SelectMany(x=>new[]{Path.Combine(x,"StreamingAssets","aa"),Path.Combine(x,"com.unity.addressables")}).Append(cache).Where(Directory.Exists).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         CatalogPath=roots.SelectMany(x=>Directory.EnumerateFiles(x,"catalog*.json",SearchOption.AllDirectories)).OrderByDescending(File.GetLastWriteTimeUtc).FirstOrDefault()??throw new InvalidOperationException("未找到 Addressables JSON catalog，请先启动游戏完成资源更新");
         document=JsonDocument.Parse(File.ReadAllText(CatalogPath));var d=document.RootElement;
         var kd=Convert.FromBase64String(d.GetProperty("m_KeyDataString").GetString()!);var bd=Convert.FromBase64String(d.GetProperty("m_BucketDataString").GetString()!);var ed=Convert.FromBase64String(d.GetProperty("m_EntryDataString").GetString()!);

@@ -131,12 +131,7 @@ public sealed class SkinManager
         if (!Directory.Exists(skinsDir))
             return result;
 
-        var defaultDir = Path.Combine(skinsDir, "default");
-        var totalPoolCount = Directory.Exists(defaultDir)
-            ? Directory.EnumerateFiles(defaultDir, "*.*", SearchOption.TopDirectoryOnly)
-                .Where(f => SupportedImageExtensions.Contains(Path.GetExtension(f)) || Path.GetExtension(f).Equals(".cardanim", StringComparison.OrdinalIgnoreCase))
-                .Select(Path.GetFileNameWithoutExtension).Distinct(StringComparer.OrdinalIgnoreCase).Count()
-            : 0;
+        var totalPoolCount = GetCards(gameDirectory, "default").Count;
 
         var subDirs = Directory.GetDirectories(skinsDir);
         foreach (var subDir in subDirs)
@@ -179,7 +174,7 @@ public sealed class SkinManager
 
     /// <summary>
     /// 获取指定皮肤方案中的完整卡牌列表。
-    /// 以 default 方案为全卡池母本，精准比对出哪些牌已加载独立皮肤，哪些牌回退使用默认。
+    /// 合并官方配表、default 与当前方案的卡面，即使旧默认包缺图也能选择新增卡牌。
     /// </summary>
     public List<SkinCardInfo> GetCards(string gameDirectory, string skinName)
     {
@@ -210,6 +205,18 @@ public sealed class SkinManager
             {
                 var fileName = Path.GetFileName(file);
                 fileMap[fileName] = (targetDir, true);
+            }
+        }
+
+        // 配表是新卡选项的来源；默认皮肤包可能尚未包含新卡的图片。
+        // 使用官方 Image/ImageSfw 键，保留已有扩展名，避免同一卡面重复出现。
+        if (_catalog is not null)
+        {
+            var representedKeys = new HashSet<string>(fileMap.Keys.Select(name => Path.GetFileNameWithoutExtension(name)), StringComparer.OrdinalIgnoreCase);
+            foreach (var key in _catalog.CardAssetKeys)
+            {
+                if (key.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || CategorizeCard(key) == "卡面") continue;
+                if (representedKeys.Add(key)) fileMap[key + ".png"] = (defaultDir, false);
             }
         }
 

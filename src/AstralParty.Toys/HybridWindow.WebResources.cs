@@ -54,7 +54,12 @@ public partial class HybridWindow
                 }
                 else
                 {
-                    return WebView.CoreWebView2.Environment.CreateWebResourceResponse(Stream.Null, 404, "Not Found", "Content-Type: text/plain");
+                    var original = DefaultSkinPackage.OpenCard(fileName);
+                    return original is null
+                        ? WebView.CoreWebView2.Environment.CreateWebResourceResponse(Stream.Null, 404, "Not Found", "Content-Type: text/plain")
+                        : WebView.CoreWebView2.Environment.CreateWebResourceResponse(
+                            new WebResourceStream(original), 200, "OK",
+                            "Content-Type: image/png\r\nCache-Control: no-store\r\nAccess-Control-Allow-Origin: *");
                 }
             }
 

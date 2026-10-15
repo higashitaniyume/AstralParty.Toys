@@ -32,6 +32,36 @@ public sealed class SkinManagerTests : IDisposable
         }
     }
 
+    [Theory]
+    [InlineData(21026, "疾行菇")]
+    [InlineData(21027, "仙品杨桃")]
+    [InlineData(21028, "芳香蜜桃")]
+    [InlineData(21029, "招财树")]
+    public void GetCards_IncludesNewCardsMissingFromInstalledDefaultSkin(int id, string name)
+    {
+        var manager = new SkinManager(Support.TestPaths.AppDirectory);
+        var skins = manager.GetSkinsDirectory(_testRoot);
+        Directory.CreateDirectory(Path.Combine(skins, "default"));
+        Directory.CreateDirectory(Path.Combine(skins, "custom"));
+        File.WriteAllText(Path.Combine(skins, "default", "UT_HandCard_10001.png"), "old installed card");
+
+        var card = Assert.Single(manager.GetCards(_testRoot, "custom"), c => c.CardId == id && !c.IsSfw);
+        Assert.Equal(name, card.CardName);
+        Assert.Equal("手牌卡", card.Category);
+        Assert.False(card.IsCustomized);
+        Assert.True(card.CanRestore);
+        Assert.False(File.Exists(Path.Combine(skins, "default", card.FileName)));
+
+        var source = Path.Combine(_testRoot, "replacement.png");
+        File.WriteAllText(source, "replacement image");
+        manager.ReplaceCardImage(_testRoot, "custom", card.FileName, source);
+        var replaced = Assert.Single(manager.GetCards(_testRoot, "custom"), c => c.CardId == id && !c.IsSfw);
+        Assert.True(replaced.IsCustomized);
+        Assert.Equal("replacement image", File.ReadAllText(Path.Combine(skins, "custom", card.FileName)));
+        var profile = Assert.Single(manager.GetProfiles(_testRoot), p => p.Name == "custom");
+        Assert.Equal(manager.GetCards(_testRoot, "default").Count, profile.TotalPoolCount);
+    }
+
     [Fact]
     public void GetActiveSkin_DefaultsToDefault_WhenCfgMissing()
     {
@@ -105,7 +135,7 @@ public sealed class SkinManagerTests : IDisposable
         Assert.NotNull(targetProfile);
         Assert.Equal("夏日主题", targetProfile!.DisplayName);
         Assert.Equal("AuthorTest", targetProfile.Author);
-        Assert.Equal(185, targetProfile.CardCount);
+        Assert.Equal(196, targetProfile.CardCount);
         Assert.False(File.Exists(Path.Combine(targetDir, "UT_HandCard_101.png")));
     }
 
@@ -269,7 +299,7 @@ public sealed class SkinManagerTests : IDisposable
     public void EmbeddedTemplate_RestoresDefaultAndCreatesPristineSchemeOffline()
     {
         var baseline = Path.Combine(_testRoot, "baseline");
-        Assert.Equal(186, DefaultSkinPackage.Install(baseline));
+        Assert.Equal(197, DefaultSkinPackage.Install(baseline));
         var expected = File.ReadAllBytes(Path.Combine(baseline, "UT_HandCard_10001.png"));
         _skinManager.RestoreDefaultProfile(_testRoot);
         var defaultDir = Path.Combine(_skinManager.GetSkinsDirectory(_testRoot), "default");

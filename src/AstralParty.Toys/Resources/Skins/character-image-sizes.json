@@ -6702,5 +6702,161 @@
   "UT_Platform_129": [
     260,
     260
+  ],
+  "UT_Hero_Bust_113_04_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_113_04_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_113_04_1_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_117_04_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_117_04_0_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_117_04_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_117_04_1_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_119_03_0": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_119_03_0_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_119_03_1": [
+    1568,
+    900
+  ],
+  "UT_Hero_Bust_119_03_1_sfw": [
+    1568,
+    900
+  ],
+  "UT_Hero_Card_113_04": [
+    1416,
+    1612
+  ],
+  "UT_Hero_Card_117_04": [
+    1261,
+    2048
+  ],
+  "UT_Hero_Card_117_04_sfw": [
+    1261,
+    2048
+  ],
+  "UT_Hero_Card_119_03": [
+    1857,
+    2048
+  ],
+  "UT_Hero_Card_119_03_sfw": [
+    1857,
+    2048
+  ],
+  "UT_Hero_Card2_113_04": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_117_04": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_117_04_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_119_03": [
+    420,
+    684
+  ],
+  "UT_Hero_Card2_119_03_sfw": [
+    420,
+    684
+  ],
+  "UT_Hero_InGameCard_119_03": [
+    1084,
+    1240
+  ],
+  "UT_Hero_InGameCard_119_03_sfw": [
+    1084,
+    1240
+  ],
+  "UT_Hero_LevelUp_113_04": [
+    600,
+    810
+  ],
+  "UT_Hero_LevelUp_117_04": [
+    752,
+    788
+  ],
+  "UT_Hero_LevelUp_119_03": [
+    864,
+    884
+  ],
+  "UT_Hero_ProfilePhoto_113_04": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_117_04": [
+    220,
+    220
+  ],
+  "UT_Hero_ProfilePhoto_119_03": [
+    220,
+    220
+  ],
+  "UT_Hero_RolePhoto_113_04": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_117_04": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_117_04_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_119_03": [
+    240,
+    340
+  ],
+  "UT_Hero_RolePhoto_119_03_sfw": [
+    240,
+    340
+  ],
+  "UT_Hero_ThinCard_113_04": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_117_04": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_117_04_sfw": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_119_03": [
+    128,
+    308
+  ],
+  "UT_Hero_ThinCard_119_03_sfw": [
+    128,
+    308
   ]
 }

@@ -32,6 +32,19 @@ public static class DefaultSkinPackage
         foreach (var entry in entries) entry.ExtractToFile(Path.Combine(directory, RelativeName(entry)), true);
         return entries.Length;
     }
+    /// <summary>旧磁盘默认包缺少新卡时，从当前内嵌包提供预览，不改写玩家文件。</summary>
+    public static Stream? OpenCard(string fileName)
+    {
+        if (Path.GetFileName(fileName) != fileName || fileName.Contains('\\') ||
+            !Path.GetExtension(fileName).Equals(".png", StringComparison.OrdinalIgnoreCase) || !Contains(fileName)) return null;
+        using var archive = Open();
+        var entry = archive.Entries.First(e => !string.IsNullOrEmpty(e.Name) && RelativeName(e).Equals(fileName, StringComparison.OrdinalIgnoreCase));
+        var memory = new MemoryStream();
+        using (var source = entry.Open()) source.CopyTo(memory);
+        memory.Position = 0;
+        return memory;
+    }
+
     public static void RestoreCard(string directory, string fileName)
     {
         if (Path.GetFileName(fileName) != fileName || fileName.Contains('\\')) throw new ArgumentException("卡面文件名不正确");
