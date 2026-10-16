@@ -674,6 +674,11 @@ public partial class HybridWindow
         }
     }
 
+    private object BuildClientRelic(RelicDisplay relic) => new
+    {
+        relic.Id, relic.Name, relic.Quality, image = AssetUrl(relic.ImagePath)
+    };
+
     private object BuildClientReport(ReplayReport report) => new
     {
         file = new { report.FileName, report.FilePath, report.FileSizeText, report.Sha256 },
@@ -695,7 +700,8 @@ public partial class HybridWindow
             avatar = AssetUrl(x.AvatarPath), x.FinalStatus, x.Hp, x.MaxHp, x.HpText,
             x.Gold, x.Attack, x.Defense, x.Damage, x.Injured, x.Kills, x.Healing,
             x.MovePoints, x.UsedCards, x.UsedSkills, x.TransferGold, x.BoughtRelics,
-            x.FinalBossKill, x.SelectedRelicCount, x.SelectedRelicsText
+            x.FinalBossKill, x.SelectedRelicCount, x.SelectedRelicsText,
+            selectedRelics = x.SelectedRelics.Select(BuildClientRelic)
         }),
         events = report.Events.Select(x => new
         {
@@ -706,7 +712,8 @@ public partial class HybridWindow
         {
             x.FrameIndex, x.Round, x.PlayerId, x.PlayerName, x.HeroName, x.Kind, x.Level, x.LevelText,
             x.RelicId, x.RelicName, x.Quality, x.OptionsText, x.Source, x.RefreshNumber, x.IsRefresh,
-            x.RefreshText, image = AssetUrl(x.ImagePath), sourceIcon = AssetUrl(x.SourceIconPath)
+            x.RefreshText, image = AssetUrl(x.ImagePath), sourceIcon = AssetUrl(x.SourceIconPath),
+            options = x.Options.Select(BuildClientRelic)
         }),
         shops = report.Shops.Select(x => new
         {

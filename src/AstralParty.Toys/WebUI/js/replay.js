@@ -692,7 +692,7 @@
                 <div><small style="color:var(--text-muted);font-size:11px">技能使用</small><div style="font-weight:700">${fmt(p.usedSkills)}</div></div>
               </div>
               <div style="font-size:12px;color:var(--text-secondary)">
-                <b>已持有 ${p.selectedRelicCount} 个筹码：</b>${esc(p.selectedRelicsText || '无')}
+                <b>已持有 ${p.selectedRelicCount} 个筹码：</b>${this.relicList(p.selectedRelics, '无', true)}
               </div>
             </article>
           `).join('')}
@@ -713,6 +713,13 @@
           <div id="timelineContent" class="table-scroll-wrap" style="padding:18px"></div>
         </div>
       `;
+
+      const relicsByFrame = new Map((report.relics || []).map(relic => [relic.frameIndex, relic]));
+      const eventRelics = ev => {
+        const relic = relicsByFrame.get(ev.frameIndex);
+        if (!relic) return '';
+        return this.relicList(relic.relicId > 0 ? [relic] : relic.options);
+      };
 
       const update = () => {
         const q = ($('timelineSearch')?.value || '').trim().toLowerCase();
@@ -739,7 +746,7 @@
                   <span style="font-family:monospace;font-size:11px;color:var(--gp-gold);flex:0 0 54px">#${ev.frameIndex}</span>
                   <span class="badge badge-notice">${esc(ev.type)}</span>
                   <strong style="color:#ffffff;flex:0 0 110px">${esc(ev.playerName || '系统')}</strong>
-                  <span style="color:var(--gp-text-sub);flex:1">${esc(ev.description || ev.title)}</span>
+                  <span style="color:var(--gp-text-sub);flex:1">${esc(ev.description || ev.title)}${ev.type === '筹码' ? eventRelics(ev) : ''}</span>
                 </div>
               `).join('')}
             </div>
@@ -749,6 +756,22 @@
 
       $('timelineSearch')?.addEventListener('input', update);
       update();
+    },
+
+    relicBadge(relic, iconOnly = false) {
+      const name = relic.name || relic.relicName || '未知筹码';
+      const label = [name, relic.quality].filter(Boolean).join(' · ');
+      const rarity = { '普通': 'blue', '稀有': 'purple', '传说': 'gold' }[relic.quality] || 'unknown';
+      return `<span class="replay-relic replay-relic-${rarity}" title="${esc(label)}"${iconOnly ? ` role="img" aria-label="${esc(label)}"` : ''}>
+        ${relic.image ? `<img src="${esc(relic.image)}" alt="" width="36" height="36" loading="lazy" onerror="this.hidden=true">` : ''}
+        ${iconOnly ? '' : `<span>${esc(name)}</span>`}
+      </span>`;
+    },
+
+    relicList(relics, fallback = '', iconOnly = false) {
+      return relics?.length
+        ? `<span class="replay-relic-list">${relics.map(relic => this.relicBadge(relic, iconOnly)).join('')}</span>`
+        : esc(fallback);
     },
 
     renderRelics(report) {
@@ -809,10 +832,10 @@
             <td><span style="color:var(--gp-text-sub);font-size:12px">${esc(r.heroName || '—')}</span></td>
             <td><span class="badge badge-notice">${esc(r.source)}</span></td>
             <td><span class="badge ${r.kind === '选择' ? 'badge-event' : 'badge-update'}">${esc(r.kind)}</span></td>
-            <td><strong>${esc(r.relicName)}</strong></td>
+            <td>${r.relicId > 0 ? this.relicBadge(r) : '—'}</td>
             <td class="quality-${esc(r.quality)}">${esc(r.quality)}</td>
             <td>${esc(r.refreshText || '—')}</td>
-            <td style="color:var(--text-muted);font-size:12px">${esc(r.optionsText)}</td>
+            <td style="color:var(--text-muted);font-size:12px">${this.relicList(r.options, r.optionsText)}</td>
           </tr>
         `).join('');
       };

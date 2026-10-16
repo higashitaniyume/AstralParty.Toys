@@ -10,6 +10,40 @@
   color: var(--gp-text-main);
 }
 
+/* Keep game relic artwork legible beside its name in tables and player lists. */
+.replay-relic-list {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  vertical-align: middle;
+}
+.replay-relic {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  vertical-align: middle;
+}
+.replay-relic-blue { --relic-bg: #2266b0; --relic-edge: #79bcff; }
+.replay-relic-purple { --relic-bg: #7941a8; --relic-edge: #d39aff; }
+.replay-relic-gold { --relic-bg: #a66a13; --relic-edge: #ffda70; }
+.replay-relic img {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  box-sizing: border-box;
+  padding: 2px;
+  border: 1px solid var(--relic-edge, #8290a6);
+  border-radius: 6px;
+  background: linear-gradient(145deg, var(--relic-bg, #414b5c), #192236);
+  box-shadow: inset 0 0 6px var(--relic-bg, #414b5c);
+  object-fit: contain;
+}
+.replay-relic span { overflow-wrap: anywhere; }
+#relicTableBody td:last-child { min-width: 220px; }
+#timelineContent .replay-relic-list { display: flex; margin-top: 6px; }
+
 /* Tools Sub-Header */
 .tools-header {
   height: 60px;

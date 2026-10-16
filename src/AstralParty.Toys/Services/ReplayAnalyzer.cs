@@ -380,6 +380,7 @@ public sealed class ReplayAnalyzer
             if (!selectedByPlayer.TryGetValue(player.Id, out var ids)) continue;
             player.SelectedRelicCount = ids.Count;
             player.SelectedRelicsText = string.Join("、", ids.Select(_config.Relic));
+            player.SelectedRelics = ids.Select(BuildRelicDisplay).ToArray();
         }
 
         // 收尾：把未关闭的商店进店记录也落进报告（重复广播已合并）
@@ -602,6 +603,7 @@ public sealed class ReplayAnalyzer
                         Kind = refreshCount > 0 ? "刷新候选" : "首次候选",
                         Level = level,
                         OptionsText = options,
+                        Options = ids.Select(BuildRelicDisplay).ToArray(),
                         Source = source,
                         SourceIconPath = sourceIcon,
                         RefreshNumber = refreshCount,
@@ -637,6 +639,14 @@ public sealed class ReplayAnalyzer
             });
         }
     }
+
+    private RelicDisplay BuildRelicDisplay(int id) => new()
+    {
+        Id = id,
+        Name = _config.Relic(id),
+        Quality = _config.RelicQuality(id),
+        ImagePath = _assets.Relic(id, _config.RelicAssets(id))
+    };
 
     /// <summary>处理卡牌商店 Action（5029 PVP / 5215 PVE）：进店候选。</summary>
     private void HandleShopAction(int frameIndex, object action, int actionId, int round,

@@ -75,6 +75,7 @@ public sealed class PlayerSummary
     public bool FinalBossKill { get; set; }
     public int SelectedRelicCount { get; set; }
     public string SelectedRelicsText { get; set; } = "—";
+    public RelicDisplay[] SelectedRelics { get; set; } = [];
     public string HpText => MaxHp > 0 ? $"{Hp} / {MaxHp}" : "—";
     public string CombatText => MaxHp > 0 ? $"{Attack} / {Defense}" : "—";
     public string IdentityText => $"ID {Id} · 槽位 {Slot + 1} · 账号等级 {AccountLevel}";
@@ -93,6 +94,14 @@ public sealed class TimelineEvent
     public string RoundText => Round > 0 ? $"第 {Round} 回合" : "对局";
 }
 
+public sealed class RelicDisplay
+{
+    public int Id { get; init; }
+    public string Name { get; init; } = "";
+    public string Quality { get; init; } = "";
+    public string ImagePath { get; init; } = "";
+}
+
 public sealed class RelicRecord
 {
     public int FrameIndex { get; init; }
@@ -106,6 +115,7 @@ public sealed class RelicRecord
     public string RelicName { get; init; } = "";
     public string Quality { get; init; } = "";
     public string OptionsText { get; init; } = "";
+    public RelicDisplay[] Options { get; init; } = [];
     public string ImagePath { get; init; } = "";
     public string Source { get; init; } = "来源未记录";
     public string SourceIconPath { get; init; } = "";
