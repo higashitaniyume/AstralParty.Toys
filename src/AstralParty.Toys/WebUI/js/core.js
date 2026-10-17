@@ -38,6 +38,8 @@ function openModal(title, contentHtml, iconName) {
   const titleEl = $('modalTitle');
   const bodyEl = $('modalBody');
   if (!modal || !titleEl || !bodyEl) return;
+  // 新弹窗覆盖旧的：上一个弹窗登记的「关闭时回调」不能留到这次
+  modal._onClose = null;
   // 标题可带一个 Material Symbols 图标（iconName）；标题文本本身仍做 HTML 转义。
   titleEl.innerHTML = (iconName && window.Icons ? Icons.svg(iconName) + ' ' : '') + esc(title);
   bodyEl.innerHTML = contentHtml;
@@ -53,9 +55,13 @@ function closeModal() {
   window.CharacterCropModule?.cancel();
   const modal = $('globalModal');
   if (!modal) return;
+  // 关闭回调（例如「导入降级确认」要在窗口被 X 关掉时告诉宿主：别等了）
+  const onClose = modal._onClose;
+  modal._onClose = null;
   const wasOpen = modal.classList.contains('open');
   modal.classList.remove('open');
   if (!wasOpen) return;
+  onClose?.();
   const restore = modal._restoreFocus;
   modal._restoreFocus = null;
   if (restore?.isConnected) restore.focus();
@@ -318,6 +324,11 @@ host?.addEventListener('message', event => {
 
     case 'modPackageImportResult':
       window.ModsModule?.renderPackageImportResult(msg.payload);
+      break;
+
+    case 'modImportConfirm':
+      // 模组包里是比已装更旧的版本：弹窗确认后才真正写入（不能无声降级）
+      window.ModsModule?.openImportConfirm(msg.payload);
       break;
 
     case 'modUpdateCheck':

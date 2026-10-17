@@ -651,6 +651,19 @@ body:not(.reduce-motion) #modsView:not(.page-entering) .mods-advanced {
   line-height: 1.7;
   color: var(--gp-text-muted);
 }
+
+/* 列表型提示：例如「导入降级确认」里逐条列出的模组与版本 */
+.cfg-list {
+  margin: 2px 0;
+  padding-left: 20px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--gp-text-main);
+  list-style: disc;
+}
+.cfg-list .cfg-list { margin: 2px 0 4px; padding-left: 18px; }
+.cfg-list li { margin: 2px 0; }
+.cfg-list code { font-size: 12px; color: var(--gp-gold); }
 .cfg-section {
   margin-top: 6px;
   padding-top: 8px;

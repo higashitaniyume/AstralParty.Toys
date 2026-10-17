@@ -1651,15 +1651,18 @@ public sealed partial class ModManager
         return prefix + separator + "\n  \"" + key + "\": " + (value ? "true" : "false") + "\n" + suffix;
     }
 
-    /// <summary>把 mod DLL 复制进游戏 mods 目录(新布局: mods\{Name}\{Name}.dll)。</summary>
+    /// <summary>把单个 mod DLL 复制进游戏 mods 目录（新布局: mods\{Name}\{Name}.dll）。
+    /// 带 sidecar / 配置 / 资源的完整模组包（ZIP）走 <see cref="ImportModPackage"/>。</summary>
     public ModEntryInfo ImportMod(string gameDirectory, string sourcePath)
     {
         if (string.IsNullOrWhiteSpace(gameDirectory) || !Directory.Exists(gameDirectory))
             throw new DirectoryNotFoundException("游戏目录不存在，请先安装加载器或选择游戏目录。");
         if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
             throw new FileNotFoundException("找不到要导入的 mod 文件。");
+        if (sourcePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException("整个模组包（.zip）请用 ImportModPackage 导入，这里只接收单个 DLL。");
         if (!sourcePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidDataException("mod 必须是 .dll 文件。");
+            throw new InvalidDataException("mod 必须是 .dll 文件（模组包请用 .zip）。");
 
         var modsDir = Path.Combine(gameDirectory, LoaderFolderName, ModsFolderName);
 

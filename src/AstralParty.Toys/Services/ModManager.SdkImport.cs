@@ -35,9 +35,27 @@ public sealed partial class ModManager
                 InstallPackage(gameDirectory, bytes, overwriteDll, allowDowngrade);
                 return "加载器发布包 " + (ParsePackageManifest(bytes)?.Version ?? "");
             }
+            // 模组包（<ModId>/<ModId>.dll）走到这里说明选错了入口：直接说清楚该点哪个按钮，
+            // 别让用户对着「发布包必须包含唯一的 CesiumLoader.SDK.dll」猜。
+            if (LooksLikeModPackage(paths)
+                && !paths.Contains(SdkDllName)
+                && !paths.Contains($"{LoaderFolderName}/{SdkFolderName}/{SdkDllName}"))
+                throw new InvalidOperationException(
+                    "这是模组包（含 <ModId>/<ModId>.dll），请用「导入模组」安装；「导入发布包」只用于加载器与 SDK。");
         }
         return "SDK " + ImportSdk(gameDirectory, sourcePath);
     }
+
+    /// <summary>包内是否存在 <c>&lt;目录&gt;\&lt;目录&gt;.dll</c>（加载器认可的模组结构）。</summary>
+    private static bool LooksLikeModPackage(IReadOnlyCollection<string> paths)
+        => paths.Any(path =>
+        {
+            var segments = path.Split('/');
+            return segments.Length >= 2
+                   && segments[^1].EndsWith(".dll", StringComparison.OrdinalIgnoreCase)
+                   && Path.GetFileNameWithoutExtension(segments[^1])
+                       .Equals(segments[^2], StringComparison.OrdinalIgnoreCase);
+        });
 
     /// <summary>导入发布包中的 SDK，不提取或执行开发工具、脚本和其它程序集。</summary>
     public string ImportSdk(string gameDirectory, string sourcePath)

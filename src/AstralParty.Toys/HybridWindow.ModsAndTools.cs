@@ -254,11 +254,193 @@ public partial class HybridWindow
         ModManager.OpenInExplorer(folder);
     }
 
-    private void HandleModImport(string path)
+    private bool _modImportRunning;
+
+    /// <summary>等待界面回答「是否降级导入」的模组包路径；空 = 没有待确认的导入。</summary>
+    private List<string> _pendingModImportPaths = new();
+
+    private void HandleModImport(string path) => _ = PrepareModImportAsync(new[] { path });
+
+    /// <summary>
+    /// 导入模组：单个 DLL 直接复制进 mods\{ModId}\；ZIP 模组包按包内结构解压安装
+    /// （&lt;ModId&gt;\&lt;ModId&gt;.dll，可一次带多个模组）。逐个文件处理，某个失败不影响其它文件。
+    ///
+    /// ZIP 先做一次只读预检：包内版本比已装的旧时先回界面确认（和加载器安装的降级闸门同一套口径），
+    /// 用户点「仍然导入」才真正落盘。读包、解压与写盘都在后台线程。</summary>
+    private async Task PrepareModImportAsync(IReadOnlyList<string> paths)
     {
-        var entry = _modManager.ImportMod(RequireModGameDirectory(), path);
-        Post(new { type = "toast", message = $"已导入 mod：{entry.FileName}（{FormatBytes(entry.SizeBytes)}）" });
-        _ = PushModStatusAsync();
+        if (_modImportRunning)
+        {
+            Post(new { type = "toast", message = "正在导入模组，请稍候。" });
+            return;
+        }
+        // 新的一次导入作废上一次没回答的确认（避免旧弹窗丢了答复后卡住后续操作）
+        _pendingModImportPaths = new List<string>();
+
+        string directory;
+        try
+        {
+            directory = RequireModGameDirectory();
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = ex.Message });
+            return;
+        }
+
+        var packages = paths
+            .Where(path => Path.GetExtension(path).Equals(".zip", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (packages.Count > 0)
+        {
+            List<ModPackageInspection> inspections = new();
+            try
+            {
+                inspections = await Task.Run(() => packages
+                    .Select(path => _modManager.InspectModPackage(directory, path))
+                    .ToList());
+            }
+            catch
+            {
+                // 预检失败不拦路：真正导入时还会逐文件校验并报错，同一个包不会写坏任何东西
+            }
+
+            var downgrades = inspections.Where(inspection => inspection.HasDowngrade).ToList();
+            if (downgrades.Count > 0)
+            {
+                _pendingModImportPaths = paths.ToList();
+                Post(new
+                {
+                    type = "modImportConfirm",
+                    payload = new
+                    {
+                        packages = downgrades.Select(inspection => new
+                        {
+                            name = inspection.SourceName,
+                            mods = inspection.Mods.Where(mod => mod.IsDowngrade).Select(mod => new
+                            {
+                                name = mod.Name,
+                                from = mod.InstalledVersion,
+                                to = mod.PackageVersion
+                            })
+                        })
+                    }
+                });
+                return;
+            }
+        }
+
+        await ImportModFilesAsync(paths, allowDowngrade: false);
+    }
+
+    /// <summary>降级确认弹窗的回答（界面按钮）。确认后才带着 allowDowngrade 真正导入。</summary>
+    private void HandleModImportConfirmAnswer(bool allow)
+    {
+        var paths = _pendingModImportPaths;
+        _pendingModImportPaths = new List<string>();
+        if (!allow || paths.Count == 0) return;
+        _ = ImportModFilesAsync(paths, allowDowngrade: true);
+    }
+
+    private async Task ImportModFilesAsync(IReadOnlyList<string> paths, bool allowDowngrade)
+    {
+        if (_modImportRunning)
+        {
+            Post(new { type = "toast", message = "正在导入模组，请稍候。" });
+            return;
+        }
+
+        string directory;
+        try
+        {
+            directory = RequireModGameDirectory();
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = ex.Message });
+            return;
+        }
+
+        _modImportRunning = true;
+        try
+        {
+            var outcome = await Task.Run(() => ImportModFiles(directory, paths, allowDowngrade));
+            if (outcome.Imported.Count > 0)
+            {
+                var message = $"已导入 {outcome.Imported.Count} 个模组：{string.Join("、", outcome.Imported)}——重启游戏后生效";
+                if (outcome.Notes.Count > 0) message += "；" + string.Join("；", outcome.Notes);
+                Post(new { type = "toast", message });
+            }
+            foreach (var failure in outcome.Failures)
+                Post(new { type = "toast", message = $"导入失败：{failure}" });
+        }
+        finally
+        {
+            _modImportRunning = false;
+            _ = PushModStatusAsync();
+        }
+    }
+
+    private readonly record struct ModImportOutcome(
+        List<string> Imported, List<string> Notes, List<string> Failures);
+
+    /// <summary>逐个文件导入（在后台线程执行，不碰界面）。</summary>
+    private ModImportOutcome ImportModFiles(string gameDirectory, IReadOnlyList<string> paths, bool allowDowngrade)
+    {
+        var imported = new List<string>();
+        var notes = new List<string>();
+        var failures = new List<string>();
+        foreach (var path in paths)
+        {
+            try
+            {
+                if (Path.GetExtension(path).Equals(".zip", StringComparison.OrdinalIgnoreCase))
+                {
+                    var result = _modManager.ImportModPackage(gameDirectory, path, allowDowngrade);
+                    if (result.Changes.Count > 0)
+                        imported.AddRange(result.Changes.Select(DescribeModChange));
+                    else
+                        imported.AddRange(result.Mods.Select(ModImportName));
+                    // 升级已有模组时，玩家自己的配置与停用状态会被保留 —— 值得说一句，免得以为没生效
+                    if (result.PreservedConfigs.Count > 0)
+                        notes.Add($"保留了 {string.Join("、", result.PreservedConfigs)} 的已有配置");
+                    if (result.PreservedDisabled.Count > 0)
+                        notes.Add($"{string.Join("、", result.PreservedDisabled)} 仍为禁用状态");
+                    if (result.RemovedFiles.Count > 0)
+                        notes.Add($"把 {result.RemovedFiles.Count} 个旧版本文件移入了回收站");
+                    // 回收站不可用时旧文件原样保留（不永久删除），如实说一声
+                    if (result.KeptFiles.Count > 0)
+                        notes.Add($"{result.KeptFiles.Count} 个旧版本文件没能移入回收站，已保留");
+                    if (result.Skipped.Count > 0)
+                        notes.Add($"忽略了 {result.Skipped.Count} 个非模组文件");
+                }
+                else
+                {
+                    imported.Add(ModImportName(_modManager.ImportMod(gameDirectory, path)));
+                }
+            }
+            catch (Exception ex)
+            {
+                failures.Add($"{Path.GetFileName(path)}：{ex.Message}");
+            }
+        }
+        return new ModImportOutcome(imported, notes, failures);
+    }
+
+    /// <summary>toast 里用模组自己的显示名（sidecar 的 name），没有就用程序集名。</summary>
+    private static string ModImportName(ModEntryInfo entry)
+        => entry.DisplayName.Length > 0 ? entry.DisplayName : entry.Name;
+
+    /// <summary>「手牌查看（升级 v1.0.8 → v1.1.0）」这类一句话版本说明。</summary>
+    private static string DescribeModChange(ModPackageChange change)
+    {
+        var name = change.Name.Length > 0 ? change.Name : change.ModId;
+        if (!change.WasInstalled || change.FromVersion.Length == 0)
+            return change.ToVersion.Length > 0 ? $"{name}（新装 v{change.ToVersion}）" : name;
+        if (change.ToVersion.Length == 0) return $"{name}（版本未知）";
+        if (change.IsDowngrade) return $"{name}（降级 v{change.FromVersion} → v{change.ToVersion}）";
+        if (change.IsUpgrade) return $"{name}（升级 v{change.FromVersion} → v{change.ToVersion}）";
+        return $"{name}（v{change.ToVersion}，版本未变）";
     }
 
     private void HandleModPickPackageFile()
@@ -307,32 +489,17 @@ public partial class HybridWindow
         }
     }
 
-    private void HandleModPickImport()
+    private async void HandleModPickImport()
     {
         var dialog = new OpenFileDialog
         {
-            Title = "选择要导入的 mod DLL",
-            Filter = "Mod DLL|*.dll|所有文件|*.*",
+            Title = "选择要导入的模组（DLL 或 ZIP 模组包）",
+            Filter = "模组包 (*.zip)|*.zip|模组 DLL (*.dll)|*.dll|所有文件|*.*",
             CheckFileExists = true,
             Multiselect = true
         };
         if (dialog.ShowDialog(this) != true || dialog.FileNames.Length == 0) return;
-        var imported = 0;
-        foreach (var file in dialog.FileNames)
-        {
-            try
-            {
-                _modManager.ImportMod(RequireModGameDirectory(), file);
-                imported++;
-            }
-            catch (Exception ex)
-            {
-                Post(new { type = "toast", message = $"导入 {Path.GetFileName(file)} 失败：{ex.Message}" });
-            }
-        }
-        if (imported > 0)
-            Post(new { type = "toast", message = $"已导入 {imported} 个 mod，重启游戏后生效。" });
-        _ = PushModStatusAsync();
+        await PrepareModImportAsync(dialog.FileNames);
     }
 
     private void HandleModDelete(string fileName)

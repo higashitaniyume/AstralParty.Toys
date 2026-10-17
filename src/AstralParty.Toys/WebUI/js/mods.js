@@ -148,6 +148,39 @@
       if (cancel) cancel.textContent = '关闭';
     },
 
+    /** 导入前的降级确认：包内版本比已装的旧，不能无声覆盖。（Host 只在预检发现降级时发这条消息） */
+    openImportConfirm(payload) {
+      const packages = payload?.packages || [];
+      const rows = packages.map(pkg => {
+        const mods = (pkg.mods || []).map(mod =>
+          `<li><b>${esc(mod.name)}</b>：已装 <code>v${esc(mod.from)}</code> → 包内 <code>v${esc(mod.to)}</code></li>`
+        ).join('');
+        return `<li><b>${esc(pkg.name)}</b><ul class="cfg-list">${mods}</ul></li>`;
+      }).join('');
+      const html = `
+        <div class="cfg-form">
+          <p class="cfg-hint">下面这些模组，包里的版本比游戏目录里已装的更旧：</p>
+          <ul class="cfg-list">${rows}</ul>
+          <p class="cfg-hint">继续导入会用包里的旧版本覆盖现有文件。玩家改过的 <code>config.json</code> 与「已禁用」状态仍会保留，
+          被替换掉的旧文件会移入回收站（回收站不可用时保留原文件）。如果只是想升级，请改用更新的模组包。</p>
+          <div class="cfg-actions">
+            <button class="secondary-btn" id="modImportDowngradeCancel">取消</button>
+            <button class="danger-btn" id="modImportDowngradeConfirm">仍然导入</button>
+          </div>
+        </div>`;
+      openModal('检测到版本降级', html, 'warning');
+      const modal = $('globalModal');
+      // 无论点按钮还是右上角 X 关闭，都要给宿主一个答复，否则它会一直等在这个确认上
+      const finish = allow => {
+        if (modal) modal._onClose = null;
+        post({ type: 'modImportConfirmAnswer', allow });
+        closeModal();
+      };
+      $('modImportDowngradeCancel')?.addEventListener('click', () => finish(false));
+      $('modImportDowngradeConfirm')?.addEventListener('click', () => finish(true));
+      if (modal) modal._onClose = () => post({ type: 'modImportConfirmAnswer', allow: false });
+    },
+
     bindEvents() {
       $('modsBackHomeBtn')?.addEventListener('click', () => showPage('home'));
 
@@ -568,7 +601,7 @@
       const list = entries || [];
       if (list.length === 0) {
         container.innerHTML = kind === 'mod'
-          ? '<p class="mods-empty">还没有模组 —— 点「导入模组 DLL」添加，或重新安装加载器时勾选内置模组</p>'
+          ? '<p class="mods-empty">还没有模组 —— 点「导入模组」添加 DLL 或 ZIP 模组包，或重新安装加载器时勾选内置模组</p>'
           : '<p class="mods-empty">sdk 目录为空（重新安装加载器会写入 CesiumLoader.SDK.dll）</p>';
         return;
       }

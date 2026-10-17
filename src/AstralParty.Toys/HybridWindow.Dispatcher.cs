@@ -19,13 +19,13 @@ public partial class HybridWindow
             using var document = JsonDocument.Parse(e.WebMessageAsJson);
             var root = document.RootElement;
             var type = root.TryGetProperty("type", out var typeElement) ? typeElement.GetString() : null;
-            if ((_loaderRecoveryBusy || _modPackageImportRunning || _modUpdateRunning)
+            if ((_loaderRecoveryBusy || _modPackageImportRunning || _modUpdateRunning || _modImportRunning)
                 && type is "modInstall" or "modUninstall" or "modDisableLoader" or "modRestoreLoader"
                     or "modDownloadUpdate" or "modImportPackage" or "modImport" or "modPickImport" or "modDelete" or "modToggle"
                     or "speedhackInstall" or "speedhackUninstall")
             {
                 if (type is "modDisableLoader" or "modRestoreLoader") Post(new { type = "modRecoveryDone" });
-                throw new InvalidOperationException("加载器操作正在进行，请等待完成后再修改游戏文件。");
+                throw new InvalidOperationException("游戏文件操作正在进行（安装 / 更新 / 导入），请等待完成后再修改。");
             }
             if (_cardAnimationConversion != null && type is "skinsDelete" or "skinsImportZip" or "skinsRestoreDefault" or "skinsDownloadDefault" or "skinsImportLegacyZip" or "skinsCropSave" or "skinsExportZip" or "skinsExportConfirmed")
                 throw new InvalidOperationException("请先等待或取消当前动态卡面转换，再修改或导出皮肤方案。");
@@ -333,6 +333,12 @@ public partial class HybridWindow
                     break;
                 case "modPickImport":
                     HandleModPickImport();
+                    break;
+                case "modImportConfirmAnswer":
+                    // 降级确认弹窗的回答：只有用户点「仍然导入」才按 allowDowngrade 真正落盘
+                    HandleModImportConfirmAnswer(
+                        root.TryGetProperty("allow", out var modImportAllowElement)
+                        && modImportAllowElement.ValueKind == JsonValueKind.True);
                     break;
                 case "modDelete":
                     if (root.TryGetProperty("fileName", out var modDeleteElement) &&
