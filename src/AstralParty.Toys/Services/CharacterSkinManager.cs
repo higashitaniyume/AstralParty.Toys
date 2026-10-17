@@ -99,7 +99,10 @@ public sealed class CharacterSkinManager
     public string Import(string game, string zipPath)
     {
         using var archive = ZipFile.OpenRead(zipPath);
-        if (archive.Entries.Count > 12000 || archive.Entries.Sum(x => x.Length) > 512L * 1024 * 1024) throw new InvalidOperationException("皮肤包文件数量或大小超限");
+        // 不设文件数量或总大小上限：包是玩家自己选的本地文件，解压前只确认目标盘放得下
+        long declaredBytes = 0;
+        foreach (var declaredEntry in archive.Entries) declaredBytes += declaredEntry.Length;
+        ImportLimits.EnsureFreeSpace(Root(game), declaredBytes);
         var manifests = archive.Entries.Where(x => x.Name == "character-skin.json").ToArray();
         if (manifests.Length != 1) throw new InvalidOperationException("ZIP 必须包含且仅包含一份 character-skin.json");
         var manifestEntry = manifests[0];

@@ -7,7 +7,8 @@ using CesiumLoader.CharacterSkins;
 
 namespace AstralParty.Toys.Services;
 
-/// <summary>Bounded, per-bundle conversion. Atlas pixels are retained only for one texture at a time.</summary>
+/// <summary>Per-bundle conversion. Atlas pixels are retained only for one texture at a time.
+/// 不设人为的数量或总大小上限：只保留 Unity 纹理边长上限（<see cref="ImportLimits.MaxTextureDimension"/>）。</summary>
 internal sealed class LegacyCharacterAnimationImport(string staging, CancellationToken token)
 {
     internal readonly Dictionary<string,string> Sprites = new(StringComparer.OrdinalIgnoreCase);
@@ -15,21 +16,11 @@ internal sealed class LegacyCharacterAnimationImport(string staging, Cancellatio
     internal readonly List<string> Media = [];
     readonly List<object> layouts = [];
     readonly HashSet<int> timelineHeroes = [];
-    long outputPixels, staticPixels;
-    const long MaxFramePixels = 2L * 1024 * 1024 * 1024;
+    long decodedFrameBytes;   // 仅用于写进 legacy-animation-source.json 的统计，不再当上限
     static readonly Regex SpriteName = new(@"^[A-Za-z0-9_-]+_\d+$", RegexOptions.CultureInvariant);
 
     internal void ExportBundle(string path, Dictionary<string,string> converted, HashSet<string> names, Action<int,int>? progress = null)
     {
-        var manager = new AssetsManager();
-        try
-        {
-            var bundle = manager.LoadBundleFile(path, false); long expanded=0;
-            foreach(var block in bundle.file.BlockAndDirInfo.BlockInfos)
-                if((expanded+=block.DecompressedSize)>LegacyCharacterSkinImporter.MaxArchiveBytes)throw new InvalidDataException("UnityFS 解压后大小超限。");
-            manager.UnloadAll();
-        }
-        finally { manager.UnloadAll(); }
         using var resources=new CharacterUnityResources();resources.Load([path],token,true);
         foreach(var obj in resources.Objects)
         {
@@ -52,7 +43,6 @@ internal sealed class LegacyCharacterAnimationImport(string staging, Cancellatio
             if(atlases.Contains((texture.File,texture.Info.PathId)))continue;
             string name=texture.Value["m_Name"].AsString;
             if(string.IsNullOrWhiteSpace(name)||!names.Add(name))throw new InvalidDataException("纹理资源名为空或重复："+name);
-            if((staticPixels+=(long)width*height*4)>LegacyCharacterSkinImporter.MaxArchiveBytes)throw new InvalidDataException("静态纹理解码总大小超限。");
             string relative="images/"+converted.Count.ToString("D5")+".png";
             resources.ExportTexture(texture,CharacterSkinRules.SafePath(staging,relative));converted.Add(name,relative);resources.ReleaseTextures();
         }
@@ -63,9 +53,8 @@ internal sealed class LegacyCharacterAnimationImport(string staging, Cancellatio
             {
                 token.ThrowIfCancellationRequested();var s=obj.Value;string name=s["m_Name"].AsString;
                 if(!SpriteName.IsMatch(name)||Sprites.ContainsKey(name))throw new InvalidDataException("精灵名称无效或重复："+name);
-                if(Sprites.Count>=10000)throw new InvalidDataException("动画帧数量超限。");
                 int width=checked((int)Math.Round(s["m_Rect"]["width"].AsFloat)),height=checked((int)Math.Round(s["m_Rect"]["height"].AsFloat));CheckSize(width,height);
-                if((outputPixels+=(long)width*height*4)>MaxFramePixels)throw new InvalidDataException("动画帧解码总大小超过 2 GiB。");
+                decodedFrameBytes+=(long)width*height*4;
                 string action=name[..name.LastIndexOf('_')],relative="animations/"+action+"/"+name+".png";
                 resources.ExportSprite(obj,CharacterSkinRules.SafePath(staging,relative));Sprites.Add(name,relative);
                 if(++processed%25==0 || processed==sprites.Length)progress?.Invoke(processed,sprites.Length);
@@ -92,7 +81,8 @@ internal sealed class LegacyCharacterAnimationImport(string staging, Cancellatio
     }
     static void CheckSize(int width,int height)
     {
-        if(width<=0||height<=0||width>16384||height>16384||(long)width*height*4>64L*1024*1024)throw new InvalidDataException("纹理或动画帧尺寸超限。");
+        // 只保留 Unity 纹理/精灵的边长上限（GPU 硬上限）；帧数、总像素与文件总体积不再设人为限额。
+        if(width<=0||height<=0||width>ImportLimits.MaxTextureDimension||height>ImportLimits.MaxTextureDimension)throw new InvalidDataException("纹理或动画帧尺寸超出 Unity 上限（最长边 16384）。");
     }
     void ValidateMetadata(CharacterUnityObject obj,bool hasSprites)
     {
@@ -129,6 +119,6 @@ internal sealed class LegacyCharacterAnimationImport(string staging, Cancellatio
         foreach(var (name,path) in Sprites)manifest.SpriteMappings.Add(name,path);
         foreach(var (name,animation) in Animations)manifest.Animations.Add(name,animation);
         if(Sprites.Count>0&&Animations.Count==0)throw new InvalidDataException("精灵帧没有完整动作信息。");
-        File.WriteAllText(Path.Combine(staging,"legacy-animation-source.json"),JsonSerializer.Serialize(new{Sprites=layouts,PreservedMedia=Media,EnabledMedia=false,DecodedFrameBytes=outputPixels},CharacterSkinManager.JsonOptions));
+        File.WriteAllText(Path.Combine(staging,"legacy-animation-source.json"),JsonSerializer.Serialize(new{Sprites=layouts,PreservedMedia=Media,EnabledMedia=false,DecodedFrameBytes=decodedFrameBytes},CharacterSkinManager.JsonOptions));
     }
 }

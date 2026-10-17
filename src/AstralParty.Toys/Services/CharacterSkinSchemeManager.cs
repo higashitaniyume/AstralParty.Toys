@@ -173,8 +173,10 @@ public sealed class CharacterSkinSchemeManager
                 files.Add((path, "packages/" + packageId + "/" + relative));
             }
         string json = JsonSerializer.Serialize(scheme, CharacterSkinManager.JsonOptions);
-        if (files.Count + 1 > 12000 || files.Sum(x => new FileInfo(x.Path).Length) + System.Text.Encoding.UTF8.GetByteCount(json) > 512L * 1024 * 1024)
-            throw new InvalidOperationException("皮肤方案文件数量或大小超限");
+        // 不设文件数量或总大小上限：导出的是玩家自己的方案与素材包，只确认磁盘放得下
+        long requiredBytes = System.Text.Encoding.UTF8.GetByteCount(json);
+        foreach (var file in files) requiredBytes += new FileInfo(file.Path).Length;
+        ImportLimits.EnsureFreeSpace(Path.GetFullPath(destination), requiredBytes);
         using var archive = ZipFile.Open(destination, ZipArchiveMode.Create);
         var entry = archive.CreateEntry("character-scheme.json");
         using (var writer = new StreamWriter(entry.Open())) writer.Write(json);
@@ -183,7 +185,10 @@ public sealed class CharacterSkinSchemeManager
     public string Import(string game, string zipPath)
     {
         using var archive = ZipFile.OpenRead(zipPath);
-        if (archive.Entries.Count > 12000 || archive.Entries.Sum(x => x.Length) > 512L * 1024 * 1024) throw new InvalidOperationException("皮肤方案文件数量或大小超限");
+        // 不设文件数量或总大小上限：解压前只确认目标盘放得下（见 ImportLimits）
+        long declaredBytes = 0;
+        foreach (var declaredEntry in archive.Entries) declaredBytes += declaredEntry.Length;
+        ImportLimits.EnsureFreeSpace(Root(game), declaredBytes);
         string staging = Path.Combine(Root(game), ".import-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(staging);
         var moved = new List<string>();

@@ -422,15 +422,11 @@ public sealed class SkinManager
             CardAnimationPackage.Remove(directory, Path.GetFileNameWithoutExtension(manifest));
         return count;
     }
-    /// <summary>安全导入皮肤 ZIP 压缩包，自动识别各种层级结构。</summary>
+    /// <summary>安全导入皮肤 ZIP 压缩包，自动识别各种层级结构。不设文件数量或总大小上限，只受磁盘可用空间约束。</summary>
     public string ImportSkinZip(string gameDirectory, string zipPath)
     {
         if (!File.Exists(zipPath))
             throw new FileNotFoundException("皮肤压缩包不存在", zipPath);
-
-        var fileInfo = new FileInfo(zipPath);
-        if (fileInfo.Length > 256 * 1024 * 1024)
-            throw new InvalidOperationException("皮肤压缩包不能超过 256 MB。");
 
         var skinsDir = GetSkinsDirectory(gameDirectory);
         Directory.CreateDirectory(skinsDir);
@@ -439,8 +435,10 @@ public sealed class SkinManager
         if (archive.Entries.Count == 0)
             throw new InvalidOperationException("压缩包内没有任何文件。");
 
-        if (archive.Entries.Sum(e => e.Length) > 512L * 1024 * 1024 || archive.Entries.Any(e => e.Length > 32L * 1024 * 1024))
-            throw new InvalidOperationException("皮肤包解压体积过大。");
+        // 解压前只确认目标盘放得下；不再按固定 MB 数或单文件大小挡包
+        long declaredBytes = 0;
+        foreach (var declaredEntry in archive.Entries) declaredBytes += declaredEntry.Length;
+        ImportLimits.EnsureFreeSpace(skinsDir, declaredBytes);
 
         // 校验路径安全性，防止路径遍历攻击
         foreach (var entry in archive.Entries)

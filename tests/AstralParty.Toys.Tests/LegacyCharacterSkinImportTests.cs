@@ -174,10 +174,12 @@ public sealed class LegacyCharacterSkinImportTests : IDisposable
     }
 
     [Fact]
-    public async Task TooManyZipEntriesAreRejectedBeforeExtraction()
+    public void ZipEntryCountIsNotArtificiallyCapped()
     {
-        var entries = Enumerable.Range(0, LegacyCharacterSkinImporter.MaxEntries + 1).Select(i => (i + ".txt", Array.Empty<byte>())).ToArray();
-        await Assert.ThrowsAsync<InvalidDataException>(() => Import(Zip(entries))); AssertRolledBack();
+        // 不再按文件数量挡包：结构校验通过即接受（数量只受内存/磁盘约束）
+        var entries = Enumerable.Range(0, 12001).Select(i => (i + ".txt", Array.Empty<byte>())).ToArray();
+        using var archive = LegacyCharacterSkinImporter.OpenArchive(Zip(entries));
+        Assert.Equal(entries.Length, LegacyCharacterSkinImporter.ValidateArchive(archive).Count);
     }
 
     [Fact]
@@ -187,8 +189,9 @@ public sealed class LegacyCharacterSkinImportTests : IDisposable
         Assert.Equal(original, LegacyCharacterSkinImporter.NormalizeBundle(duplicated, "bundle", out string? notice)); Assert.Contains("2", notice);
         Assert.Throws<InvalidDataException>(() => LegacyCharacterSkinImporter.NormalizeBundle(Bundle(suffix: [7, 2]), "bundle", out _));
         byte[] truncated = original[..^1]; Assert.Throws<InvalidDataException>(() => LegacyCharacterSkinImporter.NormalizeBundle(truncated, "bundle", out _));
+        // 只拒绝「超过能读入内存的 2 GiB」：块信息未压缩大小写 2 GiB 应被拒绝
         byte[] hugeMetadata = original.ToArray(); int sizeOffset = 8 + 4 + 6 + 12;
-        BinaryPrimitives.WriteUInt32BigEndian(hugeMetadata.AsSpan(sizeOffset + 12, 4), 17 * 1024 * 1024);
+        BinaryPrimitives.WriteUInt32BigEndian(hugeMetadata.AsSpan(sizeOffset + 12, 4), 0x80000000);
         Assert.Throws<InvalidDataException>(() => LegacyCharacterSkinImporter.NormalizeBundle(hugeMetadata, "bundle", out _));
     }
 

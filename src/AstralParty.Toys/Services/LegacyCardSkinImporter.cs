@@ -42,8 +42,12 @@ public static class LegacyCardSkinImporter
         Directory.CreateDirectory(staging);
         try
         {
+            // 不按固定体积挡包：只确认目标盘放得下这些解压后的内容
+            long declaredBytes = 0;
+            foreach (var (declaredEntry, _) in entries) declaredBytes += declaredEntry.Length;
+            ImportLimits.EnsureFreeSpace(staging, declaredBytes);
+
             var bundles = new List<(string Relative, string Path)>();
-            long extracted = 0;
             foreach (var (entry, relative) in entries)
             {
                 token.ThrowIfCancellationRequested();
@@ -56,9 +60,8 @@ public static class LegacyCardSkinImporter
                     byte[] buffer = new byte[81920]; int count; long written = 0;
                     while ((count = input.Read(buffer)) > 0)
                     {
-                        token.ThrowIfCancellationRequested(); written += count; extracted += count;
-                        if (written > entry.Length || extracted > LegacyCharacterSkinImporter.MaxArchiveBytes)
-                            throw new InvalidDataException("ZIP 解压大小超过声明或限制。");
+                        token.ThrowIfCancellationRequested(); written += count;
+                        if (written > entry.Length) throw new InvalidDataException("ZIP 解压大小超过声明。");
                         output.Write(buffer, 0, count);
                     }
                     if (written != entry.Length) throw new InvalidDataException("ZIP 文件长度不完整：" + relative);
@@ -67,7 +70,6 @@ public static class LegacyCardSkinImporter
             }
             var assets = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var normalizations = new List<string>();
-            long decodedBytes = 0;
             string work = Path.Combine(staging, ".work"); Directory.CreateDirectory(work);
             for (int i = 0; i < bundles.Count; i++)
             {
@@ -87,11 +89,11 @@ public static class LegacyCardSkinImporter
                     token.ThrowIfCancellationRequested();
                     if (!IsCardAsset(texture.Name)) throw new InvalidDataException("资源不是支持的卡牌贴图，拒绝部分导入：" + texture.Name);
                     if (!assets.TryAdd(texture.Name, texture.Name + ".png")) throw new InvalidDataException("存在重复卡牌资源名：" + texture.Name);
-                    long size = (long)texture.Width * texture.Height * 4;
-                    if (texture.Width <= 0 || texture.Height <= 0 || texture.Width > 16384 || texture.Height > 16384 ||
-                        size > 64L * 1024 * 1024 || size != texture.Pixels.LongLength ||
-                        (decodedBytes += size) > LegacyCharacterSkinImporter.MaxArchiveBytes)
-                        throw new InvalidDataException("卡面尺寸或解码大小超限：" + texture.Name);
+                    // 唯一保留的尺寸限制是 Unity 纹理边长上限；解码字节数由它自然限住
+                    if (texture.Width <= 0 || texture.Height <= 0
+                        || texture.Width > ImportLimits.MaxTextureDimension || texture.Height > ImportLimits.MaxTextureDimension
+                        || (long)texture.Width * texture.Height * 4 != texture.Pixels.LongLength)
+                        throw new InvalidDataException("卡面尺寸超出 Unity 上限（最长边 16384）：" + texture.Name);
                     CharacterUnityResources.SavePng(CharacterSkinRules.SafePath(staging, texture.Name + ".png"), texture.Width, texture.Height, texture.Pixels);
                 }
                 // Only paths are retained across bundles; decoded pixel arrays are released each iteration.

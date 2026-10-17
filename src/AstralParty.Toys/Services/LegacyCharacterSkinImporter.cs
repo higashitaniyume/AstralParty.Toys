@@ -19,12 +19,10 @@ public sealed class LegacyCharacterSkinTargetException : InvalidOperationExcepti
 }
 
 /// <summary>Converts legacy character images and sprite animations to an inactive Toys package; preserves recognized skill video sources.
-/// Never overwrites original game bundles or activates the imported package.</summary>
+/// Never overwrites original game bundles or activates the imported package.
+/// 不设人为的文件数量或总大小上限：只受 Unity 纹理尺寸、单个 bundle 可读入内存与磁盘剩余空间约束（见 <see cref="ImportLimits"/>）。</summary>
 public static class LegacyCharacterSkinImporter
 {
-    internal const long MaxArchiveBytes = 512L * 1024 * 1024;
-    internal const long MaxBundleBytes = 128L * 1024 * 1024;
-    internal const int MaxEntries = 12000;
     internal sealed record Target(int HeroId, int SkinItemId, string Name, Dictionary<string, string> Slots, HashSet<string> Assets);
     internal sealed record Texture(string Name, int Width, int Height, byte[] Pixels);
     internal delegate IReadOnlyList<Texture> ReadBundle(string path, CancellationToken token);
@@ -113,7 +111,7 @@ public static class LegacyCharacterSkinImporter
         ReadBundle readBundle, Action<CharacterExportProgress> progress, CancellationToken token, int selectedHeroId, int selectedSkinItemId, bool animationResources = false)
     {
         void Report(int percent, string text) { token.ThrowIfCancellationRequested(); progress(new(percent, text)); token.ThrowIfCancellationRequested(); }
-        Report(2, "检查旧皮肤 ZIP 的路径与大小");
+        Report(2, "检查旧皮肤 ZIP 的路径与可用空间");
         var manager = new CharacterSkinManager();
         string id = "legacy-" + Guid.NewGuid().ToString("N");
         string targetPath = manager.Package(game, id);
@@ -125,8 +123,12 @@ public static class LegacyCharacterSkinImporter
         Directory.CreateDirectory(staging);
         try
         {
+            // 不按固定体积挡包：只确认目标盘放得下这些解压后的内容
+            long declaredBytes = 0;
+            foreach (var (declaredEntry, _) in entries) declaredBytes += declaredEntry.Length;
+            ImportLimits.EnsureFreeSpace(staging, declaredBytes);
+
             var bundles = new List<(string Original, string Path)>();
-            long extracted = 0;
             foreach (var (entry, relative) in entries)
             {
                 token.ThrowIfCancellationRequested();
@@ -139,8 +141,8 @@ public static class LegacyCharacterSkinImporter
                     byte[] buffer = new byte[81920]; int count; long written = 0;
                     while ((count = input.Read(buffer)) > 0)
                     {
-                        token.ThrowIfCancellationRequested(); written += count; extracted += count;
-                        if (written > entry.Length || extracted > MaxArchiveBytes) throw new InvalidDataException("ZIP 解压大小超过声明或限制。");
+                        token.ThrowIfCancellationRequested(); written += count;
+                        if (written > entry.Length) throw new InvalidDataException("ZIP 解压大小超过声明。");
                         output.Write(buffer, 0, count);
                     }
                     if (written != entry.Length) throw new InvalidDataException("ZIP 文件长度不完整：" + relative);
@@ -150,7 +152,6 @@ public static class LegacyCharacterSkinImporter
             var textureNames = new HashSet<string>(StringComparer.Ordinal);
             var converted = new Dictionary<string, string>(StringComparer.Ordinal);
             var normalizations = new List<string>();
-            long pixels = 0;
             var animation = animationResources ? new LegacyCharacterAnimationImport(staging, token) : null;
             for (int i = 0; i < bundles.Count; i++)
             {
@@ -178,9 +179,11 @@ public static class LegacyCharacterSkinImporter
                         throw new InvalidDataException("纹理资源名为空或重复：" + texture.Name);
                     // Some account/background configs are not shipped in Toys' GameData subset.
                     // Auxiliary textures retain their exact Unity resource name; target detection below must still have an exact config anchor.
-                    long length = (long)texture.Width * texture.Height * 4;
-                    if (texture.Width <= 0 || texture.Height <= 0 || texture.Width > 16384 || texture.Height > 16384 || length > 64L * 1024 * 1024 || length != texture.Pixels.LongLength || (pixels += length) > MaxArchiveBytes)
-                        throw new InvalidDataException("纹理尺寸或解码大小超限：" + texture.Name);
+                    // 唯一保留的尺寸限制是 Unity 纹理边长上限；解码字节数由它自然限住（16384×16384×4 = 1 GiB）。
+                    if (texture.Width <= 0 || texture.Height <= 0
+                        || texture.Width > ImportLimits.MaxTextureDimension || texture.Height > ImportLimits.MaxTextureDimension
+                        || (long)texture.Width * texture.Height * 4 != texture.Pixels.LongLength)
+                        throw new InvalidDataException("纹理尺寸超出 Unity 上限（最长边 16384）或解码数据不完整：" + texture.Name);
                     string relative = "images/" + converted.Count.ToString("D5") + ".png";
                     CharacterUnityResources.SavePng(CharacterSkinRules.SafePath(staging, relative), texture.Width, texture.Height, texture.Pixels);
                     converted.Add(texture.Name, relative);
@@ -210,12 +213,6 @@ public static class LegacyCharacterSkinImporter
                 AuxiliaryResourcesAbsentFromBundledConfig = converted.Keys.Where(x => !assets.Contains(x)).ToArray(), Normalizations = normalizations
             }, CharacterSkinManager.JsonOptions));
             Directory.Delete(Path.Combine(staging, ".work"), true);
-            long persisted = 0;
-            foreach (string file in Directory.GetFiles(staging, "*", SearchOption.AllDirectories))
-            {
-                token.ThrowIfCancellationRequested();
-                if ((persisted += new FileInfo(file).Length) > MaxArchiveBytes) throw new InvalidDataException("转换后的皮肤方案超过 512 MiB，无法完整导入导出。");
-            }
             Report(99, "保存旧包转换结果");
             Directory.Move(staging, targetPath);
             // No cancellation/throwing observer callback after atomic commit.
@@ -268,15 +265,14 @@ public static class LegacyCharacterSkinImporter
 
     internal static List<(ZipArchiveEntry Entry, string Relative)> ValidateArchive(ZipArchive archive)
     {
-        if (archive.Entries.Count > MaxEntries) throw new InvalidDataException("ZIP 文件数量超限。");
-        long bytes = 0; var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var files = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var result = new List<(ZipArchiveEntry, string)>();
         foreach (var entry in archive.Entries)
         {
-            bytes = checked(bytes + entry.Length);
-            if (bytes > MaxArchiveBytes || (entry.Name.EndsWith(".bundle", StringComparison.OrdinalIgnoreCase) && entry.Length > MaxBundleBytes))
-                throw new InvalidDataException("ZIP 文件或资源包大小超限。");
+            // 文件数量与总大小不设人为上限；只有「单个 bundle 必须整块读进内存」这一条硬边界。
+            if (entry.Name.EndsWith(".bundle", StringComparison.OrdinalIgnoreCase) && entry.Length > ImportLimits.MaxBundleBytes)
+                throw new InvalidDataException("单个资源包超过 2 GiB，无法读入内存：" + entry.FullName);
             string name = entry.FullName.Replace('\\', '/').TrimEnd('/');
             if (name.Length == 0 || name.Length > 2000 || name.StartsWith('/') || name.IndexOf(':') >= 0)
                 throw new InvalidDataException("ZIP 路径无效：" + entry.FullName);
@@ -319,8 +315,9 @@ public static class LegacyCharacterSkinImporter
         uint compressed = BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(offset + 8, 4));
         uint uncompressed = BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(offset + 12, 4));
         uint flags = BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(offset + 16, 4));
-        if (declared < offset + 20 || declared > bytes.Length || declared > MaxBundleBytes || compressed > MaxBundleBytes || uncompressed > 16 * 1024 * 1024)
-            throw new InvalidDataException("UnityFS 大小声明无效或超限：" + name);
+        if (declared < offset + 20 || declared > bytes.Length || declared > ImportLimits.MaxBundleBytes
+            || compressed > ImportLimits.MaxBundleBytes || uncompressed > ImportLimits.MaxBundleBytes)
+            throw new InvalidDataException("UnityFS 大小声明无效，或超过 2 GiB 无法读入内存：" + name);
         if (declared == bytes.Length) return bytes;
         // A known old package accidentally repeats the tail of its end-of-file directory block.
         // Accept ONLY a byte-identical duplicate suffix wholly contained in that compressed directory.
@@ -334,17 +331,11 @@ public static class LegacyCharacterSkinImporter
 
     internal static IReadOnlyList<Texture> ReadTextures(string path, CancellationToken token)
     {
-        // Read directory metadata before unpacking to bound compressed-data expansion.
+        // 不再按固定体积限制解压总量：bundle 本身已受「能整块读入内存」约束，真正的上限是机器内存。
         var manager = new AssetsManager();
         try
         {
-            var bundle = manager.LoadBundleFile(path, false);
-            long decoded = 0;
-            foreach (var block in bundle.file.BlockAndDirInfo.BlockInfos)
-                if ((decoded += block.DecompressedSize) > MaxArchiveBytes) throw new InvalidDataException("UnityFS 解压后大小超限。");
-            manager.UnloadAll();
-            token.ThrowIfCancellationRequested();
-            bundle = manager.LoadBundleFile(path, true);
+            var bundle = manager.LoadBundleFile(path, true);
             for (int i = 0; i < bundle.file.BlockAndDirInfo.DirectoryInfos.Count; i++)
             {
                 token.ThrowIfCancellationRequested();
@@ -363,13 +354,14 @@ public static class LegacyCharacterSkinImporter
         foreach (var file in textures.Select(x => x.File).Distinct())
             if (file.file.AssetInfos.Any(x => x.TypeId is not (28 or 142)))
                 throw new InvalidDataException("仅支持静态 Texture2D 替换包；包内含动画、精灵或其他资源，不能部分导入。");
-        var result = new List<Texture>(); long total = 0;
+        var result = new List<Texture>();
         foreach (var texture in textures)
         {
             token.ThrowIfCancellationRequested();
             int width = texture.Value["m_Width"].AsInt, height = texture.Value["m_Height"].AsInt;
-            if (width <= 0 || height <= 0 || width > 16384 || height > 16384 || (long)width * height * 4 > 64L * 1024 * 1024 || (total += (long)width * height * 4) > MaxArchiveBytes)
-                throw new InvalidDataException("Texture2D 解码大小超限。");
+            if (width <= 0 || height <= 0
+                || width > ImportLimits.MaxTextureDimension || height > ImportLimits.MaxTextureDimension)
+                throw new InvalidDataException("Texture2D 尺寸超出 Unity 上限（最长边 16384）。");
             var decoded = resources.Texture(texture);
             result.Add(new(texture.Value["m_Name"].AsString, decoded.Width, decoded.Height, decoded.Pixels));
         }
