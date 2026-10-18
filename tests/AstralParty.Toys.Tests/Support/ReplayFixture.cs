@@ -47,6 +47,7 @@ internal static class ReplayFixture
     private const int CmdGameFinish = 1016;
     private const int CmdReplaySnapshot = 1113;
     private const int CmdReplayDie = 1115;
+    private const int CmdThrowDice = 5022;
     private const int CmdSelectRelic = 5212;
     private const int CmdPredictAction = 1002;
     private const int CmdPVEShopBuy = 5216;
@@ -80,6 +81,14 @@ internal static class ReplayFixture
             Game.Value.SetNumber(snapshot, "PlayerId", playerId);
             Game.Value.SetMessage(snapshot, "Room", BuildRoom(options, round, final: round == options.RoundCount));
             frames.Add((CmdReplaySnapshot, Game.Value.Serialize(snapshot)));
+
+            var roll = Game.Value.New("party.protocol.ThrowDiceS2C");
+            Game.Value.SetNumber(roll, "PlayerId", playerId);
+            Game.Value.Add(roll, "Vals", round % 6 + 1);
+            Game.Value.Add(roll, "Vals", round % 4 + 1);
+            Game.Value.SetNumber(roll, "MovePoint", round % 6 + 1 + round % 4 + 1);
+            Game.Value.SetFlag(roll, "IsControlMovePoint", round == 2);
+            frames.Add((CmdThrowDice, Game.Value.Serialize(roll)));
 
             var die = Game.Value.New("party.protocol.ReplayDieS2C");
             Game.Value.SetNumber(die, "PlayerId", options.MonsterId * 1000L);   // 被击败的单位 ID
@@ -245,6 +254,18 @@ internal static class ReplayFixture
             game.SetNumber(hero, "Attack", 5 + index);
             game.SetNumber(hero, "Defense", 3 + index);
             game.SetNumber(hero, "BuyRelicNum", index + round - 1);
+            var cond = game.New("party.model.ConditionalInfo");
+            game.SetNumber(cond, "TotalDamage", (index + 1) * round);
+            game.SetNumber(cond, "TotalInjured", index * round);
+            game.SetNumber(cond, "TreatmentScore", index * 10);
+            game.SetNumber(cond, "Gold", round * 10);
+            game.SetNumber(cond, "TransferGold", index == 0 ? round * 5 : 0);
+            game.SetNumber(cond, "UseCard", round);
+            game.SetNumber(cond, "UseSkill", index);
+            game.SetNumber(cond, "MovePoint", index + round);
+            game.SetNumber(cond, "SelfDie", final && index == 1 ? 1 : 0);
+            game.SetNumber(cond, "KillPveMonster", round);
+            game.SetMessage(hero, "Cond", cond);
             game.SetMessage(player, "Hero", hero);
 
             game.Add(room, "Players", player);

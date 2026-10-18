@@ -340,6 +340,17 @@
 
           <!-- Replay Sub Navigation Tabs (Visible when replay is active) -->
           <div class="replay-subnav hidden" id="replaySubnav">
+            <button class="subnav-tab" data-tab="performance">
+              <svg
+                class="subnav-ico"
+                viewBox="0 -960 960 960"
+                aria-hidden="true"
+              >
+                <path
+                  d="M120-120v-720h80v640h640v80H120Zm160-160v-200h80v200h-80Zm160 0v-320h80v320h-80Zm160 0v-440h80v440h-80Z"
+                /></svg
+              ><span data-i18n="replay.tab_performance">表现分析</span>
+            </button>
             <button class="subnav-tab active" data-tab="summary">
               <svg
                 class="subnav-ico"
@@ -532,6 +543,7 @@
             <!-- Active Replay Detail Workspace -->
             <div class="hidden" id="replayWorkspaceBox" style="height: 100%">
               <div id="summaryView" class="replay-view"></div>
+              <div id="performanceView" class="replay-view hidden"></div>
               <div id="playersView" class="replay-view hidden"></div>
               <div id="timelineView" class="replay-view hidden"></div>
               <div id="relicsView" class="replay-view hidden"></div>

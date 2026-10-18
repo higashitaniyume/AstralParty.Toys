@@ -703,6 +703,12 @@ public partial class HybridWindow
             x.FinalBossKill, x.SelectedRelicCount, x.SelectedRelicsText,
             selectedRelics = x.SelectedRelics.Select(BuildClientRelic)
         }),
+        performance = report.Performance.Select(x => new
+        {
+            x.PlayerId,
+            points = x.Points,
+            dice = x.Dice
+        }),
         events = report.Events.Select(x => new
         {
             x.FrameIndex, x.Round, x.RoundText, x.PlayerId, x.PlayerName, x.Type,
@@ -746,6 +752,7 @@ public partial class HybridWindow
             report.BossName, report.AwardsText
         },
         players = report.Players,
+        performance = report.Performance,
         timeline = report.Events,
         relics = report.Relics,
         shops = report.Shops,

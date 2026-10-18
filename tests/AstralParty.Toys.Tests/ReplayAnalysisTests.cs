@@ -34,10 +34,10 @@ public sealed class ReplayAnalysisTests
         });
 
         // 帧结构与协议分布
-        Assert.Equal(1 + options.RoundCount * 3 + 1 + 7, report.FrameCount);   // +7 = 商店进店/回执帧（3 回合共 3+2+2）
+        Assert.Equal(1 + options.RoundCount * 3 + options.RoundCount + 1 + 7, report.FrameCount);   // +7 = 商店进店/回执帧（3 回合共 3+2+2）
         Assert.Equal(1003, report.Frames[0].CmdId);
         Assert.Equal(1016, report.Frames[^1].CmdId);
-        Assert.Equal(8, report.CommandTypeCount);
+        Assert.Equal(9, report.CommandTypeCount);
         Assert.Equal(64, report.Sha256.Length);
         Assert.Equal(ReplayId, report.FileName);
         Assert.NotEqual("—", report.FileSizeText);
@@ -141,6 +141,43 @@ public sealed class ReplayAnalysisTests
         // 统计条
         Assert.NotEmpty(report.CommandStats);
         Assert.NotEmpty(report.RelicQualityStats);
+    }
+
+    [Fact]
+    public void Analyze_BuildsPerRoundPerformanceTransfersAndDice()
+    {
+        using var sandbox = new TestSandbox("ap-analysis-performance");
+        var (_, options, report) = ReportFactory.Create(sandbox, new ReplayFixtureOptions
+        {
+            ReplayId = ReplayId,
+            RoundCount = 3
+        });
+
+        Assert.Equal(options.PlayerIds.Length, report.Performance.Count);
+        var first = report.Performance.Single(item => item.PlayerId == options.PlayerIds[0]);
+        Assert.Equal([0, 1, 3], first.Points.Select(item => item.Round));
+        Assert.Equal([0, 1, 1], first.Points.Select(item => item.DamageDelta));
+        Assert.Equal([0, 5, 5], first.Points.Select(item => item.TransferDelta));
+        Assert.Equal([0, 10, 10], first.Points.Select(item => item.EarnedGoldDelta));
+        Assert.Equal(15, first.Points[^1].Transfer);
+        Assert.Equal(30, first.Points[^1].EarnedGold);
+        Assert.Equal(103, first.Points[^1].CurrentGold);   // 100 + 0*10 + 末回合 3
+        Assert.Equal(3, first.Points[^1].Kills);
+        Assert.Equal(0, first.Points[^1].Deaths);
+
+        // 中间玩家在末回合阵亡：累计死亡只在最后一段增加。
+        var second = report.Performance.Single(item => item.PlayerId == options.PlayerIds[1]);
+        Assert.Equal([0, 0, 1], second.Points.Select(item => item.Deaths));
+        Assert.Equal(1, second.Points[^1].DeathsDelta);
+
+        // 掷骰按帧顺序归到当前回合；受控移动单独标记。
+        var dice = report.Performance.SelectMany(item => item.Dice).ToList();
+        Assert.Equal(options.RoundCount, dice.Count);
+        Assert.Equal([1, 2, 3], dice.Select(item => item.Round));
+        Assert.All(dice, item => Assert.Equal(2, item.Values.Length));
+        Assert.Single(dice, item => item.Controlled);
+        Assert.Single(first.Dice);
+        Assert.Equal(1, first.Dice[0].Round);
     }
 
     [Fact]

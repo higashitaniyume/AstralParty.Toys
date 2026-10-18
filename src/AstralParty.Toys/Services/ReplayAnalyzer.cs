@@ -113,6 +113,8 @@ public sealed class ReplayAnalyzer
 
         FillMatchSummary(report, initialRoom, finalRoom, finish, snapshots);
         var players = FillPlayers(report, initialRoom, finalRoom);
+        foreach (var performance in FillPerformance(players, initialRoom, snapshots)) report.Performance.Add(performance);
+        var performanceByPlayer = report.Performance.ToDictionary(x => x.PlayerId);
         var playerNames = players.ToDictionary(x => x.Id, x => x.Nickname);
         var playerHeroes = players.ToDictionary(x => x.Id, x => x.HeroName);
         report.BossName = FindBossName(finalRoom);
@@ -135,6 +137,25 @@ public sealed class ReplayAnalyzer
 
         foreach (var frame in frames)
         {
+            if (frame.CmdId == 5022)
+            {
+                var roll = _protocol.TryDecode(5022, frame.Payload);
+                if (roll is null) continue;
+                var playerId = ReflectionValue.Long(roll, "PlayerId");
+                if (performanceByPlayer.TryGetValue(playerId, out var performance))
+                {
+                    performance.Dice.Add(new DiceRoll
+                    {
+                        Round = currentRound,
+                        Values = ReflectionValue.Items(ReflectionValue.Get(roll, "Vals"))
+                            .Select(x => Convert.ToInt32(x)).ToArray(),
+                        MovePoint = ReflectionValue.Int(roll, "MovePoint"),
+                        Controlled = ReflectionValue.Bool(roll, "IsControlMovePoint")
+                    });
+                }
+                continue;
+            }
+
             if (frame.CmdId == 1113)
             {
                 var snapshot = _protocol.TryDecode(1113, frame.Payload);
@@ -516,6 +537,88 @@ public sealed class ReplayAnalyzer
         }
         return players;
     }
+
+    private List<PlayerPerformance> FillPerformance(List<PlayerSummary> players, object initialRoom,
+        List<(ProtocolFrame Frame, object Value)> snapshots)
+    {
+        var initialPlayers = ReflectionValue.Items(ReflectionValue.Get(initialRoom, "Players"))
+            .ToDictionary(x => ReflectionValue.Long(x, "Id"));
+        var lastSnapshotFrame = snapshots.Count > 0 ? snapshots[^1].Frame.Index : -1;
+        var result = new List<PlayerPerformance>();
+        foreach (var player in players)
+        {
+            initialPlayers.TryGetValue(player.Id, out var baseline);
+            var initialHero = ReflectionValue.Get(baseline, "Hero");
+            var initialCond = ReflectionValue.Get(initialHero, "Cond");
+
+            // 快照记录的是回合边界上的累计值：回合结束后的快照归到刚结束的回合，
+            // 最后一个快照保留当前回合，避免把决胜回合的数字算到下一回合。
+            var rounds = new SortedDictionary<int, PerformanceTotals>();
+            foreach (var (frame, value) in snapshots)
+            {
+                var room = ReflectionValue.Get(value, "Room");
+                var snapshotPlayer = ReflectionValue.Items(ReflectionValue.Get(room, "Players"))
+                    .FirstOrDefault(x => ReflectionValue.Long(x, "Id") == player.Id);
+                var hero = ReflectionValue.Get(snapshotPlayer, "Hero");
+                if (hero is null) continue;
+                var cond = ReflectionValue.Get(hero, "Cond");
+                int round = Math.Max(0, ReflectionValue.Int(room, "Round") - (frame.Index == lastSnapshotFrame ? 0 : 1));
+                if (!rounds.ContainsKey(round) || frame.Index == lastSnapshotFrame)
+                {
+                    rounds[round] = new PerformanceTotals(
+                        ReflectionValue.Int(cond, "TotalDamage"),
+                        ReflectionValue.Int(cond, "TransferGold"),
+                        ReflectionValue.Int(cond, "UseCard"),
+                        ReflectionValue.Int(cond, "Gold"),
+                        ReflectionValue.Int(hero, "Gold"),
+                        ReflectionValue.Int(cond, "SelfDie"),
+                        ReflectionValue.Int(cond, "KillPveMonster"));
+                }
+            }
+
+            int damage = ReflectionValue.Int(initialCond, "TotalDamage");
+            int transfer = ReflectionValue.Int(initialCond, "TransferGold");
+            int cards = ReflectionValue.Int(initialCond, "UseCard");
+            int earnedGold = ReflectionValue.Int(initialCond, "Gold");
+            int currentGold = ReflectionValue.Int(initialHero, "Gold");
+            int deaths = ReflectionValue.Int(initialCond, "SelfDie");
+            int kills = ReflectionValue.Int(initialCond, "KillPveMonster");
+            var points = new List<PerformancePoint>(rounds.Count);
+            foreach (var (round, totals) in rounds)
+            {
+                points.Add(new PerformancePoint
+                {
+                    Round = round,
+                    Damage = totals.Damage,
+                    Transfer = totals.Transfer,
+                    Cards = totals.Cards,
+                    EarnedGold = totals.EarnedGold,
+                    CurrentGold = totals.CurrentGold,
+                    Deaths = totals.Deaths,
+                    Kills = totals.Kills,
+                    DamageDelta = totals.Damage - damage,
+                    TransferDelta = totals.Transfer - transfer,
+                    CardsDelta = totals.Cards - cards,
+                    EarnedGoldDelta = totals.EarnedGold - earnedGold,
+                    CurrentGoldDelta = totals.CurrentGold - currentGold,
+                    DeathsDelta = totals.Deaths - deaths,
+                    KillsDelta = totals.Kills - kills
+                });
+                damage = totals.Damage;
+                transfer = totals.Transfer;
+                cards = totals.Cards;
+                earnedGold = totals.EarnedGold;
+                currentGold = totals.CurrentGold;
+                deaths = totals.Deaths;
+                kills = totals.Kills;
+            }
+            result.Add(new PlayerPerformance { PlayerId = player.Id, Points = points });
+        }
+        return result;
+    }
+
+    private readonly record struct PerformanceTotals(int Damage, int Transfer, int Cards, int EarnedGold,
+        int CurrentGold, int Deaths, int Kills);
 
     private void ParseActions(ProtocolFrame frame, int round, IReadOnlyDictionary<long, string> playerNames,
         IReadOnlyDictionary<long, string> playerHeroes,

@@ -36,6 +36,8 @@ public sealed class ReplayReport
     public ObservableCollection<TimelineEvent> Events { get; } = [];
     public ObservableCollection<RelicRecord> Relics { get; } = [];
     public ObservableCollection<ShopRecord> Shops { get; } = [];
+    /// <summary>按玩家、按回合边界快照归集的表现曲线；旧回放可能为空。</summary>
+    public ObservableCollection<PlayerPerformance> Performance { get; } = [];
     public ObservableCollection<ProtocolFrame> Frames { get; } = [];
     public ObservableCollection<StatItem> CommandStats { get; } = [];
     public ObservableCollection<StatItem> ActionStats { get; } = [];
@@ -79,6 +81,41 @@ public sealed class PlayerSummary
     public string HpText => MaxHp > 0 ? $"{Hp} / {MaxHp}" : "—";
     public string CombatText => MaxHp > 0 ? $"{Attack} / {Defense}" : "—";
     public string IdentityText => $"ID {Id} · 槽位 {Slot + 1} · 账号等级 {AccountLevel}";
+}
+
+public sealed class PlayerPerformance
+{
+    public long PlayerId { get; init; }
+    /// <summary>按回合升序；数值为快照时的累计值，Delta 为相对上一回合的增量。</summary>
+    public List<PerformancePoint> Points { get; init; } = [];
+    public List<DiceRoll> Dice { get; init; } = [];
+}
+
+public sealed class PerformancePoint
+{
+    public int Round { get; init; }
+    public int Damage { get; init; }
+    public int Transfer { get; init; }
+    public int Cards { get; init; }
+    public int EarnedGold { get; init; }
+    public int CurrentGold { get; init; }
+    public int Deaths { get; init; }
+    public int Kills { get; init; }
+    public int DamageDelta { get; init; }
+    public int TransferDelta { get; init; }
+    public int CardsDelta { get; init; }
+    public int EarnedGoldDelta { get; init; }
+    public int CurrentGoldDelta { get; init; }
+    public int DeathsDelta { get; init; }
+    public int KillsDelta { get; init; }
+}
+
+public sealed class DiceRoll
+{
+    public int Round { get; init; }
+    public int[] Values { get; init; } = [];
+    public int MovePoint { get; init; }
+    public bool Controlled { get; init; }
 }
 
 public sealed class TimelineEvent
