@@ -48,6 +48,7 @@ public partial class HybridWindow
     private object BuildLibraryPayload(LibrarySnapshot snapshot)
     {
         _replayLibrary.Clear();
+        var upgradeTargetVersion = _libraryService.SupportedGameVersion ?? "";
         var entries = new List<object>(snapshot.Entries.Count);
         for (var index = 0; index < snapshot.Entries.Count; index++)
         {
@@ -55,6 +56,10 @@ public partial class HybridWindow
             var token = $"replay-{index}";
             _replayLibrary[token] = entry.LibraryPath ?? entry.GamePath ?? "";
             var meta = entry.Meta;
+            var gameVersion = meta?.GameVersion is { Length: > 0 } version ? version : "";
+            var versionCompare = gameVersion.Length > 0 && upgradeTargetVersion.Length > 0
+                ? ReplayLibraryService.CompareGameVersion(gameVersion, upgradeTargetVersion)
+                : 0;
             entries.Add(new
             {
                 token,
@@ -75,7 +80,11 @@ public partial class HybridWindow
                 mapId = meta?.MapId ?? 0,
                 roundCount = meta?.RoundCount ?? 0,
                 frameCount = meta?.FrameCount ?? 0,
-                gameVersion = meta?.GameVersion is { Length: > 0 } version ? version : "—",
+                gameVersion = gameVersion is { Length: > 0 } ? gameVersion : "—",
+                canUpgrade = meta is { Healthy: true } && gameVersion.Length > 0 &&
+                             upgradeTargetVersion.Length > 0 && versionCompare < 0,
+                isCurrentVersion = gameVersion.Length > 0 && upgradeTargetVersion.Length > 0 && versionCompare == 0,
+                isNewerVersion = gameVersion.Length > 0 && upgradeTargetVersion.Length > 0 && versionCompare > 0,
                 winnerText = meta is { WinnerName.Length: > 0 } ? meta.WinnerName
                     : meta is { WinnerId: > 0 } ? $"玩家 {meta.WinnerId}" : "—",
                 playersText = meta is null || meta.Players.Count == 0
@@ -93,6 +102,7 @@ public partial class HybridWindow
             available = snapshot.GameDirectoryAvailable,
             libraryRoot = snapshot.LibraryRoot,
             libraryAvailable = snapshot.LibraryAvailable,
+            upgradeTargetVersion,
             libraryCount = snapshot.LibraryCount,
             librarySizeText = FormatLibrarySize(snapshot.LibraryBytes),
             gameCount = snapshot.GameCount,

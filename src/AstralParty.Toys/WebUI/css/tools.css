@@ -1012,6 +1012,8 @@ input[type="number"].library-input::-webkit-inner-spin-button { -webkit-appearan
 
 .entry-actions {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 6px;
 }
 

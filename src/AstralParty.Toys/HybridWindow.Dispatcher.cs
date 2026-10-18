@@ -102,6 +102,9 @@ public partial class HybridWindow
                     var allowUnparseable = root.TryGetProperty("allowUnparseable", out var allowElement) && allowElement.GetBoolean();
                     await RunLibraryOperationAsync(() => _libraryService.Restore(ReadIds(root), allowUnparseable));
                     break;
+                case "libraryUpgrade":
+                    await RunLibraryOperationAsync(() => _libraryService.Upgrade(ReadIds(root)));
+                    break;
                 case "libraryDelete":
                     var deleteTarget = (root.TryGetProperty("target", out var targetElement) ? targetElement.GetString() : null) switch
                     {

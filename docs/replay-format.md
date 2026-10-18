@@ -455,6 +455,19 @@ while (byteBuf.ReadableBytes() >= 6) {
 | `GameFinishParseFailed` | 1016 反序列化失败 |
 | `GameFinishNotFound` | 找不到带载荷的 1016 |
 
+### 4.8 播放前的版本校验与「升级」
+
+`ReplayLoader` 只校验帧流和两个锚点，不校验版本；但战绩列表里的「播放 / 保存」按钮还会经过
+`BattleShortRecord.IsValidVersion()`，严格比较：
+
+```csharp
+(GameSettings.APP_VERSION + "-" + GameSettings.RES_VERSION).Equals(Version)
+```
+
+`Version` 来自 `1016.Version`。因此旧回放即使能被当前协议完整解析，版本字符串不相等时按钮仍会置灰并提示 1140。
+回放库的「升级」只改写 1016 的 `GameFinishS2C.Version`（字段 12），其他帧和未知字段逐字节保留；
+升级前原文件复制到库内 `_backup\<replayId>\`，目标版本取随包 `GameData/Version.bin`。
+
 ---
 
 ## 5. 本工具的解析管线（`ReplayAnalyzer.Analyze`）

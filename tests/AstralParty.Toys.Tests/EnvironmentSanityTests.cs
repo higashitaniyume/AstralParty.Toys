@@ -18,6 +18,7 @@ public sealed class EnvironmentSanityTests
         Assert.True(Directory.Exists(Support.TestPaths.GameDataDirectory),
             $"缺少配表目录：{Support.TestPaths.GameDataDirectory}");
         Assert.Contains("Character.bin", Directory.GetFiles(Support.TestPaths.GameDataDirectory).Select(Path.GetFileName));
+        Assert.Contains("Version.bin", Directory.GetFiles(Support.TestPaths.GameDataDirectory).Select(Path.GetFileName));
     }
 
     [Fact]

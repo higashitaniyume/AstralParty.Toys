@@ -47,6 +47,8 @@ public sealed class ReplayLibraryService
     private GameProtocolContext? _protocol;
     private ConfigCatalog? _config;
     private bool _protocolUnavailable;
+    private string? _supportedGameVersion;
+    private bool _supportedGameVersionProbed;
     private HttpClient? _httpClient;
 
     public ReplayLibraryService(string appDirectory, string? gameReplayDirectory = null, string? profileDirectory = null)
@@ -72,6 +74,43 @@ public sealed class ReplayLibraryService
     public string OperationsLogPath => Path.Combine(LibraryRoot, OperationsLogName);
 
     public string IndexDirectory => Path.Combine(LibraryRoot, IndexFolderName);
+
+    /// <summary>
+    /// 本工具内置协议/配表对应的游戏版本（<c>APP_VERSION-RES_VERSION</c>）。
+    /// 与游戏 <c>BattleShortRecord.IsValidVersion()</c> 的比较口径一致；读不到时为 null。
+    /// </summary>
+    public string? SupportedGameVersion
+    {
+        get
+        {
+            if (!_supportedGameVersionProbed)
+            {
+                _supportedGameVersionProbed = true;
+                try
+                {
+                    if (EnsureProtocol())
+                    {
+                        var path = Path.Combine(_appDirectory, "GameData", "Version.bin");
+                        if (File.Exists(path))
+                        {
+                            var config = _protocol!.Decode("VersionConfigure", File.ReadAllBytes(path));
+                            var data = ReflectionValue.Items(ReflectionValue.Get(config, "DataDict"))
+                                .FirstOrDefault(item => ReflectionValue.Int(item, "Key") == 1);
+                            var value = ReflectionValue.Get(data, "Value");
+                            var app = ReflectionValue.Text(value, "AppVersion");
+                            var res = ReflectionValue.Text(value, "ResVersion");
+                            if (app.Length > 0 && res.Length > 0) _supportedGameVersion = $"{app}-{res}";
+                        }
+                    }
+                }
+                catch
+                {
+                    _supportedGameVersion = null;
+                }
+            }
+            return _supportedGameVersion;
+        }
+    }
 
     /// <summary>
     /// 下载用的 HTTP 管道。只有测试会替换它（拿本地假响应跑通「下载 → 落库」全流程，
@@ -762,6 +801,166 @@ public sealed class ReplayLibraryService
     }
 
     private int CountGameSlots() => EnumerateReplays(GameDirectory).Count();
+
+    /// <summary>
+    /// 把旧回放的结算版本标记升级到本工具当前支持的版本。
+    ///
+    /// 游戏能不能播由 <c>BattleShortRecord.IsValidVersion()</c> 决定，它严格比较
+    /// <c>APP_VERSION-RES_VERSION</c>；旧回放的帧格式/协议可能完全兼容，只是版本字符串不等。
+    /// 这里只改 1016 的 Version 字段，帧流其余字节原样保留，并在库内 <c>_backup</c> 留原文件。
+    /// </summary>
+    public ReplayOperationResult Upgrade(IReadOnlyCollection<string> replayIds)
+    {
+        var result = new ReplayOperationResult();
+        if (Guard(result) is { } guard) return guard;
+        if (!EnsureProtocol())
+            return ReplayOperationResult.Fail("协议程序集不可用，无法升级回放。请确认程序目录下存在 Protocol\\AstralParty.Runtime.dll。");
+
+        var targetVersion = SupportedGameVersion;
+        if (string.IsNullOrWhiteSpace(targetVersion))
+            return ReplayOperationResult.Fail("读不到本工具支持的版本（GameData\\Version.bin 缺失或无法解析），无法确定升级目标。");
+
+        foreach (var id in replayIds)
+        {
+            var sources = new List<(string Path, string Kind, string Label)>(2);
+            var gameFile = GameFile(id);
+            var libraryFile = LibraryFile(id);
+            if (File.Exists(gameFile)) sources.Add((gameFile, "game", "游戏目录"));
+            if (File.Exists(libraryFile)) sources.Add((libraryFile, "library", "回放库"));
+            if (sources.Count == 0)
+            {
+                result.Skipped++;
+                result.Messages.Add($"{id}：游戏目录和回放库里都没有这个回放，已跳过。");
+                continue;
+            }
+
+            var appliedForId = false;
+            foreach (var (path, kind, label) in sources)
+            {
+                try
+                {
+                    var bytes = File.ReadAllBytes(path);
+                    if (!_protocol!.TryParseSettlement(bytes, out var finish, out _))
+                    {
+                        result.Skipped++;
+                        result.Messages.Add($"{id}：{label}副本解析不出结算帧，无法升级。");
+                        continue;
+                    }
+
+                    var oldVersion = ReflectionValue.Text(finish, "Version");
+                    if (string.Equals(oldVersion, targetVersion, StringComparison.Ordinal))
+                    {
+                        result.Skipped++;
+                        result.Messages.Add($"{id}：{label}副本已经是当前支持的版本 {targetVersion}。");
+                        continue;
+                    }
+
+                    if (CompareGameVersion(oldVersion, targetVersion) > 0)
+                    {
+                        result.Skipped++;
+                        result.Messages.Add($"{id}：{label}副本版本 {oldVersion} 高于本工具支持的 {targetVersion}，未降级。");
+                        continue;
+                    }
+
+                    if (!ReplayVersionUpgrader.TryUpgrade(bytes, targetVersion, out var upgraded, out var frameVersion, out var error))
+                    {
+                        result.Failed++;
+                        result.Messages.Add($"{id}：{label}副本升级失败（{error}）。");
+                        continue;
+                    }
+
+                    if (!_protocol.TryParseSettlement(upgraded, out var verify, out _) ||
+                        !string.Equals(ReflectionValue.Text(verify, "Version"), targetVersion, StringComparison.Ordinal))
+                    {
+                        result.Failed++;
+                        result.Messages.Add($"{id}：{label}副本升级后校验失败，未写入。");
+                        continue;
+                    }
+
+                    BackupBeforeUpgrade(id, path, kind, frameVersion);
+                    WriteBytesAtomic(path, upgraded);
+
+                    var meta = BuildMeta(id, upgraded, "version-upgrade");
+                    meta.SizeBytes = new FileInfo(path).Length;
+                    meta.ModifiedUtcTicks = File.GetLastWriteTimeUtc(path).Ticks;
+                    _cache[path] = new CacheEntry(meta.SizeBytes, meta.ModifiedUtcTicks, meta);
+                    if (kind == "library") WriteSidecar(meta);
+
+                    appliedForId = true;
+                    var libraryOnlyHint = kind == "library" && !File.Exists(gameFile)
+                        ? "要进游戏观看，请再点「放回游戏」。"
+                        : "";
+                    result.Messages.Add($"{id}：{label}副本已从 {frameVersion} 升级到 {targetVersion}，原文件已备份。{libraryOnlyHint}");
+                    Log("upgrade", id, $"{path}: {frameVersion} -> {targetVersion}");
+                }
+                catch (Exception ex)
+                {
+                    result.Failed++;
+                    result.Messages.Add($"{id}：{label}副本升级失败（{ex.Message}）。");
+                }
+            }
+
+            if (appliedForId) result.Applied++;
+        }
+
+        if (result.Applied == 0 && result.Failed == 0 && result.Skipped == 0)
+            result.Messages.Add("没有可升级的回放。");
+        return result;
+    }
+
+    /// <summary>版本号形如 <c>3.3.0-0.0.0</c>；解析失败时退回序数比较。</summary>
+    internal static int CompareGameVersion(string left, string right)
+    {
+        if (TryParseGameVersion(left, out var leftApp, out var leftRes) &&
+            TryParseGameVersion(right, out var rightApp, out var rightRes))
+        {
+            var compared = leftApp.CompareTo(rightApp);
+            return compared != 0 ? compared : leftRes.CompareTo(rightRes);
+        }
+        return string.Compare(left, right, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool TryParseGameVersion(string value, out Version app, out Version res)
+    {
+        app = new Version(0, 0, 0);
+        res = new Version(0, 0, 0);
+        var parts = value.Split('-', 2);
+        if (parts.Length != 2) return false;
+        if (!Version.TryParse(parts[0], out var parsedApp) || parsedApp is null) return false;
+        if (!Version.TryParse(parts[1], out var parsedRes) || parsedRes is null) return false;
+        app = parsedApp;
+        res = parsedRes;
+        return true;
+    }
+
+    /// <summary>升级前把原文件复制到库内 <c>_backup\&lt;id&gt;</c>；同名备份已存在时保留最早那份。</summary>
+    private void BackupBeforeUpgrade(string replayId, string sourceFile, string kind, string oldVersion)
+    {
+        var safeVersion = new string(oldVersion.Select(ch =>
+            char.IsLetterOrDigit(ch) || ch is '.' or '-' or '_' ? ch : '_').ToArray());
+        if (safeVersion.Length == 0) safeVersion = "unknown";
+        var directory = Path.Combine(LibraryRoot, "_backup", replayId);
+        Directory.CreateDirectory(directory);
+        var backup = Path.Combine(directory, $"{replayId}.{safeVersion}.{kind}.bak");
+        if (!File.Exists(backup)) CopyVerified(sourceFile, backup);
+    }
+
+    private static void WriteBytesAtomic(string path, byte[] bytes)
+    {
+        var directory = Path.GetDirectoryName(path)!;
+        Directory.CreateDirectory(directory);
+        var temp = path + ".upgrade.tmp";
+        try
+        {
+            File.WriteAllBytes(temp, bytes);
+            File.Move(temp, path, overwrite: true);
+        }
+        finally
+        {
+            TryDeleteFile(temp);
+        }
+    }
+
 
     /// <summary>归档游戏目录里最旧的若干局，只保留最新 keepCount 个。</summary>
     public ReplayOperationResult Maintain(int? keepCount = null)

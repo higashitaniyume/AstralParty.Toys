@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using AstralParty.Toys.Services;
 using AstralParty.Toys.Tests.Support;
 
@@ -143,6 +144,115 @@ public sealed class ReplayLibraryTests
     }
 
     [Fact]
+    public void Upgrade_RewritesVersion_KeepsFramesAndBacksUpOriginal()
+    {
+        using var harness = new LibraryHarness("ap-library-upgrade");
+        var target = harness.Service.SupportedGameVersion;
+        Assert.False(string.IsNullOrWhiteSpace(target), "没有读到内置 Version.bin 的支持版本");
+        const string id = "1800000000000004";
+        harness.SeedVersionedReplay(id, "3.2.0-2.0.0");
+
+        var before = File.ReadAllBytes(Path.Combine(harness.GameDirectory, id, id));
+        var beforeMeta = harness.Service.Snapshot().Entries.Single(item => item.ReplayId == id).Meta!;
+
+        var result = harness.Service.Upgrade([id]);
+
+        Assert.True(result.Ok, string.Join(" | ", result.Messages));
+        Assert.Equal(1, result.Applied);
+        var after = File.ReadAllBytes(Path.Combine(harness.GameDirectory, id, id));
+        var afterMeta = harness.Service.Snapshot().Entries.Single(item => item.ReplayId == id).Meta!;
+        Assert.True(afterMeta.Healthy, afterMeta.Error);
+        Assert.Equal(target, afterMeta.GameVersion);
+        Assert.Equal(beforeMeta.FrameCount, afterMeta.FrameCount);
+        Assert.Equal(before.Length, after.Length); // 两个版本字符串等长时，帧流大小不变
+        Assert.True(ReplayVersionUpgrader.TryReadVersion(after, out var version, out var error), error);
+        Assert.Equal(target, version);
+        Assert.NotEqual(Convert.ToHexString(SHA256.HashData(before)), Convert.ToHexString(SHA256.HashData(after)));
+
+        var backups = Directory.Exists(Path.Combine(harness.LibraryDirectory, "_backup", id))
+            ? Directory.GetFiles(Path.Combine(harness.LibraryDirectory, "_backup", id), "*.bak")
+            : [];
+        Assert.NotEmpty(backups);
+        Assert.Equal(Convert.ToHexString(SHA256.HashData(before)), Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(backups[0]))));
+
+        var again = harness.Service.Upgrade([id]);
+        Assert.Equal(0, again.Applied);
+        Assert.Equal(1, again.Skipped);
+        Assert.Equal(Convert.ToHexString(SHA256.HashData(after)), Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(Path.Combine(harness.GameDirectory, id, id)))));
+    }
+
+    [Fact]
+    public void Upgrade_RefusesToDowngradeNewerReplay()
+    {
+        using var harness = new LibraryHarness("ap-library-upgrade-newer");
+        const string id = "1800000000000005";
+        const string newer = "9.9.9-9.9.9";
+        harness.SeedVersionedReplay(id, newer);
+        var before = File.ReadAllBytes(Path.Combine(harness.GameDirectory, id, id));
+
+        var result = harness.Service.Upgrade([id]);
+
+        Assert.Equal(0, result.Applied);
+        Assert.Equal(1, result.Skipped);
+        Assert.Contains("未降级", string.Join(" | ", result.Messages));
+        Assert.Equal(Convert.ToHexString(SHA256.HashData(before)), Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(Path.Combine(harness.GameDirectory, id, id)))));
+    }
+
+    [Fact]
+    public void Upgrade_UpdatesBothGameAndLibraryCopies()
+    {
+        using var harness = new LibraryHarness("ap-library-upgrade-both");
+        var target = harness.Service.SupportedGameVersion;
+        Assert.False(string.IsNullOrWhiteSpace(target), "没有读到内置 Version.bin 的支持版本");
+        const string id = "1800000000000006";
+        harness.SeedVersionedReplay(id, "3.2.0-2.0.0");
+        harness.Service.Archive([id]);
+        harness.Service.Restore([id]);
+
+        var result = harness.Service.Upgrade([id]);
+
+        Assert.True(result.Ok, string.Join(" | ", result.Messages));
+        Assert.Equal(1, result.Applied);
+        foreach (var file in new[]
+                 {
+                     Path.Combine(harness.GameDirectory, id, id),
+                     Path.Combine(harness.LibraryDirectory, id, id)
+                 })
+        {
+            Assert.True(ReplayVersionUpgrader.TryReadVersion(File.ReadAllBytes(file), out var version, out var error), error);
+            Assert.Equal(target, version);
+        }
+        Assert.Equal(2, Directory.GetFiles(Path.Combine(harness.LibraryDirectory, "_backup", id), "*.bak").Length);
+    }
+
+    [RealReplayFact]
+    public void Upgrade_RealReplayCopy_WritesBackupAndCurrentVersion()
+    {
+        using var harness = new LibraryHarness("ap-library-upgrade-real");
+        var target = harness.Service.SupportedGameVersion;
+        Assert.False(string.IsNullOrWhiteSpace(target), "没有读到内置 Version.bin 的支持版本");
+
+        var source = RealReplay.FindFile()!;
+        var sourceBytes = File.ReadAllBytes(source);
+        Assert.True(ReplayVersionUpgrader.TryReadVersion(sourceBytes, out var sourceVersion, out var error), error);
+        if (sourceVersion == target) return; // 最新回放已经是目标版本，没有升级可验证
+
+        const string id = "1800000000000099";
+        harness.SeedFromFile(id, source);
+        var before = File.ReadAllBytes(Path.Combine(harness.GameDirectory, id, id));
+
+        var result = harness.Service.Upgrade([id]);
+
+        Assert.True(result.Ok, string.Join(" | ", result.Messages));
+        Assert.Equal(1, result.Applied);
+        var after = File.ReadAllBytes(Path.Combine(harness.GameDirectory, id, id));
+        Assert.True(ReplayVersionUpgrader.TryReadVersion(after, out var upgradedVersion, out error), error);
+        Assert.Equal(target, upgradedVersion);
+        Assert.Equal(Convert.ToHexString(SHA256.HashData(before)), Convert.ToHexString(SHA256.HashData(
+            File.ReadAllBytes(Assert.Single(Directory.GetFiles(Path.Combine(harness.LibraryDirectory, "_backup", id), "*.bak"))))));
+    }
+
+    [Fact]
     public void LibraryRootEqualToGameRoot_RejectsEverything()
     {
         using var harness = new LibraryHarness("ap-library-same-folder");
@@ -214,6 +324,31 @@ public sealed class ReplayLibraryTests
         public string SeedUnparseableReplay(string replayId = "0000000000000000000000000000dead")
         {
             WriteReplayFile(replayId, ReplayFixture.CreateUnparseable(), DateTime.UtcNow);
+            return replayId;
+        }
+
+        /// <summary>造一局指定版本标记的回放，用于升级测试。</summary>
+        public string SeedVersionedReplay(string replayId, string gameVersion)
+        {
+            var bytes = ReplayFixture.Create(new ReplayFixtureOptions
+            {
+                ReplayId = replayId,
+                GameVersion = gameVersion,
+                StartTime = BaseTime,
+                FinishTime = BaseTime + 3_600
+            });
+            WriteReplayFile(replayId, bytes, new DateTime(2026, 1, 1, 8, 0, 0, DateTimeKind.Utc));
+            return replayId;
+        }
+
+        /// <summary>把外部真实回放复制进沙箱，用于真实数据回归。</summary>
+        public string SeedFromFile(string replayId, string sourcePath)
+        {
+            var directory = Path.Combine(GameDirectory, replayId);
+            Directory.CreateDirectory(directory);
+            var file = Path.Combine(directory, replayId);
+            File.Copy(sourcePath, file, overwrite: true);
+            File.SetLastWriteTimeUtc(file, new DateTime(2026, 1, 1, 8, 0, 0, DateTimeKind.Utc));
             return replayId;
         }
 

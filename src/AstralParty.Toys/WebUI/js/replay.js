@@ -271,6 +271,15 @@
       if (!item.healthy) badges.push(`<span class="badge badge-warn" title="${esc(item.error || '解析不出结算帧，文件可能已损坏或来自不兼容的版本。')}">${esc(window.t?.('replay.badge_unparseable') || '无法解析')}</span>`);
 
       const actions = [`<button data-action="open">${esc(window.t?.('replay.action_view') || '查看')}</button>`];
+      const supportedVersion = this.libraryData?.upgradeTargetVersion || '';
+      let upgradeTitle = '';
+      if (!item.healthy) upgradeTitle = item.error || '无法解析，不能升级';
+      else if (!supportedVersion) upgradeTitle = '本工具没有可用的版本配置';
+      else if (item.isCurrentVersion) upgradeTitle = window.t?.('replay.upgrade_current') || '已是当前支持版本';
+      else if (item.isNewerVersion) upgradeTitle = (window.t?.('replay.upgrade_newer', { version: supportedVersion }) || `版本高于本工具支持的 ${supportedVersion}`);
+      else if (!item.gameVersion || item.gameVersion === '—') upgradeTitle = window.t?.('replay.upgrade_unknown') || '文件里没有版本标记';
+      else upgradeTitle = window.t?.('replay.upgrade_tooltip', { version: supportedVersion }) || `升级到本工具支持的 ${supportedVersion}`;
+      actions.push(`<button data-action="upgrade" ${item.canUpgrade ? '' : 'disabled'} title="${esc(upgradeTitle)}">${esc(window.t?.('replay.action_upgrade') || '升级')}</button>`);
       if (item.inGame) actions.push(`<button data-action="archive">${esc(window.t?.('replay.action_archive') || '归档')}</button>` );
       if (item.inLibrary) actions.push(`<button data-action="restore">${esc(window.t?.('replay.action_restore') || '放回游戏')}</button>`);
       actions.push(`<button class="danger" data-action="delete">${esc(window.t?.('common.delete') || '删除')}</button>`);
@@ -325,6 +334,9 @@
       switch (button.dataset.action) {
         case 'open':
           post({ type: 'openRecentReplay', token });
+          break;
+        case 'upgrade':
+          post({ type: 'libraryUpgrade', ids: [replayId] });
           break;
         case 'archive':
           post({ type: 'libraryArchive', ids: [replayId] });
