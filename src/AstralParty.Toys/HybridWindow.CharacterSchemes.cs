@@ -52,6 +52,12 @@ public partial class HybridWindow
                     var scheme = JsonSerializer.Deserialize<CharacterSkinScheme>(root.GetProperty("scheme").GetRawText(), CharacterSkinManager.JsonOptions) ?? throw new InvalidOperationException("方案为空");
                     manager.Save(game, id, scheme);
                     break;
+                case "characterSchemesUpdateMetadata":
+                    manager.UpdateMetadata(game, id,
+                        root.TryGetProperty("name", out var nameValue) ? nameValue.GetString() : null,
+                        root.TryGetProperty("author", out var authorValue) ? authorValue.GetString() : null,
+                        root.TryGetProperty("description", out var descriptionValue) ? descriptionValue.GetString() : null);
+                    break;
                 case "characterSchemesRemoveRule":
                     var current = manager.Load(game, id);
                     string ruleId = root.GetProperty("ruleId").GetString()!;

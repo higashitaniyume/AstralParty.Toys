@@ -15,6 +15,20 @@ public sealed class CharacterSkinSchemeTests : IDisposable
     public void Dispose() { if (Directory.Exists(root)) Directory.Delete(root, true); }
     private CharacterSkinScheme Scheme(params CharacterSkinBinding[] rules) => new() { Id = "demo", Name = "Demo", Rules = rules.ToList() };
     private static CharacterSkinBinding Rule(string id, int hero, int target = 0, int official = 0, string custom = "") => new() { Id = id, HeroId = hero, TargetSkinItemId = target, OfficialSourceSkinItemId = official, CustomPackageId = custom };
+    [Fact] public void UpdateMetadataChangesOnlyMetadataAndRejectsInvalidInput()
+    {
+        packages.Create(root,"custom",114,0,"Custom");
+        manager.Save(root,"demo",Scheme(Rule("a",114,custom:"custom"))); manager.SetActive(root,"demo");
+        manager.UpdateMetadata(root,"demo","  New name  ","  Author  ","  Line 1\nLine 2  ");
+        var saved=manager.Load(root,"demo");
+        Assert.Equal("New name",saved.Name); Assert.Equal("Author",saved.Author); Assert.Equal("Line 1\nLine 2",saved.Description);
+        Assert.Equal("a",Assert.Single(saved.Rules).Id); Assert.Equal("custom",saved.Rules[0].CustomPackageId);
+        Assert.Equal("demo",packages.Settings(root).ActiveSchemeId);
+        Assert.Throws<InvalidOperationException>(()=>manager.UpdateMetadata(root,"demo","   ","author","description"));
+        Assert.Throws<InvalidOperationException>(()=>manager.UpdateMetadata(root,"demo","ok",new string('a',101),"description"));
+        Assert.Throws<InvalidOperationException>(()=>manager.UpdateMetadata(root,"demo","ok","author",new string('d',2001)));
+        Assert.Equal("New name",manager.Load(root,"demo").Name);
+    }
     [Fact] public void MultipleHeroesAndExactBeforeWildcardResolve()
     {
         var scheme = Scheme(Rule("all", 114, official: 100114001), Rule("exact",114,100114002,100114002), Rule("other",102,official:100102001));

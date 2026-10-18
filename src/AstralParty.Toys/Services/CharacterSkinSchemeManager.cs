@@ -83,6 +83,23 @@ public sealed class CharacterSkinSchemeManager
         Save(game, id, scheme);
         return scheme;
     }
+    /// <summary>只改方案元信息；规则、自定义包与启用状态保持原样。</summary>
+    public CharacterSkinScheme UpdateMetadata(string game, string id, string? name, string? author, string? description)
+    {
+        name = (name ?? "").Trim();
+        author = (author ?? "").Trim();
+        description = (description ?? "").Trim();
+        if (name.Length == 0) throw new InvalidOperationException("方案名称不能为空");
+        if (name.Length > 100) throw new InvalidOperationException("方案名称最长 100 个字符");
+        if (author.Length > 100) throw new InvalidOperationException("作者最长 100 个字符");
+        if (description.Length > 2000) throw new InvalidOperationException("方案简介最长 2000 个字符");
+        var scheme = Load(game, id);
+        scheme.Name = name;
+        scheme.Author = author;
+        scheme.Description = description;
+        Save(game, id, scheme);
+        return scheme;
+    }
     public CharacterSkinBinding CreateBindingFromPackage(string game, string packageId, string ruleId)
     {
         CharacterSkinSchemeRules.ValidateId(ruleId);

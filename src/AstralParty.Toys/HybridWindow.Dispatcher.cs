@@ -453,6 +453,7 @@ public partial class HybridWindow
                     break;
                 case "characterSchemesCreate":
                 case "characterSchemesSave":
+                case "characterSchemesUpdateMetadata":
                 case "characterSchemesActive":
                 case "characterSchemesDelete":
                 case "characterSchemesRemoveRule":

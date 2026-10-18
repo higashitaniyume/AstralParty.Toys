@@ -27,7 +27,8 @@
       $("characterPackagesMode").onclick = () => this.setMode("packages");
       const dialogs = document.createElement("div");
       dialogs.innerHTML = `<dialog id="characterSchemeCreateDialog" aria-labelledby="characterSchemeCreateTitle"><form id="characterSchemeCreateForm"><h3 id="characterSchemeCreateTitle">新建方案</h3><input type="hidden" name="id"><label>方案名称<input name="name" required maxlength="100" placeholder="例如：我的日常搭配" autofocus></label><p>先给搭配起个名字，再添加喜欢的人物皮肤。</p><p id="characterSchemeCreateError" class="character-error" role="alert"></p><div class="character-toolbar"><button class="primary-btn" type="submit">创建方案</button><button class="secondary-btn" type="button" data-close="characterSchemeCreateDialog">取消</button></div></form></dialog>
-      <dialog id="characterBindingDialog" aria-labelledby="characterBindingTitle"><form id="characterBindingForm"><h3 id="characterBindingTitle">添加人物皮肤</h3><label>人物<select id="characterBindingHero" required></select></label><label>使用方式<select id="characterBindingMode"><option value="package">已有皮肤包</option><option value="create">新建自定义皮肤</option><option value="official">官方皮肤</option></select></label><div id="characterBindingPackageArea"><label>人物皮肤包<select id="characterBindingPackage"></select></label><button type="button" class="secondary-btn" id="characterBindingImportPackage">从 ZIP 导入此人物皮肤包</button><p id="characterBindingPackageHint"></p></div><div id="characterBindingCreateArea" hidden><p>创建后会自动加入当前方案，接着编辑图片、动画和文案。</p><button type="button" class="primary-btn" id="characterBindingCreatePackage">继续创建皮肤包</button></div><div id="characterBindingOfficialArea"></div><details id="characterBindingAdvanced" class="cs-disclosure"><summary>高级设置：替换范围与混合搭配</summary><label>替换哪些原皮肤<select id="characterBindingTarget" required></select></label><div id="characterBindingOfficialAdvanced"><label id="characterBindingOfficialLabel">官方皮肤基础<select id="characterBindingOfficial"></select></label></div><p>默认替换此人物的全部原皮肤。自定义素材优先，未修改的部分沿用所选基础。</p></details><p id="characterBindingError" class="character-error" role="alert"></p><div class="character-toolbar"><button id="characterBindingSave" class="primary-btn" type="submit">添加到方案</button><button class="secondary-btn" type="button" data-close="characterBindingDialog">取消</button></div></form></dialog>`;
+      <dialog id="characterBindingDialog" aria-labelledby="characterBindingTitle"><form id="characterBindingForm"><h3 id="characterBindingTitle">添加人物皮肤</h3><label>人物<select id="characterBindingHero" required></select></label><label>使用方式<select id="characterBindingMode"><option value="package">已有皮肤包</option><option value="create">新建自定义皮肤</option><option value="official">官方皮肤</option></select></label><div id="characterBindingPackageArea"><label>人物皮肤包<select id="characterBindingPackage"></select></label><button type="button" class="secondary-btn" id="characterBindingImportPackage">从 ZIP 导入此人物皮肤包</button><p id="characterBindingPackageHint"></p></div><div id="characterBindingCreateArea" hidden><p>创建后会自动加入当前方案，接着编辑图片、动画和文案。</p><button type="button" class="primary-btn" id="characterBindingCreatePackage">继续创建皮肤包</button></div><div id="characterBindingOfficialArea"></div><details id="characterBindingAdvanced" class="cs-disclosure"><summary>高级设置：替换范围与混合搭配</summary><label>替换哪些原皮肤<select id="characterBindingTarget" required></select></label><div id="characterBindingOfficialAdvanced"><label id="characterBindingOfficialLabel">官方皮肤基础<select id="characterBindingOfficial"></select></label></div><p>默认替换此人物的全部原皮肤。自定义素材优先，未修改的部分沿用所选基础。</p></details><p id="characterBindingError" class="character-error" role="alert"></p><div class="character-toolbar"><button id="characterBindingSave" class="primary-btn" type="submit">添加到方案</button><button class="secondary-btn" type="button" data-close="characterBindingDialog">取消</button></div></form></dialog>
+      <dialog id="characterSchemeMetaDialog" aria-labelledby="characterSchemeMetaTitle"><form id="characterSchemeMetaForm"><h3 id="characterSchemeMetaTitle">编辑方案信息</h3><p class="cs-dialog-hint">方案标识：<code id="characterSchemeMetaId"></code>（创建后不可修改）</p><label>方案名称<input name="name" required maxlength="100" placeholder="例如：我的日常搭配" autofocus></label><label>作者<input name="author" maxlength="100" placeholder="昵称，可留空"></label><label>方案简介<textarea name="description" rows="4" maxlength="2000" placeholder="介绍一下这套搭配，例如适合的玩法或角色组合。"></textarea></label><p id="characterSchemeMetaError" class="character-error" role="alert"></p><div class="character-toolbar"><button class="primary-btn" type="submit">保存信息</button><button class="secondary-btn" type="button" data-close="characterSchemeMetaDialog">取消</button></div></form></dialog>`;
       $("characterSkinPanel").appendChild(dialogs);
       // Keep the existing material editor, but host it inside the selected scheme when editing a member.
       this.detailHome = $("characterDetail").parentElement;
@@ -64,6 +65,26 @@
           name,
         });
       };
+      $("characterSchemeMetaForm").onsubmit = (e) => {
+        e.preventDefault();
+        const f = new FormData(e.target);
+        const name = String(f.get("name") || "").trim();
+        if (!name) {
+          $("characterSchemeMetaError").textContent = "请输入方案名称。";
+          return;
+        }
+        $("characterSchemeMetaError").textContent = "";
+        post({
+          type: "characterSchemesUpdateMetadata",
+          id: this.selected,
+          name,
+          author: String(f.get("author") || "").trim(),
+          description: String(f.get("description") || "").trim(),
+        });
+      };
+      $("characterSchemeMetaDialog").addEventListener("close", () => {
+        $("characterSchemeMetaError").textContent = "";
+      });
       $("characterBindingHero").onchange = () => {this.bindingOptions();if(!this.editing)this.chooseBindingDefault();this.updateBindingMode();};
       $("characterBindingMode").onchange = () => this.updateBindingMode(true);
       $("characterBindingForm").onsubmit = (e) => this.saveBinding(e);
@@ -171,14 +192,14 @@
       const active=!!field(p,"active"), invalid=!!field(p,"error"), count=new Set(rules.map(r=>field(r,"heroId"))).size;
       $("characterSchemesPanel").innerHTML = `<div class="character-workspace cs-scheme-workspace"><aside class="character-list-panel cs-scheme-sidebar"><div class="cs-section-heading"><h3>我的方案</h3><button class="primary-btn" id="characterSchemeNew">新建方案</button></div><label class="cs-search-label" for="characterSchemeSearch">搜索方案</label><input type="search" id="characterSchemeSearch" placeholder="输入方案名称" value="${esc(this.search||'')}"><div id="characterSchemeList">${profiles.map(item=>{
         const scheme=field(item,"scheme"), rs=field(scheme,"rules")||[], id=field(item,"id");
-        return `<button class="character-package ${id===this.selected?'active':''}" data-scheme="${esc(id)}" data-name="${esc(field(scheme,'name')||id)}" aria-pressed="${id===this.selected}"><strong>${esc(field(scheme,'name')||'未命名方案')}</strong><small>${field(item,'error')?'需要修复':`${new Set(rs.map(r=>field(r,'heroId'))).size} 个人物 · ${field(item,'active')?'已启用':'未启用'}`}</small></button>`;
-      }).join('')}<p id="characterSchemeSearchEmpty" hidden>没有匹配的方案。</p></div><details class="cs-disclosure"><summary>导入与管理</summary><div class="cs-menu-actions"><button class="secondary-btn" id="characterSchemeImport">导入方案 ZIP</button><button class="secondary-btn" id="characterSchemeFolder">打开方案目录</button><button class="secondary-btn" id="characterSchemeRefresh">刷新方案与状态</button>${this.data?.installed&&!this.data?.updateRequired?'<button class="secondary-btn" id="characterSchemeInstall">更新角色皮肤模组</button>':''}</div></details></aside><div class="character-detail cs-scheme-detail">${field(this.data?.runtimeStatus,"state")==="Failed"?`<div class="cs-install-notice" role="alert"><p>上次游戏未能应用方案：${esc(field(this.data.runtimeStatus,"error")||"请展开模组状态查看详情。")}</p></div>`:""}${!this.data?.installed||this.data?.updateRequired?`<div class="cs-install-notice" role="status"><p>${this.data?.installed?`游戏中的角色皮肤模组为 ${esc(this.data.installedVersion||'未知版本')}，请更新到 ${esc(this.data.bundledVersion)}，然后重启游戏以使用最新修复。`:'先安装角色皮肤模组，方案才能在游戏中生效。'}</p><button class="primary-btn" id="characterSchemeInstall">${this.data?.installed?'更新角色皮肤模组':'安装角色皮肤模组'}</button></div>`:''}${!p?`<div class="cs-empty"><h3>把喜欢的人物放进同一个方案</h3><p>新建一个方案，再添加人物皮肤。之后可以一键切换整套搭配。</p><button class="primary-btn" id="characterSchemeEmptyCreate">新建第一个方案</button></div>`:`<header class="cs-scheme-heading"><div><p class="cs-eyebrow">多人物搭配 · ${count} 个人物</p><h3>${esc(field(s,'name')||'未命名方案')}</h3><span class="cs-scheme-state ${active?'is-active':''}">${active?'已启用 · 重启游戏后生效':'尚未启用'}</span></div><button class="${active?'secondary-btn':'primary-btn'}" id="characterSchemeEnable" ${invalid?'disabled':''}>${active?'停用此方案':'应用此方案'}</button></header><p class="cs-scheme-help">添加或修改人物后，完全退出并重启游戏以应用搭配。</p>${invalid?`<p class="character-error" role="alert">${esc(field(p,'error'))}</p>`:''}<details class="cs-disclosure cs-scheme-actions"><summary>方案设置</summary>${!invalid?`<label>方案名称<input id="characterSchemeName" value="${esc(field(s,'name'))}" maxlength="100" required></label><button class="secondary-btn" id="characterSchemeRename">保存名称</button>`:''}<div class="character-toolbar"><button class="secondary-btn" id="characterSchemeExport" ${invalid?'disabled':''}>导出方案 ZIP</button><button class="secondary-btn" id="characterSchemeOpen">打开目录</button><button class="danger-btn" id="characterSchemeDelete">删除方案</button></div></details>${invalid?'':`<div class="cs-section-heading cs-members-heading"><h4>方案中的人物</h4><div class="character-toolbar"><button class="primary-btn" id="characterBindingNew">添加人物皮肤</button><button class="secondary-btn" id="characterSchemeImportPackage">导入人物包</button></div></div><div class="character-binding-list">${rules.map(r=>{
+        return `<button class="character-package ${id===this.selected?'active':''}" data-scheme="${esc(id)}" data-name="${esc(field(scheme,'name')||id)}" data-search="${esc([field(scheme,'name')||id,field(scheme,'author')||'',field(scheme,'description')||''].join(' ').toLocaleLowerCase())}" aria-pressed="${id===this.selected}"><strong>${esc(field(scheme,'name')||'未命名方案')}</strong><small>${field(item,'error')?'需要修复':`${new Set(rs.map(r=>field(r,'heroId'))).size} 个人物 · ${field(item,'active')?'已启用':'未启用'}`}</small></button>`;
+      }).join('')}<p id="characterSchemeSearchEmpty" hidden>没有匹配的方案。</p></div><details class="cs-disclosure"><summary>导入与管理</summary><div class="cs-menu-actions"><button class="secondary-btn" id="characterSchemeImport">导入方案 ZIP</button><button class="secondary-btn" id="characterSchemeFolder">打开方案目录</button><button class="secondary-btn" id="characterSchemeRefresh">刷新方案与状态</button>${this.data?.installed&&!this.data?.updateRequired?'<button class="secondary-btn" id="characterSchemeInstall">更新角色皮肤模组</button>':''}</div></details></aside><div class="character-detail cs-scheme-detail">${field(this.data?.runtimeStatus,"state")==="Failed"?`<div class="cs-install-notice" role="alert"><p>上次游戏未能应用方案：${esc(field(this.data.runtimeStatus,"error")||"请展开模组状态查看详情。")}</p></div>`:""}${!this.data?.installed||this.data?.updateRequired?`<div class="cs-install-notice" role="status"><p>${this.data?.installed?`游戏中的角色皮肤模组为 ${esc(this.data.installedVersion||'未知版本')}，请更新到 ${esc(this.data.bundledVersion)}，然后重启游戏以使用最新修复。`:'先安装角色皮肤模组，方案才能在游戏中生效。'}</p><button class="primary-btn" id="characterSchemeInstall">${this.data?.installed?'更新角色皮肤模组':'安装角色皮肤模组'}</button></div>`:''}${!p?`<div class="cs-empty"><h3>把喜欢的人物放进同一个方案</h3><p>新建一个方案，再添加人物皮肤。之后可以一键切换整套搭配。</p><button class="primary-btn" id="characterSchemeEmptyCreate">新建第一个方案</button></div>`:`<header class="cs-scheme-heading"><div><p class="cs-eyebrow">多人物搭配 · ${count} 个人物</p><h3>${esc(field(s,'name')||'未命名方案')}</h3>${field(s,'author')?`<p class="cs-scheme-byline">作者：${esc(field(s,'author'))}</p>`:''}<span class="cs-scheme-state ${active?'is-active':''}">${active?'已启用 · 重启游戏后生效':'尚未启用'}</span></div><button class="${active?'secondary-btn':'primary-btn'}" id="characterSchemeEnable" ${invalid?'disabled':''}>${active?'停用此方案':'应用此方案'}</button></header>${field(s,'description')?`<p class="cs-scheme-description">${esc(field(s,'description'))}</p>`:''}<p class="cs-scheme-help">添加或修改人物后，完全退出并重启游戏以应用搭配。</p>${invalid?`<p class="character-error" role="alert">${esc(field(p,'error'))}</p>`:''}<details class="cs-disclosure cs-scheme-actions"><summary>方案设置</summary>${!invalid?`<button class="secondary-btn" id="characterSchemeEditMeta">编辑方案信息</button>`:''}<div class="character-toolbar"><button class="secondary-btn" id="characterSchemeExport" ${invalid?'disabled':''}>导出方案 ZIP</button><button class="secondary-btn" id="characterSchemeOpen">打开目录</button><button class="danger-btn" id="characterSchemeDelete">删除方案</button></div></details>${invalid?'':`<div class="cs-section-heading cs-members-heading"><h4>方案中的人物</h4><div class="character-toolbar"><button class="primary-btn" id="characterBindingNew">添加人物皮肤</button><button class="secondary-btn" id="characterSchemeImportPackage">导入人物包</button></div></div><div class="character-binding-list">${rules.map(r=>{
         const hero=field(r,'heroId'),official=field(r,'officialSourceSkinItemId'),custom=field(r,'customPackageId'),rid=field(r,'id');
         const pkg=(this.data.profiles||[]).find(item=>field(item,'id')===custom), name=field(field(pkg,'manifest'),'name')||'自定义皮肤包';
         const summary=custom?`${name}${official?' + '+this.skinName(hero,official):''}`:this.skinName(hero,official);
         return `<article class="character-binding"><span class="cs-source-label">${custom?(official?'自定义 + 官方基础':'自定义皮肤'):'官方皮肤'}</span><h4>${esc(this.heroName(hero))}</h4><p class="cs-source-summary">${esc(summary)}</p><p class="cs-target-summary">${field(r,'targetSkinItemId')?'仅替换 '+esc(this.skinName(hero,field(r,'targetSkinItemId'))):'适用于此人物全部原皮肤'}</p>${custom?`<button class="primary-btn" data-edit-package="${esc(custom)}">编辑人物皮肤</button>`:`<button class="primary-btn" data-edit-binding="${esc(rid)}">更换官方皮肤</button>`}<details class="cs-disclosure"><summary>人物设置</summary><div class="cs-menu-actions">${custom?`<button class="secondary-btn" data-edit-binding="${esc(rid)}">来源与替换范围</button>`:`<button class="secondary-btn" data-create-package="${esc(rid)}">创建自定义覆盖</button>`}<button class="link-btn" data-delete-binding="${esc(rid)}">从方案移除此人物</button></div></details></article>`;
       }).join('')||`<div class="cs-empty"><h4>还没有添加人物</h4><p>选择已有皮肤包、制作自定义皮肤，或搭配官方皮肤。</p><button class="primary-btn" id="characterBindingEmptyAdd">添加第一个人物</button></div>`}</div>`}`}${this.data?.migrationError?`<p class="character-error" role="alert">旧配置已保留，但暂未转换：${esc(this.data.migrationError)}</p>`:''}<details class="cs-disclosure cs-runtime-details"><summary>模组状态与使用说明</summary><p>${this.data?.installed?'角色皮肤模组已安装':'尚未安装角色皮肤模组，请从左侧管理菜单安装。'}</p>${this.runtimeSummary()}<p>官方来源替换图片与人物动画。语音、视频、特效及特殊演出保留原版。</p></details></div></div>`;
-      const filter=()=>{this.search=$("characterSchemeSearch").value;let visible=0;$("characterSchemeList").querySelectorAll('[data-scheme]').forEach(b=>{b.hidden=!b.dataset.name.toLocaleLowerCase().includes(this.search.trim().toLocaleLowerCase());if(!b.hidden)visible++;});$("characterSchemeSearchEmpty").hidden=visible>0;};
+      const filter=()=>{this.search=$("characterSchemeSearch").value;let visible=0;$("characterSchemeList").querySelectorAll('[data-scheme]').forEach(b=>{b.hidden=!b.dataset.search.includes(this.search.trim().toLocaleLowerCase());if(!b.hidden)visible++;});$("characterSchemeSearchEmpty").hidden=visible>0;};
       $("characterSchemeSearch").oninput=filter;filter();
       if($("characterSchemeEmptyCreate"))$("characterSchemeEmptyCreate").onclick=()=>$("characterSchemeNew").click();
       if($("characterBindingEmptyAdd"))$("characterBindingEmptyAdd").onclick=()=>this.openBinding();
@@ -222,13 +243,7 @@
           { type: "characterSchemesDelete", id: this.selected },
         );
       if (field(p, "error")) return;
-      $("characterSchemeRename").onclick = () => {
-        const input = $("characterSchemeName");
-        if (!input.reportValidity()) return;
-        const copy = this.copyScheme();
-        copy.Name = input.value;
-        this.save(copy);
-      };
+      $("characterSchemeEditMeta").onclick = () => this.openMeta();
       $("characterBindingNew").onclick = () => this.openBinding();
       $("characterSchemeImportPackage").onclick = () => post({type:"characterSchemesImportPackage",id:this.selected});
       $("characterSchemesPanel").querySelectorAll("[data-create-package]").forEach(b=>b.onclick=()=>{
@@ -299,6 +314,23 @@
     },
     save(scheme) {
       post({ type: "characterSchemesSave", id: this.selected, scheme });
+    },
+    openMeta() {
+      const p = this.profile();
+      if (!p || field(p, "error")) {
+        toast("请先创建或选择一个有效方案。");
+        return;
+      }
+      const s = field(p, "scheme");
+      const form = $("characterSchemeMetaForm");
+      form.reset();
+      $("characterSchemeMetaError").textContent = "";
+      $("characterSchemeMetaId").textContent = field(s, "id") || "";
+      form.elements.namedItem("name").value = field(s, "name") || "";
+      form.elements.namedItem("author").value = field(s, "author") || "";
+      form.elements.namedItem("description").value =
+        field(s, "description") || "";
+      $("characterSchemeMetaDialog").showModal();
     },
     openBinding(rule = null, packageId = null) {
       if (!this.profile() || field(this.profile(), "error")) {
@@ -437,9 +469,12 @@
     },
     saved(payload) {
       if (payload.success) {
+        $("characterSchemeMetaDialog").close();
         $("characterBindingDialog").close();
         $("characterSchemeCreateDialog").close();
-      } else if ($("characterBindingDialog").open)
+      } else if ($("characterSchemeMetaDialog").open)
+        $("characterSchemeMetaError").textContent = payload.error || "保存失败";
+      else if ($("characterBindingDialog").open)
         $("characterBindingError").textContent = payload.error || "保存失败";
       else if($("characterSchemeCreateDialog").open)$("characterSchemeCreateError").textContent=payload.error||"创建失败";
     },

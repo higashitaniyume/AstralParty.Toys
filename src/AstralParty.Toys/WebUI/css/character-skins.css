@@ -56,14 +56,14 @@
   color: var(--gp-blue);
 }
 #characterSkinPanel .primary-btn,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) .primary-btn {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) .primary-btn {
   background: var(--cs-accent);
   border-color: transparent;
   color: white;
   box-shadow: none;
 }
 #characterSkinPanel .primary-btn:hover,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) .primary-btn:hover {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) .primary-btn:hover {
   background: color-mix(in srgb, var(--cs-accent) 88%, black);
 }
 .character-skin-tabs {
@@ -106,14 +106,14 @@
   padding-bottom: 20px;
 }
 #characterSkinPanel .secondary-btn,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) .secondary-btn {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) .secondary-btn {
   color: var(--cs-text);
   background: var(--cs-input);
   border: 1px solid var(--cs-border-strong);
   box-shadow: none;
 }
 #characterSkinPanel .secondary-btn:hover,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) .secondary-btn:hover {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) .secondary-btn:hover {
   color: var(--cs-text);
   background: var(--cs-hover);
   border-color: var(--cs-border-strong);
@@ -283,7 +283,7 @@
   gap: 16px;
 }
 .character-detail label,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) label {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) label {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -296,8 +296,9 @@
 .character-detail select,
 .character-detail textarea,
 .character-list-panel input,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) input,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) select {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) input,
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) select,
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) textarea {
   width: 100%;
   max-width: 100%;
   min-height: 44px;
@@ -313,14 +314,15 @@
     box-shadow 0.18s;
 }
 .character-detail select option,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) select option {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) select option {
   color: var(--cs-text);
   background: var(--cs-input);
 }
 .character-detail input::placeholder,
 .character-detail textarea::placeholder,
 .character-list-panel input::placeholder,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) input::placeholder {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) input::placeholder,
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) textarea::placeholder {
   color: var(--cs-muted);
   opacity: 1;
 }
@@ -333,8 +335,9 @@
 .character-detail select:focus,
 .character-detail textarea:focus,
 .character-list-panel input:focus,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) input:focus,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) select:focus {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) input:focus,
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) select:focus,
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) textarea:focus {
   outline: 2px solid var(--gp-blue);
   outline-offset: 2px;
   border-color: var(--gp-blue);
@@ -449,7 +452,7 @@
   font-weight: 600;
   margin-left: 8px;
 }
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) {
   width: min(480px, calc(100vw - 48px));
   max-height: calc(100vh - 64px);
   padding: 28px;
@@ -460,11 +463,11 @@
   box-shadow: var(--gp-shadow-lg);
   overflow: auto;
 }
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog)::backdrop {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog)::backdrop {
   background: rgb(0 0 0 / 0.6);
   backdrop-filter: blur(3px);
 }
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) .character-template-toggle {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) .character-template-toggle {
   flex-direction: row;
   align-items: center;
 }
@@ -478,11 +481,11 @@
 #characterTemplateProgress {
   overflow-wrap: anywhere;
 }
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) h3 {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) h3 {
   font-size: 22px;
   margin: 0 0 24px;
 }
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) p {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) p {
   font-size: 13px;
   line-height: 1.6;
   color: var(--cs-secondary);
@@ -512,7 +515,7 @@
 .character-detail button:focus-visible,
 .character-skin-tabs button:focus-visible,
 .character-package:focus-visible,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) button:focus-visible {
+:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) button:focus-visible {
   outline: 2px solid var(--gp-blue);
   outline-offset: 3px;
 }
@@ -578,7 +581,7 @@
 @media (prefers-reduced-motion: reduce) {
   .character-skin-tabs *,
   #characterSkinPanel *,
-  :is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog) * {
+  :is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) * {
     transition: none !important;
   }
 }
@@ -627,6 +630,7 @@
 .cs-menu-actions { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
 .cs-menu-actions button { text-align: left; }
 .cs-scheme-actions .character-toolbar { margin: 12px 0 0; }
+.cs-scheme-actions #characterSchemeEditMeta { margin-top: 12px; }
 .cs-members-heading { margin-top: 28px; }
 .cs-members-heading .character-toolbar { margin: 0; }
 .cs-scheme-detail .character-binding-list { grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); align-items: start; }
@@ -675,3 +679,12 @@
 
 .cs-install-notice { padding: 16px; margin-bottom: 24px; border: 1px solid var(--cs-border-strong); border-radius: var(--gp-radius-sm); background: var(--cs-accent-wash); display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
 .cs-install-notice p { margin: 0; flex: 1 1 220px; }
+
+/* 方案元信息：作者、简介与编辑对话框 */
+.cs-scheme-byline { margin: 6px 0 0; font-size: 13px; color: var(--cs-secondary); overflow-wrap: anywhere; }
+.cs-scheme-description { margin: 14px 0 0; max-width: 62em; font-size: 14px; line-height: 1.7; color: var(--cs-text); white-space: pre-wrap; overflow-wrap: anywhere; }
+#characterSchemeMetaDialog textarea { min-height: 96px; resize: vertical; line-height: 1.6; }
+#characterSchemeMetaDialog .cs-dialog-hint { margin: 0 0 18px; font-size: 13px; color: var(--cs-secondary); overflow-wrap: anywhere; }
+#characterSchemeMetaDialog .cs-dialog-hint code { padding: 2px 6px; border-radius: 4px; background: var(--cs-input); font-size: 12px; }
+#characterSchemeMetaError { color: var(--cs-error); }
+#characterSchemeMetaError:empty { display: none; }
