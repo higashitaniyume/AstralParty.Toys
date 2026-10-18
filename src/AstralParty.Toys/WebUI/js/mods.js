@@ -241,7 +241,8 @@
         const del = e.target.closest('.mod-del-btn');
         if (del) {
           const fileName = del.dataset.file;
-          if (fileName && confirm(`确定删除模组「${fileName}」？`)) {
+          const prompt = window.i18n?.translateSource(`确定删除模组「${fileName}」？`) || `确定删除模组「${fileName}」？`;
+          if (fileName && confirm(prompt)) {
             post({ type: 'modDelete', fileName });
           }
           return;

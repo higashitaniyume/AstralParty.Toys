@@ -27,7 +27,8 @@ const post = message => host?.postMessage(message);
 function toast(message) {
   const node = $('toast');
   if (!node) return;
-  node.textContent = message;
+  const text = window.i18n?.translateSource(message) ?? message;
+  node.textContent = text;
   node.classList.add('show');
   clearTimeout(toast._timer);
   toast._timer = setTimeout(() => node.classList.remove('show'), 3800);
