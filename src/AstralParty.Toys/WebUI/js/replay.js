@@ -8,6 +8,19 @@
     return value + ' B';
   };
 
+  // 品质显示文本会跟随界面语言变化（普通/Common/通常/傳說…）。样式类名必须用
+  // 稳定的颜色键，不能拿本地化后的文本拼 class，否则切语言后筹码底色就丢了。
+  const QUALITY_TONE = {
+    blue: 'blue', 普通: 'blue', common: 'blue', 通常: 'blue', 一般: 'blue',
+    purple: 'purple', 稀有: 'purple', rare: 'purple', レア: 'purple',
+    epic: 'epic', 史诗: 'epic', 史詩: 'epic',
+    gold: 'gold', orange: 'gold', 传说: 'gold', 傳說: 'gold', legendary: 'gold', レジェンド: 'gold', 传奇: 'gold', 傳奇: 'gold'
+  };
+  const qualityTone = quality => {
+    const key = String(quality ?? '').trim().toLowerCase();
+    return QUALITY_TONE[key] || QUALITY_TONE[String(quality ?? '').trim()] || 'unknown';
+  };
+
   const ReplayModule = {
     libraryData: null,
     // 归档 / 放回 / 删除正在进行中（文件 IO + 之后整表重扫）：挡住重复点击
@@ -980,7 +993,7 @@
     relicBadge(relic, iconOnly = false) {
       const name = relic.name || relic.relicName || '未知筹码';
       const label = [name, relic.quality].filter(Boolean).join(' · ');
-      const rarity = { '普通': 'blue', '稀有': 'purple', '传说': 'gold' }[relic.quality] || 'unknown';
+      const rarity = qualityTone(relic.quality);
       return `<span class="replay-relic replay-relic-${rarity}" title="${esc(label)}"${iconOnly ? ` role="img" aria-label="${esc(label)}"` : ''}>
         ${relic.image ? `<img src="${esc(relic.image)}" alt="" width="36" height="36" loading="lazy" onerror="this.hidden=true">` : ''}
         ${iconOnly ? '' : `<span>${esc(name)}</span>`}
@@ -1052,7 +1065,7 @@
             <td><span class="badge badge-notice">${esc(r.source)}</span></td>
             <td><span class="badge ${r.kind === '选择' ? 'badge-event' : 'badge-update'}">${esc(r.kind)}</span></td>
             <td>${r.relicId > 0 ? this.relicBadge(r) : '—'}</td>
-            <td class="quality-${esc(r.quality)}">${esc(r.quality)}</td>
+            <td class="quality-${qualityTone(r.quality)}">${esc(r.quality)}</td>
             <td>${esc(r.refreshText || '—')}</td>
             <td style="color:var(--text-muted);font-size:12px">${this.relicList(r.options, r.optionsText)}</td>
           </tr>

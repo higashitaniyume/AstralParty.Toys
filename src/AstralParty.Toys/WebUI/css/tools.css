@@ -26,7 +26,7 @@
   vertical-align: middle;
 }
 .replay-relic-blue { --relic-bg: #2266b0; --relic-edge: #79bcff; }
-.replay-relic-purple { --relic-bg: #7941a8; --relic-edge: #d39aff; }
+.replay-relic-purple, .replay-relic-epic { --relic-bg: #7941a8; --relic-edge: #d39aff; }
 .replay-relic-gold { --relic-bg: #a66a13; --relic-edge: #ffda70; }
 .replay-relic img {
   flex: 0 0 36px;
@@ -710,10 +710,11 @@ body:not(.reduce-motion) #toolsView:not(.page-entering) .replay-view:not(.hidden
 }
 
 /* Quality Colors */
-.quality-普通 { color: #94a3b8; font-weight: 800; }
-.quality-稀有 { color: #38bdf8; font-weight: 800; }
-.quality-史诗 { color: #c084fc; font-weight: 800; }
-.quality-传说 { color: #facc15; font-weight: 900; text-shadow: 0 0 8px rgba(250, 204, 21, 0.6); }
+.quality-blue, .quality-普通 { color: #94a3b8; font-weight: 800; }
+.quality-purple, .quality-稀有 { color: #38bdf8; font-weight: 800; }
+.quality-epic, .quality-史诗, .quality-史詩 { color: #c084fc; font-weight: 800; }
+.quality-gold, .quality-传说, .quality-傳說 { color: #facc15; font-weight: 900; text-shadow: 0 0 8px rgba(250, 204, 21, 0.6); }
+.quality-unknown { color: #94a3b8; font-weight: 800; }
 
 /* Protocol Split Layout */
 .protocol-split-layout {
