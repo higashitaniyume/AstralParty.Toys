@@ -10,10 +10,10 @@
     <AssemblyName>AstralParty.Toys</AssemblyName>
     <RootNamespace>AstralParty.Toys</RootNamespace>
     <StartupObject>AstralParty.Toys.App</StartupObject>
-    <!-- v1.2.3 正式发布，程序与安装器数字版本均为 1.2.3。 -->
-    <Version>1.2.3</Version>
-    <AssemblyVersion>1.2.3.0</AssemblyVersion>
-    <FileVersion>1.2.3.0</FileVersion>
+    <!-- v1.2.4 正式发布，程序与安装器数字版本均为 1.2.4。 -->
+    <Version>1.2.4</Version>
+    <AssemblyVersion>1.2.4.0</AssemblyVersion>
+    <FileVersion>1.2.4.0</FileVersion>
     <ApplicationIcon>WebUI\images\UT_AccountHeadShot_70902.ico</ApplicationIcon>
   </PropertyGroup>
 
@@ -48,7 +48,7 @@
     <Content Include="Protocol\*.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="GameData\Skin.bin;GameData\STRSkin.bin;GameData\Character.bin;GameData\STRCharacter.bin;GameData\Map.bin;GameData\STRMap.bin;GameData\Monster.bin;GameData\STRMonster.bin;GameData\Relic.bin;GameData\STRRelic.bin;GameData\Item.bin;GameData\STRItem.bin;GameData\Card.bin;GameData\STRCard.bin;GameData\Event.bin;GameData\STREvent.bin;GameData\Destiny.bin;GameData\STRDestiny.bin;GameData\MapEvent.bin;GameData\STRMapEvent.bin">
+    <Content Include="GameData\Version.bin;GameData\Skin.bin;GameData\STRSkin.bin;GameData\Character.bin;GameData\STRCharacter.bin;GameData\Map.bin;GameData\STRMap.bin;GameData\Monster.bin;GameData\STRMonster.bin;GameData\Relic.bin;GameData\STRRelic.bin;GameData\Item.bin;GameData\STRItem.bin;GameData\Card.bin;GameData\STRCard.bin;GameData\Event.bin;GameData\STREvent.bin;GameData\Destiny.bin;GameData\STRDestiny.bin;GameData\MapEvent.bin;GameData\STRMapEvent.bin">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="WebUI\images\UT_AccountHeadShot_70902.ico" />
