@@ -63,6 +63,32 @@ public sealed class SkinManagerTests : IDisposable
     }
 
     [Fact]
+    public void UpdateProfileMetadata_PreservesUnrelatedSkinJsonFieldsAndRejectsDefault()
+    {
+        var directory = Path.Combine(_skinManager.GetSkinsDirectory(_testRoot), "custom");
+        Directory.CreateDirectory(directory);
+        var metaFile = Path.Combine(directory, "skin.json");
+        File.WriteAllText(metaFile, "{\"name\":\"Old\",\"author\":\"A\",\"extra\":42}");
+
+        _skinManager.UpdateProfileMetadata(_testRoot, "custom", "  New name  ", "  B  ", "  Description  ");
+        var profile = Assert.Single(_skinManager.GetProfiles(_testRoot), p => p.Name == "custom");
+        Assert.Equal("New name", profile.DisplayName);
+        Assert.Equal("B", profile.Author);
+        Assert.Equal("Description", profile.Description);
+        using (var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(metaFile)))
+        {
+            Assert.Equal(42, document.RootElement.GetProperty("extra").GetInt32());
+            Assert.Equal("New name", document.RootElement.GetProperty("name").GetString());
+        }
+
+        Assert.Throws<ArgumentException>(() => _skinManager.UpdateProfileMetadata(_testRoot, "custom", " ", "B", "D"));
+        Assert.Throws<ArgumentException>(() => _skinManager.UpdateProfileMetadata(_testRoot, "default", "N", "B", "D"));
+
+        File.WriteAllText(metaFile, "not json");
+        Assert.Throws<InvalidOperationException>(() => _skinManager.UpdateProfileMetadata(_testRoot, "custom", "N", "B", "D"));
+    }
+
+    [Fact]
     public void GetActiveSkin_DefaultsToDefault_WhenCfgMissing()
     {
         var active = _skinManager.GetActiveSkin(_testRoot);

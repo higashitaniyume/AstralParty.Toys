@@ -90,6 +90,8 @@
 
       // 基于方案复制
       $('skinDuplicateProfileBtn')?.addEventListener('click', () => this.openDuplicateModal(this.selectedSkin));
+      // 编辑方案元信息（显示名称 / 作者 / 描述）
+      $('skinEditMetaBtn')?.addEventListener('click', () => this.openEditMeta());
       // 打开方案目录
       $('skinOpenProfileFolderBtn')?.addEventListener('click', () => post({ type: 'skinsOpenFolder', name: this.selectedSkin }));
       // 删除方案
@@ -207,6 +209,13 @@
 
       const gameDefault = this.selectedSkin === '__game_default__';
       if ($('skinDuplicateProfileBtn')) $('skinDuplicateProfileBtn').disabled = false;
+      const metaBtn = $('skinEditMetaBtn');
+      if (metaBtn) {
+        const canEditMeta = !!p && !gameDefault && p.name.toLowerCase() !== 'default';
+        metaBtn.disabled = !canEditMeta;
+        metaBtn.style.opacity = canEditMeta ? '1' : '0.4';
+        metaBtn.title = canEditMeta ? '修改显示名称、作者和方案描述' : '游戏默认方案没有可编辑的方案信息';
+      }
       if ($('skinOpenProfileFolderBtn')) $('skinOpenProfileFolderBtn').disabled = gameDefault;
       if ($('skinExportZipBtn')) $('skinExportZipBtn').disabled = gameDefault || !p || !p.cardCount;
       const deleteBtn = $('skinDeleteProfileBtn');
@@ -526,6 +535,57 @@
           displayName: dispName,
           author: author,
           description: desc
+        });
+        closeModal();
+      });
+    },
+
+    openEditMeta() {
+      const p = this.profiles.find(x => x.name.toLowerCase() === (this.selectedSkin || '').toLowerCase());
+      if (!p || p.name === '__game_default__' || p.name.toLowerCase() === 'default') {
+        toast('游戏默认方案没有可编辑的方案信息');
+        return;
+      }
+
+      openModal('编辑方案信息', `
+        <div class="skin-duplicate-modal">
+          <p style="font-size:0.88rem; color:#94a3b8; margin:0;">
+            只修改方案对外展示的信息，不会改变方案目录名 <code>${esc(p.name)}</code> 或其中的卡面图片。
+          </p>
+          <div class="skin-form-group">
+            <label for="editSkinDisplayName">方案显示名称：</label>
+            <input type="text" id="editSkinDisplayName" value="${esc(p.displayName || p.name)}" maxlength="100" spellcheck="false" placeholder="如 二次元萌化包">
+          </div>
+          <div class="skin-form-group">
+            <label for="editSkinAuthor">作者签名（可选）：</label>
+            <input type="text" id="editSkinAuthor" value="${esc(p.author || '')}" maxlength="100" spellcheck="false" placeholder="您的昵称">
+          </div>
+          <div class="skin-form-group">
+            <label for="editSkinDesc">方案描述（可选）：</label>
+            <textarea id="editSkinDesc" rows="3" maxlength="2000" placeholder="简要说明此方案的特色…">${esc(p.description || '')}</textarea>
+          </div>
+          <div class="skin-modal-actions">
+            <button class="secondary-btn" id="editSkinMetaCancel">取消</button>
+            <button class="primary-btn" id="editSkinMetaSave">保存信息</button>
+          </div>
+        </div>
+      `, 'add');
+
+      $('editSkinMetaCancel')?.addEventListener('click', closeModal);
+      $('editSkinMetaSave')?.addEventListener('click', () => {
+        const displayName = ($('editSkinDisplayName')?.value || '').trim();
+        const author = ($('editSkinAuthor')?.value || '').trim();
+        const description = ($('editSkinDesc')?.value || '').trim();
+        if (!displayName) {
+          toast('请输入方案显示名称');
+          return;
+        }
+        post({
+          type: 'skinsUpdateMeta',
+          name: p.name,
+          displayName,
+          author,
+          description
         });
         closeModal();
       });

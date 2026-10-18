@@ -533,6 +533,26 @@ public partial class HybridWindow
                 case "skinsDuplicate":
                     HandleSkinDuplicate(root);
                     break;
+                case "skinsUpdateMeta":
+                    if (root.TryGetProperty("name", out var sMetaElem) && sMetaElem.GetString() is { Length: > 0 } metaSkin)
+                    {
+                        try
+                        {
+                            _skinManager.UpdateProfileMetadata(
+                                RequireModGameDirectory(),
+                                metaSkin,
+                                root.TryGetProperty("displayName", out var sMetaDisplay) ? sMetaDisplay.GetString() ?? "" : "",
+                                root.TryGetProperty("author", out var sMetaAuthor) ? sMetaAuthor.GetString() ?? "" : "",
+                                root.TryGetProperty("description", out var sMetaDesc) ? sMetaDesc.GetString() ?? "" : "");
+                            Post(new { type = "toast", message = "方案信息已保存。" });
+                            PushSkinProfiles();
+                        }
+                        catch (Exception ex)
+                        {
+                            Post(new { type = "toast", message = $"保存方案信息失败：{ex.Message}" });
+                        }
+                    }
+                    break;
                 case "skinsDelete":
                     if (root.TryGetProperty("name", out var sDelElem) && sDelElem.GetString() is { Length: > 0 } delSkin)
                     {

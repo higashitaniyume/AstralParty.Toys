@@ -3,7 +3,9 @@ using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using CesiumLoader.CharacterSkins;
 
 namespace AstralParty.Toys.Services;
 
@@ -598,6 +600,48 @@ public sealed class SkinManager
         File.WriteAllText(Path.Combine(destDir, "skin.json"), json, new UTF8Encoding(false));
 
         return cleanName;
+    }
+
+    /// <summary>
+    /// 修改已有方案的可展示信息（显示名称、作者、描述）。方案目录名保持不变，
+    /// skin.json 中其它字段（例如自定义包元数据）原样保留。
+    /// </summary>
+    public void UpdateProfileMetadata(string gameDirectory, string skinName, string displayName, string author, string description)
+    {
+        if (string.IsNullOrWhiteSpace(skinName) || skinName == GameDefault ||
+            skinName.Equals("default", StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("游戏默认方案没有可编辑的方案信息", nameof(skinName));
+        string skinsDir = GetSkinsDirectory(gameDirectory);
+        string directory = CharacterSkinRules.SafePath(skinsDir, skinName);
+        if (!Directory.Exists(directory)) throw new DirectoryNotFoundException("皮肤方案不存在: " + skinName);
+
+        displayName = (displayName ?? "").Trim();
+        author = (author ?? "").Trim();
+        description = (description ?? "").Trim();
+        if (displayName.Length == 0) throw new ArgumentException("方案显示名称不能为空", nameof(displayName));
+        if (displayName.Length > 100) throw new ArgumentException("方案显示名称最长 100 个字符", nameof(displayName));
+        if (author.Length > 100) throw new ArgumentException("作者最长 100 个字符", nameof(author));
+        if (description.Length > 2000) throw new ArgumentException("方案描述最长 2000 个字符", nameof(description));
+
+        string metaFile = Path.Combine(directory, "skin.json");
+        var meta = new JsonObject();
+        if (File.Exists(metaFile))
+        {
+            try
+            {
+                if (JsonNode.Parse(File.ReadAllText(metaFile, Encoding.UTF8)) is not JsonObject existing)
+                    throw new InvalidOperationException("skin.json 根节点不是对象");
+                meta = existing;
+            }
+            catch (JsonException ex)
+            {
+                throw new InvalidOperationException("skin.json 格式无效，请先修复后再编辑方案信息", ex);
+            }
+        }
+        meta["name"] = displayName;
+        meta["author"] = author;
+        meta["description"] = description;
+        File.WriteAllText(metaFile, meta.ToJsonString(new JsonSerializerOptions { WriteIndented = true }), new UTF8Encoding(false));
     }
 
     /// <summary>删除指定的皮肤方案（default 方案禁止删除）。</summary>
