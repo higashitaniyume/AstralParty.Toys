@@ -11,7 +11,6 @@ const AppState = {
   activeReplayTab: 'summary',
   activeWikiTab: 'heroes',
   currentPortrait: null,
-  currentGreetingIndex: 0,
   isPageTransitioning: false,
   pendingPage: null
 };

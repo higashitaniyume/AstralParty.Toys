@@ -84,74 +84,6 @@ public sealed class HomeDataService
         [306] = "雪莉"
     };
 
-    private static readonly string[] UniversalGreetings =
-    [
-        "欢迎来到吉星派对！今天也要一起投掷出大吉的命运骰子吗？",
-        "吉星高照！听说在对战前向看板娘打个招呼，摇出6点的概率会大幅提升哦！",
-        "好久不见！今天有什么精彩的对局想要复盘或者研究吗？",
-        "准备好开始新的棋盘冒险了吗？攻略、工具和回放我都替你整理好啦～",
-        "今天在棋盘上，也要保持优雅又犀利的走位哦！",
-        "叮～发现一名充满斗志的指挥官！今天想先看回放还是查阅攻略呢？",
-        "听说合理的筹码组合是逆风翻盘的秘诀，快去看看攻略吧！",
-        "悄悄告诉你，今天幸运星的坐标就在我们这边！"
-    ];
-
-    private static readonly Dictionary<int, string[]> HeroSpecificGreetings = new()
-    {
-        [101] =
-        [
-            "商业之主帕露南在此！只要精打细算，就能在吉星派对中积累出无可匹敌的星币优势！",
-            "名义上我是商业之主，但在棋盘上，智慧和运筹帷幄才是真正的财富！",
-            "只要仔细观察对手的筹码与走位，就能提前推算出他们的全部策略哦！"
-        ],
-        [102] =
-        [
-            "只要报酬丰厚……啊不是，古怪神探芬妮随时准备出击！",
-            "想要获胜的话，可别只顾着往前冲，合理的星币理财才是硬道理！",
-            "嘘……我刚才发现了一张超稀有的筹码卡，要不要借你看看？"
-        ],
-        [103] =
-        [
-            "魔法的奇迹可不是巧合，而是阿兰娜无数次精准计算的结果哦～",
-            "水晶球显示，你今天在对局中会遇到意想不到的大惊喜！",
-            "呼呼，今天想看我用哪一种华丽的魔法把对手送回起点呢？"
-        ],
-        [104] =
-        [
-            "保持专注！棋盘如同战场，绝不容许丝毫松懈！",
-            "战术、策略、果断的决断，这才是小町克敌制胜的关键所在。",
-            "指挥官，列阵完毕！随时可以进入下一场对战！"
-        ],
-        [105] =
-        [
-            "呜哇！派德曼差点把红茶洒出来了……别突然戳我啦！",
-            "刚刚烤好了松饼，指挥官要先吃一块再去看回放分析吗？",
-            "派对开始前，一定要把体力补充得满满的才行～"
-        ],
-        [106] =
-        [
-            "巡逻任务完成！帕帕拉报告：棋盘区域一切正常，无异常骚乱！",
-            "遵守派对规则可是每个人的义务哦！若是作弊，手铐可不答应！",
-            "今天也要堂堂正正地拿下胜利！"
-        ],
-        [107] =
-        [
-            "喵呜～恋觉得阳光正好，要在棋盘的草地上打个滚吗？",
-            "特调一杯‘幸运猫薄荷苏打’送给你，喝了之后点数全都是大点哦！",
-            "别走那么快嘛，留下来多陪恋玩一会儿嘛～"
-        ]
-    };
-
-    private static readonly string[] ClickReactions =
-    [
-        "哎呀！戳到痒痒肉啦～",
-        "再戳……再戳我就要把你的骰子点数变成1了哦！",
-        "你在看哪里呀，指挥官？",
-        "嘻嘻，感觉跟指挥官的羁绊值又悄悄增加了呢！",
-        "怎么啦？是遇到难对付的对手了吗，快来让我看看回放！",
-        "星光闪烁，幸运降临！"
-    ];
-
     private readonly string _appDirectory;
     private readonly ConfigCatalog? _catalog;
     private List<PortraitItem>? _cachedPortraits;
@@ -238,16 +170,9 @@ public sealed class HomeDataService
 
     public object GetHomeData()
     {
-        var portraits = GetPortraits();
-
         return new
         {
-            portraitsCount = portraits.Count,
-            portraits,
-            greetings = UniversalGreetings,
-            heroGreetings = HeroSpecificGreetings,
-            clickReactions = ClickReactions,
-            wikiUrl = "https://wiki.biligame.com/starengine/%E9%A6%96%E9%A1%B5"
+            portraits = GetPortraits()
         };
     }
 }
