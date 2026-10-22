@@ -2,7 +2,8 @@
   <PropertyGroup>
     <TargetFramework>net8.0-windows</TargetFramework>
     <OutputType>Library</OutputType>
-    <Nullable>disable</Nullable>
+    <!-- 默认开启可空分析；上游 RML 源码逐个用 #nullable disable 关闭，Toys 新增的 RmlEngine/EngineControl/Log 保持检查。 -->
+    <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>AstralParty.Toys.ResourceEngine</AssemblyName>

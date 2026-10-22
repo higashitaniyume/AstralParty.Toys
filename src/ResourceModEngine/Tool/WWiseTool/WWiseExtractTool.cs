@@ -1,4 +1,6 @@
-﻿using ResourceModLoader.Tool.Creator;
+﻿// 第三方 RML 代码未按可空引用标注，单独关闭该文件的分析。
+#nullable disable
+using ResourceModLoader.Tool.Creator;
 using ResourceModLoader.Utils;
 using System;
 using System.Collections.Generic;
