@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -409,7 +409,6 @@ namespace ResourceModLoader.Utils
             int pos = 0;
 
             // 尝试 varint
-            bool varintOk = true;
             var varintList = new List<ulong>();
             int savedPos = pos;
             try
@@ -441,7 +440,7 @@ namespace ResourceModLoader.Utils
                     return result;
                 }
             }
-            catch { varintOk = false; }
+            catch { }
 
             // 尝试 fixed32
             if (data.Length % 4 == 0)
