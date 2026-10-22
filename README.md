@@ -68,6 +68,7 @@ winget upgrade Hiynet.AstralParty.Toys
 | 角色皮肤 | 多人物方案、贴图裁切、精灵动画、模板与 GIF 导出、旧式 Unity bundle 皮肤包导入 |
 | 卡牌皮肤 | 自定义卡面与多方案管理；导入视频/GIF 制作动态卡面 |
 | 模组管理 | 安装、更新、卸载 CesiumLoader；导入模组包（ZIP）或单个 DLL、编辑配置与绑定热键；升级保留配置与停用状态、旧版本残留移入回收站，降级需确认 |
+| 资源模组 | 导入 RML 格式 ZIP；内置 RML 引擎解析 `.bundle`、`mod.json`、`replace.txt`、图片与 Patch，改写 Addressables catalog；显示进度、文件日志，可暂停/取消并还原；支持启停、删除与恢复原版 |
 | 启动与变速 | 管理多个游戏版本，选择 Steam 或绕过 Steam 启动，设置基础倍率与游戏内变速热键 |
 
 CesiumLoader 随附 7 个模组：自动感谢、卡牌皮肤、角色皮肤、战斗胜率助手、自由相机、变速热键与行为日志。功能与配置详见 [加载器文档](https://github.com/higashitaniyume/CesiumLoader#内置模组)。安装与模组配置变更通常需要重启游戏。
@@ -88,6 +89,7 @@ CesiumLoader 随附 7 个模组：自动感谢、卡牌皮肤、角色皮肤、�
 | 游戏回放缓存（国服） | `%USERPROFILE%\AppData\LocalLow\feimo\AstralParty_CN\Temp\Replay` |
 | WebView2 数据 | `%LOCALAPPDATA%\AstralParty.Toys\WebView2` |
 | 加载器、模组与日志 | 游戏目录下的 `version.dll` 与 `AstralParty_ModLoader\` |
+| 资源模组与备份 | 游戏目录下的 `AstralParty_ResourceMods\` |
 
 **归档会移动回放，放回游戏会复制并保留库内副本。** 自动整理需要在设置中开启；安装器卸载不会删除回放库或游戏目录中的模组。
 
@@ -109,6 +111,7 @@ dotnet publish src/AstralParty.Toys/AstralParty.Toys.csproj -c Release -r win-x6
 
 - [回放格式与解析口径](docs/replay-format.md)
 - [角色皮肤方案](docs/character-skin-schemes.md)
+- [资源模组安装与恢复](docs/resource-mods.md)
 - [加载器恢复与排障](docs/loader-recovery.md)
 - [安装器构建](installer/README.md)
 
@@ -117,5 +120,7 @@ dotnet publish src/AstralParty.Toys/AstralParty.Toys.csproj -c Release -r win-x6
 企鹅：**1078464597**。反馈问题时可在程序「版本信息」中复制构建与环境信息。
 
 原创代码以 [GNU AGPL-3.0](LICENSE) 发布。Copyright © 2026 Yume Higashitani。
+
+资源模组安装器内置 [zxy19/ResourceModLoader](https://github.com/zxy19/ResourceModLoader) 的 Mod 引擎（MIT），其许可与版权声明见 [src/ResourceModEngine/LICENSE.txt](src/ResourceModEngine/LICENSE.txt)。
 
 内嵌的 Astral Party 协议程序集、配表与游戏素材归原权利人所有，不属于本项目的授权范围。CesiumLoader 各组件遵循其自身许可，详见 [加载器许可说明](https://github.com/higashitaniyume/CesiumLoader#许可)。

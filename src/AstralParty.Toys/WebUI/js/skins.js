@@ -141,6 +141,7 @@
     onShowSkins() {
       window.GameLibModule?.init();
       post({ type: 'skinsGetProfiles' });
+      if (window.CharacterSkinsModule?.tab === 'resource') window.ResourceModsModule?.onShow();
     },
 
     legacyImported(payload) {

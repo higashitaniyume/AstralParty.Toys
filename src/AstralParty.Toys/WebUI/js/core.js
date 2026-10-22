@@ -318,6 +318,22 @@ host?.addEventListener('message', event => {
       if (window.ModsModule) window.ModsModule.renderModStatus(msg.payload);
       break;
 
+    case 'resourceModsStatus':
+      window.ResourceModsModule?.render(msg.payload);
+      break;
+
+    case 'resourceModsProgress':
+      window.ResourceModsModule?.renderProgress(msg.payload);
+      break;
+
+    case 'resourceModsPaused':
+      window.ResourceModsModule?.renderPaused(msg.payload?.paused);
+      break;
+
+    case 'resourceModsOperation':
+      window.ResourceModsModule?.renderOperation(msg.payload);
+      break;
+
     case 'modPackageFileSelected':
       window.ModsModule?.applyPackageFile(msg.payload);
       break;

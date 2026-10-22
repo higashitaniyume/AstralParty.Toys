@@ -21,6 +21,7 @@ public partial class HybridWindow
         if (string.IsNullOrWhiteSpace(dir)) return;
         _modManager.SaveStoredGameDirectory(dir);
         _speedhackManager.SaveStoredGameDirectory(dir);
+        _ = PushResourceModStatusAsync();
     }
 
     private int _gameProfilesRequest;

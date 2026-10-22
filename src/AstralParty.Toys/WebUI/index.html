@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="css/utilities.css" />
     <link rel="stylesheet" href="css/mods.css" />
     <link rel="stylesheet" href="css/skins.css" />
+    <link rel="stylesheet" href="css/resource-mods.css" />
   </head>
   <body>
     <div class="app-shell">
@@ -1354,7 +1355,58 @@
             >
               角色皮肤
             </button>
+            <button
+              id="resourceModTab"
+              role="tab"
+              aria-selected="false"
+              aria-controls="resourceModPanel"
+              tabindex="-1"
+              data-i18n="skins.resource_mods"
+            >
+              资源模组
+            </button>
           </div>
+          <section
+            id="resourceModPanel"
+            class="hidden"
+            role="tabpanel"
+            aria-labelledby="resourceModTab"
+          >
+            <div class="resource-mod-toolbar">
+              <button class="primary-btn" id="resourceModImportBtn" data-i18n="resource_mods.import">
+                ＋ 导入资源模组 (.zip)
+              </button>
+              <button class="secondary-btn" id="resourceModApplyBtn" data-i18n="resource_mods.apply">应用</button>
+              <button class="secondary-btn" id="resourceModRestoreBtn" data-i18n="resource_mods.restore">恢复原版</button>
+              <button class="secondary-btn" id="resourceModFolderBtn" data-i18n="resource_mods.open_folder">打开目录</button>
+              <button class="secondary-btn" id="resourceModRefreshBtn" data-i18n="common.refresh">刷新</button>
+            </div>
+            <div class="resource-mod-banner" id="resourceModBanner" role="status"></div>
+            <details class="resource-mod-warnings hidden" id="resourceModWarnings">
+              <summary id="resourceModWarningsSummary">有未生效的条目</summary>
+              <pre id="resourceModWarningsBody"></pre>
+            </details>
+            <div class="resource-mod-progress hidden" id="resourceModProgress" role="group" aria-label="资源模组进度">
+              <div class="rmp-head">
+                <strong id="rmpPhase">准备中…</strong>
+                <span id="rmpPercent">0%</span>
+              </div>
+              <progress id="rmpBar" max="100" value="0"></progress>
+              <div class="rmp-task" id="rmpTask"></div>
+              <pre class="rmp-log" id="rmpLog"></pre>
+              <div class="rmp-actions">
+                <button class="secondary-btn" id="rmpPause">暂停</button>
+                <button class="secondary-btn" id="rmpCancel">取消并还原</button>
+              </div>
+            </div>
+            <div class="resource-mod-list" id="resourceModList"></div>
+            <div class="resource-mod-empty" id="resourceModEmpty">
+              <strong data-i18n="resource_mods.empty_title">还没有资源模组</strong>
+              <p data-i18n="resource_mods.empty_desc">
+                导入 RML 格式的 ZIP（包内含 .bundle 文件），安装后由 Toys 改写 Addressables catalog 生效；重启游戏后可见。
+              </p>
+            </div>
+          </section>
           <section
             id="characterSkinPanel"
             class="hidden"
@@ -1925,6 +1977,17 @@
         aria-live="polite"
         aria-atomic="true"
       ></div>
+
+      <!-- 右下角常驻操作提示：停用/启用/删除等需要等待的操作 -->
+      <div class="op-toast" id="opToast" role="status" aria-live="polite">
+        <span class="op-spinner" aria-hidden="true"></span>
+        <div class="op-toast-text">
+          <strong id="opToastTitle">正在处理…</strong>
+          <span id="opToastDetail"></span>
+        </div>
+        <span class="op-toast-percent" id="opToastPercent"></span>
+        <button class="op-toast-cancel hidden" id="opToastCancel">取消</button>
+      </div>
     </div>
 
     <style>
@@ -1949,6 +2012,7 @@
     <script src="js/character-skins.js"></script>
     <script src="js/character-crop.js"></script>
     <script src="js/skins.js"></script>
+    <script src="js/resource-mods.js"></script>
     <script src="js/skin-crop.js"></script>
     <script src="js/app.js"></script>
   </body>

@@ -18,7 +18,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ResourceModEngine\ResourceModEngine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AssetsTools.NET" Version="3.0.5" />
+    <PackageReference Include="AssetsTools.NET.Addressables" Version="3.0.2" />
     <PackageReference Include="AssetsTools.NET.Texture" Version="3.0.2" />
     <PackageReference Include="Magick.NET-Q8-AnyCPU" Version="15.0.0" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />

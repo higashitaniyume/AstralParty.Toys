@@ -526,6 +526,33 @@ public partial class HybridWindow
                 case "skinsImportZip":
                     HandleSkinImportZip();
                     break;
+                case "resourceModsStatus":
+                    await PushResourceModStatusAsync();
+                    break;
+                case "resourceModsImport":
+                    HandleResourceModImport();
+                    break;
+                case "resourceModsApply":
+                    HandleResourceModApply();
+                    break;
+                case "resourceModsRestore":
+                    HandleResourceModRestore();
+                    break;
+                case "resourceModsToggle":
+                    HandleResourceModToggle(root);
+                    break;
+                case "resourceModsDelete":
+                    HandleResourceModDelete(root);
+                    break;
+                case "resourceModsOpenFolder":
+                    HandleResourceModOpenFolder();
+                    break;
+                case "resourceModsPause":
+                    HandleResourceModPause(root);
+                    break;
+                case "resourceModsCancel":
+                    HandleResourceModCancel();
+                    break;
                 case "skinsRestoreDefault":
                     try {
                         _skinManager.RestoreDefaultProfile(RequireModGameDirectory());

@@ -13,7 +13,8 @@
     init() {
       $('cardSkinTab').onclick=()=>this.switchTab('cards');
       $('characterSkinTab').onclick=()=>this.switchTab('characters');
-      for(const [id,other] of [['cardSkinTab','characterSkinTab'],['characterSkinTab','cardSkinTab']]) $(id).addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();$(other).click();$(other).focus();}});
+      $('resourceModTab').onclick=()=>this.switchTab('resource');
+      for(const [id,other] of [['cardSkinTab','characterSkinTab'],['characterSkinTab','resourceModTab'],['resourceModTab','cardSkinTab']]) $(id).addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();$(other).click();$(other).focus();}});
       $('characterImport').onclick=()=>this.send('characterSkinsImport');
       $('characterLegacyImport').onclick=()=>this.send('characterSkinsImportLegacy');
       $('characterFolder').onclick=()=>this.send('characterSkinsOpen',{id:''});
@@ -33,11 +34,12 @@
     },
     switchTab(tab) {
       this.tab=tab;this.stop();
-      $('cardSkinPanel').classList.toggle('hidden',tab!=='cards');$('characterSkinPanel').classList.toggle('hidden',tab!=='characters');
-      for(const [id,on] of [['cardSkinTab',tab==='cards'],['characterSkinTab',tab==='characters']]){$(id).classList.toggle('active',on);$(id).setAttribute('aria-selected',on);$(id).tabIndex=on?0:-1;}
+      $('cardSkinPanel').classList.toggle('hidden',tab!=='cards');$('characterSkinPanel').classList.toggle('hidden',tab!=='characters');$('resourceModPanel')?.classList.toggle('hidden',tab!=='resource');
+      for(const [id,on] of [['cardSkinTab',tab==='cards'],['characterSkinTab',tab==='characters'],['resourceModTab',tab==='resource']]){$(id).classList.toggle('active',on);$(id).setAttribute('aria-selected',on);$(id).tabIndex=on?0:-1;}
       document.querySelector('.skins-header .utilities-header-actions').classList.toggle('hidden',tab!=='cards');
-      document.querySelector('.skins-header .utilities-tagline').textContent=tab==='cards'?'卡牌皮肤 · 方案与卡面管理':'角色皮肤 · 图片 / 文案 / 精灵动画';
+      document.querySelector('.skins-header .utilities-tagline').textContent=tab==='cards'?'卡牌皮肤 · 方案与卡面管理':tab==='characters'?'角色皮肤 · 图片 / 文案 / 精灵动画':'资源模组 · RML 格式 ZIP / 目录替换';
       if(tab==='characters')this.send('characterSkinsGet');
+      if(tab==='resource')window.ResourceModsModule?.onShow();
     },
     render(payload) {
       // Preserve manifest dictionary keys (Idle, Character, etc.). Only normalize DTO envelope fields.
