@@ -1,0 +1,1 @@
+{"id":"TurnFocusMod","name":"回合置前","version":"1.1.0","author":"CesiumLoader","description":"轮到自己选择筹码、战斗出牌、攻击或防御时把游戏窗口切换到前台，窗口已在前台时不打扰。","permissions":257,"sdkVersion":"2.6.0","dependencies":[]}

@@ -1385,18 +1385,22 @@ public sealed class ModManagerTests
     }
 
     [Fact]
-    public void InstallPackage_OnlyInstallsPublicDistributionMods()
+    public void InstallPackage_InstallsEveryModInPackage()
     {
-        using var harness = new ModHarness("ap-mod-public-distribution");
+        using var harness = new ModHarness("ap-mod-package-all");
         harness.Manager.InstallPackage(harness.GameDirectory,
             BuildFakePackage("9.0.0", includeSymbols: true, includeOptionalMod: true), overwriteDll: false);
 
         var modsRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
         Assert.True(File.Exists(Path.Combine(modsRoot, "ActivityLogMod", "ActivityLogMod.dll")));
-        Assert.False(Directory.Exists(Path.Combine(modsRoot, "OptionalMod")));
-        Assert.Equal(7, ModManager.EmbeddedBuiltInModIdList.Count);
+        // 发布包里有什么就装什么: 不在 Toys 公开分发清单里的 OptionalMod 也要落地。
+        Assert.True(File.Exists(Path.Combine(modsRoot, "OptionalMod", "OptionalMod.dll")));
+        Assert.True(File.Exists(Path.Combine(modsRoot, "OptionalMod", "OptionalMod.json")));
+        Assert.True(File.Exists(Path.Combine(modsRoot, "OptionalMod", "OptionalMod.pdb")));
+        Assert.Equal(9, ModManager.EmbeddedBuiltInModIdList.Count);
         Assert.Equal(new[] { "ActivityLogMod", "AutoThanksMod", "CardSkinMod", "CharacterSkinMod",
-            "CombatOddsMod", "FreeCameraMod", "SpeedHackMod" }, ModManager.EmbeddedBuiltInModIdList);
+            "CombatOddsMod", "ForkDirectionMod", "FreeCameraMod", "SpeedHackMod", "TurnFocusMod" },
+            ModManager.EmbeddedBuiltInModIdList);
     }
 
     [Fact]

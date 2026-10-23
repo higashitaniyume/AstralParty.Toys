@@ -1,5 +1,5 @@
 #ifndef ProductVersion
-  #define ProductVersion "1.2.5"
+  #define ProductVersion "1.2.6"
 #endif
 
 [Setup]

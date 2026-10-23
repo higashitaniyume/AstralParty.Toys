@@ -23,6 +23,10 @@
   // AstralParty_ModLoader\speed\request.txt 请求倍率。false = 关掉该通道
   // (基础倍率仍然生效, 但 SpeedHackMod 的热键不再可用)。
   "speedControlEnabled": true,
+  // 窗口置前控制文件通道: mod 通过 AstralParty_ModLoader\window\request.txt 请求把游戏
+  // 窗口切到前台(热更程序集无法 P/Invoke user32)。false = 关闭该通道, 只影响
+  // "回合置前"类 mod, 不影响游戏与其它 mod。
+  "windowControlEnabled": true,
   // Steam 自杀门绕过: 国服客户端在非 Steam 客户端启动时, AOT 类 SteamManager 的
   // Awake() 会打印 "[ERROR] 非Steam客户端启动, 退出游戏" 并退出。true=把 Awake()
   // 换成 no-op(原生 inline hook), 让游戏继续启动; false=恢复原版行为(会退出游戏)。
@@ -90,5 +94,5 @@
   "steamBypassLobbyQuery": true,
   // 当前分发的 SDK 版本(SemVer): 加载器用它校验 mod 声明的 SdkVersion,
   // 不兼容时拒绝加载该 mod。升级 SDK 时同步更新此字段。
-  "sdkVersion": "2.5.0"
+  "sdkVersion": "2.6.0"
 }

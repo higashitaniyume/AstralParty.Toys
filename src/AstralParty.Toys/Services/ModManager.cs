@@ -74,13 +74,16 @@ public sealed partial class ModManager
     /// <summary>发布包（cesium-loader.zip）内 mod 条目的前缀；zip 内路径统一用正斜杠。</summary>
     private const string PackageModsPrefix = "AstralParty_ModLoader/mods/";
 
-    /// <summary>发布包中的模组文件必须属于程序集的公开分发清单。</summary>
-    private static bool IsDistributedPackageMod(string path)
+    /// <summary>
+    /// 是否是发布包里的模组条目。安装以发布包内容为准：包内 mods\{ModId}\ 下的
+    /// 文件全部安装，不再按 Toys 的公开分发清单过滤（清单只决定随程序内置哪些 mod）。
+    /// </summary>
+    private static bool IsPackageModEntry(string path)
     {
         if (!path.StartsWith(PackageModsPrefix, StringComparison.OrdinalIgnoreCase)) return false;
         var relative = path.Substring(PackageModsPrefix.Length);
         var separator = relative.IndexOf('/');
-        return separator > 0 && BuiltInModIds.Contains(relative.Substring(0, separator), StringComparer.Ordinal);
+        return separator > 0 && separator < relative.Length - 1;
     }
 
     /// <summary>内嵌加载器版本号；来源：构建时下载的 cesium-loader.json 里 version 字段（CI 自动更新），本地开发构建为 dev-local。</summary>
@@ -753,10 +756,9 @@ public sealed partial class ModManager
             "AstralParty_ModLoader/doorstop_config.json",
             "AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll"
         };
-        // 包内 mod：不写死具体 mod —— mods\{ModId}\ 下的文件一律纳入校验，
-        // 这样发布包新增/移除内置 mod（如后来的自由相机）时这里无需改动。
+        // 包内 mod：以发布包内容为准，mods\{ModId}\ 下的文件全部纳入校验。
         requiredRelative.AddRange(archive.Entries
-            .Where(e => IsDistributedPackageMod(e.FullName)
+            .Where(e => IsPackageModEntry(e.FullName)
                         && !string.IsNullOrEmpty(e.Name))
             .Select(e => e.FullName));
         if (requiredRelative.Count == 3)
@@ -857,7 +859,7 @@ public sealed partial class ModManager
             // bootstrap\：托管引导（仅 doorstop_config 的 useManagedBootstrap=true 时才加载）。
             // 包内有就整套装（dll + 同名 pdb）；老发布包没有该目录则跳过。
             ExtractDirectoryEntries(archive, "AstralParty_ModLoader/bootstrap/", loaderRoot);
-            // mod：每 mod 一个文件夹，仅安装公开分发清单中的模组，
+            // mod：每 mod 一个文件夹，发布包里有什么就装什么；
             // 同时拒绝含 ".." 的条目，避免 zip 路径穿越写出 mods\ 之外。
             ExtractDirectoryEntries(archive, PackageModsPrefix, loaderRoot);
 
@@ -906,7 +908,6 @@ public sealed partial class ModManager
         {
             if (!entry.FullName.StartsWith(entryPrefix, StringComparison.OrdinalIgnoreCase)) continue;
             if (string.IsNullOrEmpty(entry.Name)) continue;   // 目录条目
-            if (entryPrefix == PackageModsPrefix && !IsDistributedPackageMod(entry.FullName)) continue;
             var relative = entry.FullName.Substring(packageRootLength).Replace('/', Path.DirectorySeparatorChar);
             if (!IsSafeRelativePath(relative))
                 throw new InvalidDataException($"发布包含有非法路径：{entry.FullName}");

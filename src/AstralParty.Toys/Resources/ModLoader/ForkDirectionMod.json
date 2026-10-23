@@ -1,0 +1,1 @@
+{"id":"ForkDirectionMod","name":"岔路地块标记","version":"1.1.0","author":"CesiumLoader","description":"PVE 岔路三个相邻地块按邻接顺序显示红A、黄B、蓝C及地块ID","permissions":1,"sdkVersion":"2.5.0","dependencies":[]}
