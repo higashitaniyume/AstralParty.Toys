@@ -68,7 +68,7 @@ winget upgrade Hiynet.AstralParty.Toys
 | 角色皮肤 | 多人物方案、贴图裁切、精灵动画、模板与 GIF 导出、旧式 Unity bundle 皮肤包导入 |
 | 卡牌皮肤 | 自定义卡面与多方案管理；导入视频/GIF 制作动态卡面 |
 | 模组管理 | 安装、更新、卸载 CesiumLoader；导入模组包（ZIP）或单个 DLL、编辑配置与绑定热键；升级保留配置与停用状态、旧版本残留移入回收站，降级需确认 |
-| RML 模组 | 导入 RML 格式 ZIP；内置 RML 引擎解析 `.bundle`、`mod.json`、`replace.txt`、图片与 Patch，改写 Addressables catalog；显示进度、文件日志，可暂停/取消并还原；支持启停、删除与还原官方资源 |
+| 资源模组 | 导入 RML 格式 ZIP；内置 RML 引擎解析 `.bundle`、`mod.json`、`replace.txt`、图片与 Patch，改写 Addressables catalog；显示进度、文件日志，可暂停/取消并还原；支持启停、删除与还原官方资源 |
 | 启动与变速 | 管理多个游戏版本，选择 Steam 或绕过 Steam 启动，设置基础倍率与游戏内变速热键 |
 
 CesiumLoader 随附 7 个模组：自动感谢、卡牌皮肤、角色皮肤、战斗胜率助手、自由相机、变速热键与行为日志。功能与配置详见 [加载器文档](https://github.com/higashitaniyume/CesiumLoader#内置模组)。安装与模组配置变更通常需要重启游戏。

@@ -48,6 +48,31 @@
 
     onShow() {
       this.refresh();
+      this.maybeShowNotice();
+    },
+
+    maybeShowNotice() {
+      try {
+        if (window.localStorage.getItem('rmlInstallerNoticeSeen.v1') === '1') return;
+      } catch {
+        // localStorage 不可用时仍然展示一次提示。
+      }
+      if ($('globalModal')?.classList.contains('open')) return;
+      openModal('RML 资源模组安装器', `
+        <div class="rml-notice">
+          <p>本页面是 <strong>RML（ResourceModLoader）</strong> 格式资源模组的安装器，并非游戏官方功能。</p>
+          <p>项目仓库：<a href="https://github.com/higashitaniyume/AstralParty.Toys" target="_blank" rel="noopener">AstralParty.Toys</a> ·
+            <a href="https://github.com/higashitaniyume/AstralParty.Toys/issues" target="_blank" rel="noopener">Issues</a><br />
+            内置引擎：<a href="https://github.com/zxy19/ResourceModLoader" target="_blank" rel="noopener">zxy19/ResourceModLoader</a></p>
+          <p>模组内容与版权归各模组作者所有。如有侵权，请联系删除：<a href="https://github.com/higashitaniyume/AstralParty.Toys/issues" target="_blank" rel="noopener">提交 Issue</a>。</p>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:18px">
+          <button class="primary-btn" id="rmlNoticeOk">我已了解</button>
+        </div>`);
+      $('rmlNoticeOk')?.addEventListener('click', () => {
+        try { window.localStorage.setItem('rmlInstallerNoticeSeen.v1', '1'); } catch { }
+        closeModal();
+      });
     },
 
     refresh() {

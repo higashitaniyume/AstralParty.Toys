@@ -453,3 +453,23 @@
 .resource-mod-warnings.hidden {
   display: none;
 }
+
+.rml-notice p {
+  margin: 0 0 10px;
+  color: var(--gp-text-sub);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.rml-notice p:last-child {
+  margin-bottom: 0;
+}
+
+.rml-notice a {
+  color: var(--gp-gold);
+  text-decoration: none;
+}
+
+.rml-notice a:hover {
+  text-decoration: underline;
+}
