@@ -1421,11 +1421,11 @@ input[type="number"].library-input::-webkit-inner-spin-button { -webkit-appearan
 .monster-spawn-item { display: flex; align-items: center; gap: 9px; min-width: 0; padding: 7px 9px; background: rgba(255, 255, 255, .045); border-radius: var(--gp-radius-sm); }
 .monster-spawn-item img,
 .monster-spawn-placeholder {
-  flex: 0 0 34px;
-  width: 34px;
-  height: 34px;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
   border-radius: 8px;
-  object-fit: cover;
+  object-fit: contain;
   background: #000;
 }
 .monster-spawn-placeholder { display: grid; place-items: center; color: var(--gp-text-muted); font-weight: 900; }
@@ -1445,5 +1445,6 @@ input[type="number"].library-input::-webkit-inner-spin-button { -webkit-appearan
   .transfer-summary header { flex-direction: column; gap: 8px; }
   .monster-summary-grid { grid-template-columns: 1fr; }
 }
+
 
 
