@@ -30,6 +30,8 @@ namespace ResourceModLoader
         public bool isValid;
         public bool mergeMode = false;
         public bool isDebugMode = false;
+        /// <summary>ProcessMods 捕获到的顶层异常；单项 bundle 修补失败只记日志，不会写到这里。</summary>
+        public Exception LastError;
 
         public GameModder(string baseDir, string? modsPath = null) {
 
@@ -239,6 +241,7 @@ namespace ResourceModLoader
         // 执行资源
         public void ProcessMods(bool resetAfterDone,bool skipSaveAddressable=false)
         {
+            LastError = null;
             try
             {
                 EngineControl.Checkpoint();
@@ -259,6 +262,7 @@ namespace ResourceModLoader
             }
             catch (Exception e)
             {
+                LastError = e;
                 Log.Error(e.ToString());
                 if (e.StackTrace != null)
                     Log.Error(e.StackTrace);
@@ -359,57 +363,84 @@ namespace ResourceModLoader
                 Directory.CreateDirectory(Path.Combine(basePath, "_generated"));
             foreach (var bundleName in scan.GetAllBundleName())
             {
-                var toPatch = modContext.CollectToPatch(bundleName);
-                if (toPatch.Any() || modContext.IsRequiredPatch(bundleName, ""))
+                try
                 {
-                    var hashList = modContext.CollectHashList(bundleName);
+                    MergeAndPatchBundle(bundleName);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception e)
+                {
+                    // 单个 bundle 修补失败时只跳过该 bundle，不能让其余模组一起失效。
+                    CleanupGenerated(bundleName);
+                    Log.Error($"修补 {bundleName} 失败，已跳过该 bundle：{e.Message}");
+                    Report.Error(bundleName, $"修补 {bundleName} 失败，已跳过该 bundle：{e.Message}");
+                }
+            }
+        }
+        void MergeAndPatchBundle(string bundleName)
+        {
+            EngineControl.Checkpoint(bundleName);
+            var toPatch = modContext.CollectToPatch(bundleName);
+            if (!toPatch.Any() && !modContext.IsRequiredPatch(bundleName, ""))
+                return;
 
-                    if (hashList != null)
+            var hashList = modContext.CollectHashList(bundleName);
+
+            if (hashList != null)
+            {
+                var bundlePath = scan.GetBundleLocalPath(bundleName);
+                if (bundlePath != "" && Path.Exists(bundlePath))
+                {
+                    hashList.Add(Convert.ToHexString(MD5.HashData(File.ReadAllBytes(bundlePath))));
+                }
+            }
+
+            bool result = true;
+            List<Tuple<string, string, string>> conflicts = [];
+
+            if (hashList==null || modRecord.requireReApply(bundleName, hashList))
+            {
+                (result, conflicts) = AB.MergeBundles(scan.GetBundleLocalPath(bundleName), toPatch, Path.Combine(basePath, "_generated", bundleName), (m, b, a, p, r) => modContext.PostPatch(bundleName, "", m, b, a, p, r),this.isDebugMode);
+            }
+            else {
+                Log.Info("从缓存的修补结果中加载" + bundleName);
+                conflicts = modRecord.getConflicts(bundleName);
+            }
+
+            if (result)
+            {
+                modContext.Redirect(bundleName, Path.Combine(basePath, "_generated", bundleName), "", "", true);
+                foreach (var (name, i, c) in conflicts)
+                {
+                    Report.Warning(i, $"在修补 {name} 时和 {c} 冲突");
+                }
+                if(hashList != null)
+                    modRecord.setSourceHashList(bundleName, hashList,conflicts);
+            }
+            else
+            {
+                if (toPatch.Any())
+                {
+                    foreach (var tp in toPatch)
                     {
-                        var bundlePath = scan.GetBundleLocalPath(bundleName);
-                        if (bundlePath != "" && Path.Exists(bundlePath))
+                        foreach (var (name, _, _) in conflicts)
                         {
-                            hashList.Add(Convert.ToHexString(MD5.HashData(File.ReadAllBytes(bundlePath))));
-                        }
-                    }
-
-                    bool result = true;
-                    List<Tuple<string, string, string>> conflicts = [];
-
-                    if (hashList==null || modRecord.requireReApply(bundleName, hashList))
-                    {
-                        (result, conflicts) = AB.MergeBundles(scan.GetBundleLocalPath(bundleName), toPatch, Path.Combine(basePath, "_generated", bundleName), (m, b, a, p, r) => modContext.PostPatch(bundleName, "", m, b, a, p, r),this.isDebugMode);
-                    }
-                    else {
-                        Log.Info("从缓存的修补结果中加载" + bundleName);
-                        conflicts = modRecord.getConflicts(bundleName);
-                    }
-
-                    if (result)
-                    {
-                        modContext.Redirect(bundleName, Path.Combine(basePath, "_generated", bundleName), "", "", true);
-                        foreach (var (name, i, c) in conflicts)
-                        {
-                            Report.Warning(i, $"在修补 {name} 时和 {c} 冲突");
-                        }
-                        if(hashList != null)
-                            modRecord.setSourceHashList(bundleName, hashList,conflicts);
-                    }
-                    else
-                    {
-                        if (toPatch.Any())
-                        {
-                            foreach (var tp in toPatch)
-                            {
-                                foreach (var (name, _, _) in conflicts)
-                                {
-                                    modContext.Redirect(bundleName, toPatch[0], "", "", true);
-                                    Report.Warning(tp, $" {bundleName} 的修补中存在 {name} 和当前的包不能兼容，无法完成修补，使用重定向进行修补");
-                                }
-                            }
+                            modContext.Redirect(bundleName, toPatch[0], "", "", true);
+                            Report.Warning(tp, $" {bundleName} 的修补中存在 {name} 和当前的包不能兼容，无法完成修补，使用重定向进行修补");
                         }
                     }
                 }
+            }
+        }
+        void CleanupGenerated(string bundleName)
+        {
+            var save = Path.Combine(basePath, "_generated", bundleName);
+            foreach (var path in new[] { save, save + ".temp", save + ".temp1", save + ".preload", save + ".uncompressed" })
+            {
+                try { if (File.Exists(path)) File.Delete(path); } catch { }
             }
         }
         void ApplyAll()

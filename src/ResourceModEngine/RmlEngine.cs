@@ -37,6 +37,8 @@ public static class RmlEngine
                 throw new InvalidOperationException("未能加载 Addressables catalog，请先启动一次游戏下载资源。");
 
             modder.ProcessMods(resetAfterDone: false);
+            if (modder.LastError != null)
+                throw new InvalidOperationException("资源引擎执行失败：" + modder.LastError.Message, modder.LastError);
             LastReport = Report.GetSummary();
         }
         finally

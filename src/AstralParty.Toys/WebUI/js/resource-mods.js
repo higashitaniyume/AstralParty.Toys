@@ -15,6 +15,7 @@
     progressPaused: false,
     progressPhase: "",
     progressPercent: 0,
+    logCollapsed: false,
 
     init() {
       $('resourceModImportBtn')?.addEventListener('click', () => post({ type: 'resourceModsImport' }));
@@ -24,6 +25,13 @@
       $('resourceModRefreshBtn')?.addEventListener('click', () => this.refresh());
       $('rmpPause')?.addEventListener('click', () => post({ type: 'resourceModsPause', paused: !this.progressPaused }));
       $('rmpCancel')?.addEventListener('click', () => this.confirmCancel());
+      $('rmpLogToggle')?.addEventListener('click', () => this.toggleLog());
+      window.addEventListener('appLanguageChanged', () => {
+        this.applyLogCollapsed();
+        const pause = $('rmpPause');
+        if (pause) pause.textContent = t(this.progressPaused ? 'resource_mods.resume' : 'resource_mods.pause');
+      });
+      this.applyLogCollapsed();
 
       $('resourceModList')?.addEventListener('click', event => {
         const card = event.target.closest('.resource-mod-card');
@@ -99,6 +107,8 @@
         toast.classList.remove('show');
         return;
       }
+      // 新一轮操作开始时清掉上一次的日志；导入过程中的自动应用不会走到这里。
+      if (p.percent == null) this.clearLog();
       toast.classList.add('show');
       $('opToastTitle').textContent = p.title || '正在处理…';
       $('opToastDetail').textContent = p.detail || '';
@@ -109,7 +119,7 @@
     renderProgress(p) {
       const panel = $('resourceModProgress');
       if (!panel || !p) return;
-      if (p.phase === 'import' && (p.percent || 0) <= 3) $('rmpLog').textContent = '';
+      if (p.phase === 'import' && (p.percent || 0) <= 3) this.clearLog();
       panel.classList.remove('hidden');
       if (p.phase === 'import' && (p.percent || 0) <= 3) this.progressPaused = false;
       if (p.phase === 'apply' && (p.percent || 0) <= 5) this.progressPaused = false;
@@ -121,28 +131,23 @@
       $('rmpBar').value = p.percent || 0;
       $('rmpTask').textContent = p.task || '';
 
-      if (p.detail) {
-        const log = $('rmpLog');
-        const lines = (log.textContent ? log.textContent.split('\n') : []);
-        lines.push(p.detail);
-        while (lines.length > 200) lines.shift();
-        log.textContent = lines.join('\n');
-        log.scrollTop = log.scrollHeight;
-      }
+      if (p.detail) this.appendLog(p.detail);
 
       const finished = p.phase === 'done' || p.phase === 'cancelled';
       $('rmpPause').disabled = finished || p.canPause === false;
-      $('rmpPause').textContent = p.paused ? '继续' : '暂停';
+      $('rmpPause').classList.toggle('hidden', finished);
+      $('rmpPause').textContent = t(p.paused ? 'resource_mods.resume' : 'resource_mods.pause');
       $('rmpCancel').disabled = finished || p.canCancel === false;
+      $('rmpCancel').classList.toggle('hidden', finished);
       this.setBusy(!finished);
-      if (finished) setTimeout(() => { panel.classList.add('hidden'); panel.classList.remove('is-paused'); }, 1200);
+      if (finished) panel.classList.remove('is-paused');
     },
 
     renderPaused(paused) {
       this.progressPaused = !!paused;
       $('resourceModProgress')?.classList.toggle('is-paused', !!paused);
       const button = $('rmpPause');
-      if (button) button.textContent = paused ? '继续' : '暂停';
+      if (button) button.textContent = t(paused ? 'resource_mods.resume' : 'resource_mods.pause');
     },
 
     setBusy(busy) {
@@ -151,6 +156,36 @@
         if (button) button.disabled = busy;
       }
       if (!busy && this.status) this.render(this.status);
+    },
+
+    appendLog(detail) {
+      const log = $('rmpLog');
+      if (!log) return;
+      const lines = (log.textContent ? log.textContent.split('\n') : []);
+      lines.push(detail);
+      while (lines.length > 200) lines.shift();
+      log.textContent = lines.join('\n');
+      log.scrollTop = log.scrollHeight;
+    },
+
+    clearLog() {
+      const log = $('rmpLog');
+      if (log) log.textContent = '';
+    },
+
+    toggleLog() {
+      this.logCollapsed = !this.logCollapsed;
+      this.applyLogCollapsed();
+      if (!this.logCollapsed) {
+        const log = $('rmpLog');
+        if (log) log.scrollTop = log.scrollHeight;
+      }
+    },
+
+    applyLogCollapsed() {
+      $('rmpLog')?.classList.toggle('hidden', this.logCollapsed);
+      const button = $('rmpLogToggle');
+      if (button) button.textContent = t(this.logCollapsed ? 'resource_mods.log_expand' : 'resource_mods.log_collapse');
     },
 
     confirmCancel() {

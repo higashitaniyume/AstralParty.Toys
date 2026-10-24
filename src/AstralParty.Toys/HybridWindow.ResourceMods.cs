@@ -162,7 +162,7 @@ public partial class HybridWindow
         {
             var result = await Task.Run(() => _resourceModManager.Apply(directory, progress, _resourceModCts.Token));
             var issues = result.Errors > 0 ? $" {result.Errors} 条引擎错误未生效。" : result.Warnings > 0 ? $" {result.Warnings} 条警告。" : "";
-            Post(new { type = "toast", message = $"已应用资源模组：{result.Bundles} 个 bundle，{result.Redirects} 处重定向（catalog {result.CatalogVersion}）。{issues}" });
+            Post(new { type = "toast", message = $"已写入游戏资源：{result.Bundles} 个模组，{result.Redirects} 处资源替换（资源版本 {result.CatalogVersion}）。{issues}" });
         }
         catch (OperationCanceledException)
         {
@@ -195,7 +195,7 @@ public partial class HybridWindow
         try
         {
             await Task.Run(() => _resourceModManager.Restore(directory));
-            Post(new { type = "toast", message = "已恢复游戏原始资源目录，重启游戏后生效。" });
+            Post(new { type = "toast", message = "已还原官方资源，重启游戏后生效。" });
         }
         catch (Exception ex)
         {

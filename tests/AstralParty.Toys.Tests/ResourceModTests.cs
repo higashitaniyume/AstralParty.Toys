@@ -143,6 +143,44 @@ public sealed class ResourceModTests
     }
 
     [Fact]
+    public void ApplyMovesDisabledPackageOutOfPackagesEvenWhenEngineFails()
+    {
+        var game = CreateFakeGame(out var company, out var product);
+        try
+        {
+            var localLow = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                "AppData", "LocalLow", company, product, "com.unity.addressables");
+            Directory.CreateDirectory(localLow);
+            File.WriteAllText(Path.Combine(localLow, "catalog_9.9.9.json"), "{}");
+
+            var store = Path.Combine(game, ResourceModManager.StoreFolderName);
+            var id = "rm-disabled";
+            var package = Path.Combine(store, "packages", id);
+            Directory.CreateDirectory(package);
+            File.WriteAllBytes(Path.Combine(package, "x.bundle"), new byte[] { 1 });
+            var enabledPackage = Path.Combine(store, "packages", "rm-enabled");
+            Directory.CreateDirectory(enabledPackage);
+            File.WriteAllBytes(Path.Combine(enabledPackage, "y.bundle"), new byte[] { 1 });
+            File.WriteAllText(
+                Path.Combine(store, "installed.json"),
+                "{\"schema\":1,\"mods\":["
+                + "{\"id\":\"rm-enabled\",\"name\":\"enabled\",\"enabled\":true,\"fileCount\":1},"
+                + "{\"id\":\"" + id + "\",\"name\":\"disabled\",\"enabled\":false,\"fileCount\":1}]}");
+
+            var manager = new ResourceModManager();
+            Assert.ThrowsAny<Exception>(() => manager.Apply(game));
+
+            Assert.False(Directory.Exists(package));
+            Assert.True(Directory.Exists(Path.Combine(store, "disabled", id)));
+        }
+        finally
+        {
+            Cleanup(game, company, product);
+        }
+    }
+
+    [Fact]
     public void AddAddressableRegistersNewKeyWithSyntheticBundle()
     {
         var file = Path.GetTempFileName();

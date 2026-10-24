@@ -677,25 +677,42 @@ namespace ResourceModLoader.Utils
             byte[] data = incomingAssetsFile.Reader.ReadBytes((int)size);
             return new PatchEntry { FileIndex = fileIndex, PathId = pathId, Data = data, TypeId = typeId, ScriptIndex = scriptIndex };
         }
+        /// <summary>
+        /// AssetsTools.NET 的 Hash128 是带 byte[] 的结构体；未填写哈希时 data 为 null，
+        /// 直接 Equals(object) 会在读取 data.Length 时抛 NullReferenceException。
+        /// </summary>
+        private static bool HashEquals(Hash128 left, Hash128 right)
+            => left.data is { Length: 16 } && right.data is { Length: 16 } && left.Equals(right);
+
         private static bool IsTypeTreeMatch(AssetFileInfo incomingFile, AssetsFile incomingAssetsFile, AssetFileInfo target, AssetsFile targetAsset)
         {
             var scriptIndex = incomingFile.GetScriptIndex(incomingAssetsFile);
             var incomingTypeTree = incomingAssetsFile.Metadata.FindTypeTreeTypeByScriptIndex(scriptIndex);
             var targetScriptIndex = target.GetScriptIndex(targetAsset);
             var targetTypeTree = targetAsset.Metadata.FindTypeTreeTypeByScriptIndex(targetScriptIndex);
-            return incomingTypeTree.TypeHash.Equals(targetTypeTree.TypeHash);
+            if (incomingTypeTree == null || targetTypeTree == null)
+                return false;
+            return HashEquals(incomingTypeTree.TypeHash, targetTypeTree.TypeHash);
         }
         private static TypeTreeType? GetMatchedTypeTree(AssetFileInfo incomingFile, AssetsFile incomingAssetsFile,AssetsFile target)
         {
+            var typeId = incomingFile.GetTypeId(incomingAssetsFile);
+            var candidates = target.Metadata.TypeTreeTypes.Where(t => t.TypeId == typeId).ToList();
+            if (candidates.Count == 0)
+                return null;
+
+            // 非 MonoBehaviour 的类型由 TypeId 唯一确定；此前按 scriptIndex(0xffff) 取到的是
+            // 列表中第一个非脚本类型，TypeHash 对不上就会误报“Type不存在”。
+            if (typeId != (int)AssetClassID.MonoBehaviour)
+                return candidates[0];
 
             var scriptIndex = incomingFile.GetScriptIndex(incomingAssetsFile);
             var incomingTypeTree = incomingAssetsFile.Metadata.FindTypeTreeTypeByScriptIndex(scriptIndex);
+            if (incomingTypeTree == null)
+                return null;
 
-            var localTypeTree = target.Metadata.TypeTreeTypes
-                .FirstOrDefault(t => t.ScriptIdHash.Equals(incomingTypeTree.ScriptIdHash))
-                ?? target.Metadata.TypeTreeTypes
-                    .FirstOrDefault(t => t.TypeHash.Equals(incomingTypeTree.TypeHash));
-            return localTypeTree;
+            return candidates.FirstOrDefault(t => HashEquals(t.ScriptIdHash, incomingTypeTree.ScriptIdHash))
+                ?? candidates.FirstOrDefault(t => HashEquals(t.TypeHash, incomingTypeTree.TypeHash));
         }
 
         private static void MergeAssetBundleContainers(AssetsManager manager, BundleFileInstance bundle, AssetsFileInstance[] assets, string patchPath, string cacheFile)

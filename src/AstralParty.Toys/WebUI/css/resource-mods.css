@@ -13,6 +13,13 @@
   min-height: 38px;
 }
 
+.resource-mod-hint {
+  margin: -6px 0 12px;
+  color: var(--gp-text-muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
 .resource-mod-banner {
   display: flex;
   flex-wrap: wrap;
@@ -183,6 +190,39 @@
   display: none;
 }
 
+.resource-mod-credits {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--gp-border);
+  color: var(--gp-text-muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.resource-mod-credits p {
+  margin: 0 0 4px;
+}
+
+.resource-mod-credits-title {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--gp-text-sub);
+  font-size: 12px;
+}
+
+.resource-mod-credits p:last-child {
+  margin-bottom: 0;
+}
+
+.resource-mod-credits a {
+  color: var(--gp-gold);
+  text-decoration: none;
+}
+
+.resource-mod-credits a:hover {
+  text-decoration: underline;
+}
+
 .resource-mod-progress {
   margin-top: 14px;
   padding: 14px 16px;
@@ -228,22 +268,51 @@
   word-break: break-all;
 }
 
+.rmp-log-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  color: var(--gp-text-muted);
+  font-size: 11px;
+}
+
+.rmp-log-toggle {
+  padding: 3px 10px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-full);
+  color: var(--gp-text-sub);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.rmp-log-toggle:hover {
+  border-color: var(--gp-border-highlight);
+  color: var(--gp-gold);
+  text-decoration: none;
+}
+
 .rmp-log {
   max-height: 140px;
   overflow: auto;
-  margin: 8px 0 0;
+  margin: 4px 0 0;
   padding: 8px 10px;
   border-radius: var(--gp-radius-sm);
   background: rgba(0, 0, 0, 0.28);
   color: var(--gp-text-muted);
+  font-family: inherit;
   font-size: 11px;
   line-height: 1.55;
   white-space: pre-wrap;
   word-break: break-all;
+  cursor: text;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .rmp-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 10px;
   margin-top: 10px;
@@ -377,6 +446,7 @@
   white-space: pre-wrap;
   word-break: break-all;
   color: var(--gp-text-muted);
+  font-family: inherit;
   font-size: 11px;
 }
 

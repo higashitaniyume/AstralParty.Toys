@@ -378,6 +378,10 @@ public sealed class ResourceModManager
             if (enabled.Count == 0)
                 throw new InvalidOperationException("没有已启用的资源模组。");
 
+            // 引擎按目录扫描 mods，不读 installed.json；先让目录与启用状态一致，
+            // 否则已停用但仍留在 packages 里的模组也会被应用。
+            SyncPackageFolders(store, manifest);
+
             var packagesDir = Path.Combine(store, PackagesFolderName);
             Directory.CreateDirectory(packagesDir);
 
@@ -451,6 +455,14 @@ public sealed class ResourceModManager
                 throw new OperationCanceledException(cancellationToken);
             }
             var redirects = CountStoreRedirects(layout.CatalogJsonPath, store, layout.GameDirectory);
+            if (redirects == 0)
+            {
+                // 引擎把错误吞在日志里时，catalog 不会被写入；此时不能记为“已应用”。
+                var detail = messages.Count > 0
+                    ? "\n" + string.Join("\n", messages.TakeLast(6))
+                    : "\n引擎没有改写任何 bundle 地址。";
+                throw new InvalidOperationException("没有任何资源替换写入 catalog，资源模组未生效。" + detail);
+            }
             manifest.Applied = new ResourceModAppliedState
             {
                 CatalogVersion = layout.CatalogVersion,
@@ -645,6 +657,24 @@ public sealed class ResourceModManager
     {
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(name + "\n" + length.ToString()));
         return "rm-" + Convert.ToHexString(hash)[..12].ToLowerInvariant();
+    }
+
+    /// <summary>让 packages / disabled 两个目录与清单里的启用状态一致，引擎只扫描 packages。</summary>
+    private static void SyncPackageFolders(string store, ResourceModManifest manifest)
+    {
+        foreach (var mod in manifest.Mods)
+        {
+            var expected = Path.Combine(store, mod.Enabled ? PackagesFolderName : DisabledFolderName, mod.Id);
+            var other = Path.Combine(store, mod.Enabled ? DisabledFolderName : PackagesFolderName, mod.Id);
+            if (Directory.Exists(expected))
+            {
+                if (Directory.Exists(other)) TryDeleteDirectory(other);
+                continue;
+            }
+            if (!Directory.Exists(other)) continue;
+            Directory.CreateDirectory(Path.GetDirectoryName(expected)!);
+            Directory.Move(other, expected);
+        }
     }
 
     private static string PackageDirectory(string store, ResourceModPackage mod)

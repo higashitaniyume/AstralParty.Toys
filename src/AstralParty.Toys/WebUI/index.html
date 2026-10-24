@@ -1363,7 +1363,7 @@
               tabindex="-1"
               data-i18n="skins.resource_mods"
             >
-              资源模组
+              RML 模组
             </button>
           </div>
           <section
@@ -1376,11 +1376,14 @@
               <button class="primary-btn" id="resourceModImportBtn" data-i18n="resource_mods.import">
                 ＋ 导入资源模组 (.zip)
               </button>
-              <button class="secondary-btn" id="resourceModApplyBtn" data-i18n="resource_mods.apply">应用</button>
-              <button class="secondary-btn" id="resourceModRestoreBtn" data-i18n="resource_mods.restore">恢复原版</button>
+              <button class="secondary-btn" id="resourceModApplyBtn" data-i18n="resource_mods.apply" data-i18n-title="resource_mods.apply_hint" title="把已启用的模组写入游戏资源；需要先退出游戏。">应用模组</button>
+              <button class="secondary-btn" id="resourceModRestoreBtn" data-i18n="resource_mods.restore" data-i18n-title="resource_mods.restore_hint" title="撤销所有模组对游戏资源的改写；已安装的模组文件会保留。">还原官方资源</button>
               <button class="secondary-btn" id="resourceModFolderBtn" data-i18n="resource_mods.open_folder">打开目录</button>
               <button class="secondary-btn" id="resourceModRefreshBtn" data-i18n="common.refresh">刷新</button>
             </div>
+            <p class="resource-mod-hint" data-i18n="resource_mods.toolbar_hint">
+              「应用模组」把已启用模组写入游戏资源；「还原官方资源」撤销所有模组改写，模组文件仍保留。
+            </p>
             <div class="resource-mod-banner" id="resourceModBanner" role="status"></div>
             <details class="resource-mod-warnings hidden" id="resourceModWarnings">
               <summary id="resourceModWarningsSummary">有未生效的条目</summary>
@@ -1393,10 +1396,14 @@
               </div>
               <progress id="rmpBar" max="100" value="0"></progress>
               <div class="rmp-task" id="rmpTask"></div>
+              <div class="rmp-log-head">
+                <span data-i18n="resource_mods.log_title">日志</span>
+                <button class="rmp-log-toggle" id="rmpLogToggle" data-i18n="resource_mods.log_collapse">关闭日志</button>
+              </div>
               <pre class="rmp-log" id="rmpLog"></pre>
               <div class="rmp-actions">
-                <button class="secondary-btn" id="rmpPause">暂停</button>
-                <button class="secondary-btn" id="rmpCancel">取消并还原</button>
+                <button class="secondary-btn" id="rmpPause" data-i18n="resource_mods.pause">暂停</button>
+                <button class="secondary-btn" id="rmpCancel" data-i18n="resource_mods.cancel">取消并还原</button>
               </div>
             </div>
             <div class="resource-mod-list" id="resourceModList"></div>
@@ -1406,6 +1413,16 @@
                 导入 RML 格式的 ZIP（包内含 .bundle 文件），安装后由 Toys 改写 Addressables catalog 生效；重启游戏后可见。
               </p>
             </div>
+            <footer class="resource-mod-credits">
+              <strong class="resource-mod-credits-title" data-i18n="resource_mods.credits_title">使用与分发</strong>
+              <p>
+                <span data-i18n="resource_mods.credits_engine">内置引擎：ResourceModLoader（MIT，© 小鱼飘飘）。原始仓库：</span>
+                <a href="https://github.com/zxy19/ResourceModLoader" target="_blank" rel="noopener">github.com/zxy19/ResourceModLoader</a>
+              </p>
+              <p data-i18n="resource_mods.credits_mods">
+                模组包的内容与版权归各模组作者所有。使用、修改和二次分发请遵守包内附带的授权协议与说明；未明确授权的模组包请勿分发。
+              </p>
+            </footer>
           </section>
           <section
             id="characterSkinPanel"
