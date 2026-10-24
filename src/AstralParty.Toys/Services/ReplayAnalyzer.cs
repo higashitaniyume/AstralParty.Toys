@@ -134,6 +134,13 @@ public sealed class ReplayAnalyzer
         var currentRound = 0;
         var currentPlayer = 0L;
         var lastSnapshotFrame = snapshots.Count > 0 ? snapshots[^1].Frame.Index : -1;
+        var initialRound = Math.Max(1, ReflectionValue.Int(initialRoom, "Round"));
+        var landTypes = new Dictionary<int, int>();
+        var lastPlayerNodes = new Dictionary<long, int>();
+        var monsters = new Dictionary<long, MonsterRecord>();
+        ReadLandTypes(initialRoom, landTypes);
+        SeedPlayerNodes(initialRoom, lastPlayerNodes);
+        TrackMonsters(initialRoom, runningFrame.Index, initialRound, landTypes, monsters, report);
 
         foreach (var frame in frames)
         {
@@ -163,6 +170,10 @@ public sealed class ReplayAnalyzer
                 currentPlayer = ReflectionValue.Long(snapshot, "PlayerId");
                 var room = ReflectionValue.Get(snapshot, "Room");
                 currentRound = ReflectionValue.Int(room, "Round");
+                ReadLandTypes(room, landTypes);
+                var steps = TrackMonsterTileSteps(room, frame.Index, currentRound, landTypes, lastPlayerNodes, playerNames, report);
+                var spawnedMonsters = TrackMonsters(room, frame.Index, currentRound, landTypes, monsters, report);
+                AttributeTileSpawns(steps, spawnedMonsters, currentPlayer);
                 if (frame.Index != lastSnapshotFrame)
                 {
                     report.Events.Add(new TimelineEvent
@@ -287,6 +298,37 @@ public sealed class ReplayAnalyzer
                 if (message is null) continue;
                 var heroId = ReflectionValue.Int(message, "HeroId");
                 var killerId = ReflectionValue.Long(message, "KillerId");
+                var dyingId = ReflectionValue.Long(message, "PlayerId");
+                if (!playerNames.ContainsKey(dyingId))
+                {
+                    if (monsters.TryGetValue(dyingId, out var defeated))
+                    {
+                        defeated.DeathFrameIndex = frame.Index;
+                        defeated.DeathRound = currentRound;
+                        defeated.KillerId = killerId;
+                        defeated.KillerName = PlayerName(playerNames, killerId);
+                    }
+                    else
+                    {
+                        var deathOnly = new MonsterRecord
+                        {
+                            Id = dyingId,
+                            HeroId = heroId,
+                            MonsterName = _config.Monster(heroId),
+                            ImagePath = _assets.Monster(heroId, _config.MonsterAssets(heroId)),
+                            SpawnFrameIndex = -1,
+                            SpawnRound = 0,
+                            SpawnNodeId = 0,
+                            SpawnLandType = 0,
+                            DeathFrameIndex = frame.Index,
+                            DeathRound = currentRound,
+                            KillerId = killerId,
+                            KillerName = PlayerName(playerNames, killerId)
+                        };
+                        monsters[dyingId] = deathOnly;
+                        report.Monsters.Add(deathOnly);
+                    }
+                }
                 report.Events.Add(new TimelineEvent
                 {
                     FrameIndex = frame.Index,
@@ -382,6 +424,8 @@ public sealed class ReplayAnalyzer
                 });
             }
         }
+
+        FinalizeMonsters(report, snapshots.Count > 0 ? snapshots[^1].Frame.Index : -1);
 
         if (finishFrame is not null)
         {
@@ -1089,6 +1133,189 @@ public sealed class ReplayAnalyzer
         public bool IsClosed { get; set; }
     }
 
+    /// <summary>刷怪地块的 LandType；游戏枚举 LandType.Monster = 19。</summary>
+    private const int MonsterTileLandType = 19;
+
+    private static void ReadLandTypes(object? room, IDictionary<int, int> target)
+    {
+        foreach (var land in ReflectionValue.Items(ReflectionValue.Get(room, "Lands")))
+        {
+            var nodeId = ReflectionValue.Int(land, "Key");
+            target[nodeId] = ReflectionValue.Int(ReflectionValue.Get(land, "Value"), "LandType");
+        }
+    }
+
+    private static void SeedPlayerNodes(object? room, IDictionary<long, int> target)
+    {
+        foreach (var player in ReflectionValue.Items(ReflectionValue.Get(room, "Players")))
+        {
+            var id = ReflectionValue.Long(player, "Id");
+            var nodeId = ReflectionValue.Int(ReflectionValue.Get(player, "Hero"), "NodeId");
+            if (id != 0) target[id] = nodeId;
+        }
+    }
+
+    private List<MonsterTileStep> TrackMonsterTileSteps(object? room, int frameIndex, int round, IReadOnlyDictionary<int, int> landTypes,
+        IDictionary<long, int> lastPlayerNodes, IReadOnlyDictionary<long, string> playerNames, ReplayReport report)
+    {
+        var steps = new List<MonsterTileStep>();
+        foreach (var player in ReflectionValue.Items(ReflectionValue.Get(room, "Players")))
+        {
+            var id = ReflectionValue.Long(player, "Id");
+            var nodeId = ReflectionValue.Int(ReflectionValue.Get(player, "Hero"), "NodeId");
+            if (id == 0) continue;
+
+            // 只看回合快照落点：停在刷怪地块才计一次；经过但没停下的路径不在快照里，不会被计入；连续停在同一格也不重复计数。
+            if (lastPlayerNodes.TryGetValue(id, out var previousNode) && previousNode != nodeId &&
+                landTypes.GetValueOrDefault(nodeId) == MonsterTileLandType)
+            {
+                var step = new MonsterTileStep
+                {
+                    FrameIndex = frameIndex,
+                    Round = round,
+                    PlayerId = id,
+                    PlayerName = PlayerName(playerNames, id),
+                    NodeId = nodeId
+                };
+                steps.Add(step);
+                report.MonsterTileSteps.Add(step);
+            }
+            lastPlayerNodes[id] = nodeId;
+        }
+        return steps;
+    }
+
+    private List<MonsterRecord> TrackMonsters(object? room, int frameIndex, int round, IReadOnlyDictionary<int, int> landTypes,
+        IDictionary<long, MonsterRecord> monsters, ReplayReport report)
+    {
+        var spawned = new List<MonsterRecord>();
+        foreach (var monster in ReflectionValue.Items(ReflectionValue.Get(room, "Monsters")))
+        {
+            var id = ReflectionValue.Long(monster, "Id");
+            if (id == 0) continue;
+            var hero = ReflectionValue.Get(monster, "Hero");
+            var heroId = ReflectionValue.Int(hero, "HeroId");
+            var nodeId = ReflectionValue.Int(hero, "NodeId");
+            var hp = ReflectionValue.Int(hero, "Hp");
+            var maxHp = ReflectionValue.Int(hero, "MaxHp");
+            var attack = ReflectionValue.Int(hero, "Attack");
+            var defense = ReflectionValue.Int(hero, "Defense");
+            var index = ReflectionValue.Int(hero, "MonsterIndex");
+
+            if (!monsters.TryGetValue(id, out var record))
+            {
+                record = new MonsterRecord
+                {
+                    Id = id,
+                    HeroId = heroId,
+                    MonsterName = _config.Monster(heroId),
+                    ImagePath = _assets.Monster(heroId, _config.MonsterAssets(heroId)),
+                    SpawnFrameIndex = frameIndex,
+                    SpawnRound = round,
+                    SpawnNodeId = nodeId,
+                    SpawnLandType = landTypes.GetValueOrDefault(nodeId)
+                };
+                monsters[id] = record;
+                report.Monsters.Add(record);
+                spawned.Add(record);
+            }
+
+            record.MonsterIndex = index;
+            record.Hp = hp;
+            record.MaxHp = maxHp;
+            record.Attack = attack;
+            record.Defense = defense;
+            record.LastFrameIndex = frameIndex;
+            record.LastRound = round;
+            record.LastNodeId = nodeId;
+        }
+        return spawned;
+    }
+
+    private static void AttributeTileSpawns(IReadOnlyList<MonsterTileStep> steps, IReadOnlyList<MonsterRecord> spawned, long currentPlayer)
+    {
+        if (steps.Count == 0 || spawned.Count == 0) return;
+        var target = steps.FirstOrDefault(step => step.PlayerId == currentPlayer) ?? steps[0];
+        foreach (var monster in spawned)
+        {
+            target.MonsterIds.Add(monster.Id);
+            monster.SpawnedByMonsterTile = true;
+        }
+    }
+
+    private void FinalizeMonsters(ReplayReport report, int finalFrameIndex)
+    {
+        foreach (var record in report.Monsters)
+        {
+            if (record.DeathFrameIndex is not null)
+            {
+                record.StatusKey = "defeated";
+                record.Status = MonsterStatus("defeated");
+            }
+            else if (record.SpawnFrameIndex < 0)
+            {
+                record.StatusKey = "defeated";
+                record.Status = MonsterStatus("deathOnly");
+                record.DeathFrameIndex = finalFrameIndex >= 0 ? finalFrameIndex : null;
+            }
+            else if (finalFrameIndex < 0)
+            {
+                record.StatusKey = "left";
+                record.Status = MonsterStatus("left");
+            }
+            else if (record.LastFrameIndex == finalFrameIndex)
+            {
+                record.StatusKey = "alive";
+                record.Status = MonsterStatus("alive");
+            }
+            else
+            {
+                record.StatusKey = "left";
+                record.Status = MonsterStatus("left");
+            }
+        }
+
+        // 死亡记录可能先于怪物快照出现；按首次观测/死亡帧排序，保持时间线稳定。
+        var ordered = report.Monsters
+            .OrderBy(record => record.SpawnFrameIndex < 0 ? record.DeathFrameIndex ?? int.MaxValue : record.SpawnFrameIndex)
+            .ThenBy(record => record.Id)
+            .ToArray();
+        report.Monsters.Clear();
+        foreach (var record in ordered) report.Monsters.Add(record);
+    }
+
+    private string MonsterStatus(string key) => key switch
+    {
+        "defeated" => _config.Language switch
+        {
+            AppLanguage.English => "Defeated",
+            AppLanguage.Japanese => "撃破",
+            AppLanguage.TraditionalChinese => "被擊敗",
+            _ => "被击败"
+        },
+        "deathOnly" => _config.Language switch
+        {
+            AppLanguage.English => "Defeated (spawn not captured)",
+            AppLanguage.Japanese => "撃破（出現未記録）",
+            AppLanguage.TraditionalChinese => "被擊敗（未捕獲出生）",
+            _ => "被击败（未捕获出生）"
+        },
+        "left" => _config.Language switch
+        {
+            AppLanguage.English => "Left (defeat not recorded)",
+            AppLanguage.Japanese => "離脱（撃破未記録）",
+            AppLanguage.TraditionalChinese => "離場（未記錄擊敗）",
+            _ => "离场（未记录击败）"
+        },
+        _ => _config.Language switch
+        {
+            AppLanguage.English => "Survived to settlement",
+            AppLanguage.Japanese => "決着まで生存",
+            AppLanguage.TraditionalChinese => "存活至結算",
+            _ => "存活至结算"
+        }
+    };
+
     private string FindBossName(object? room)
     {
         foreach (var monster in ReflectionValue.Items(ReflectionValue.Get(room, "Monsters")))
@@ -1134,3 +1361,5 @@ public sealed class ReplayAnalyzer
         return $"{value:0.##} {units[index]}";
     }
 }
+
+

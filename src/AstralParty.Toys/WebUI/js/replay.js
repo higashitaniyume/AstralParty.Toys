@@ -658,6 +658,7 @@
         </div>
 
         ${this.transferSummary(report)}
+        ${this.monsterSummary(report)}
 
         <div style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between">
           <h3 style="margin:0;font-size:16px;color:var(--text-main)">参战玩家 (${report.players.length} 名)</h3>
@@ -687,6 +688,96 @@
                 <div><strong>${esc(p.nickname)}</strong><p>转出 <b>${fmt(p.transferGold || 0)}</b> 星币</p></div>
               </article>`).join('')}
           </div>
+        </section>`;
+    },
+
+    monsterSummary(report) {
+      const monsters = report.monsters || [];
+      const steps = report.monsterTileSteps || [];
+      const tileMonsters = monsters.filter(m => m.spawnedByMonsterTile);
+      const summary = report.monsterSummary || {
+        total: monsters.length,
+        defeated: monsters.filter(m => m.statusKey === 'defeated').length,
+        alive: monsters.filter(m => m.statusKey === 'alive').length,
+        spawnTile: monsters.filter(m => m.spawnedOnMonsterTile).length,
+        tileSpawned: tileMonsters.length,
+        tileDefeated: tileMonsters.filter(m => m.statusKey === 'defeated').length,
+        steps: steps.length,
+        tileSteps: steps.filter(step => (step.monsterIds || []).length > 0).length
+      };
+      if (!tileMonsters.length && !steps.length) return '';
+
+      const byPlayer = new Map();
+      for (const step of steps) {
+        const key = String(step.playerId);
+        const entry = byPlayer.get(key) || { name: step.playerName || `玩家 ${key}`, count: 0 };
+        entry.count += 1;
+        byPlayer.set(key, entry);
+      }
+
+      const groups = new Map();
+      for (const monster of tileMonsters) {
+        const key = String(monster.heroId);
+        const entry = groups.get(key) || {
+          name: monster.monsterName || `怪物 ${key}`,
+          image: monster.image || '',
+          count: 0,
+          defeated: 0
+        };
+        entry.count += 1;
+        if (monster.statusKey === 'defeated') entry.defeated += 1;
+        groups.set(key, entry);
+      }
+
+      const monsterName = id => monsters.find(monster => String(monster.id) === String(id))?.monsterName || `怪物 ${id}`;
+      const stepRows = steps.map(step => {
+        const names = step.monsterNames?.length
+          ? step.monsterNames
+          : (step.monsterIds || []).map(monsterName);
+        return { step, names };
+      });
+      const tileSteps = summary.tileSteps ?? stepRows.filter(row => row.names.length > 0).length;
+
+      return `
+        <section class="transfer-summary monster-summary">
+          <header>
+            <div>
+              <h3>刷怪地块记录</h3>
+              <p>只按回合快照的落点统计：停在刷怪地块才计入，经过但没停下不计；同一快照内新出现的怪物归到这次踩中，其他途径出现的怪物不混入。</p>
+            </div>
+            <span>踩中 <strong>${fmt(summary.steps)}</strong> 次 · 其中 ${fmt(tileSteps)} 次刷出怪物</span>
+          </header>
+          <div class="monster-summary-grid">
+            <article class="monster-step-card">
+              <small>踩中刷怪地块</small>
+              <strong class="monster-step-total">${fmt(summary.steps)}</strong>
+              <div class="monster-step-players">
+                ${byPlayer.size
+                  ? [...byPlayer.values()].map(item => `<span>${esc(item.name)} ×${item.count}</span>`).join('')
+                  : '<span class="muted">本局未记录到踩中刷怪地块</span>'}
+              </div>
+            </article>
+            <article class="monster-spawn-card">
+              <small>刷怪地块刷出 ${fmt(summary.tileSpawned)} 只 · 已击败 ${fmt(summary.tileDefeated)}</small>
+              <div class="monster-spawn-grid">
+                ${groups.size
+                  ? [...groups.values()].map(item => `
+                    <div class="monster-spawn-item" title="${esc(item.name)} · 刷出 ${item.count} 只 · 已击败 ${item.defeated} 只">
+                      ${item.image ? `<img src="${esc(item.image)}" alt="">` : `<span class="monster-spawn-placeholder">?</span>`}
+                      <div><strong>${esc(item.name)}</strong><span>×${item.count}${item.defeated ? ` · 击败 ${item.defeated}` : ''}</span></div>
+                    </div>`).join('')
+                  : '<span class="muted">本局未记录到刷怪地块刷出的怪物</span>'}
+              </div>
+            </article>
+          </div>
+          ${stepRows.length ? `
+            <div class="monster-step-list">
+              ${stepRows.map(({ step, names }) => `
+                <div class="monster-step-row ${names.length ? '' : 'empty'}">
+                  <span class="monster-step-meta">第 ${step.round} 回合 · ${esc(step.playerName)} · 节点 ${step.nodeId}</span>
+                  <span class="monster-step-result">${names.length ? names.map(esc).join('、') : '本次未刷出怪物'}</span>
+                </div>`).join('')}
+            </div>` : ''}
         </section>`;
     },
 
@@ -1292,3 +1383,4 @@
 
   window.ReplayModule = ReplayModule;
 })();
+

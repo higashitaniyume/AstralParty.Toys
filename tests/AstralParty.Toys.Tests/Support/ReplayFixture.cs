@@ -33,6 +33,14 @@ internal sealed record ReplayFixtureOptions
     public long StartTime { get; init; } = 1_760_000_000;
     public long FinishTime { get; init; } = 1_760_003_600;
     public int AwardCount { get; init; } = 5;
+    /// <summary>刷怪格节点；-1 表示不生成刷怪格。</summary>
+    public int MonsterTileNode { get; init; } = -1;
+    /// <summary>1 号玩家从第几回合开始站到刷怪格上。</summary>
+    public int MonsterTileStepRound { get; init; } = 1;
+    public int SpawnMonsterId { get; init; }
+    public int SpawnMonsterFromRound { get; init; } = 2;
+    public int SpawnMonsterDeathRound { get; init; }
+    public int SpawnMonsterNode { get; init; } = 5;
 }
 
 /// <summary>
@@ -95,6 +103,15 @@ internal static class ReplayFixture
             Game.Value.SetNumber(die, "HeroId", options.MonsterId);            // 怪物配置 ID
             Game.Value.SetNumber(die, "KillerId", playerId);                   // 击杀者
             frames.Add((CmdReplayDie, Game.Value.Serialize(die)));
+
+            if (options.SpawnMonsterId != 0 && round == options.SpawnMonsterDeathRound)
+            {
+                var spawnedDie = Game.Value.New("party.protocol.ReplayDieS2C");
+                Game.Value.SetNumber(spawnedDie, "PlayerId", options.SpawnMonsterId * 1000L + 1);
+                Game.Value.SetNumber(spawnedDie, "HeroId", options.SpawnMonsterId);
+                Game.Value.SetNumber(spawnedDie, "KillerId", playerId);
+                frames.Add((CmdReplayDie, Game.Value.Serialize(spawnedDie)));
+            }
 
             var relic = Game.Value.New("party.protocol.SelectRelicS2C");
             Game.Value.SetNumber(relic, "PlayerId", playerId);
@@ -236,6 +253,18 @@ internal static class ReplayFixture
         game.SetNumber(room, "PlayerTotalDie", options.PlayerDeaths);
         game.SetNumber(room, "RoomServerId", options.RoomServerId);
 
+        if (options.MonsterTileNode >= 0)
+        {
+            var monsterLand = game.New("party.model.BaseLand");
+            game.SetNumber(monsterLand, "NodeId", options.MonsterTileNode);
+            game.SetNumber(monsterLand, "LandType", 19);   // LandType.Monster
+            game.SetMessageEntry(room, "Lands", options.MonsterTileNode, monsterLand);
+            var normalLand = game.New("party.model.BaseLand");
+            game.SetNumber(normalLand, "NodeId", options.MonsterTileNode + 1);
+            game.SetNumber(normalLand, "LandType", 1);
+            game.SetMessageEntry(room, "Lands", options.MonsterTileNode + 1, normalLand);
+        }
+
         for (var index = 0; index < options.PlayerIds.Length; index++)
         {
             var player = game.New("party.model.Player");
@@ -253,6 +282,12 @@ internal static class ReplayFixture
             game.SetNumber(hero, "Hp", final && index == 1 ? 0 : 20 - index);   // 2 号玩家末局阵亡
             game.SetNumber(hero, "Attack", 5 + index);
             game.SetNumber(hero, "Defense", 3 + index);
+            if (options.MonsterTileNode >= 0)
+            {
+                game.SetNumber(hero, "NodeId", index == 0 && round >= options.MonsterTileStepRound
+                    ? options.MonsterTileNode
+                    : options.MonsterTileNode + 1);
+            }
             game.SetNumber(hero, "BuyRelicNum", index + round - 1);
             var cond = game.New("party.model.ConditionalInfo");
             game.SetNumber(cond, "TotalDamage", (index + 1) * round);
@@ -281,6 +316,22 @@ internal static class ReplayFixture
         game.SetNumber(monsterHero, "MonsterType", MonsterTypeBoss);
         game.SetMessage(monster, "Hero", monsterHero);
         game.Add(room, "Monsters", monster);
+
+        if (options.SpawnMonsterId != 0 && round >= options.SpawnMonsterFromRound)
+        {
+            var spawned = game.New("party.model.Player");
+            game.SetNumber(spawned, "Id", options.SpawnMonsterId * 1000L + 1);
+            var spawnedHero = game.New("party.model.Hero");
+            game.SetNumber(spawnedHero, "HeroId", options.SpawnMonsterId);
+            game.SetNumber(spawnedHero, "NodeId", options.SpawnMonsterNode);
+            game.SetNumber(spawnedHero, "Hp", 15);
+            game.SetNumber(spawnedHero, "MaxHp", 15);
+            game.SetNumber(spawnedHero, "Attack", 2);
+            game.SetNumber(spawnedHero, "Defense", 1);
+            game.SetNumber(spawnedHero, "MonsterIndex", 1);
+            game.SetMessage(spawned, "Hero", spawnedHero);
+            game.Add(room, "Monsters", spawned);
+        }
 
         return room;
     }
@@ -332,6 +383,19 @@ internal sealed class GameProtocolTypes
     {
         var map = Property(target, name).GetValue(target)!;
         map.GetType().GetMethod("Add", [typeof(int), typeof(int)])!.Invoke(map, [key, value]);
+    }
+
+    /// <summary>map&lt;int, 消息&gt; 的一条记录。</summary>
+    public void SetMessageEntry(object target, string name, int key, object value)
+    {
+        var map = Property(target, name).GetValue(target)!;
+        var add = map.GetType().GetMethods()
+            .FirstOrDefault(method => method.Name == "Add"
+                                      && method.GetParameters().Length == 2
+                                      && method.GetParameters()[0].ParameterType == typeof(int)
+                                      && method.GetParameters()[1].ParameterType.IsInstanceOfType(value))
+            ?? throw new InvalidOperationException($"{target.GetType().Name}.{name} 没有可用的消息 Add。");
+        add.Invoke(map, [key, value]);
     }
 
     /// <summary>repeated 字段追加一项。</summary>

@@ -1396,10 +1396,54 @@ input[type="number"].library-input::-webkit-inner-spin-button { -webkit-appearan
 .player-transfer-line { margin: 10px 0 0; font-size: 12px; color: var(--gp-text-sub); }
 .player-transfer-line b { color: var(--gp-gold); font-family: 'Fira Code', monospace; }
 
+/* ============================== 刷怪地块记录 ============================== */
+.monster-summary-grid { display: grid; grid-template-columns: minmax(180px, .65fr) minmax(0, 2fr); gap: 12px; }
+.monster-step-card,
+.monster-spawn-card {
+  min-width: 0;
+  padding: 13px 14px;
+  background: var(--gp-bg-card);
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: var(--gp-radius-md);
+}
+.monster-step-card small,
+.monster-spawn-card small { display: block; font-size: 12px; color: var(--gp-text-muted); line-height: 1.6; }
+.monster-step-total { display: block; margin: 4px 0 8px; font-family: 'Fira Code', monospace; font-size: 30px; line-height: 1; color: var(--gp-gold); }
+.monster-step-players { display: flex; flex-wrap: wrap; gap: 6px; }
+.monster-step-players > span {
+  padding: 4px 8px;
+  font-size: 12px;
+  color: var(--gp-text-sub);
+  background: rgba(255, 255, 255, .06);
+  border-radius: 999px;
+}
+.monster-spawn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 8px; margin-top: 9px; }
+.monster-spawn-item { display: flex; align-items: center; gap: 9px; min-width: 0; padding: 7px 9px; background: rgba(255, 255, 255, .045); border-radius: var(--gp-radius-sm); }
+.monster-spawn-item img,
+.monster-spawn-placeholder {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #000;
+}
+.monster-spawn-placeholder { display: grid; place-items: center; color: var(--gp-text-muted); font-weight: 900; }
+.monster-spawn-item strong { display: block; font-size: 12px; color: #fff; overflow-wrap: anywhere; }
+.monster-spawn-item span { display: block; margin-top: 2px; font-size: 11px; color: var(--gp-text-muted); }
+.monster-summary .muted { font-size: 12px; color: var(--gp-text-muted); }
+.monster-step-list { display: grid; gap: 6px; margin-top: 12px; max-height: 220px; overflow: auto; }
+.monster-step-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 7px 10px; font-size: 12px; background: rgba(255, 255, 255, .04); border-radius: var(--gp-radius-sm); }
+.monster-step-meta { flex: 0 0 auto; color: var(--gp-text-muted); }
+.monster-step-result { color: var(--gp-text-sub); text-align: right; overflow-wrap: anywhere; }
+.monster-step-row.empty .monster-step-result { color: var(--gp-text-muted); font-style: italic; }
+
 @media (max-width: 760px) {
   .performance-hero { flex-direction: column; }
   .performance-total { text-align: left; }
   .performance-players { margin-left: 0; }
   .transfer-summary header { flex-direction: column; gap: 8px; }
+  .monster-summary-grid { grid-template-columns: 1fr; }
 }
+
 

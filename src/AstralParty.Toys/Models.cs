@@ -38,6 +38,10 @@ public sealed class ReplayReport
     public ObservableCollection<ShopRecord> Shops { get; } = [];
     /// <summary>按玩家、按回合边界快照归集的表现曲线；旧回放可能为空。</summary>
     public ObservableCollection<PlayerPerformance> Performance { get; } = [];
+    /// <summary>本局在快照中观测到的怪物；按实体 ID 合并，死亡由 ReplayDieS2C 回填。</summary>
+    public ObservableCollection<MonsterRecord> Monsters { get; } = [];
+    /// <summary>玩家从其他节点踩中“刷怪地块”（LandType 19）的快照记录。</summary>
+    public ObservableCollection<MonsterTileStep> MonsterTileSteps { get; } = [];
     public ObservableCollection<ProtocolFrame> Frames { get; } = [];
     public ObservableCollection<StatItem> CommandStats { get; } = [];
     public ObservableCollection<StatItem> ActionStats { get; } = [];
@@ -116,6 +120,50 @@ public sealed class DiceRoll
     public int[] Values { get; init; } = [];
     public int MovePoint { get; init; }
     public bool Controlled { get; init; }
+}
+
+/// <summary>一只在回放中出现过的怪物。出生信息来自首次出现的回合快照，死亡信息来自 ReplayDieS2C。</summary>
+public sealed class MonsterRecord
+{
+    public long Id { get; init; }
+    public int HeroId { get; init; }
+    public string MonsterName { get; init; } = "未知怪物";
+    public string ImagePath { get; init; } = "";
+    public int MonsterIndex { get; set; }
+    public int SpawnFrameIndex { get; init; }
+    public int SpawnRound { get; init; }
+    public int SpawnNodeId { get; init; }
+    public int SpawnLandType { get; init; }
+    public bool SpawnedOnMonsterTile => SpawnLandType == 19;
+    /// <summary>是否可归因到一次“踩中刷怪地块”的快照（同帧出现的新怪物）。</summary>
+    public bool SpawnedByMonsterTile { get; set; }
+    public int Hp { get; set; }
+    public int MaxHp { get; set; }
+    public int Attack { get; set; }
+    public int Defense { get; set; }
+    public int LastFrameIndex { get; set; }
+    public int LastRound { get; set; }
+    public int LastNodeId { get; set; }
+    public int? DeathFrameIndex { get; set; }
+    public int? DeathRound { get; set; }
+    public long KillerId { get; set; }
+    public string KillerName { get; set; } = "";
+    public string Status { get; set; } = "存活至结算";
+    /// <summary>稳定状态键，供界面选择样式；不受语言影响。</summary>
+    public string StatusKey { get; set; } = "alive";
+}
+
+/// <summary>一次踩中刷怪地块的快照。连续停留在同一格不会重复计数，离开后再次踩中才计下一次。</summary>
+public sealed class MonsterTileStep
+{
+    public int FrameIndex { get; init; }
+    public int Round { get; init; }
+    public long PlayerId { get; init; }
+    public string PlayerName { get; init; } = "";
+    public int NodeId { get; init; }
+    /// <summary>同一快照里新出现、可归因到这次踩格的怪物实体。</summary>
+    public List<long> MonsterIds { get; } = [];
+    public int MonsterCount => MonsterIds.Count;
 }
 
 public sealed class TimelineEvent
@@ -213,3 +261,6 @@ public sealed class StatItem
     public double BarWidth { get; init; }
     public string Detail => $"{Count:N0} · {Percent:P1}";
 }
+
+
+

@@ -226,6 +226,40 @@ public sealed class ReplayAnalysisTests
     }
 
     [Fact]
+    public void Analyze_RecordsMonsterTileStepsAndAttributesSameSnapshotSpawns()
+    {
+        using var sandbox = new TestSandbox("ap-analysis-monster-tile");
+        var spawnMonsterId = TestPaths.CreateAnalyzer().Config.MonsterIds.Skip(1).First();
+        var (_, options, report) = ReportFactory.Create(sandbox, new ReplayFixtureOptions
+        {
+            ReplayId = ReplayId,
+            RoundCount = 3,
+            MonsterTileNode = 0,
+            MonsterTileStepRound = 2,
+            SpawnMonsterId = spawnMonsterId,
+            SpawnMonsterFromRound = 2,
+            SpawnMonsterDeathRound = 3
+        });
+
+        var step = Assert.Single(report.MonsterTileSteps);
+        Assert.Equal(2, step.Round);
+        Assert.Equal(0, step.NodeId);
+        Assert.Equal(options.PlayerIds[0], step.PlayerId);
+        Assert.Equal([spawnMonsterId * 1000L + 1], step.MonsterIds);
+
+        var spawned = Assert.Single(report.Monsters, monster => monster.Id == spawnMonsterId * 1000L + 1);
+        Assert.Equal(spawnMonsterId, spawned.HeroId);
+        Assert.True(spawned.SpawnedByMonsterTile);
+        Assert.Equal(2, spawned.SpawnRound);
+        Assert.Equal("defeated", spawned.StatusKey);
+        Assert.Equal(options.Nicks[2], spawned.KillerName);
+        Assert.Equal(3, spawned.DeathRound);
+
+        // 普通快照里的 BOSS 不应被误归因为刷怪格刷新。
+        Assert.Contains(report.Monsters, monster => monster.HeroId == options.MonsterId && !monster.SpawnedByMonsterTile);
+    }
+
+    [Fact]
     public void Analyze_RejectsCorruptedFiles()
     {
         using var sandbox = new TestSandbox("ap-analysis-corrupt");
@@ -267,7 +301,16 @@ public sealed class ReplayAnalysisTests
         // 候选记录（首次/刷新）不带单张 ID，只有「选择」记录一定带
         Assert.All(report.Relics.Where(record => record.Kind == "选择"),
             record => Assert.True(record.RelicId > 0, "筹码「选择」记录缺少 ID"));
-        Assert.Contains(report.Shops, shop => shop.Cards.Length > 0 && shop.OptionsText.Length > 0);    }
+        Assert.Contains(report.Shops, shop => shop.Cards.Length > 0 && shop.OptionsText.Length > 0);
+
+        Assert.All(report.MonsterTileSteps, step =>
+        {
+            Assert.Equal(step.MonsterCount, step.MonsterIds.Count);
+            Assert.All(step.MonsterIds, id => Assert.Contains(report.Monsters, monster => monster.Id == id));
+        });
+        Assert.All(report.Monsters.Where(monster => monster.SpawnedByMonsterTile), monster =>
+            Assert.Contains(report.MonsterTileSteps, step => step.MonsterIds.Contains(monster.Id)));
+    }
 
     [RealReplayFact]
     public void Analyze_RealReplay_IsAcceptedByGameSettlementParser()

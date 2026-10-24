@@ -719,6 +719,29 @@ public partial class HybridWindow
             points = x.Points,
             dice = x.Dice
         }),
+        monsters = report.Monsters.Select(x => new
+        {
+            x.Id, x.HeroId, x.MonsterName, image = AssetUrl(x.ImagePath), x.MonsterIndex,
+            x.SpawnFrameIndex, x.SpawnRound, x.SpawnNodeId, x.SpawnLandType, x.SpawnedOnMonsterTile,
+            x.SpawnedByMonsterTile, x.Hp, x.MaxHp, x.Attack, x.Defense, x.LastFrameIndex, x.LastRound, x.LastNodeId,
+            x.DeathFrameIndex, x.DeathRound, x.KillerId, x.KillerName, x.Status, x.StatusKey
+        }),
+        monsterTileSteps = report.MonsterTileSteps.Select(x => new
+        {
+            x.FrameIndex, x.Round, x.PlayerId, x.PlayerName, x.NodeId, x.MonsterIds, x.MonsterCount,
+            monsterNames = x.MonsterIds.Select(id => report.Monsters.FirstOrDefault(monster => monster.Id == id)?.MonsterName ?? "").Where(name => name.Length > 0)
+        }),
+        monsterSummary = new
+        {
+            total = report.Monsters.Count,
+            defeated = report.Monsters.Count(x => x.StatusKey == "defeated"),
+            alive = report.Monsters.Count(x => x.StatusKey == "alive"),
+            spawnTile = report.Monsters.Count(x => x.SpawnedOnMonsterTile),
+            tileSpawned = report.Monsters.Count(x => x.SpawnedByMonsterTile),
+            tileDefeated = report.Monsters.Count(x => x.SpawnedByMonsterTile && x.StatusKey == "defeated"),
+            steps = report.MonsterTileSteps.Count,
+            tileSteps = report.MonsterTileSteps.Count(x => x.MonsterIds.Count > 0)
+        },
         events = report.Events.Select(x => new
         {
             x.FrameIndex, x.Round, x.RoundText, x.PlayerId, x.PlayerName, x.Type,
@@ -766,6 +789,8 @@ public partial class HybridWindow
         timeline = report.Events,
         relics = report.Relics,
         shops = report.Shops,
+        monsters = report.Monsters,
+        monsterTileSteps = report.MonsterTileSteps,
         statistics = new { commands = report.CommandStats, actions = report.ActionStats, relicQualities = report.RelicQualityStats },
         frames = report.Frames.Select(frame => new
         {
