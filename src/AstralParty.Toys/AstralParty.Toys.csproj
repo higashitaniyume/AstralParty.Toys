@@ -10,10 +10,10 @@
     <AssemblyName>AstralParty.Toys</AssemblyName>
     <RootNamespace>AstralParty.Toys</RootNamespace>
     <StartupObject>AstralParty.Toys.App</StartupObject>
-    <!-- v1.2.7 正式发布，程序与安装器数字版本均为 1.2.7。 -->
-    <Version>1.2.7</Version>
-    <AssemblyVersion>1.2.7.0</AssemblyVersion>
-    <FileVersion>1.2.7.0</FileVersion>
+    <!-- v1.2.8 正式发布，程序与安装器数字版本均为 1.2.8。 -->
+    <Version>1.2.8</Version>
+    <AssemblyVersion>1.2.8.0</AssemblyVersion>
+    <FileVersion>1.2.8.0</FileVersion>
     <ApplicationIcon>WebUI\images\UT_AccountHeadShot_70902.ico</ApplicationIcon>
   </PropertyGroup>
 
