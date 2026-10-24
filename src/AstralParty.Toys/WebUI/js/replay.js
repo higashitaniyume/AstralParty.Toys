@@ -736,25 +736,23 @@
           : (step.monsterIds || []).map(monsterName);
         return { step, names };
       });
-      const tileSteps = summary.tileSteps ?? stepRows.filter(row => row.names.length > 0).length;
-
       return `
         <section class="transfer-summary monster-summary">
           <header>
             <div>
               <h3>刷怪地块记录</h3>
-              <p>只按回合快照的落点统计：停在刷怪地块才计入，经过但没停下不计；同一快照内新出现的怪物归到这次踩中，其他途径出现的怪物不混入。</p>
+              <p>只记录踩中后同一快照内确实刷出怪物的踩踏；经过不停下、或踩中但没有刷出怪物都不计入。</p>
             </div>
-            <span>踩中 <strong>${fmt(summary.steps)}</strong> 次 · 其中 ${fmt(tileSteps)} 次刷出怪物</span>
+            <span>踩中并触发刷新 <strong>${fmt(summary.steps)}</strong> 次</span>
           </header>
           <div class="monster-summary-grid">
             <article class="monster-step-card">
-              <small>踩中刷怪地块</small>
+              <small>触发刷新的踩中</small>
               <strong class="monster-step-total">${fmt(summary.steps)}</strong>
               <div class="monster-step-players">
                 ${byPlayer.size
                   ? [...byPlayer.values()].map(item => `<span>${esc(item.name)} ×${item.count}</span>`).join('')
-                  : '<span class="muted">本局未记录到踩中刷怪地块</span>'}
+                  : '<span class="muted">本局未记录到踩中并触发刷新的情况</span>'}
               </div>
             </article>
             <article class="monster-spawn-card">
@@ -772,10 +770,10 @@
           </div>
           ${stepRows.length ? `
             <div class="monster-step-list">
-              ${stepRows.map(({ step, names }) => `
-                <div class="monster-step-row ${names.length ? '' : 'empty'}">
+              ${stepRows.filter(({ names }) => names.length > 0).map(({ step, names }) => `
+                <div class="monster-step-row">
                   <span class="monster-step-meta">第 ${step.round} 回合 · ${esc(step.playerName)} · 节点 ${step.nodeId}</span>
-                  <span class="monster-step-result">${names.length ? names.map(esc).join('、') : '本次未刷出怪物'}</span>
+                  <span class="monster-step-result">${names.map(esc).join('、')}</span>
                 </div>`).join('')}
             </div>` : ''}
         </section>`;

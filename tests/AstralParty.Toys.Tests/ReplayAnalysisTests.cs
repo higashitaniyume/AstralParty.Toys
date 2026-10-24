@@ -260,6 +260,22 @@ public sealed class ReplayAnalysisTests
     }
 
     [Fact]
+    public void Analyze_DoesNotRecordMonsterTileLandingWithoutMonsterRefresh()
+    {
+        using var sandbox = new TestSandbox("ap-analysis-monster-tile-no-spawn");
+        var (_, _, report) = ReportFactory.Create(sandbox, new ReplayFixtureOptions
+        {
+            ReplayId = ReplayId,
+            RoundCount = 3,
+            MonsterTileNode = 0,
+            MonsterTileStepRound = 2
+        });
+
+        Assert.Empty(report.MonsterTileSteps);
+        Assert.DoesNotContain(report.Monsters, monster => monster.SpawnedByMonsterTile);
+    }
+
+    [Fact]
     public void Analyze_RejectsCorruptedFiles()
     {
         using var sandbox = new TestSandbox("ap-analysis-corrupt");

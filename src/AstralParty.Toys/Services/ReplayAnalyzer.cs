@@ -173,7 +173,7 @@ public sealed class ReplayAnalyzer
                 ReadLandTypes(room, landTypes);
                 var steps = TrackMonsterTileSteps(room, frame.Index, currentRound, landTypes, lastPlayerNodes, playerNames, report);
                 var spawnedMonsters = TrackMonsters(room, frame.Index, currentRound, landTypes, monsters, report);
-                AttributeTileSpawns(steps, spawnedMonsters, currentPlayer);
+                AttributeTileSpawns(steps, spawnedMonsters, currentPlayer, report);
                 if (frame.Index != lastSnapshotFrame)
                 {
                     report.Events.Add(new TimelineEvent
@@ -1178,7 +1178,6 @@ public sealed class ReplayAnalyzer
                     NodeId = nodeId
                 };
                 steps.Add(step);
-                report.MonsterTileSteps.Add(step);
             }
             lastPlayerNodes[id] = nodeId;
         }
@@ -1232,7 +1231,8 @@ public sealed class ReplayAnalyzer
         return spawned;
     }
 
-    private static void AttributeTileSpawns(IReadOnlyList<MonsterTileStep> steps, IReadOnlyList<MonsterRecord> spawned, long currentPlayer)
+    private static void AttributeTileSpawns(IReadOnlyList<MonsterTileStep> steps, IReadOnlyList<MonsterRecord> spawned,
+        long currentPlayer, ReplayReport report)
     {
         if (steps.Count == 0 || spawned.Count == 0) return;
         var target = steps.FirstOrDefault(step => step.PlayerId == currentPlayer) ?? steps[0];
@@ -1241,6 +1241,8 @@ public sealed class ReplayAnalyzer
             target.MonsterIds.Add(monster.Id);
             monster.SpawnedByMonsterTile = true;
         }
+        // 只有真的刷出怪物的踩中才进入报告；踩中但没刷出的落点直接丢弃。
+        report.MonsterTileSteps.Add(target);
     }
 
     private void FinalizeMonsters(ReplayReport report, int finalFrameIndex)

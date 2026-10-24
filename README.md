@@ -63,7 +63,7 @@ winget upgrade Hiynet.AstralParty.Toys
 | 模块 | 能力 |
 | --- | --- |
 | 回放库 | 扫描、归档、放回游戏、版本升级、搜索与整理；按回放 ID 从官方 CDN 下载，支持区服选择 |
-| 对局复盘 | 对局摘要、刷怪地块踩中与刷怪统计、玩家表现、按回合事件，以及筹码候选、刷新、选择与来源 |
+| 对局复盘 | 对局摘要、踩中刷怪地块并触发刷新的统计、玩家表现、按回合事件，以及筹码候选、刷新、选择与来源 |
 | 专业分析 | protobuf 消息、原始帧、JSON 导出与 AI 摘要 |
 | 角色皮肤 | 多人物方案、贴图裁切、精灵动画、模板与 GIF 导出、旧式 Unity bundle 皮肤包导入 |
 | 卡牌皮肤 | 自定义卡面与多方案管理；导入视频/GIF 制作动态卡面 |
@@ -124,5 +124,6 @@ dotnet publish src/AstralParty.Toys/AstralParty.Toys.csproj -c Release -r win-x6
 资源模组安装器内置 [zxy19/ResourceModLoader](https://github.com/zxy19/ResourceModLoader) 的 Mod 引擎（MIT），其许可与版权声明见 [src/ResourceModEngine/LICENSE.txt](src/ResourceModEngine/LICENSE.txt)。
 
 内嵌的 Astral Party 协议程序集、配表与游戏素材归原权利人所有，不属于本项目的授权范围。CesiumLoader 各组件遵循其自身许可，详见 [加载器许可说明](https://github.com/higashitaniyume/CesiumLoader#许可)。
+
 
 
