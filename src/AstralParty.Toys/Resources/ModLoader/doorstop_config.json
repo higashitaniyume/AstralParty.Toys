@@ -14,6 +14,9 @@
   "consoleEnabled": true,
   // 控制台窗口是否置顶。默认 false: 置顶窗口会一直压着游戏, 调试时很碍事。
   "consoleTopmost": false,
+  // CesiumLoader Debug Shell: 控制台命令输入(输入 help 查看命令)。默认开;
+  // 关掉只影响命令输入, 控制台照常显示日志。
+  "debugShell": true,
   "forwardActivityLog": true,
   // 变速引擎基础倍率: 游戏启动即应用, 全程保持。1.0=正常(默认), 2.0=全程2倍速。
   // 范围 [1,100] —— 低于 1 倍(减速)被硬性禁止, 写更小的值会按 1.0 处理并记日志。

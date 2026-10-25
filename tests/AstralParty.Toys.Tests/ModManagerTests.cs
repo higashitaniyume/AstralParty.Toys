@@ -1107,12 +1107,14 @@ public sealed class ModManagerTests
         using var harness = new ModHarness("ap-mod-cfg-save");
         harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
 
-        var config = new LoaderConfig { SpeedhackBaseSpeed = 3.0, ConsoleTopmost = false, SpeedControlEnabled = false };
+        var config = new LoaderConfig { SpeedhackBaseSpeed = 3.0, ConsoleTopmost = false, SpeedControlEnabled = false, DebugShell = false };
         harness.Manager.SaveLoaderConfig(harness.GameDirectory, config);
 
         var read = harness.Manager.ReadLoaderConfig(harness.GameDirectory);
         Assert.Equal(3.0, read.SpeedhackBaseSpeed);
         Assert.False(read.ConsoleTopmost);
+        // Debug Shell 开关必须能往返(老配置没有该键时默认开)
+        Assert.False(read.DebugShell);
         // 变速控制文件通道开关必须能往返(老配置没有该键时默认开)
         Assert.False(read.SpeedControlEnabled);
 
@@ -1136,8 +1138,9 @@ public sealed class ModManagerTests
         Assert.False(config.ConsoleTopmost);
         Assert.Equal(2.5, config.SpeedhackBaseSpeed);
         Assert.Equal(90, config.GameAssemblyTimeoutSec);
-        // 老配置(升级上来的 doorstop_config.json)没有 speedControlEnabled -> 默认开, 热键可用
+        // 老配置(升级上来的 doorstop_config.json)没有 speedControlEnabled / debugShell -> 默认开
         Assert.True(config.SpeedControlEnabled);
+        Assert.True(config.DebugShell);
 
         // 无该选项时 camelCase 无法映射(回归保护)
         var strict = System.Text.Json.JsonSerializer.Deserialize<LoaderConfig>(json)!;

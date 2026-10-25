@@ -759,6 +759,7 @@
         ['speedControlEnabled', '允许游戏内热键变速（Delete 在 1.0x 与刚才的倍率之间切换，Alt+= / Alt+- 调倍率）', 'bool', config.speedControlEnabled],
         ['consoleEnabled', '显示控制台窗口（模组日志）', 'bool', config.consoleEnabled],
         ['consoleTopmost', '控制台窗口置顶', 'bool', config.consoleTopmost],
+        ['debugShell', '控制台命令输入（CesiumLoader Debug Shell，输入 help 查看命令）', 'bool', config.debugShell],
         ['forwardActivityLog', '把模组日志转发到控制台', 'bool', config.forwardActivityLog],
         ['steamBypassEnabled', '不装 Steam 也能启动游戏（首页「启动方式」把这一套三个开关一起开 / 关）', 'bool', config.steamBypassEnabled]
       ];
@@ -852,6 +853,7 @@
         hybridclrTimeoutSec: num('hybridclrTimeoutSec'),
         consoleEnabled: bool('consoleEnabled'),
         consoleTopmost: bool('consoleTopmost'),
+        debugShell: bool('debugShell'),
         forwardActivityLog: bool('forwardActivityLog'),
         speedhackBaseSpeed: speed,
         speedControlEnabled: bool('speedControlEnabled'),

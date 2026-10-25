@@ -996,6 +996,8 @@ public sealed partial class ModManager
             if (root.TryGetProperty("consoleEnabled", out ce) && ce.ValueKind == JsonValueKind.False) defaults.ConsoleEnabled = false;
             if (root.TryGetProperty("consoleTopmost", out var ct) && ct.ValueKind == JsonValueKind.True) defaults.ConsoleTopmost = true;
             if (root.TryGetProperty("consoleTopmost", out ct) && ct.ValueKind == JsonValueKind.False) defaults.ConsoleTopmost = false;
+            if (root.TryGetProperty("debugShell", out var ds) && ds.ValueKind == JsonValueKind.True) defaults.DebugShell = true;
+            if (root.TryGetProperty("debugShell", out ds) && ds.ValueKind == JsonValueKind.False) defaults.DebugShell = false;
             if (root.TryGetProperty("forwardActivityLog", out var fa) && fa.ValueKind == JsonValueKind.True) defaults.ForwardActivityLog = true;
             if (root.TryGetProperty("forwardActivityLog", out fa) && fa.ValueKind == JsonValueKind.False) defaults.ForwardActivityLog = false;
             if (root.TryGetProperty("speedhackBaseSpeed", out var sp) && sp.ValueKind == JsonValueKind.Number) defaults.SpeedhackBaseSpeed = sp.GetDouble();
@@ -1045,6 +1047,7 @@ public sealed partial class ModManager
             ["hybridclrTimeoutSec"] = config.HybridclrTimeoutSec,
             ["consoleEnabled"] = config.ConsoleEnabled,
             ["consoleTopmost"] = config.ConsoleTopmost,
+            ["debugShell"] = config.DebugShell,
             ["forwardActivityLog"] = config.ForwardActivityLog,
             ["speedhackBaseSpeed"] = config.SpeedhackBaseSpeed,
             ["speedControlEnabled"] = config.SpeedControlEnabled,

@@ -13,6 +13,8 @@ public sealed class LoaderConfig
     public int HybridclrTimeoutSec { get; set; } = 60;
     public bool ConsoleEnabled { get; set; } = true;
     public bool ConsoleTopmost { get; set; } = true;
+    /// <summary>CesiumLoader Debug Shell: 控制台命令输入(输入 help 查看命令)。默认开; 关掉只影响命令, 日志照常。</summary>
+    public bool DebugShell { get; set; } = true;
     public bool ForwardActivityLog { get; set; } = true;
     public double SpeedhackBaseSpeed { get; set; } = 1.0;
     /// <summary>变速控制文件通道(mod 热键变速用)。默认开; 关掉后 SpeedHackMod 的热键失效(基础倍率仍生效)。</summary>
