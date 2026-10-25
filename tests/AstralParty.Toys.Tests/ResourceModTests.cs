@@ -1,4 +1,5 @@
-﻿using System.IO.Compression;
+using System.IO.Compression;
+using System.Text;
 using AddressablesTools.Catalog;
 using AddressablesTools.Classes;
 using AstralParty.Toys.Services;
@@ -102,6 +103,67 @@ public sealed class ResourceModTests
         Assert.Null(ResourceModCatalog.TryResolve(Path.Combine(Path.GetTempPath(), "toys-missing-" + Guid.NewGuid().ToString("N"))));
     }
 
+    [RealRmlArchiveFact]
+    public void RealArchivePreservesEntryNames()
+    {
+        var zip = Environment.GetEnvironmentVariable("ASTRAL_TEST_RML_ZIP")!;
+        var game = CreateFakeGame(out var company, out var product);
+        try
+        {
+            var result = new ResourceModManager().Import(game, zip);
+            var package = Path.Combine(game, ResourceModManager.StoreFolderName, "packages", result.Package.Id);
+
+            Assert.True(Directory.Exists(package));
+            var entries = Directory.EnumerateFileSystemEntries(package, "*", SearchOption.AllDirectories).ToArray();
+            Assert.DoesNotContain(entries, path => path.Contains('\uFFFD'));
+            using var archive = CompatZipArchive.OpenRead(zip);
+            Assert.Equal(
+                archive.Entries.Count(entry => !string.IsNullOrEmpty(entry.Name)),
+                entries.Count(path => (File.GetAttributes(path) & FileAttributes.Directory) == 0));
+        }
+        finally
+        {
+            Cleanup(game, company, product);
+        }
+    }
+
+    [Fact]
+    public void ReimportRemovesPreviousPackageContentOutsideEngineScanTree()
+    {
+        var game = CreateFakeGame(out var company, out var product);
+        var zip = Path.Combine(Path.GetTempPath(), "toys-rml-replace-" + Guid.NewGuid().ToString("N") + ".zip");
+        try
+        {
+            byte[] content = { 1, 2, 3 };
+            using (var archive = ZipFile.Open(zip, ZipArchiveMode.Create))
+            {
+                using var stream = archive.CreateEntry("预览.png").Open();
+                stream.Write(content);
+            }
+
+            var manager = new ResourceModManager();
+            var first = manager.Import(game, zip);
+            var package = Path.Combine(game, ResourceModManager.StoreFolderName, "packages", first.Package.Id);
+            File.WriteAllText(Path.Combine(package, "旧版本残留.txt"), "stale");
+
+            manager.Import(game, zip);
+
+            // 旧包不能留在 packages 里（引擎会把它当成第二个模组），也不能以 .replaced- 形式残留。
+            Assert.False(File.Exists(Path.Combine(package, "旧版本残留.txt")));
+            Assert.True(File.Exists(Path.Combine(package, "预览.png")));
+            var store = Path.Combine(game, ResourceModManager.StoreFolderName);
+            Assert.DoesNotContain(
+                Directory.EnumerateFileSystemEntries(store, "*", SearchOption.AllDirectories),
+                path => path.EndsWith(".old", StringComparison.OrdinalIgnoreCase)
+                    || Path.GetFileName(path).StartsWith(".replaced-", StringComparison.Ordinal));
+        }
+        finally
+        {
+            if (File.Exists(zip)) File.Delete(zip);
+            Cleanup(game, company, product);
+        }
+    }
+
     [Fact]
     public void ImportRejectsZipWithoutBundles()
     {
@@ -123,6 +185,77 @@ public sealed class ResourceModTests
         finally
         {
             if (File.Exists(zip)) File.Delete(zip);
+            Cleanup(game, company, product);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ImportKeepsChineseEntryNames(bool gbk)
+    {
+        var game = CreateFakeGame(out var company, out var product);
+        var zip = Path.Combine(Path.GetTempPath(), "toys-rml-gbk-" + Guid.NewGuid().ToString("N") + ".zip");
+        try
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            var encoding = gbk
+                ? Encoding.GetEncoding(936, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback)
+                : null;
+            byte[] content = { 1, 2, 3 };
+            using (var archive = ZipFile.Open(zip, ZipArchiveMode.Create, encoding))
+            {
+                using (var stream = archive.CreateEntry("预览/效果图.png").Open()) stream.Write(content);
+                using (var stream = archive.CreateEntry("皮肤/替换.bundle").Open()) stream.Write(content);
+                using (var stream = archive.CreateEntry("使用说明.txt").Open()) stream.Write(content);
+            }
+
+            var manager = new ResourceModManager();
+            var result = manager.Import(game, zip);
+            var package = Path.Combine(game, ResourceModManager.StoreFolderName, "packages", result.Package.Id);
+
+            Assert.True(File.Exists(Path.Combine(package, "预览", "效果图.png")));
+            Assert.True(File.Exists(Path.Combine(package, "皮肤", "替换.bundle")));
+            Assert.True(File.Exists(Path.Combine(package, "使用说明.txt")));
+            Assert.Equal(3, result.Package.FileCount);
+            Assert.DoesNotContain(
+                Directory.EnumerateFileSystemEntries(package, "*", SearchOption.AllDirectories),
+                path => path.Contains('\uFFFD'));
+            Assert.False(manager.GetStatus(game).Mods.Single().HasMojibakeNames);
+        }
+        finally
+        {
+            if (File.Exists(zip)) File.Delete(zip);
+            Cleanup(game, company, product);
+        }
+    }
+
+    [Fact]
+    public void StatusFlagsPackagesWithGarbledFileNames()
+    {
+        var game = CreateFakeGame(out var company, out var product);
+        try
+        {
+            var store = Path.Combine(game, ResourceModManager.StoreFolderName);
+            var broken = Path.Combine(store, "packages", "rm-broken");
+            Directory.CreateDirectory(Path.Combine(broken, "\uFFFD\uFFFD\u03F7"));
+            File.WriteAllText(Path.Combine(broken, "\uFFFD\uFFFD\u0228\uFFFD.pdf"), "x");
+            var clean = Path.Combine(store, "packages", "rm-clean");
+            Directory.CreateDirectory(clean);
+            File.WriteAllText(Path.Combine(clean, "预览.png"), "x");
+            File.WriteAllText(
+                Path.Combine(store, "installed.json"),
+                "{\"schema\":1,\"mods\":["
+                + "{\"id\":\"rm-broken\",\"name\":\"broken\",\"enabled\":true,\"fileCount\":1},"
+                + "{\"id\":\"rm-clean\",\"name\":\"clean\",\"enabled\":true,\"fileCount\":1}]}");
+
+            var status = new ResourceModManager().GetStatus(game);
+
+            Assert.True(status.Mods.Single(mod => mod.Id == "rm-broken").HasMojibakeNames);
+            Assert.False(status.Mods.Single(mod => mod.Id == "rm-clean").HasMojibakeNames);
+        }
+        finally
+        {
             Cleanup(game, company, product);
         }
     }
@@ -281,5 +414,16 @@ public sealed class ResourceModTests
             if (Directory.Exists(localLow)) Directory.Delete(localLow, true);
         }
         catch { }
+    }
+}
+
+/// <summary>真实 RML 包取样：环境变量 <c>ASTRAL_TEST_RML_ZIP</c> 指向一个含中文文件名的现成 ZIP。</summary>
+public sealed class RealRmlArchiveFactAttribute : FactAttribute
+{
+    public RealRmlArchiveFactAttribute()
+    {
+        var archive = Environment.GetEnvironmentVariable("ASTRAL_TEST_RML_ZIP");
+        if (string.IsNullOrEmpty(archive) || !File.Exists(archive))
+            Skip = "设置 ASTRAL_TEST_RML_ZIP 可验证真实 RML 包的文件名解码。";
     }
 }

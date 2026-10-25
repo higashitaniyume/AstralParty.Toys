@@ -433,7 +433,7 @@ public sealed class SkinManager
         var skinsDir = GetSkinsDirectory(gameDirectory);
         Directory.CreateDirectory(skinsDir);
 
-        using var archive = ZipFile.OpenRead(zipPath);
+        using var archive = CompatZipArchive.OpenRead(zipPath);
         if (archive.Entries.Count == 0)
             throw new InvalidOperationException("压缩包内没有任何文件。");
 

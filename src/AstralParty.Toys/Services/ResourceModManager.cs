@@ -73,6 +73,8 @@ public sealed class ResourceModPackageStatus
     public long Size { get; set; }
     public DateTimeOffset ImportedAt { get; set; }
     public string[] UnmatchedNames { get; set; } = Array.Empty<string>();
+    /// <summary>包内是否残留 U+FFFD 乱码文件名（旧版本按 UTF-8 解码 GBK 名字导致），需重新导入修正。</summary>
+    public bool HasMojibakeNames { get; set; }
 }
 
 public sealed class ResourceModStatus
@@ -199,7 +201,8 @@ public sealed class ResourceModManager
                     MatchedBundles = fileCount,
                     UnmatchedBundles = 0,
                     Size = size,
-                    ImportedAt = mod.ImportedAt
+                    ImportedAt = mod.ImportedAt,
+                    HasMojibakeNames = ContainsMojibakeNames(dir)
                 });
             }
 
@@ -249,6 +252,8 @@ public sealed class ResourceModManager
             var packagesDir = Path.Combine(store, PackagesFolderName);
             var finalDir = Path.Combine(packagesDir, id);
             var tempDir = Path.Combine(packagesDir, ".import-" + id);
+            // 被替换的旧包要移出 packages：RML 引擎递归扫描该目录，留在里面会被当成第二个模组一起应用。
+            var retiredDir = Path.Combine(store, ".replaced-" + id);
             Directory.CreateDirectory(packagesDir);
             if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
             Directory.CreateDirectory(tempDir);
@@ -264,7 +269,7 @@ public sealed class ResourceModManager
 
             try
             {
-                using var archive = ZipFile.OpenRead(zipPath);
+                using var archive = CompatZipArchive.OpenRead(zipPath);
                 var files = archive.Entries.Where(entry => !string.IsNullOrEmpty(entry.Name)).ToList();
                 ImportLimits.EnsureFreeSpace(store, files.Sum(entry => entry.Length) + (32L << 20));
 
@@ -296,8 +301,8 @@ public sealed class ResourceModManager
                 if (!HasRecognizableContent(tempDir))
                     throw new InvalidDataException("压缩包里没有可识别的资源模组内容（bundle / mod.json / replace.txt / 图片 / patch）。");
 
-                TryDeleteDirectory(finalDir + ".old");
-                if (Directory.Exists(finalDir)) Directory.Move(finalDir, finalDir + ".old");
+                TryDeleteDirectory(retiredDir);
+                if (Directory.Exists(finalDir)) Directory.Move(finalDir, retiredDir);
                 Directory.Move(tempDir, finalDir);
             }
             catch (OperationCanceledException)
@@ -333,13 +338,13 @@ public sealed class ResourceModManager
                     result.ApplyErrors = applied.Errors;
                     result.ApplyWarnings = applied.Warnings;
                     result.ApplyMessages = applied.Messages;
-                    TryDeleteDirectory(finalDir + ".old");
+                    TryDeleteDirectory(retiredDir);
                 }
                 catch (OperationCanceledException)
                 {
                     // 回滚：恢复被替换的旧包，撤销本次清单变更，catalog 已由 Apply 还原。
                     TryDeleteDirectory(finalDir);
-                    if (Directory.Exists(finalDir + ".old")) Directory.Move(finalDir + ".old", finalDir);
+                    if (Directory.Exists(retiredDir)) Directory.Move(retiredDir, finalDir);
                     manifest.Mods.RemoveAll(mod => string.Equals(mod.Id, id, StringComparison.OrdinalIgnoreCase));
                     if (previous is not null) manifest.Mods.Add(previous);
                     SaveManifest(store, manifest);
@@ -349,9 +354,11 @@ public sealed class ResourceModManager
                 catch (Exception ex)
                 {
                     result.ApplyError = ex.Message;
-                    TryDeleteDirectory(finalDir + ".old");
+                    TryDeleteDirectory(retiredDir);
                 }
             }
+            // 未应用（等待稍后应用）时旧包也已用不上，一并清掉，避免残留在 store 里。
+            TryDeleteDirectory(retiredDir);
             if (!result.Applied)
                 ReportProgress(progress, "done", 100, "安装完成", result.PendingReason ?? "", canPause: false, canCancel: false);
             return result;
@@ -695,6 +702,20 @@ public sealed class ResourceModManager
         }
         catch (IOException) { return (0, 0); }
         catch (UnauthorizedAccessException) { return (0, 0); }
+    }
+
+    /// <summary>旧版本按 UTF-8 解码 GBK 文件名，解压后名字里会留下 U+FFFD；命中时提示玩家重新导入同一 ZIP。</summary>
+    private static bool ContainsMojibakeNames(string dir)
+    {
+        if (!Directory.Exists(dir)) return false;
+        try
+        {
+            foreach (var entry in Directory.EnumerateFileSystemEntries(dir, "*", SearchOption.AllDirectories))
+                if (entry.Contains('\uFFFD')) return true;
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
+        return false;
     }
 
     private static bool HasRecognizableContent(string dir)

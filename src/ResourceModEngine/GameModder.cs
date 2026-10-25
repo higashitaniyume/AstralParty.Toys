@@ -348,7 +348,8 @@ namespace ResourceModLoader
                     if (isTop)
                         Report.SetCurrentModPath(dir);
                     var dirName = Path.GetFileName(dir);
-                    if (dirName != "_generated")
+                    // _generated 是引擎自己的产物；点开头的是安装器的工作目录（如 .import- / .replaced-），都不算模组。
+                    if (dirName != "_generated" && !dirName.StartsWith("."))
                     {
                         ApplyMod(Path.Combine(modPath, dir), priority);
                     }

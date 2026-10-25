@@ -81,6 +81,8 @@
 
     render(status) {
       this.status = status || {};
+      const mods = status?.mods || [];
+      const mojibakeCount = mods.filter(mod => mod.hasMojibakeNames).length;
       const banner = $('resourceModBanner');
       if (banner) {
         const parts = [];
@@ -98,6 +100,10 @@
           if (status?.needsApply) parts.push(t('resource_mods.status_pending'));
           if (status?.gameRunning) parts.push(t('resource_mods.status_running'));
           if (status?.needsApply || status?.gameRunning) cls = 'is-warn';
+          if (mojibakeCount > 0) {
+            parts.push(t('resource_mods.mojibake_banner', { n: mojibakeCount }));
+            if (cls !== 'is-error') cls = 'is-warn';
+          }
         }
         banner.className = 'resource-mod-banner ' + cls;
         banner.textContent = parts.join(' · ');
@@ -113,9 +119,8 @@
         }
       }
 
-      const mods = status?.mods || [];
-      const list = $('resourceModList');
-      if (list) list.innerHTML = mods.map(mod => this.cardHtml(mod)).join('');
+      const modsList = $('resourceModList');
+      if (modsList) modsList.innerHTML = mods.map(mod => this.cardHtml(mod)).join('');
       $('resourceModEmpty')?.classList.toggle('hidden', mods.length > 0);
 
       const apply = $('resourceModApplyBtn');
@@ -234,6 +239,9 @@
       const badge = mod.enabled
         ? `<span class="resource-mod-badge is-on">${t('resource_mods.enabled')}</span>`
         : `<span class="resource-mod-badge is-off">${t('resource_mods.disabled')}</span>`;
+      const mojibake = mod.hasMojibakeNames
+        ? `<p class="resource-mod-warn">${t('resource_mods.mojibake_card')}</p>`
+        : '';
       return `
         <article class="resource-mod-card${mod.enabled ? '' : ' is-disabled'}" data-id="${esc(mod.id)}">
           <div class="resource-mod-head">
@@ -252,6 +260,7 @@
             <span>${t('resource_mods.matched', { n: mod.matchedBundles })}</span>
             <span>${formatSize(mod.size)}</span>
           </div>
+          ${mojibake}
           ${details}
         </article>`;
     },

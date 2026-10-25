@@ -109,6 +109,13 @@
   font-size: 12px;
 }
 
+.resource-mod-warn {
+  margin: 0;
+  color: var(--gp-gold);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 .resource-mod-badge {
   display: inline-flex;
   align-items: center;

@@ -243,25 +243,7 @@ public static class LegacyCharacterSkinImporter
         return candidates[0];
     }
 
-    internal static ZipArchive OpenArchive(string path)
-    {
-        ZipArchive? archive = null;
-        try
-        {
-            archive = ZipFile.Open(path, ZipArchiveMode.Read, new UTF8Encoding(false, true));
-            _ = archive.Entries.Count; // Entry names decode lazily while reading the central directory.
-            return archive;
-        }
-        catch (DecoderFallbackException)
-        {
-            archive?.Dispose();
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            archive = ZipFile.Open(path, ZipArchiveMode.Read, Encoding.GetEncoding(936, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback));
-            try { _ = archive.Entries.Count; return archive; }
-            catch { archive.Dispose(); throw; }
-        }
-        catch { archive?.Dispose(); throw; }
-    }
+    internal static ZipArchive OpenArchive(string path) => CompatZipArchive.OpenRead(path);
 
     internal static List<(ZipArchiveEntry Entry, string Relative)> ValidateArchive(ZipArchive archive)
     {

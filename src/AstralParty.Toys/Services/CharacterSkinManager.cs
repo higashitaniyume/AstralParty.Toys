@@ -98,7 +98,7 @@ public sealed class CharacterSkinManager
     }
     public string Import(string game, string zipPath)
     {
-        using var archive = ZipFile.OpenRead(zipPath);
+        using var archive = CompatZipArchive.OpenRead(zipPath);
         // 不设文件数量或总大小上限：包是玩家自己选的本地文件，解压前只确认目标盘放得下
         long declaredBytes = 0;
         foreach (var declaredEntry in archive.Entries) declaredBytes += declaredEntry.Length;
