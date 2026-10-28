@@ -614,6 +614,14 @@ body:not(.reduce-motion) #modsView:not(.page-entering) .mods-advanced {
   overflow-y: auto;
   padding: 2px;
 }
+/* 模组配置弹窗里让表单占满加宽后的弹窗，说明文字不再被 520px 卡住。 */
+.modal-wide .cfg-form {
+  max-width: none;
+  width: 100%;
+}
+/* 输入框不用跟着弹窗无限变宽，多出来的宽度留给标签/说明文字。 */
+.modal-wide .cfg-row input[type="number"] { flex: 0 1 180px; }
+.modal-wide .cfg-row input[type="text"] { flex: 0 1 380px; }
 .cfg-row {
   display: flex;
   align-items: center;
@@ -645,6 +653,19 @@ body:not(.reduce-motion) #modsView:not(.page-entering) .mods-advanced {
 .cfg-row input:focus { border-color: var(--gp-pink); }
 .cfg-row input:read-only { opacity: 0.6; }
 .cfg-label { flex: 1; min-width: 0; line-height: 1.55; font-size: 12.5px; }
+/* mod 自带的多语言说明：说明用主色，配置名缩成小号灰色跟在后面 */
+.cfg-comment { white-space: pre-line; }
+.cfg-field-key {
+  margin-left: 2px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--gp-text-muted);
+  white-space: nowrap;
+}
+.cfg-row.cfg-described { align-items: flex-start; }
+.cfg-row.cfg-described input[type="number"],
+.cfg-row.cfg-described input[type="text"],
+.cfg-row.cfg-described .key-btn { margin-top: 1px; }
 
 .cfg-hint {
   font-size: 12px;

@@ -1283,6 +1283,107 @@ public sealed class ModManagerTests
         Assert.Equal("Mouse4", field.StringValue);
     }
 
+    [Fact]
+    public void ReadModConfigFields_ResolvesCommentsByLanguageAndFallback()
+    {
+        using var harness = new ModHarness("ap-mod-comments");
+        var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
+        var configDir = Path.Combine(modsDir, "DocMod");
+        Directory.CreateDirectory(configDir);
+        File.WriteAllText(Path.Combine(configDir, "config.json"), """
+            {
+              "Enabled": true,
+              "cooldownSeconds": 2,
+              "speed": 1.5,
+              "note": "hello",
+              "plain": 1,
+              "_comments": {
+                "Enabled": { "zh-Hans": "启用", "zh-Hant": "啟用", "en": "Enable", "ja": "有効" },
+                "cooldownSeconds": { "en": "Cooldown in seconds" },
+                "speed": "Common note",
+                "note": { "zh-TW": "繁體說明" }
+              }
+            }
+            """);
+
+        string Comment(string language, string name) =>
+            harness.Manager.ReadModConfigFields(harness.GameDirectory, "DocMod.dll", language)
+                .Single(f => f.Name == name).Comment;
+
+        Assert.Equal("启用", Comment("zh-Hans", "Enabled"));
+        Assert.Equal("啟用", Comment("zh-Hant", "Enabled"));
+        Assert.Equal("Enable", Comment("en", "Enabled"));
+        Assert.Equal("有効", Comment("ja", "Enabled"));
+        // 当前语言没有时: ja -> zh-Hans -> en
+        Assert.Equal("Cooldown in seconds", Comment("ja", "cooldownSeconds"));
+        // 字符串简写对所有语言都生效
+        Assert.Equal("Common note", Comment("ja", "speed"));
+        Assert.Equal("Common note", Comment("en", "speed"));
+        // 语言别名
+        Assert.Equal("繁體說明", Comment("zh-Hant", "note"));
+        // 没有说明的字段保持空串
+        Assert.Equal("", Comment("zh-Hans", "plain"));
+
+        // _comments 不进入可编辑字段
+        var fields = harness.Manager.ReadModConfigFields(harness.GameDirectory, "DocMod.dll", "zh-Hans");
+        Assert.DoesNotContain(fields, f => f.Name == "_comments");
+        Assert.Equal(5, fields.Count);
+    }
+
+    [Fact]
+    public void SaveModConfigFields_PreservesCommentsAndNestedOtherValues()
+    {
+        using var harness = new ModHarness("ap-mod-comments-save");
+        var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
+        var configPath = Path.Combine(modsDir, "DocMod", "config.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(configPath)!);
+        File.WriteAllText(configPath, """
+            {
+              "Enabled": true,
+              "nested": { "a": 1, "b": [true, "x"] },
+              "_comments": {
+                "Enabled": { "zh-Hans": "启用", "en": "Enable" }
+              }
+            }
+            """);
+
+        var fields = harness.Manager.ReadModConfigFields(harness.GameDirectory, "DocMod.dll", "zh-Hans");
+        var enabled = fields.Single(f => f.Name == "Enabled");
+        enabled.BoolValue = false;
+
+        // 模拟前端误带一个 _comments 字段：后台必须忽略，不能覆盖原说明。
+        fields.Add(new ModConfigField { Name = "_comments", Kind = "string", StringValue = "oops" });
+        harness.Manager.SaveModConfigFields(harness.GameDirectory, "DocMod.dll", fields);
+
+        using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(configPath));
+        var root = doc.RootElement;
+        Assert.False(root.GetProperty("Enabled").GetBoolean());
+        Assert.Equal(1, root.GetProperty("nested").GetProperty("a").GetInt32());
+        Assert.True(root.GetProperty("nested").GetProperty("b")[0].GetBoolean());
+        Assert.Equal("x", root.GetProperty("nested").GetProperty("b")[1].GetString());
+
+        var comments = root.GetProperty("_comments");
+        Assert.Equal("启用", comments.GetProperty("Enabled").GetProperty("zh-Hans").GetString());
+        Assert.Equal("Enable", comments.GetProperty("Enabled").GetProperty("en").GetString());
+        Assert.Equal(System.Text.Json.JsonValueKind.Object, comments.ValueKind);
+    }
+
+    [Fact]
+    public void SaveModConfigFields_RejectsInvalidOtherJson()
+    {
+        using var harness = new ModHarness("ap-mod-other-json");
+        var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
+        var configPath = Path.Combine(modsDir, "BadMod", "config.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(configPath)!);
+        File.WriteAllText(configPath, "{\"bad\":{\"a\":1}}");
+
+        var fields = harness.Manager.ReadModConfigFields(harness.GameDirectory, "BadMod.dll");
+        fields.Single(f => f.Name == "bad").StringValue = "{not json";
+
+        Assert.Throws<InvalidOperationException>(() =>
+            harness.Manager.SaveModConfigFields(harness.GameDirectory, "BadMod.dll", fields));
+    }
+
     // ============================== 联网更新：包解析 / 校验 / 安装 ==============================
 
     /// <summary>构造一个符合发布布局的内存 zip（version.dll Doorstop 式，含清单，可带/不带哈希校验）。</summary>

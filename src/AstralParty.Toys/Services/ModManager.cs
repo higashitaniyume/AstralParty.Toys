@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Win32;
 
 namespace AstralParty.Toys.Services;
@@ -1396,18 +1397,24 @@ public sealed partial class ModManager
     /// 每个字段带 name + kind(bool/number/string/key) + 当前值。
     /// kind=key 的是键位绑定(名字以 Key 结尾, 如 toggleKey/speedUpKey): 值本身是字符串,
     /// 但 UI 用"按一下要设的键"来采集(含鼠标侧键), 而不是让用户手打 KeyCode 名字。</summary>
-    public List<ModConfigField> ReadModConfigFields(string gameDirectory, string fileName)
+    public List<ModConfigField> ReadModConfigFields(string gameDirectory, string fileName, string? language = null)
     {
         var list = new List<ModConfigField>();
         var text = ReadModConfig(gameDirectory, fileName);
         if (string.IsNullOrWhiteSpace(text)) return list;
         try
         {
-            using var doc = JsonDocument.Parse(text);
+            using var doc = JsonDocument.Parse(StripJsonComments(text));
             if (doc.RootElement.ValueKind != JsonValueKind.Object) return list;
             foreach (var prop in doc.RootElement.EnumerateObject())
             {
-                var field = new ModConfigField { Name = prop.Name };
+                // _comments 是元数据，不是可编辑的配置项。
+                if (string.Equals(prop.Name, ModConfigComments.Key, StringComparison.Ordinal)) continue;
+                var field = new ModConfigField
+                {
+                    Name = prop.Name,
+                    Comment = ModConfigComments.Resolve(doc.RootElement, prop.Name, language)
+                };
                 switch (prop.Value.ValueKind)
                 {
                     case JsonValueKind.True:
@@ -1445,7 +1452,9 @@ public sealed partial class ModManager
         => name.Length > 3 && name.EndsWith("Key", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>按表单字段保存 mod 配置(序列化回 JSON; 类型由字段 Kind 决定)。
-    /// 落盘位置与 mod 自己读的完全一致: <c>mods\{ModId}\config.json</c>(DLL 旁边)。</summary>
+    /// 落盘位置与 mod 自己读的完全一致: <c>mods\{ModId}\config.json</c>(DLL 旁边)。
+    /// <c>_comments</c> 不来自表单，保存时从原文件原样带回并放在末尾；<c>other</c> 字段按 JSON 解析，
+    /// 不会把嵌套对象/数组写成字符串。</summary>
     public void SaveModConfigFields(string gameDirectory, string fileName, List<ModConfigField> fields)
     {
         if (string.IsNullOrWhiteSpace(gameDirectory) || string.IsNullOrWhiteSpace(fileName))
@@ -1453,21 +1462,62 @@ public sealed partial class ModManager
         var path = ModConfigWritePath(gameDirectory, fileName);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
-        var dict = new Dictionary<string, object?>();
-        foreach (var field in fields)
+        JsonNode? comments = null;
+        var existing = ReadModConfig(gameDirectory, fileName);
+        if (!string.IsNullOrWhiteSpace(existing))
         {
-            switch (field.Kind)
+            try
             {
-                case "bool": dict[field.Name] = field.BoolValue; break;
-                case "number": dict[field.Name] = field.NumberValue; break;
-                // 键位和普通字符串一样落盘(kind=key 只是 UI 的"用捕获控件"提示)
-                case "key": dict[field.Name] = field.StringValue; break;
-                default: dict[field.Name] = field.StringValue; break;
+                using var doc = JsonDocument.Parse(StripJsonComments(existing));
+                if (doc.RootElement.ValueKind == JsonValueKind.Object &&
+                    doc.RootElement.TryGetProperty(ModConfigComments.Key, out var node))
+                {
+                    comments = JsonNode.Parse(node.GetRawText());
+                }
+            }
+            catch
+            {
+                // 旧文件损坏时仍按表单内容保存；说明丢失比整份配置写不进去更容易恢复。
             }
         }
-        var json = JsonSerializer.Serialize(dict, new JsonSerializerOptions { WriteIndented = true });
+
+        var root = new JsonObject();
+        foreach (var field in fields)
+        {
+            if (string.IsNullOrWhiteSpace(field.Name)) continue;
+            // 保留键不接受前端覆盖，避免把说明写坏。
+            if (string.Equals(field.Name, ModConfigComments.Key, StringComparison.Ordinal)) continue;
+            switch (field.Kind)
+            {
+                case "bool": root[field.Name] = JsonValue.Create(field.BoolValue); break;
+                case "number": root[field.Name] = JsonValue.Create(field.NumberValue); break;
+                // 键位和普通字符串一样落盘(kind=key 只是 UI 的"用捕获控件"提示)
+                case "key": root[field.Name] = JsonValue.Create(field.StringValue); break;
+                case "other":
+                    try
+                    {
+                        root[field.Name] = JsonNode.Parse(field.StringValue);
+                    }
+                    catch (JsonException ex)
+                    {
+                        throw new InvalidOperationException(
+                            $"字段 {field.Name} 的 JSON 无法解析，请检查括号、引号与逗号：{ex.Message}", ex);
+                    }
+                    break;
+                default: root[field.Name] = JsonValue.Create(field.StringValue); break;
+            }
+        }
+        if (comments != null) root[ModConfigComments.Key] = comments;
+
+        var json = root.ToJsonString(ModConfigWriteOptions);
         WriteAllBytesProtected(path, System.Text.Encoding.UTF8.GetBytes(json));
     }
+
+    private static readonly JsonSerializerOptions ModConfigWriteOptions = new()
+    {
+        WriteIndented = true,
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
 
     /// <summary>剥掉 JSON 里的 // 与 /* */ 注释(加载器配置文件带注释, System.Text.Json 不认)。</summary>
     private static string StripJsonComments(string json)

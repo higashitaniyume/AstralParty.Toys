@@ -33,7 +33,7 @@ function toast(message) {
   toast._timer = setTimeout(() => node.classList.remove('show'), 3800);
 }
 
-function openModal(title, contentHtml, iconName) {
+function openModal(title, contentHtml, iconName, modalClass) {
   const modal = $('globalModal');
   const titleEl = $('modalTitle');
   const bodyEl = $('modalBody');
@@ -43,6 +43,12 @@ function openModal(title, contentHtml, iconName) {
   // 标题可带一个 Material Symbols 图标（iconName）；标题文本本身仍做 HTML 转义。
   titleEl.innerHTML = (iconName && window.Icons ? Icons.svg(iconName) + ' ' : '') + esc(title);
   bodyEl.innerHTML = contentHtml;
+  // 弹窗尺寸按内容切换（例如配置表单需要更宽）；同一个弹窗节点会复用，先清掉上一次的尺寸类。
+  const contentEl = modal.querySelector('.modal-content');
+  if (contentEl) {
+    contentEl.classList.remove('modal-wide');
+    if (modalClass) contentEl.classList.add(modalClass);
+  }
   modal.classList.add('open');
   // 记下"打开弹窗之前焦点在哪"，关闭时还回去（键盘用户才不会丢掉位置）
   modal._restoreFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;

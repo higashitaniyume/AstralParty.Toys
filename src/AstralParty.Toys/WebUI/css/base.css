@@ -570,6 +570,11 @@ button:disabled {
   animation: soft-pop 320ms var(--motion-spring) both;
 }
 
+/* 配置类弹窗：模组配置字段带多语言说明，按内容加宽；普通提示弹窗仍用 680px。 */
+.modal-content.modal-wide {
+  width: min(900px, 94vw);
+}
+
 .modal-header {
   padding: 18px 24px;
   background: rgba(255, 255, 255, 0.04);

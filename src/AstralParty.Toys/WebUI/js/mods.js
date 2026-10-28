@@ -795,7 +795,7 @@
           </div>
           <div class="cfg-hint">保存后重启游戏生效；日常只需要改「启用加载器」或「启动时基础倍速」。</div>
         </div>`;
-      openModal('加载器设置', html, 'settings');
+      openModal('加载器设置', html, 'settings', 'modal-wide');
       $('globalModal')?.querySelector('[data-cfg-cancel]')?.addEventListener('click', closeModal);
       $('globalModal')?.querySelector('[data-cfg-save]')?.addEventListener('click', () => {
         const cfg = this.collectLoaderConfig();
@@ -882,24 +882,29 @@
         ? '<div class="cfg-hint">还没有配置文件（mods\\' + esc(fileName.replace(/\.dll$/i, '')) + '\\config.json）。保存后将创建。</div>'
         : fields.map((f, idx) => {
             const id = `cfgfield-${idx}`;
+            const described = f.comment ? ' cfg-described' : '';
+            // 有说明时显示「当前语言的说明（小灰色配置名）」；没有说明的旧配置保持原样。
+            const label = (suffix = '') => f.comment
+              ? `<span class="cfg-label" data-i18n-skip><span class="cfg-comment">${esc(f.comment)}</span><span class="cfg-field-key">（${esc(f.name)}${esc(suffix)}）</span></span>`
+              : `<span class="cfg-label">${esc(f.name)}${esc(suffix)}</span>`;
             if (f.kind === 'bool') {
-              return `<label class="cfg-row cfg-check"><input type="checkbox" data-field="${id}" data-kind="bool" ${f.boolValue ? 'checked' : ''}> <span class="cfg-label">${esc(f.name)}</span></label>`;
+              return `<label class="cfg-row cfg-check${described}"><input type="checkbox" data-field="${id}" data-kind="bool" ${f.boolValue ? 'checked' : ''}> ${label()}</label>`;
             }
             if (f.kind === 'number') {
-              return `<label class="cfg-row"><span class="cfg-label">${esc(f.name)}</span><input type="number" step="any" data-field="${id}" data-kind="number" value="${esc(String(f.numberValue))}"></label>`;
+              return `<label class="cfg-row${described}">${label()}<input type="number" step="any" data-field="${id}" data-kind="number" value="${esc(String(f.numberValue))}"></label>`;
             }
             if (f.kind === 'other') {
-              return `<label class="cfg-row"><span class="cfg-label">${esc(f.name)}（JSON）</span><input type="text" data-field="${id}" data-kind="other" value="${esc(f.stringValue)}"></label>`;
+              return `<label class="cfg-row${described}">${label(' · JSON')}<input type="text" data-field="${id}" data-kind="other" value="${esc(f.stringValue)}"></label>`;
             }
             if (f.kind === 'key') {
               const current = f.stringValue || '';
-              return `<div class="cfg-row cfg-key">
-                <span class="cfg-label">${esc(f.name)}</span>
+              return `<div class="cfg-row cfg-key${described}">
+                ${label()}
                 <button type="button" class="key-btn" data-field="${id}" data-kind="key" data-key="${esc(current)}" title="点一下，再按下要绑的键（支持鼠标左/右/中键与侧键；Esc 取消）">${esc(current || '未设置（用 mod 默认）')}</button>
                 <button type="button" class="key-clear" data-clear="${id}" title="清空（让 mod 用它自己的默认键）">×</button>
               </div>`;
             }
-            return `<label class="cfg-row"><span class="cfg-label">${esc(f.name)}</span><input type="text" data-field="${id}" data-kind="string" value="${esc(f.stringValue)}"></label>`;
+            return `<label class="cfg-row${described}">${label()}<input type="text" data-field="${id}" data-kind="string" value="${esc(f.stringValue)}"></label>`;
           }).join('');
       const html = `
         <div class="cfg-form">
@@ -911,7 +916,7 @@
             <button class="primary-btn" data-cfg-field-save>保存配置</button>
           </div>
         </div>`;
-      openModal(`配置 · ${fileName}`, html, 'settings');
+      openModal(`配置 · ${fileName}`, html, 'settings', 'modal-wide');
       const modal = $('globalModal');
       bindKeyCapture(modal);
       modal?.querySelector('[data-cfg-field-cancel]')?.addEventListener('click', closeModal);
@@ -927,6 +932,8 @@
           if (kind === 'number') return { name: f.name, kind: 'number', numberValue: Number(el?.value ?? f.numberValue) };
           // 键位在后台就是普通字符串, 只是 UI 用"捕获"来采集
           if (kind === 'key') return { name: f.name, kind: 'string', stringValue: el?.dataset.key ?? f.stringValue ?? '' };
+          // 嵌套对象/数组按原 JSON 回写，不能当字符串存（否则 _comments / 列表会被写坏）
+          if (kind === 'other') return { name: f.name, kind: 'other', stringValue: el?.value ?? f.stringValue };
           return { name: f.name, kind: 'string', stringValue: el?.value ?? f.stringValue };
         });
         post({ type: 'modSaveConfigFields', fileName, fields: out });

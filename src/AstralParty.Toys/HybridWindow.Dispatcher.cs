@@ -376,7 +376,7 @@ public partial class HybridWindow
                     if (root.TryGetProperty("fileName", out var modCfgFieldsElement) &&
                         modCfgFieldsElement.GetString() is { Length: > 0 } modCfgFieldsName)
                     {
-                        Post(new { type = "modConfigFields", payload = new { fileName = modCfgFieldsName, fields = _modManager.ReadModConfigFields(RequireModGameDirectory(), modCfgFieldsName) } });
+                        Post(new { type = "modConfigFields", payload = new { fileName = modCfgFieldsName, fields = _modManager.ReadModConfigFields(RequireModGameDirectory(), modCfgFieldsName, _libraryService.Settings.Language) } });
                     }
                     break;
                 case "modSaveConfigFields":

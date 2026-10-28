@@ -1,6 +1,7 @@
 using System.IO;
 using System.IO.Compression;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using CesiumLoader.CharacterSkins;
 
@@ -10,6 +11,11 @@ public sealed record CharacterSkinProfile(string Id, CharacterSkinManifest Manif
 public sealed class CharacterSkinManager
 {
     public static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true, PropertyNameCaseInsensitive = true };
+    private static readonly JsonSerializerOptions ConfigWriteOptions = new()
+    {
+        WriteIndented = true,
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
     public string Root(string game) => Path.Combine(game, "AstralParty_ModLoader", "character-skins");
     public string Config(string game) => Path.Combine(game, "AstralParty_ModLoader", "mods", "CharacterSkinMod", "config.json");
     public string Package(string game, string id)
@@ -75,7 +81,31 @@ public sealed class CharacterSkinManager
             settings.ActivePackages.Add(id);
         }
         Directory.CreateDirectory(Path.GetDirectoryName(Config(game))!);
-        Atomic(Config(game), JsonSerializer.Serialize(settings, JsonOptions));
+        Atomic(Config(game), SerializeSettings(game, settings));
+    }
+
+    /// <summary>写配置时保留 mod 初始化写在 config.json 里的 _comments（Toys 只改启用列表）。</summary>
+    private string SerializeSettings(string game, CharacterSkinSettings settings)
+    {
+        var node = JsonSerializer.SerializeToNode(settings, JsonOptions)!.AsObject();
+        string path = Config(game);
+        if (File.Exists(path))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(path));
+                if (doc.RootElement.ValueKind == JsonValueKind.Object &&
+                    doc.RootElement.TryGetProperty(ModConfigComments.Key, out var comments))
+                {
+                    node[ModConfigComments.Key] = JsonNode.Parse(comments.GetRawText());
+                }
+            }
+            catch
+            {
+                // 旧文件损坏时仍然写入启用列表；说明丢了不影响皮肤加载。
+            }
+        }
+        return node.ToJsonString(ConfigWriteOptions);
     }
     public void Delete(string game, string id)
     {
