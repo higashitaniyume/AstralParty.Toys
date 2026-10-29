@@ -23,6 +23,8 @@
 
   const ReplayModule = {
     libraryData: null,
+    // 当前是否在回放详情页：决定左上角按钮是「返回回放列表」还是「返回大厅」
+    detailOpen: false,
     // 归档 / 放回 / 删除正在进行中（文件 IO + 之后整表重扫）：挡住重复点击
     busyButton: null,
     // 「按 ID 下载」弹窗正在下载的回放 ID（进度消息靠它认领自己的进度）
@@ -44,11 +46,13 @@
       // Actions in Tools Header
       $('toolOpenBtn')?.addEventListener('click', () => post({ type: 'openReplay' }));
       $('toolExportBtn')?.addEventListener('click', () => post({ type: 'export' }));
-      $('toolLibraryBtn')?.addEventListener('click', () => this.showLibrary());
-      $('toolsBackHomeBtn')?.addEventListener('click', () => showPage('home'));
+      // 列表页返回大厅；详情页返回回放列表
+      $('toolsBackHomeBtn')?.addEventListener('click', () => {
+        if (this.detailOpen) this.showLibrary();
+        else showPage('home');
+      });
 
       // Empty state buttons
-      $('emptySelectReplayBtn')?.addEventListener('click', () => post({ type: 'openReplay' }));
       $('refreshLibraryBtn')?.addEventListener('click', () => post({ type: 'refreshReplays' }));
 
       // 回放库：下载（按 ID）/ 导入 / 打开目录 / 筛选 / 横幅
@@ -88,25 +92,40 @@
     },
 
     onShowTools() {
-      // If we already have a report, show report workspace, else show empty / library
-      if (AppState.replayReport) {
-        $('replayEmptyBox')?.classList.add('hidden');
-        $('replayWorkspaceBox')?.classList.remove('hidden');
-        $('replaySubnav')?.classList.remove('hidden');
-        $('toolExportBtn')?.removeAttribute('disabled');
-        $('toolLibraryBtn')?.classList.remove('hidden');
-      } else {
-        this.showLibrary();
+      // 详情页（有已解析回放）或回放列表（按 ID 下载 / 从缓存打开）
+      if (AppState.replayReport) this.setDetailMode(true);
+      else this.showLibrary();
+    },
+
+    /** 切换列表 / 详情布局，并同步左上角返回按钮的文案与行为。 */
+    setDetailMode(inDetail) {
+      this.detailOpen = !!inDetail;
+      $('replayEmptyBox')?.classList.toggle('hidden', this.detailOpen);
+      $('replayWorkspaceBox')?.classList.toggle('hidden', !this.detailOpen);
+      $('replaySubnav')?.classList.toggle('hidden', !this.detailOpen);
+      if ($('toolExportBtn')) $('toolExportBtn').disabled = !this.detailOpen;
+
+      const back = $('toolsBackHomeBtn');
+      if (back) {
+        const key = this.detailOpen ? 'replay.back_to_list' : 'replay.back_to_lobby';
+        back.dataset.i18n = key;
+        if (typeof window.t === 'function') back.textContent = window.t(key);
+      }
+
+      const meta = $('toolFileMeta');
+      if (meta && this.detailOpen) {
+        meta.removeAttribute('data-i18n');
+      } else if (meta) {
+        meta.dataset.i18n = 'replay.list_hint';
+        if (typeof window.t === 'function') meta.textContent = window.t('replay.list_hint');
       }
     },
 
     showLibrary() {
-      $('replayEmptyBox')?.classList.remove('hidden');
-      $('replayWorkspaceBox')?.classList.add('hidden');
-      $('replaySubnav')?.classList.add('hidden');
-      if ($('toolExportBtn')) $('toolExportBtn').disabled = true;
-      if ($('toolLibraryBtn')) $('toolLibraryBtn').classList.add('hidden');
-      if ($('toolFileMeta')) $('toolFileMeta').textContent = '从游戏缓存中选择一局，或手动打开回放文件';
+      this.setDetailMode(false);
+      // 回到列表即丢弃上一局详情，避免从大厅再次进入时又跳回旧报告
+      AppState.replayReport = null;
+      AppState.selectedFrame = -1;
       post({ type: 'refreshReplays' });
     },
 
@@ -591,16 +610,13 @@
       // 右边详情却是"请在左侧点击任意协议帧"的占位，自相矛盾
       AppState.selectedFrame = -1;
 
-      $('replayEmptyBox')?.classList.add('hidden');
-      $('replayWorkspaceBox')?.classList.remove('hidden');
-      $('replaySubnav')?.classList.remove('hidden');
-      $('toolExportBtn')?.removeAttribute('disabled');
-      $('toolLibraryBtn')?.classList.remove('hidden');
+      this.setDetailMode(true);
 
       if ($('toolFileMeta')) {
         const frameCount = report.match?.frameCount != null ? `${report.match.frameCount.toLocaleString()} 帧` : '';
         const fileName = report.file?.fileName || '对战回放';
         const fileSize = report.file?.fileSizeText || '';
+        $('toolFileMeta').removeAttribute('data-i18n');
         $('toolFileMeta').textContent = `${fileName} · ${fileSize} · ${frameCount}`;
       }
 

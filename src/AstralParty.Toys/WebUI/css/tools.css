@@ -186,8 +186,9 @@ body:not(.reduce-motion) #toolsView:not(.page-entering) .replay-view:not(.hidden
   min-height: 0;
   overflow: hidden;
   display: grid;
-  grid-template-columns: minmax(280px, 0.72fr) minmax(460px, 1.28fr);
-  gap: 24px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
   padding: 28px;
 }
 
@@ -376,8 +377,8 @@ body:not(.reduce-motion) #toolsView:not(.page-entering) .replay-view:not(.hidden
 
 @media (max-width: 1180px) {
   .replay-empty-state {
-    grid-template-columns: minmax(260px, 0.65fr) minmax(400px, 1.35fr);
-    gap: 18px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
     padding: 22px;
   }
 

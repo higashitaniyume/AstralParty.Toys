@@ -329,13 +329,10 @@
               >
             </div>
             <div class="tools-header-actions">
-              <button class="secondary-btn hidden" id="toolLibraryBtn" data-i18n="replay.library">
-                回放列表
-              </button>
               <button class="secondary-btn" id="toolExportBtn" data-i18n="replay.export_json" disabled>
                 导出 JSON
               </button>
-              <button class="primary-btn" id="toolOpenBtn" data-i18n="replay.open_file">＋ 打开回放</button>
+              <button class="primary-btn" id="toolOpenBtn" data-i18n="replay.select_file_btn">＋ 选择回放文件</button>
             </div>
           </div>
 
@@ -423,22 +420,6 @@
           <div class="tools-workspace">
             <!-- Empty State / Recent Replays List -->
             <div class="replay-empty-state" id="replayEmptyBox">
-              <section class="replay-picker-panel">
-                <div class="empty-icon-orbit">
-                  <span class="mi mi-lg" data-icon="casino"></span>
-                </div>
-                <h3 data-i18n="replay.select_file_title">选择回放文件</h3>
-                <p data-i18n="replay.select_file_desc">
-                  手动打开任意回放文件，本地解析玩家、回合、动作、筹码流转与底层协议帧。
-                </p>
-                <button class="primary-btn" id="emptySelectReplayBtn" data-i18n="replay.select_file_btn">
-                  ＋ 选择回放文件
-                </button>
-                <small class="replay-local-note" data-i18n="replay.offline_note"
-                  >所有数据均在本地安全离线处理</small
-                >
-              </section>
-
               <section class="recent-replays-box">
                 <div class="recent-head">
                   <div>
