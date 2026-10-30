@@ -122,19 +122,43 @@ public sealed partial class ModManager
         ? null
         : Convert.ToHexString(SHA256.HashData(EmbeddedLoaderDll));
 
-    /// <summary>一个内置 mod 的内嵌资源对。</summary>
-    private readonly record struct BuiltInModResource(string Id, byte[] Dll, byte[]? Sidecar);
+    /// <summary>一个内置 mod 的内嵌资源：DLL + 可选 sidecar + 可选数据文件（mods\{ModId}\data\*）。</summary>
+    private readonly record struct BuiltInModResource(
+        string Id,
+        byte[] Dll,
+        byte[]? Sidecar,
+        IReadOnlyDictionary<string, byte[]> Data);
 
     private static BuiltInModResource[] ReadBuiltInMods()
     {
         var list = new List<BuiltInModResource>();
+        string[] resources;
+        try { resources = Assembly.GetManifestResourceNames(); }
+        catch { resources = Array.Empty<string>(); }
+
         foreach (var id in BuiltInModIds)
         {
             var dll = ReadEmbeddedResource(id + ".dll");
             if (dll is null) continue;   // 该 mod 未随程序集分发 → 跳过
-            list.Add(new BuiltInModResource(id, dll, ReadEmbeddedResource(id + ".json")));
+            list.Add(new BuiltInModResource(id, dll, ReadEmbeddedResource(id + ".json"), ReadEmbeddedData(id, resources)));
         }
         return list.ToArray();
+    }
+
+    /// <summary>读取某个 mod 的数据包资源（资源名 data.{ModId}.{文件名}）。</summary>
+    private static IReadOnlyDictionary<string, byte[]> ReadEmbeddedData(string id, string[] resourceNames)
+    {
+        var map = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
+        var prefix = ResourcePrefix + "data." + id + ".";
+        foreach (var name in resourceNames)
+        {
+            if (!name.StartsWith(prefix, StringComparison.Ordinal)) continue;
+            var fileName = name.Substring(prefix.Length);
+            if (fileName.Length == 0) continue;
+            var bytes = ReadEmbeddedResource("data." + id + "." + fileName);
+            if (bytes is not null) map[fileName] = bytes;
+        }
+        return map;
     }
 
     private static byte[]? ReadEmbeddedResource(string name)
@@ -436,6 +460,13 @@ public sealed partial class ModManager
                     WriteAllBytesProtected(Path.Combine(modDir, mod.Id + ".dll"), mod.Dll);
                     if (mod.Sidecar is not null)
                         WriteAllBytesProtected(Path.Combine(modDir, mod.Id + ".json"), mod.Sidecar);
+                    if (mod.Data.Count > 0)
+                    {
+                        var dataDir = Path.Combine(modDir, "data");
+                        Directory.CreateDirectory(dataDir);
+                        foreach (var pair in mod.Data)
+                            WriteAllBytesProtected(Path.Combine(dataDir, pair.Key), pair.Value);
+                    }
                 }
             }
 
@@ -485,12 +516,13 @@ public sealed partial class ModManager
 
             Add(Path.Combine(gameDirectory, LoaderDllName), LoaderDllName);
             Add(Path.Combine(loaderRoot, ConfigFileName), LoaderFolderName + "/" + ConfigFileName);
-            Add(Path.Combine(loaderRoot, SdkFolderName, SdkDllName), $"{LoaderFolderName}/{SdkFolderName}/{SdkDllName}");
             foreach (var mod in EmbeddedBuiltInMods)
             {
                 var prefix = $"{LoaderFolderName}/{ModsFolderName}/{mod.Id}/";
                 Add(Path.Combine(loaderRoot, ModsFolderName, mod.Id, mod.Id + ".dll"), prefix + mod.Id + ".dll");
                 Add(Path.Combine(loaderRoot, ModsFolderName, mod.Id, mod.Id + ".json"), prefix + mod.Id + ".json");
+                foreach (var fileName in mod.Data.Keys)
+                    Add(Path.Combine(loaderRoot, ModsFolderName, mod.Id, "data", fileName), prefix + "data/" + fileName);
             }
 
             var manifest = new Dictionary<string, object?>
@@ -1854,3 +1886,4 @@ public sealed partial class ModManager
     public static void OpenInExplorer(string path)
         => SpeedhackManager.OpenInExplorer(path);
 }
+

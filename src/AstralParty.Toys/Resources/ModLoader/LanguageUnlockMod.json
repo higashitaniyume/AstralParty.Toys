@@ -1,0 +1,2 @@
+{"id":"LanguageUnlockMod","name":"多语言支持","version":"1.0.1","author":"CesiumLoader","description":"在国服客户端启用设置里已有的英文 / 日文 / 繁中选项：接管「设置→屏幕→语言」，切换后写入正文与界面文案并重新登录。国际服原生支持，不介入。","permissions":0,"sdkVersion":"2.8.10","dependencies":[]}
+

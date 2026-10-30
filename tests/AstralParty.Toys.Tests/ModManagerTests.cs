@@ -101,6 +101,23 @@ public sealed class ModManagerTests
     }
 
     [Fact]
+    public void Install_WritesBuiltInModDataFiles()
+    {
+        using var harness = new ModHarness("ap-mod-data-files");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: true);
+
+        var dataDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName,
+            ModManager.ModsFolderName, "LanguageUnlockMod", "data");
+        Assert.True(Directory.Exists(dataDir), "内置模组数据目录缺失");
+        Assert.True(File.Exists(Path.Combine(dataDir, "en.pack")));
+        Assert.True(File.Exists(Path.Combine(dataDir, "ja.xml")));
+
+        var manifest = File.ReadAllText(Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName,
+            ModManager.InstalledManifestFileName));
+        Assert.Contains("LanguageUnlockMod/data/en.pack", manifest);
+    }
+
+    [Fact]
     public void Uninstall_RefusesForeignDll_UnlessForced()
     {
         using var harness = new ModHarness("ap-mod-uninstall-guard");
@@ -1501,9 +1518,9 @@ public sealed class ModManagerTests
         Assert.True(File.Exists(Path.Combine(modsRoot, "OptionalMod", "OptionalMod.dll")));
         Assert.True(File.Exists(Path.Combine(modsRoot, "OptionalMod", "OptionalMod.json")));
         Assert.True(File.Exists(Path.Combine(modsRoot, "OptionalMod", "OptionalMod.pdb")));
-        Assert.Equal(9, ModManager.EmbeddedBuiltInModIdList.Count);
+        Assert.Equal(10, ModManager.EmbeddedBuiltInModIdList.Count);
         Assert.Equal(new[] { "ActivityLogMod", "AutoThanksMod", "CardSkinMod", "CharacterSkinMod",
-            "CombatOddsMod", "ForkDirectionMod", "FreeCameraMod", "SpeedHackMod", "TurnFocusMod" },
+            "CombatOddsMod", "ForkDirectionMod", "FreeCameraMod", "LanguageUnlockMod", "SpeedHackMod", "TurnFocusMod" },
             ModManager.EmbeddedBuiltInModIdList);
     }
 

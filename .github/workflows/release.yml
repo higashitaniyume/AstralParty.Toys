@@ -98,6 +98,11 @@ jobs:
               if (-not (Test-Path $source)) { throw "发布包缺少公开模组文件: $source" }
               Copy-Item $source "$resources/$id.$extension" -Force
             }
+            # 模组数据包（语言翻译等）：整目录同步，作为内嵌资源随程序集分发。
+            $dataSource = Join-Path $modDirectory 'data'
+            $dataTarget = Join-Path $resources "data/$id"
+            if (Test-Path $dataTarget) { Remove-Item $dataTarget -Recurse -Force }
+            if (Test-Path $dataSource) { Copy-Item $dataSource $dataTarget -Recurse -Force }
           }
           Write-Host "内置 mod: $($modIds -join ', ')"
           # 记录内嵌加载器版本（ModManager 读取显示/更新对比）

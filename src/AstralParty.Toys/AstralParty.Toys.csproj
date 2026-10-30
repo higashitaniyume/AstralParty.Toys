@@ -10,10 +10,10 @@
     <AssemblyName>AstralParty.Toys</AssemblyName>
     <RootNamespace>AstralParty.Toys</RootNamespace>
     <StartupObject>AstralParty.Toys.App</StartupObject>
-    <!-- v1.2.12 正式发布，程序与安装器数字版本均为 1.2.12。 -->
-    <Version>1.2.12</Version>
-    <AssemblyVersion>1.2.12.0</AssemblyVersion>
-    <FileVersion>1.2.12.0</FileVersion>
+    <!-- v1.2.13 正式发布，程序与安装器数字版本均为 1.2.13。 -->
+    <Version>1.2.13</Version>
+    <AssemblyVersion>1.2.13.0</AssemblyVersion>
+    <FileVersion>1.2.13.0</FileVersion>
     <ApplicationIcon>WebUI\images\UT_AccountHeadShot_70902.ico</ApplicationIcon>
   </PropertyGroup>
 
@@ -50,6 +50,10 @@
     <EmbeddedResource Include="@(BuiltInMod->'Resources\ModLoader\%(Identity).dll');@(BuiltInMod->'Resources\ModLoader\%(Identity).json')">
       <LogicalName>AstralParty.Toys.ModLoader.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
+    <!-- 模组数据包（语言翻译等）：资源名 data.{ModId}.{文件名}，安装时写到 mods\{ModId}\data\。 -->
+    <EmbeddedResource Include="Resources\ModLoader\data\LanguageUnlockMod\*">
+      <LogicalName>AstralParty.Toys.ModLoader.data.LanguageUnlockMod.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
     <Content Include="Protocol\*.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -78,3 +82,4 @@
     <InternalsVisibleTo Include="AstralParty.Toys.Tests" />
   </ItemGroup>
 </Project>
+

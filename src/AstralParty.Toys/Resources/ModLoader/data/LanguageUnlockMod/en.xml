@@ -1,0 +1,1524 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<resources xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <string name="lv54en7xbnngd-n25_b5tv" mz="n25">Who do you want me to help you transfer Star Coin to?</string>
+  <string name="lv54en7xbnngd-n5_r94h" mz="btn_Leave">Leave</string>
+  <string name="lv54en7xbnngd-n6_r94h" mz="btn_ATM">Transfer</string>
+  <string name="lv54en7xbnngd-n28_et9r" mz="n28">Please select 1 player to transfer</string>
+  <string name="lv54en7xbnngd-n37_bnng" mz="btn_Transfer">Return to the store</string>
+  <string name="lv54en7xbnngd-n29_qpnt" mz="n29">Hide</string>
+  <string name="lv54en7xbnngd-n30_qpnt" mz="n30">Show</string>
+  <string name="iepldke7x20l20-n71_mdt4" mz="btn_RefreshSkin">Change</string>
+  <string name="iepldke7x20l20-n23_zhzt" mz="btn_Data">Stats</string>
+  <string name="iepldke7x20l20-n24_zhzt" mz="btn_Battle">Match</string>
+  <string name="iepldke7x20l20-n68_cisx" mz="btn_Replay">Replay</string>
+  <string name="iepldke7x20l20-n27_zhzt" mz="btn_ShowDataToggle">Not Public</string>
+  <string name="iepldke7x20l20-n28_zhzt" mz="btn_ShowFightToggle">Not Public</string>
+  <string name="iepldke7x20l20-n30_zhzt" mz="txt_FightCount">Total Games Played: {data=0}</string>
+  <string name="iepldke7x20l20-n31_zhzt" mz="txt_WinCount">Total Wins: {data=0}</string>
+  <string name="iepldke7x20l20-n32_zhzt" mz="txt_HeroCardCount">Owned CHAR: {data=0}</string>
+  <string name="iepldke7x20l20-n33_zhzt" mz="txt_Hero">Most Used CHAR: {data=0}</string>
+  <string name="iepldke7x20l20-n34_zhzt" mz="txt_AdornCount">Owned Outfit: {data=0}</string>
+  <string name="iepldke7x20l20-n73_g04j" mz="txt_SkinCount">Skins Owned: {data=0}</string>
+  <string name="iepldke7zhztc-n18_zhzt" mz="n18">Displayed</string>
+  <string name="iepldke7zhzta-n21_gd4d" mz="n21">EMPTY</string>
+  <string name="iepldke7zhztb-n15_zhzt" mz="n15">No achievement</string>
+  <string name="iepldke7zhztb-n19_f3tl" mz="btn_Sure">Confirm</string>
+  <string name="iepldke7rrd628-n20_rrd6" mz="title">Report</string>
+  <string name="iepldke7jgmz2e-n20_rrd6" mz="title">Block</string>
+  <string name="iepldke7it6m2x-n20_rrd6" mz="txt_Save">Save</string>
+  <string name="iepldke7it6m2x-n28_it6m" mz="txt_Play">Play</string>
+  <string name="iepldke7it6m2x-n30_it6m" mz="txt_Delete">Delete</string>
+  <string name="iepldke7it6m2x-n29_it6m" mz="txt_Saved">Saved</string>
+  <string name="iepldke7it6m32-n20_rrd6" mz="title">Saving</string>
+  <string name="iepldke7zhzti-n23_lw7s" mz="btn_ReplaySave">Save</string>
+  <string name="iepldke7zhztv-n21_mdt4" mz="n21">-WIN-</string>
+  <string name="iepldke7zhztv-n22_mdt4" mz="n22">-LOSE-</string>
+  <string name="iepldke7hni02-n9_f3tl" mz="btn_Sure">Confirm</string>
+  <string name="iepldke77h6s24-n66_7h6s" mz="title">Confirm</string>
+  <string name="vckl96ksbakuq-n22_ru20" mz="btn_TaskToggle">Overview</string>
+  <string name="vckl96ksrsc7a-n156_thbm" mz="n156">Ongoing</string>
+  <string name="vckl96ksrsc7a-n157_thbm" mz="n157">Claim</string>
+  <string name="vckl96ksjzxa1o-n20_jzxa" mz="n20">Scratch Off→</string>
+  <string name="vckl96ksjzxa1o-n21_jzxa" mz="n21">Complete: </string>
+  <string name="vckl96ksjzxa1n-n18_tiv3" mz="n18">x</string>
+  <string name="vckl96ksjzxa1p-n17_jzxa" mz="n17">Next</string>
+  <string name="vckl96ksjzxa1g-n9_jzxa" mz="n9">Tasks</string>
+  <string name="vckl96ksjzxa1g-n14_jzxa" mz="n14">Reward Preview</string>
+  <string name="vckl96ksjzxa1g-n22_ru20" mz="btn_TaskToggle">Overview</string>
+  <string name="vckl96ksjzxa1h-n8_jzxa" mz="n8">Scratch Off</string>
+  <string name="vckl96ksjzxa1h-n22_jzxa" mz="n22">Reward Preview</string>
+  <string name="vckl96ksot0w2n-n33_xup8" mz="n33">Result</string>
+  <string name="vckl96ksot0w2n-n55_ot0w" mz="btn_Gacha_Confirm">Confirm</string>
+  <string name="vckl96ksec7wgx-n85_ch0q" mz="txt_LeftName">Amakawa Souri </string>
+  <string name="vckl96ksec7wgx-n86_ch0q" mz="txt_RightName">Amakawa Mamushi </string>
+  <string name="vckl96ksec7wgx-n94_ch0q" mz="n94">Data updates every 15 minutes</string>
+  <string name="vckl96ksot0w4h-n40_ot0w" mz="n40">Boost Giftpack</string>
+  <string name="vckl96ksot0w2r-n15_lo03" mz="txt_Name">Draw {time=1} times</string>
+  <string name="vckl96ksot0w4k-n49_grcm" mz="n49">Convert</string>
+  <string name="vckl96ksot0w4k-n42_ne5m" mz="n42">x</string>
+  <string name="vckl96ksot0w4t-n33_gbr1" mz="n33">Preview</string>
+  <string name="vckl96ksot0w4i-n13_xup8" mz="btn_Gacha_Detail">Detail</string>
+  <string name="vckl96ksot0w4i-n14_xup8" mz="btn_Gacha_Recoard">Record</string>
+  <string name="vckl96ksot0w4c-n156_thbm" mz="n156">Ongoing</string>
+  <string name="vckl96ksot0w4c-n157_thbm" mz="n157">Claim</string>
+  <string name="vckl96ksot0w4a-n58_ot0w" mz="txt_NextTime">Opens Next Season</string>
+  <string name="vckl96ksot0w4a-n6_xup8" mz="n6">Tasks</string>
+  <string name="vckl96ksot0w4a-n69_ru20" mz="btn_TaskToggle">Overview</string>
+  <string name="vckl96kso812e1-n37_ize7" mz="txt_Title">Unlock</string>
+  <string name="vckl96kso812e1-n38_ize7" mz="txt_Desc">（1 Attempt）</string>
+  <string name="vckl96ksize7sq4y-n37_ize7" mz="txt_Title">Unlock</string>
+  <string name="vckl96ksize7sq4y-n38_ize7" mz="txt_Desc">（1 Attempt）</string>
+  <string name="vckl96ksize7sq4x-n37_ize7" mz="txt_Title">Purchase</string>
+  <string name="vckl96kso812e0-n37_ize7" mz="txt_Title">Purchase</string>
+  <string name="vckl96ksize7sq4u-n6_at01" mz="n6"> </string>
+  <string name="vckl96ksize7sq4u-n11_at01" mz="btn_Purchase">Purchase</string>
+  <string name="vckl96ksize7sq4u-n10_at01" mz="btn_Light">Unlock</string>
+  <string name="vckl96kso812e2-n6_at01" mz="n6"> </string>
+  <string name="vckl96kso812e2-n11_at01" mz="btn_Purchase">Purchase</string>
+  <string name="vckl96kso812e2-n10_at01" mz="btn_Light">Unlock</string>
+  <string name="vckl96ksize7sq4z-n37_ize7" mz="btn_ShowSkin">Skin Preview</string>
+  <string name="vckl96ksize7sq4z-n45_ize7" mz="n45">· Exclusive Battle Stage· Exclusive Battle BGM</string>
+  <string name="vckl96kso812dz-n44_ize7" mz="n44">· Exclusive Battle Stage· Exclusive Battle BGM</string>
+  <string name="vckl96kso812dz-n50_ize7" mz="btn_ShowSkin">Skin Preview</string>
+  <string name="vckl96ksxcsllsq7p-n37_ize7" mz="txt_Title">Unlock</string>
+  <string name="vckl96ksxcsllsq7p-n38_ize7" mz="txt_Desc">（1 Attempt）</string>
+  <string name="vckl96ksxcsllsq7n-n37_ize7" mz="txt_Title">Purchase</string>
+  <string name="vckl96ksxcsllsq76-n6_at01" mz="n6"> </string>
+  <string name="vckl96ksxcsllsq76-n11_at01" mz="btn_Purchase">Purchase</string>
+  <string name="vckl96ksxcsllsq76-n10_at01" mz="btn_Light">Unlock</string>
+  <string name="vckl96ksxcsllsq80-n37_ize7" mz="btn_ShowSkin">Skin Preview</string>
+  <string name="vckl96ksxcsllsq80-n45_ize7" mz="n45">· Exclusive Battle Stage· Exclusive Battle BGM</string>
+  <string name="vckl96ksyjnjlsq8p-n33_o812" mz="txt_Title">Unlock</string>
+  <string name="vckl96ksyjnjlsq8p-n35_o812" mz="txt_Desc">（1 Attempt）</string>
+  <string name="vckl96ksyjnjlsq8n-n33_o812" mz="txt_Title">Purchase</string>
+  <string name="vckl96ksyjnjlsq88-n6_at01" mz="n6"> </string>
+  <string name="vckl96ksyjnjlsq88-n11_at01" mz="btn_Purchase">Purchase</string>
+  <string name="vckl96ksyjnjlsq88-n10_at01" mz="btn_Light">Unlock</string>
+  <string name="vckl96ksyjnjlsq8u-n16_o812" mz="btn_ShowSkin">Preview</string>
+  <string name="vckl96ksyjnjlsq8u-n26_o812" mz="n26">· Exclusive Battle Stage· Exclusive Battle BGM</string>
+  <string name="1pgen0em6brr0-n19_6brr" mz="txt_title">活动标题</string>
+  <string name="1pgen0em6brr0-n20_6brr" mz="txt_date">4.25~5.23</string>
+  <string name="1pgen0em6brr0-n23_6brr" mz="txt_coin">x1000</string>
+  <string name="1pgen0em6brro-n8_6brr" mz="title">完成奖励（7/7）</string>
+  <string name="1pgen0em6brrm-n4_6brr" mz="txt_icon">x1300</string>
+  <string name="1pgen0em6brrm-n8_6brr" mz="txt_num">第1张</string>
+  <string name="1pgen0em6brrp-n10_6brr" mz="n10">Previous</string>
+  <string name="1pgen0em6brrp-n11_6brr" mz="n11">Next</string>
+  <string name="1pgen0em6brr1h-n16_6brr" mz="txt_title">Completion Reward</string>
+  <string name="1pgen0em6brr19-n156_thbm" mz="n156">Go Complete</string>
+  <string name="1pgen0em6brr19-n157_thbm" mz="n157">Claim</string>
+  <string name="1pgen0em6brr19-n160_i817" mz="n160">Claimed</string>
+  <string name="inpepupsk0vv0-n13_l38o" mz="txt_activityTime">Event Time Remaining: {time=XX Days XX Hours}</string>
+  <string name="inpepupsk0vv6-n11_micc" mz="title">Go Get It</string>
+  <string name="hconmwfcy9qn7-n14_y9qn" mz="n14">New Character, Usable for a Limited Time!</string>
+  <string name="hconmwfcy9qn8-n7_vjqj" mz="n7">Basic Rewards</string>
+  <string name="hconmwfcy9qn8-n8_vjqj" mz="n8">Advanced Rewards</string>
+  <string name="hconmwfcy9qn9-n1_y9qn" mz="n1">Tasks</string>
+  <string name="hconmwfcy9qn3-n4_y9qn" mz="n4">Back</string>
+  <string name="hconmwfcvjqj11-n43_u0xa" mz="txt_price">￥40</string>
+  <string name="hconmwfcvjqj11-n41_u0xa" mz="txt_tip">Unlock Advanced Rewards</string>
+  <string name="hconmwfcy9qnw-n3_y9qn" mz="n3">Claim Rewards</string>
+  <string name="hconmwfcy9qnw-n3_y9qn-texts_0" mz="n3">Obtained</string>
+  <string name="hconmwfcy9qnw-n3_y9qn-texts_def" mz="n3">Claim Rewards</string>
+  <string name="hconmwfcy9qn5-n4_y9qn" mz="time">Unlocks in {time=5} hour(s)</string>
+  <string name="hconmwfcy9qn5-n3_y9qn" mz="n3">Tap to Start</string>
+  <string name="hconmwfcy9qn4-n3_y9qn" mz="n3">Return Benefits</string>
+  <string name="hconmwfcy9qn4-n3_y9qn-texts_0" mz="n3">7-Day Sign-in</string>
+  <string name="hconmwfcy9qn4-n3_y9qn-texts_1" mz="n3">Return Missions</string>
+  <string name="hconmwfcy9qn4-n3_y9qn-texts_2" mz="n3">Return Store</string>
+  <string name="hconmwfcy9qn4-n3_y9qn-texts_def" mz="n3">Return Benefits</string>
+  <string name="hconmwfcy9qnf-n156_thbm" mz="n156">Ongoing</string>
+  <string name="hconmwfcy9qnf-n157_thbm" mz="n157">Claim</string>
+  <string name="lypih982eo8h0-n59_rae1" mz="n59">Progress Rewards</string>
+  <string name="lypih982lbjz15-n156_thbm" mz="n156">Ongoing</string>
+  <string name="lypih982lbjz15-n157_thbm" mz="n157">Claim</string>
+  <string name="lypih982lbjz15-n160_i817" mz="n160">Claimed</string>
+  <string name="lypih982hdqo20-n168_thbm" mz="n168">Claim</string>
+  <string name="lypih982hdqo20-n169_thbm" mz="n169">Received</string>
+  <string name="lypih982rae11t-n169_thbm" mz="n169">Claim All</string>
+  <string name="tnvzc173esyu4-n179_esyu" mz="n179">Claim</string>
+  <string name="tnvzc173esyu4-n181_esyu" mz="n181">Claimed</string>
+  <string name="fajmeueeg85ew-n5_klg7" mz="n5">Basic Rewards</string>
+  <string name="fajmeueeg85ew-n6_klg7" mz="n6">Premium Rewards</string>
+  <string name="fajmeueeg85ew-n16_m48i" mz="n16">Level Progress Contract</string>
+  <string name="fajmeueeg85ew-n17_m48i" mz="n17">Reach the required Player Level to claim bountiful rewards</string>
+  <string name="fajmeueem48ix-n43_u0xa" mz="txt_price">￥20</string>
+  <string name="fajmeueem48ix-n41_u0xa" mz="txt_tip">Unlock Premium Rewards</string>
+  <string name="fajmeueem48ix-n46_u0xa" mz="n46">Great Value</string>
+  <string name="fajmeueeklg7t-n13_klg7" mz="text_ItemLevel">Lv.1</string>
+  <string name="n4exfankjqro1e-n37_ize7" mz="txt_Title">Unlock</string>
+  <string name="n4exfankjqro1e-n38_ize7" mz="txt_Desc">（1 Attempt）</string>
+  <string name="n4exfankjqro1c-n37_ize7" mz="txt_Title">Purchase</string>
+  <string name="n4exfankjqrov-n6_at01" mz="n6"> </string>
+  <string name="n4exfankjqrov-n11_at01" mz="btn_Purchase">Purchase</string>
+  <string name="n4exfankjqrov-n10_at01" mz="btn_Light">Unlock</string>
+  <string name="n4exfankjqro1k-n37_ize7" mz="btn_ShowSkin">Skin Preview</string>
+  <string name="n4exfankjqro1k-n45_ize7" mz="n45">· Exclusive Battle Stage· Exclusive Battle BGM</string>
+  <string name="n4exfankjqrol-n5_jqro" mz="txt_Title">Unlock</string>
+  <string name="n4exfankjqrol-n6_jqro" mz="txt_Desc">（1 Attempt）</string>
+  <string name="n4exfankjqroj-n5_jqro" mz="txt_Title">Purchase</string>
+  <string name="n4exfankjqro5-n9_jqro" mz="n9"> </string>
+  <string name="n4exfankjqrom-n0_jqro" mz="btn_ShowSkin">Preview</string>
+  <string name="n4exfankjqrom-n8_jqro" mz="n8">· Exclusive Battle Stage· Exclusive Battle BGM</string>
+  <string name="wdl8l4hslwm16-n3_lwm1" mz="n3">Tasks</string>
+  <string name="wdl8l4hslwm1x-n14_z52s" mz="txt_Remaining">Limit  {remainingNum=1} / {limitNum=1}</string>
+  <string name="wdl8l4hslwm1x-n23_z52s" mz="n23">Owned</string>
+  <string name="wdl8l4hslwm1x-n39_hcgi" mz="txt_soldout">Sold Out!</string>
+  <string name="wdl8l4hslwm1x-n24_z52s" mz="txt_timeTip">Refresh：{day=00}d{hour=00}h</string>
+  <string name="wdl8l4hslwm1o-n156_thbm" mz="n156">Go Complete</string>
+  <string name="wdl8l4hslwm1o-n157_thbm" mz="n157">Claim</string>
+  <string name="vvv9zaj1qa2x0-n16_qa2x" mz="n16">Co-op Challenge Contract</string>
+  <string name="vvv9zaj1qa2x0-n17_qa2x" mz="n17">Complete any difficulty on each map to earn rewards!</string>
+  <string name="vvv9zaj1u0xak-n43_u0xa" mz="txt_price">￥20</string>
+  <string name="vvv9zaj1u0xak-n41_u0xa" mz="txt_tip">Unlock Premium Rewards</string>
+  <string name="vvv9zaj1u0xak-n46_u0xa" mz="n46">Great Value</string>
+  <string name="vvv9zaj1qa2x3-n18_u0xa" mz="txt_complete">Challenge Completed</string>
+  <string name="vvv9zaj1qa2x3-n27_u0xa" mz="txt_undone">Unfinished Challenge</string>
+  <string name="vvv9zaj1qa2x3-n27_u0xa-texts_0" mz="txt_undone">Challenge Completed</string>
+  <string name="vvv9zaj1qa2x3-n27_u0xa-texts_def" mz="txt_undone">Unfinished Challenge</string>
+  <string name="vvv9zaj1qa2x3-n31_g6lg" mz="n31">Premium Rewards</string>
+  <string name="vvv9zaj1qa2x2-n10_qa2x" mz="txt_name">不需要翻译</string>
+  <string name="pietpp6yrr350-n1_hvc3" mz="ActivityMonthGift_Message">不需要翻译</string>
+  <string name="pietpp6yrr350-n4_hvc3" mz="ActivityMonthGift_Time">不需要翻译</string>
+  <string name="pietpp6yrr350-n21_rr35" mz="n21">不需要翻译</string>
+  <string name="pietpp6yrr35d-n2_rr35" mz="n2">Detail</string>
+  <string name="c1v285vtrp2k1e-n21_kqgj" mz="title">Back</string>
+  <string name="c1v285vtpu2i19-n38_kqgj" mz="n38">x</string>
+  <string name="c1v285vtpu2im-n156_thbm" mz="n156">Ongoing</string>
+  <string name="c1v285vtpu2im-n157_thbm" mz="n157">Receive</string>
+  <string name="c1v285vtpu2im-n164_kqgj" mz="n164">Complete</string>
+  <string name="c1v285vtpu2i1-n150_kqgj" mz="n150">--Astral Party--</string>
+  <string name="c1v285vtpu2i1-n152_kqgj" mz="n152">--Astral Party--</string>
+  <string name="c1v285vtpu2i1-n148_kqgj" mz="n148">--Astral Party--</string>
+  <string name="c1v285vtpu2i1-n82_kqgj" mz="n82">Tasks</string>
+  <string name="c1v285vtpu2i1-n84_kqgj" mz="n84">Tasks</string>
+  <string name="c1v285vtpu2i1-n106_kqgj" mz="n106">Reward Preview</string>
+  <string name="c1v285vtpu2ix-n88_kqgj" mz="n88">LIVE -&gt;</string>
+  <string name="c1v285vtpu2ix-n92_kqgj" mz="txt_Progress">Completed 
+{value=0}/{max=14} 
+Tap to Enter</string>
+  <string name="c1v285vtpu2i11-n32_kqgj" mz="n32">Reward Preview</string>
+  <string name="c1v285vtpu2i11-n78_kqgj" mz="n78">LIVE</string>
+  <string name="c1v285vtpu2i11-n89_kqgj" mz="n89">--LIVE--</string>
+  <string name="3tvdl51q8f672m-n9_8f67" mz="title">Go</string>
+  <string name="3tvdl51q8f672n-n6_8f67" mz="txt_desc">Go to [color=#12BDCD]TAPTAP[/color] and pre-register for rewards!</string>
+  <string name="3tvdl51qnhqm36-n14_nhqm" mz="n14">Visit Now</string>
+  <string name="3tvdl51qnhqm36-n15_nhqm" mz="n15">Go to Modian</string>
+  <string name="3tvdl51qnhqm35-n20_nhqm" mz="txt_Countdown">[color=#DAF3FD,#EAFFDB]{str=23:59 Remaining}[/color]</string>
+  <string name="3tvdl51qfmns3m-n13_fmns" mz="n13">不需要翻译</string>
+  <string name="3tvdl51qfmns3m-n14_fmns" mz="txt_time">不需要翻译</string>
+  <string name="3tvdl51qfmns3m-n15_k84p" mz="n15">不需要翻译</string>
+  <string name="psydn4inrr350-n53_rr35" mz="Rebate_num">不需要翻译</string>
+  <string name="psydn4inrr350-n75_ist0" mz="Rebate_num_TextType">￥</string>
+  <string name="psydn4inrr350-n59_rr35" mz="Rebate_num1">不需要翻译</string>
+  <string name="psydn4inrr350-n67_rr35" mz="n67">不需要翻译</string>
+  <string name="psydn4inrr350-n73_ist0" mz="Rebate_Time">不需要翻译</string>
+  <string name="psydn4inrr35o-n3_rr35" mz="n3">不需要翻译</string>
+  <string name="psydn4inrr35k-n2_rr35" mz="Text">Detail</string>
+  <string name="50qspitzz0ijy-n1_z0ij" mz="title">Preview</string>
+  <string name="rel5h9izuytmd-n156_thbm" mz="n156">Ongoing</string>
+  <string name="rel5h9izuytmd-n157_thbm" mz="n157">Claim</string>
+  <string name="rel5h9izuytm1-n22_ru20" mz="btn_TaskToggle">Overview</string>
+  <string name="rx1j3reajos31a-n4_dzvf" mz="txt_title">Phase {level}</string>
+  <string name="rx1j3reajos31a-n11_i817" mz="txt_finalRewardName">Item Name ×1</string>
+  <string name="rx1j3reajos31a-n12_i817" mz="txt_rewardLevelTip">Rewards for Completing This Phase</string>
+  <string name="rx1j3reajos31a-n3_dzvf" mz="btn_finalReward">Receive</string>
+  <string name="rx1j3reajos31a-n15_gzhq" mz="n15">View All Rewards</string>
+  <string name="rx1j3readzvf4-n156_thbm" mz="n156">Ongoing</string>
+  <string name="rx1j3readzvf4-n157_thbm" mz="n157">Claim</string>
+  <string name="rx1j3readzvf4-n160_i817" mz="n160">Claimed</string>
+  <string name="n11275v8l38o1m-n1_l38o" mz="n1">Back</string>
+  <string name="n11275v8jqroc-n156_thbm" mz="n156">Ongoing</string>
+  <string name="n11275v8jqroc-n157_thbm" mz="n157">Claim</string>
+  <string name="n11275v8jqron-n20_jzxa" mz="n20">YoYo Coin Gacha →</string>
+  <string name="n11275v8jqron-n21_jzxa" mz="n21">Complete: </string>
+  <string name="n11275v8jqrow-n18_tiv3" mz="n18">x</string>
+  <string name="n11275v8jqro12-n17_jzxa" mz="n17">Next</string>
+  <string name="n11275v8jqro3-n9_jzxa" mz="n9">Tasks</string>
+  <string name="n11275v8jqro3-n14_jzxa" mz="n14">Reward Preview</string>
+  <string name="n11275v8jqro3-n22_ru20" mz="btn_TaskToggle">Overview</string>
+  <string name="n11275v8jqroq-n8_jzxa" mz="n8">Scratch Off</string>
+  <string name="n11275v8jqroq-n22_jzxa" mz="n22">Reward Preview</string>
+  <string name="p8fy3he4rr3513-n3_rr35" mz="text_no">Claim</string>
+  <string name="p8fy3he4rr3513-n9_rr35" mz="text_yes">Obtained</string>
+  <string name="p8fy3he4rr3513-n7_rr35" mz="txt_number">x100</string>
+  <string name="88m1yfwgv1vk15-n76_v1vk" mz="ActivityStore_btn_act">Event</string>
+  <string name="88m1yfwgv1vk15-n77_v1vk" mz="ActivityStore_btn_str">Store</string>
+  <string name="88m1yfwgv1vk15-n78_jhcl" mz="ActivityStore_btn_OneTask">Event</string>
+  <string name="88m1yfwgv1vk15-n80_jhcl" mz="ActivityStore_btn_OneStore">Store</string>
+  <string name="88m1yfwgv1vk1j-n177_v1vk" mz="n177">Ongoing</string>
+  <string name="88m1yfwgv1vk1j-n186_v1vk" mz="n186">Claim</string>
+  <string name="88m1yfwgv1vk16-n77_v1vk" mz="txt_NextTime">Opens Next Season</string>
+  <string name="88m1yfwgv1vk16-n81_v1vk" mz="tile_task">Tasks</string>
+  <string name="88m1yfwgeusd2u-n177_v1vk" mz="n177">Ongoing</string>
+  <string name="88m1yfwgeusd2u-n186_v1vk" mz="n186">Claim</string>
+  <string name="begz6gfv7vwm0-n33_xup8" mz="n33">Result</string>
+  <string name="begz6gfv7vwm0-n55_ot0w" mz="btn_Gacha_Confirm">Confirm</string>
+  <string name="begz6gfv7vwm1c-n40_ot0w" mz="n40">Boost Giftpack</string>
+  <string name="begz6gfv7vwm19-n15_lo03" mz="txt_Name">Draw {time=1} times</string>
+  <string name="begz6gfv7vwm1f-n49_grcm" mz="n49">Convert</string>
+  <string name="begz6gfv7vwm1f-n42_ne5m" mz="n42">x</string>
+  <string name="begz6gfv7vwm15-n33_gbr1" mz="n33">Preview</string>
+  <string name="begz6gfv7vwm13-n13_xup8" mz="btn_Gacha_Detail">Detail</string>
+  <string name="begz6gfv7vwm13-n14_xup8" mz="btn_Gacha_Recoard">Record</string>
+  <string name="begz6gfv7vwmh-n58_ot0w" mz="txt_NextTime">Opens Next Season</string>
+  <string name="begz6gfv7vwmh-n6_xup8" mz="n6">Tasks</string>
+  <string name="begz6gfv7vwmh-n69_ru20" mz="btn_TaskToggle">Overview</string>
+  <string name="begz6gfvok4t1m-n157_thbm" mz="n157">Claim</string>
+  <string name="begz6gfvok4t1m-n165_8fw5" mz="n165">Go Complete</string>
+  <string name="begz6gfv7vwm1-n85_ch0q" mz="txt_LeftName">Amakawa Souri </string>
+  <string name="begz6gfv7vwm1-n86_ch0q" mz="txt_RightName">Amakawa Mamushi </string>
+  <string name="begz6gfv7vwm1-n94_ch0q" mz="n94">Data updates every 15 minutes</string>
+  <string name="6dt5s4htqw8h0-n76_v1vk" mz="ActivityStore_btn_act">Event</string>
+  <string name="6dt5s4htqw8h0-n77_v1vk" mz="ActivityStore_btn_str">Store</string>
+  <string name="6dt5s4htqw8hi-n177_v1vk" mz="n177">Ongoing</string>
+  <string name="6dt5s4htqw8hi-n186_v1vk" mz="n186">Claim</string>
+  <string name="6dt5s4htqw8h7-n97_jhcl" mz="n97">Tasks</string>
+  <string name="6dt5s4htqw8h7-n77_v1vk" mz="txt_NextTime">Opens Next Season</string>
+  <string name="6dt5s4htqw8hv-n177_v1vk" mz="n177">Ongoing</string>
+  <string name="6dt5s4htqw8hv-n186_v1vk" mz="n186">Claim</string>
+  <string name="zlysd2gupgzf51-n46_debj" mz="title">Back</string>
+  <string name="zlysd2gupgzf4c-n69_ru20" mz="btn_TaskToggle">Overview</string>
+  <string name="k49wk9ftesyu2t-n28_q4ft" mz="n28">Purchase</string>
+  <string name="k49wk9ftesyu4a-n2_esyu" mz="title">Purchase</string>
+  <string name="k49wk9ftesyu4z-n33_gbr1" mz="n33">Preview</string>
+  <string name="k49wk9ftnqmf18-n18_fu2t" mz="n18">Purchase Complete</string>
+  <string name="k49wk9ftesyu3i-n28_q4ft" mz="n28">Purchase</string>
+  <string name="andqlvspec7w0-n20_ec7w" mz="txt_Tip1">[size=80]Who[/size] do you choose to help?</string>
+  <string name="andqlvspec7w0-n30_ec7w" mz="txt_Tip2">You choose to help [size=80]{target=Amakawa Mamushi}[/size]</string>
+  <string name="andqlvspec7w0-n32_ec7w" mz="txt_Tip3">But everyone seems to have different opinions... We can only settle it with dice!</string>
+  <string name="andqlvspec7w0-n60_ec7w" mz="txt_Tip4">Dice Showdown!</string>
+  <string name="andqlvspec7wz-n43_ec7w" mz="txt_Target">[color=#ff0000]! [/color][color=#ffffff]Will be hostile to[/color]{target=Amakawa Mamushi}</string>
+  <string name="andqlvspec7wz-n44_ec7w" mz="n44">[color=#ff0000]! [/color]Obtained</string>
+  <string name="50xzye56puf30-n20_ec7w" mz="txt_Tip1">[size=80]Who[/size] do you choose to help?</string>
+  <string name="50xzye56puf30-n2_ec7w" mz="btn_SureVote">Confirm</string>
+  <string name="50xzye56puf30-n30_ec7w" mz="txt_Tip2">You choose to help [size=80]{target=Amakawa Mamushi}[/size]</string>
+  <string name="50xzye56puf30-n32_ec7w" mz="txt_Tip3">But everyone seems to have different opinions... We can only settle it with dice!</string>
+  <string name="50xzye56puf30-n60_ec7w" mz="txt_Tip4">Dice Showdown!</string>
+  <string name="50xzye56puf37-n43_ec7w" mz="txt_Target">[color=#ff0000]! [/color][color=#ffffff]Will be hostile to[/color]{target=Amakawa Mamushi}</string>
+  <string name="p0iy0chjl8aa0-n24_73il" mz="btn_Return">Back</string>
+  <string name="p0iy0chjl8aa0-n22_qp7h" mz="btn_SortUp">Quality↑</string>
+  <string name="p0iy0chjl8aa0-n31_ja01" mz="btn_SortDown">Quality↓</string>
+  <string name="p0iy0chj73il5-n36_jn4e" mz="n36">Delete: {hour=20}h, {day=30}d</string>
+  <string name="p0iy0chj73il5-n44_gd4d" mz="n44">EMPTY</string>
+  <string name="p0iy0chj73il5-n41_11biq" mz="n41">Recall</string>
+  <string name="fxejlqlfot0w91-n2_8doq" mz="txt_Title">Chips</string>
+  <string name="fxejlqlfkqgj92-n90_kqgj" mz="txt_Desc">Winning Condition</string>
+  <string name="fxejlqlfjcp5bb-n1_jcp5" mz="n1">Stay here to get the star!</string>
+  <string name="fxejlqlfh28zcr-n52_h28z" mz="n52">Round</string>
+  <string name="fxejlqlfh28zcs-n1_h28z" mz="txt_desc">The next reward round is Round {round=03}. At the start of this round, you will receive {coin=X} Star Coin(s) and {card=Y} Card(s).</string>
+  <string name="fxejlqlfcz3799-n90_cz37" mz="n90">Remaining Rounds</string>
+  <string name="fxejlqlfmgj007-n69_g1i4" mz="txt_Title">Clues</string>
+  <string name="fxejlqlfg1i48p-n69_g1i4" mz="txt_Title">Task</string>
+  <string name="fxejlqlfvi802w-n51_qs18-texts_0" mz="n51">P2</string>
+  <string name="fxejlqlfvi802w-n51_qs18-texts_1" mz="n51">P3</string>
+  <string name="fxejlqlfvi802w-n51_qs18-texts_2" mz="n51">P4</string>
+  <string name="fxejlqlfvi802w-n51_qs18-texts_5" mz="n51">BOSS</string>
+  <string name="fxejlqlfvi802w-n51_qs18-texts_def" mz="n51">P1</string>
+  <string name="ssf8xg9nf7iw0-n76_jz24" mz="n76">Daily Refresh</string>
+  <string name="ssf8xg9nf7iw0-n77_jz24" mz="n77">Weekly Refresh</string>
+  <string name="ssf8xg9nf7iw0-n62_jz24" mz="btn_battlePass">Reward</string>
+  <string name="ssf8xg9nf7iw0-n63_jz24" mz="btn_Task">Task</string>
+  <string name="ssf8xg9njz241k-n54_jz24" mz="n54">Upgrade!</string>
+  <string name="ssf8xg9njz241k-n52_jz24" mz="txt_Count">x</string>
+  <string name="ssf8xg9nb93d29-n52_jz24" mz="txt_Count">x000</string>
+  <string name="ssf8xg9njz2414-n54_jz24" mz="txt_Level">{level=1}</string>
+  <string name="ssf8xg9nq4ft9-n33_gbr1" mz="n33">Preview</string>
+  <string name="ssf8xg9njz241v-n102_jz24" mz="n102">Check All</string>
+  <string name="ssf8xg9njz2411-n28_q4ft" mz="n28">Purchase</string>
+  <string name="ssf8xg9njz2426-n108_lwm1" mz="txt_Desc">Special Character Selection Effect during the pass*</string>
+  <string name="ssf8xg9njz241s-n7_jz24" mz="n7">*The skin in the pass will be limited in 6 months!</string>
+  <string name="ssf8xg9njz241d-n156_thbm" mz="n156">Ongoing</string>
+  <string name="ssf8xg9njz241d-n157_thbm" mz="n157">Claim</string>
+  <string name="qzmgh1v9nbg68o-n24_m7gv" mz="btn_Skill">Skill</string>
+  <string name="qzmgh1v9nbg68o-n61_nbg6" mz="n61">PVE</string>
+  <string name="qzmgh1v9m7gv86-n23_m7gv" mz="btn_Relic">Chips</string>
+  <string name="qzmgh1v9m7gv86-n24_m7gv" mz="btn_Skill">Skill</string>
+  <string name="nxg5t93dkqgj0-n14_e1mn" mz="btn_Cancel">Cancel</string>
+  <string name="nxg5t93dkqgj0-n15_e1mn" mz="btn_Sure">Confirm</string>
+  <string name="nxg5t93dkqgj0-n36_pj0z" mz="n36">Hide</string>
+  <string name="nxg5t93dkqgj0-n37_pj0z" mz="n37">Show</string>
+  <string name="avgradidqees29-n53_qees" mz="n53">OBTAIN REWARDS</string>
+  <string name="avgradidw0q932-n118_w0q9" mz="n118">ALL</string>
+  <string name="avgradidqees2t-n168_q7ni" mz="txt_Round">{round=15}[size=32]Round[/size]</string>
+  <string name="avgradidqees2j-n9_qees" mz="n9">BEST</string>
+  <string name="avgradidqees2q-n38_mj58" mz="n38">Confirm</string>
+  <string name="avgradidch0q141-n173_ch0q" mz="n173">Amakawa Mamushi faction score increased!</string>
+  <string name="avgradidch0q141-n173_ch0q-texts_0" mz="n173">Amakawa Souri Popularity increased!</string>
+  <string name="avgradidch0q141-n173_ch0q-texts_1" mz="n173">Amakawa Mamushi faction score increased!</string>
+  <string name="avgradidqees2o-n78_qees" mz="txt_Slot">P1.</string>
+  <string name="avgradidqees2o-n78_qees-texts_0" mz="txt_Slot">P2.</string>
+  <string name="avgradidqees2o-n78_qees-texts_1" mz="txt_Slot">P3.</string>
+  <string name="avgradidqees2o-n78_qees-texts_2" mz="txt_Slot">P4.</string>
+  <string name="avgradidqees2o-n78_qees-texts_def" mz="txt_Slot">P1.</string>
+  <string name="avgradidqees25-n48_qees" mz="txt_Achieve">[color=#FC459A,#FCB531]Super Star[/color]</string>
+  <string name="ybwxnbf5qzg81d-n73_nc4b" mz="n73">Guild</string>
+  <string name="ybwxnbf5qzg81d-n73_nc4b-texts_0" mz="n73">Option</string>
+  <string name="ybwxnbf5qzg81d-n73_nc4b-texts_1" mz="n73">Storage</string>
+  <string name="ybwxnbf5qzg81d-n73_nc4b-texts_2" mz="n73">Mail</string>
+  <string name="ybwxnbf5qzg81d-n73_nc4b-texts_3" mz="n73">Guide</string>
+  <string name="ybwxnbf5qzg81d-n73_nc4b-texts_4" mz="n73">Gallery</string>
+  <string name="ybwxnbf5qzg81d-n73_nc4b-texts_5" mz="n73">Notice</string>
+  <string name="ybwxnbf5qzg81d-n73_nc4b-texts_6" mz="n73">Friend</string>
+  <string name="ybwxnbf5qzg81d-n73_nc4b-texts_7" mz="n73">Task</string>
+  <string name="ybwxnbf5qzg81d-n73_nc4b-texts_8" mz="n73">Guild</string>
+  <string name="ybwxnbf5qzg81d-n73_nc4b-texts_def" mz="n73">Exit</string>
+  <string name="crbpicgjhhk60-n50_ubkw" mz="bottom">Choose</string>
+  <string name="crbpicgjhhk60-n50_ubkw-cp-btn_Sure_Only" mz="bottom">Back</string>
+  <string name="crbpicgjhhk60-n50_ubkw-texts_0" mz="bottom">Choose</string>
+  <string name="crbpicgjhhk60-n50_ubkw-texts_1" mz="bottom">Reward</string>
+  <string name="crbpicgjz52sm-n1_grwp" mz="title">Open</string>
+  <string name="crbpicgjz52st-n3_hymc" mz="title">Min</string>
+  <string name="crbpicgjaxwd10-n32_z52s" mz="btn_Max">Max</string>
+  <string name="crbpicgjaxwd10-n43_jn4e" mz="n43">Quantity</string>
+  <string name="crbpicgjaxwd10-n44_jn4e" mz="txt_Num">{num=9999}</string>
+  <string name="0j78s7jyeyou0-n31_h0j4-cp-txt_Title" mz="btn_Novice">Tutorial</string>
+  <string name="0j78s7jyeyou0-n31_h0j4-cp-txt_Desc" mz="btn_Novice">Review</string>
+  <string name="0j78s7jyeyou0-n42_es7g-cp-txt_Title" mz="btn_PVE">PVE</string>
+  <string name="0j78s7jyeyou0-n42_es7g-cp-txt_Desc" mz="btn_PVE">Basic Challenge</string>
+  <string name="0j78s7jyeyou0-n43_es7g-cp-txt_Title" mz="btn_PVP">PVP</string>
+  <string name="0j78s7jyeyou0-n43_es7g-cp-txt_Desc" mz="btn_PVP">Basic Challenge</string>
+  <string name="0j78s7jyeyou0-n41_ov5l" mz="btn_CreateRoom">Start Game!</string>
+  <string name="0j78s7jyes7gy-n43_alrc" mz="n43">Progress Complete</string>
+  <string name="0j78s7jyeyou7-n82_ayrm" mz="title">Start Game</string>
+  <string name="bi8fdi6njlir1b-n33_sjju" mz="n33">[b]Click the left avatar to select your target[/b]</string>
+  <string name="bi8fdi6njlir1b-n5_r94h" mz="btn_Cancel">Cancel</string>
+  <string name="bi8fdi6njlir1b-n10_vp9k" mz="btn_Sure">Confirm</string>
+  <string name="bi8fdi6np5xi2t-n27_fcst" mz="btn_SurePoint">Confirm</string>
+  <string name="bi8fdi6np5xi2t-n38_qy40" mz="n38">Choose the roll for your next move</string>
+  <string name="bi8fdi6np5xi2t-n39_p5xi" mz="btn_OK">Confirm</string>
+  <string name="bi8fdi6njhge2q-n3_qb3s" mz="n3">Cancel</string>
+  <string name="bi8fdi6nqy4029-n3_qb3s" mz="n3">Confirm</string>
+  <string name="bi8fdi6nsjju21-n3_qb3s" mz="n1">Pass</string>
+  <string name="bi8fdi6nsjju21-n8_wvm9" mz="n2">CANCEL</string>
+  <string name="y0luzhk8x1udb-n36_mdt4" mz="n36">Chat</string>
+  <string name="y0luzhk8x1udb-n7-prompt" mz="Input_Send">[color=#CCCCCC]Enter Message[/color]</string>
+  <string name="y0luzhk8x1udb-n30_eipb" mz="txt_wordLimit">{current=0}/{limit=100}</string>
+  <string name="y0luzhk8x1udb-n8" mz="btn_Send">Send</string>
+  <string name="y0luzhk8ednm16-n43_ednm" mz="btn_Cancel">Cancel</string>
+  <string name="y0luzhk8ednm16-n44_ednm" mz="btn_Sure">Confirm</string>
+  <string name="y0luzhk8njjna-n36_ednm" mz="txt_Online">•Online</string>
+  <string name="y0luzhk8njjna-n37_ednm" mz="txt_Offline">Offline</string>
+  <string name="y0luzhk8sgc41d-n25_sgc4" mz="btn_Delete">Remove Conversation</string>
+  <string name="335msnc1kxm52u-n6_kxm5" mz="btn_ChooseCard">Confirm</string>
+  <string name="335msnc1kxm52u-n9_kxm5" mz="n9">Select a Card</string>
+  <string name="xuaw6o8jm48iv-n3_rle7" mz="title">Exchange for Star Disc</string>
+  <string name="xuaw6o8jm48iv-n7_rle7" mz="btn_Cancel">Cancel</string>
+  <string name="xuaw6o8jozsk8w-n46_debj" mz="title">Return</string>
+  <string name="xuaw6o8jozsk8z-n11_micc" mz="title">Confirm</string>
+  <string name="xuaw6o8jnc4bac-n11_micc" mz="title">Confirm</string>
+  <string name="xuaw6o8jofnra1-n46_debj" mz="title">Confirm</string>
+  <string name="xuaw6o8jnc4bad-n46_debj" mz="title">Confirm</string>
+  <string name="xuaw6o8jnc4baj-n46_debj" mz="title">Confirm</string>
+  <string name="xuaw6o8jot0wam-n11_micc" mz="title">Confirm</string>
+  <string name="xuaw6o8jo812au-n32_n9cw" mz="n32">Detail</string>
+  <string name="xuaw6o8jofnra2-n46_debj" mz="title">Return</string>
+  <string name="xuaw6o8jnc4bak-n46_debj" mz="title">Return</string>
+  <string name="xuaw6o8jzy9e0-n46_debj" mz="title">Back</string>
+  <string name="xuaw6o8jays2s8g-n1_ays2" mz="n1">New Alternate Illustration Unlocked</string>
+  <string name="xuaw6o8jpx78j9k-n118_91ym" mz="n118">Mechanism</string>
+  <string name="xuaw6o8jpx78j9k-n114_rz1o" mz="n114">Bio</string>
+  <string name="xuaw6o8jpj0zq45-n118_91ym" mz="n118">Mechanism</string>
+  <string name="xuaw6o8jpj0zq45-n114_rz1o" mz="n114">Bio</string>
+  <string name="xuaw6o8jpj0zq46-n97_rigr" mz="txt_SkillName">Active:{skillName=}</string>
+  <string name="xuaw6o8jpj0zq46-n97_rigr-texts_0" mz="txt_SkillName">Active:{skillName=}</string>
+  <string name="xuaw6o8jpj0zq46-n97_rigr-texts_1" mz="txt_SkillName">Passive:{skillName=}</string>
+  <string name="xuaw6o8jpx78j9l-n97_rigr" mz="txt_SkillName">Active:{skillName=}</string>
+  <string name="xuaw6o8jpx78j9l-n97_rigr-texts_0" mz="txt_SkillName">Active:{skillName=}</string>
+  <string name="xuaw6o8jpx78j9l-n97_rigr-texts_1" mz="txt_SkillName">Passive:{skillName=}</string>
+  <string name="xuaw6o8jz1wk0-n77_msij" mz="n77">LV.</string>
+  <string name="xuaw6o8jrct9q3d-n88_9e84" mz="title">UP</string>
+  <string name="m6sn3r229wy8q3a-n33_gbr1" mz="n33">Preview</string>
+  <string name="m6sn3r22ot0wbd-n92_dx3g" mz="txt_Title">Acquisition Method-{way=None}</string>
+  <string name="m6sn3r22px78j9h-n78_imo3" mz="btn_ReturnList">Cancel</string>
+  <string name="m6sn3r22px78j9h-n79_imo3" mz="btn_CreateRoom">Create Room</string>
+  <string name="m6sn3r22px78j9j-n130_r2u9" mz="n130">MapEvent</string>
+  <string name="m6sn3r22esjw8q-n71_imo3" mz="n71">Password:[size=30](Room will be public if no password.)[/size]</string>
+  <string name="m6sn3r22esjw8q-n72_imo3-prompt" mz="txtField_PSW">[color=#999999]Password should be 1-6 digits[/color]</string>
+  <string name="m6sn3r22esjw8q-n73_imo3" mz="n73">Details: </string>
+  <string name="m6sn3r22ucnq9u-n96_ayrm" mz="txt_Content_Time">&lt;img src='ui://m6sn3r22esjw8u' width='40' height='40'/&gt;{think=}</string>
+  <string name="m6sn3r22n2xac0-n116_n2xa" mz="txt_Content">&lt;img src='ui://m6sn3r22esjw8u' width='40' height='40'/&gt;{think=}</string>
+  <string name="m6sn3r22ot0w0-n14_z52s" mz="txt_Remaining">Limit  {remainingNum=1} / {limitNum=1}</string>
+  <string name="m6sn3r22ot0w0-n23_z52s" mz="n23">Owned</string>
+  <string name="m6sn3r22ot0w0-n39_hcgi" mz="txt_soldout">Sold Out!</string>
+  <string name="m6sn3r22ot0w0-n24_z52s" mz="txt_timeTip">Refresh：{day=00}d{hour=00}h</string>
+  <string name="m6sn3r22ot0w0-n43_hcgi" mz="n43">x</string>
+  <string name="m6sn3r22h0atqq41-n14_z52s" mz="txt_Remaining">Limit  {remainingNum=1} / {limitNum=1}</string>
+  <string name="m6sn3r22h0atqq41-n23_z52s" mz="n23">Owned</string>
+  <string name="m6sn3r22h0atqq41-n39_hcgi" mz="txt_soldout">Sold Out!</string>
+  <string name="m6sn3r22h0atqq41-n24_z52s" mz="txt_timeTip">Refresh：{day=00}d{hour=00}h</string>
+  <string name="m6sn3r22h0atqq41-n43_hcgi" mz="n43">x</string>
+  <string name="m6sn3r22ot0w9-n38_hcgi" mz="txt_DiscountPercent">{discount=35}% OFF</string>
+  <string name="m6sn3r22jn4e9a-n35_jn4e" mz="n35">x</string>
+  <string name="m6sn3r22jn4e9a-n36_jn4e" mz="n36">Ends in: {hour=20}h, {day=30}d</string>
+  <string name="m6sn3r22jn4e9a-n43_grcm" mz="n43">Owned</string>
+  <string name="m6sn3r22jz24ao-n35_jn4e" mz="txt_Symbol">x</string>
+  <string name="m6sn3r22jz24ao-n45_dvrq" mz="txt_Symbol_Replace">x</string>
+  <string name="m6sn3r22jz24ao-n42_dvrq" mz="n42">Convert</string>
+  <string name="m6sn3r22zi0cbl-n3_8hxz" mz="title">Chat</string>
+  <string name="m6sn3r22zi0cbv-n78_ayrm" mz="btn_KickPlayer">Remove</string>
+  <string name="m6sn3r22zi0cbv-n80_ayrm" mz="btn_SetMaster">Change Host</string>
+  <string name="m6sn3r22zi0cbv-n81_lhl9" mz="btn_AccountInfo">Info</string>
+  <string name="m6sn3r22zi0cbg-n64_bybb" mz="txt_Null">Waiting for others to join…</string>
+  <string name="m6sn3r22zi0cbg-n82_re7u" mz="btn_Chat">Chat</string>
+  <string name="1ov1i0v9kqgjbm-n12_gd4d" mz="txt_Name">[size=40]{name=鲨鱼哥}[/size]</string>
+  <string name="1ov1i0v9kqgjbm-n16_gd4d" mz="txt_maxLife">/{maxLife=00}</string>
+  <string name="1ov1i0v9vehs95-n3_qb3s" mz="title">[b]LET GO![/b]</string>
+  <string name="1ov1i0v9vehs92-n3_qb3s" mz="title">[b]ATTACK[/b]</string>
+  <string name="1ov1i0v9d45l9a-n88_d45l" mz="n88">Stun</string>
+  <string name="1ov1i0v9imo37u-n91_cz37" mz="txt_Team">Gift Guardian</string>
+  <string name="trgir7dot1xw0-n2_v4mo" mz="txt_desc">Due to recent violations of the code of conduct in your matches, your Fair Play Score has fallen below 90. A 3 minute cooldown will be applied to your next match. To restore your Fair Play Score, complete games as normal.</string>
+  <string name="trgir7dot1xw0-n4_v4mo" mz="btn_ok">Understood</string>
+  <string name="trgir7dot1xw0-n5_j58e" mz="txt_title">Violation Warning</string>
+  <string name="trgir7dot1xw0-n7_j58e" mz="txt_desc_2">Due to recent violations of the code of conduct in your matches, your Fair Play Score has fallen below 90. A 3 minute cooldown will be applied to your next match. To restore your Fair Play Score, complete games as normal.</string>
+  <string name="i6k190d4axwd2-n11_axwd" mz="txt_Count">Remaining: {count=0}</string>
+  <string name="i6k190d4axwd0-n16_esyu" mz="bottom">Select Discount</string>
+  <string name="i6k190d4axwd0-n5_axwd" mz="txt_Price">Discounted price: {token=USD} [color=#FFCA0F]{curPrice=000}[/color] (Save [color=#FFCA0F]{Difference=00}[/color])</string>
+  <string name="i6k190d4axwd0-n3_axwd" mz="btn_Cash">Confirm</string>
+  <string name="i6k190d4axwd0-n3_axwd-0" mz="btn_Cash">Confirm</string>
+  <string name="893ze0z8ays2b-n2_ays2" mz="title">Name</string>
+  <string name="893ze0z8okfee-n92_dx3g" mz="txt_Title">Acquisition Method-{way=None}</string>
+  <string name="893ze0z8cp3s0-n16_ays2" mz="n16">How to Obtain</string>
+  <string name="mve1x02cl83j1-n64_hfc0" mz="txt_content">No_Translate</string>
+  <string name="mve1x02chfc02-n8_hfc0" mz="txt_content1">1: Allow the game to send notifications</string>
+  <string name="mve1x02chfc02-n12_kr66" mz="txt_content2">No_Translate</string>
+  <string name="mve1x02cl83j0-n1_l83j" mz="bottom">No_Translate</string>
+  <string name="5wai1nhyl6o6at-n28_6fw5" mz="bottom">Tips</string>
+  <string name="5wai1nhyl6o6at-n25_7h6s" mz="txt_Page">&lt; {curIndex=4} /{maxIndex=4} &gt;</string>
+  <string name="5wai1nhyl6o66-n112_6fw5" mz="bottom">Winning Condition</string>
+  <string name="5wai1nhyl6o66-n92_g8sb" mz="n92">Get 3 stars to win!</string>
+  <string name="5wai1nhyl6o66-n87_g8sb" mz="n87">When player reaches</string>
+  <string name="5wai1nhyl6o66-n89_g8sb" mz="n89">Check point</string>
+  <string name="5wai1nhyl6o66-n106_md6x" mz="n106">Get 1 star by meeting the following conditions</string>
+  <string name="5wai1nhyl6o66-n110_vehs" mz="n110">Start Point</string>
+  <string name="5wai1nhyl6o66-n93_g8sb" mz="n93">Condition:</string>
+  <string name="dl889m5qlsb446-n2_ul24" mz="title">SET 1</string>
+  <string name="dl889m5qlsb44a-n17_n4se" mz="title">Special Effect (Finisher)</string>
+  <string name="dl889m5qdx3g4z-n92_dx3g" mz="txt_Title">Obtain Via-{way=暂无}</string>
+  <string name="dl889m5qlsb44l-n94_e1vv" mz="n94">Your dressing up is not saved. Continue?</string>
+  <string name="dl889m5qlsb44l-n99_o3e1" mz="btn_Cancel">Cancel</string>
+  <string name="dl889m5qlsb44l-n100_o3e1" mz="btn_Sure">Confirm</string>
+  <string name="dl889m5qlsb449-n19_n4se" mz="com_Slot_0">Avatar</string>
+  <string name="dl889m5qlsb449-n20_n4se" mz="com_Slot_1">Profile Card</string>
+  <string name="dl889m5qlsb449-n21_n4se" mz="com_Slot_2">Card</string>
+  <string name="dl889m5qlsb449-n22_n4se" mz="com_Slot_3">Dice</string>
+  <string name="dl889m5qlsb449-n23_n4se" mz="com_Slot_4">Special Effect (Finisher)</string>
+  <string name="dl889m5qlsb445-n73_dx3g-0" mz="list_Tab">Avatar</string>
+  <string name="dl889m5qlsb445-n73_dx3g-1" mz="list_Tab">Profile Card</string>
+  <string name="dl889m5qlsb445-n73_dx3g-2" mz="list_Tab">Card</string>
+  <string name="dl889m5qlsb445-n73_dx3g-3" mz="list_Tab">Dice</string>
+  <string name="dl889m5qlsb445-n73_dx3g-4" mz="list_Tab">Finisher</string>
+  <string name="dl889m5qlsb445-n73_dx3g-5" mz="list_Tab">Themed Background</string>
+  <string name="dl889m5qlsb445-n89_dx3g" mz="n89">Current Setting</string>
+  <string name="dl889m5qlsb445-n41_n4se" mz="btn_Save">Save</string>
+  <string name="dl889m5qlsb445-n62_dx3g" mz="btn_reset">Reset</string>
+  <string name="8irq146hwvm91e-n3_qb3s" mz="n1">ATTACK</string>
+  <string name="8irq146hwvm91e-n8_wvm9" mz="n2">READY</string>
+  <string name="8irq146hmjrua-n3_qb3s" mz="n1">READY</string>
+  <string name="8irq146hmjrua-n8_wvm9" mz="n2">READY</string>
+  <string name="8irq146hwvm91f-n3_qb3s" mz="n1">DEFEND</string>
+  <string name="8irq146hwvm91f-n8_wvm9" mz="n2">READY</string>
+  <string name="8irq146hwvm91g-n3_qb3s" mz="n1">EVADE</string>
+  <string name="8irq146hwvm91g-n8_wvm9" mz="n2">READY</string>
+  <string name="8irq146hwvm91g-n9_wvm9" mz="txt_Point">{sign=&gt;}{point=0}</string>
+  <string name="8irq146ht4dl2g-n4_t4dl" mz="txt_CardValue">{min=13}
+-
+{max=20}</string>
+  <string name="8irq146ht4dl2g-n1_t4dl" mz="txt_Life">{life=100}</string>
+  <string name="8irq146hwvm91a-n4_t4dl" mz="txt_CardValue">{min=13}
+-
+{max=20}</string>
+  <string name="8irq146hwvm91a-n1_t4dl" mz="txt_Life">{life=10}</string>
+  <string name="8irq146hwvm91a-n36_lmo0" mz="n36">Evaded!</string>
+  <string name="8irq146hwvm91a-n38_lmo0" mz="n38">Evade Failed!</string>
+  <string name="8irq146hwvm91a-n37_lmo0" mz="txt_HitValue">{hp=-10}</string>
+  <string name="8irq146hglhu4j-n86_9dfe" mz="txt_Cost">{curCost=3}/{maxCost=3}</string>
+  <string name="8irq146hmjrud-n33_qznh" mz="btn_PK">ATTACK</string>
+  <string name="8irq146hmjrud-n34_qznh" mz="btn_Leave">Let Go!</string>
+  <string name="8irq146hmjrud-n99_freu" mz="n99">Dwelling the next move…</string>
+  <string name="8irq146hmjrud-n110_ec7w" mz="txt_Counter">Counterattack</string>
+  <string name="8irq146hmjrud-n111_ru20" mz="btn_ShowWin">Hide</string>
+  <string name="8irq146hmjrud-n112_ru20" mz="btn_HideWin">Show</string>
+  <string name="8irq146hmjruc-n80_lmo0" mz="n80">Both sides are playing cards…</string>
+  <string name="8irq146hmjruc-n82_lmo0" mz="n99">Preparing to attack!</string>
+  <string name="8irq146hmjruc-n73_enlv" mz="txt_DiceTip">[size=50][color=#{color=ff0000}]{playerName=PLAYER NAME}[/color][/size]</string>
+  <string name="8irq146hmjruc-n84_lmo0" mz="n95">Preparing to defend!</string>
+  <string name="8irq146hmjruc-n85_lmo0" mz="txt_ChoiceTip">[size=50][color=#{color=ff0000}]{playerName=PLAYER NAME}[/color][/size]</string>
+  <string name="8irq146hmjruc-n88_lmo0" mz="txt_Defend">Chose to defend!</string>
+  <string name="8irq146hmjruc-n91_lmo0" mz="txt_Dodge">Chose to evade!</string>
+  <string name="8irq146hmjruc-n89_lmo0" mz="txt_ChoiceResult">[size=50][color=#{color=ff0000}]{playerName=PLAYER NAME}[/color][/size]</string>
+  <string name="8irq146hmjruc-n93_lmo0" mz="txt_Failure">KO!</string>
+  <string name="8irq146hmjruc-n96_lmo0" mz="txt_Success">Survived!</string>
+  <string name="8irq146hmjruc-n94_lmo0" mz="txt_ResultTip">[size=50][color=#{color=ff0000}]{playerName=PLAYER NAME}[/color][/size]</string>
+  <string name="2wec2q8z7h6s9-n28_7h6s" mz="n28">Add friend</string>
+  <string name="2wec2q8z7h6s9-n29_7h6s" mz="n29">Add friend</string>
+  <string name="2wec2q8z7h6s9-n30_7h6s" mz="n30">Recent</string>
+  <string name="2wec2q8z7h6s9-n34_7h6s" mz="n34">By UID</string>
+  <string name="2wec2q8z7h6s9-n24_7h6s" mz="txt_Times"> Daily Requests Limit{num=50}Times</string>
+  <string name="2wec2q8z7h6s9-n21_7h6s-prompt" mz="txtField_Search">[color=#999999]Enter UID[/color]</string>
+  <string name="2wec2q8z7h6s9-n19_7h6s" mz="btn_SearchPlayer">Search</string>
+  <string name="2wec2q8z7h6s9-n11_7h6s" mz="n11">Recent</string>
+  <string name="2wec2q8z7h6s9-n12_7h6s" mz="n12">Search</string>
+  <string name="2wec2q8z7h6s9-n26_7h6s" mz="n26">No matches. Please re-enter UID</string>
+  <string name="2wec2q8z7h6sy-n10_7h6s" mz="n10">Requests</string>
+  <string name="2wec2q8z7h6sy-n11_7h6s" mz="n11">Requests</string>
+  <string name="2wec2q8z7h6sy-n15_7h6s" mz="txt_ShowTime">Requests within {day=7} days</string>
+  <string name="2wec2q8z7h6sy-n14_7h6s" mz="btn_AllRefuse">Reject all</string>
+  <string name="2wec2q8z7h6sx-n37_7h6s" mz="n37">Check</string>
+  <string name="2wec2q8z7h6sw-n10_7h6s" mz="n10">Blacklist</string>
+  <string name="2wec2q8z7h6sw-n11_7h6s" mz="n11">Blacklist</string>
+  <string name="2wec2q8z7h6sw-n8_7h6s" mz="txt_blackNum">[size=60]Limit[/size]{num=00/00}</string>
+  <string name="2wec2q8zgn3f1t-n10_7h6s" mz="title">Online</string>
+  <string name="2wec2q8ztiv31p-n10_7h6s" mz="btn_FriendStatus">Online</string>
+  <string name="2wec2q8ztiv31p-n10_7h6s-texts_0" mz="btn_FriendStatus">Offline</string>
+  <string name="2wec2q8ztiv31p-n10_7h6s-texts_1" mz="btn_FriendStatus">Join Room</string>
+  <string name="2wec2q8ztiv31p-n10_7h6s-texts_def" mz="btn_FriendStatus">Online</string>
+  <string name="2wec2q8z7h6s1n-n39_7h6s" mz="n39">Observe</string>
+  <string name="2wec2q8z7h6sf-n10_7h6s" mz="n10">Friends</string>
+  <string name="2wec2q8z7h6sf-n11_7h6s" mz="n11">Friends</string>
+  <string name="2wec2q8z7h6sf-n8_7h6s" mz="txt_FriendsNum">[size=60]Limit[/size]{num=00/00}</string>
+  <string name="2wec2q8z7h6sf-n17_nzp8" mz="com_State">Status</string>
+  <string name="2wec2q8z7h6s0-n1_7h6s" mz="btn_TabFriends">Friends</string>
+  <string name="2wec2q8z7h6s0-n2_7h6s" mz="btn_TabAdd">Add friend</string>
+  <string name="2wec2q8z7h6s0-n3_7h6s" mz="btn_TabApply">Requests</string>
+  <string name="2wec2q8z7h6s0-n4_7h6s" mz="btn_TabBlacklist">Blacklist</string>
+  <string name="fmvvkhb4u13x1b-n3_u13x" mz="n3">Complete one Astral Town match to enter the rankings</string>
+  <string name="fmvvkhb4u13x1c-n58_psca" mz="n58">Highest Score</string>
+  <string name="fmvvkhb4u13x18-n28_u13x" mz="n28">Friends Ranking</string>
+  <string name="fmvvkhb4u13x18-n36_uytm" mz="FriendClose_btn">X</string>
+  <string name="fmvvkhb4u13x18-n33_uytm" mz="n33">Monthly score reset</string>
+  <string name="j90wpcmnpl6d1w-n3_qb3s" mz="txt_Name">Roll x10</string>
+  <string name="j90wpcmnpl6d1w-n13_vo6h" mz="n13">First Time is Free!</string>
+  <string name="j90wpcmnvpjm7-n3_qb3s" mz="txt_Name">Roll x {time=1}</string>
+  <string name="j90wpcmnfs8hqq2b-n3_qb3s" mz="txt_Name">Draw {time=1} times</string>
+  <string name="j90wpcmng85eqq2v-n3_qb3s" mz="txt_Name">Roll x {time=1}</string>
+  <string name="j90wpcmnfs8hqq2f-n3_qb3s" mz="txt_Name">PREVIEW</string>
+  <string name="j90wpcmnf9snqq2x-n3_qb3s" mz="txt_Name">Draw {time=10} Times</string>
+  <string name="j90wpcmnf9snqq2x-n17_gav0" mz="n17">20% OFF</string>
+  <string name="j90wpcmng85eqq2w-n120_pzeu" mz="txt_review">Preview</string>
+  <string name="j90wpcmng85eqq2w-n116_pzeu" mz="txt_receive">Select a Character</string>
+  <string name="j90wpcmng85eqq2w-n117_pzeu" mz="txt_received">Select a Character</string>
+  <string name="j90wpcmn11biq1y-n18_qdq5" mz="n18">Exchange</string>
+  <string name="j90wpcmni82zqq3a-n5_i82z" mz="n5">Claim</string>
+  <string name="j90wpcmni82zqq3c-n4_i82z" mz="num">x {count=150}</string>
+  <string name="j90wpcmnabqa1a-n52_5o9m" mz="n52">x</string>
+  <string name="j90wpcmnabqa1a-n42_ne5m" mz="n42">x</string>
+  <string name="j90wpcmnabqa1a-n49_grcm" mz="n49">Convert</string>
+  <string name="j90wpcmni82zqq3b-n3_i82z" mz="n3">&lt;Tap to View All&gt;</string>
+  <string name="j90wpcmni82zqq37-n3_i82z" mz="n3">Boost Giftpack</string>
+  <string name="j90wpcmnvjqjqq3l-n2_vjqj" mz="txt_UpDesc">-Rerun-</string>
+  <string name="j90wpcmnabqa19-n62_thbm" mz="btn_Sure_Again">Lucky!!</string>
+  <string name="j90wpcmnabqa19-n84_vlgj" mz="btn_Sure_NoAgain">Lucky!!</string>
+  <string name="j90wpcmnabqa19-n46_vpjm" mz="btn_GachaAgain">Roll Again</string>
+  <string name="j90wpcmnabqa19-n82_thbm" mz="n82">Roll Result</string>
+  <string name="j90wpcmnvpjmv-n51_vpjm" mz="n51">Item Animation</string>
+  <string name="j90wpcmnvpjmv-n50_vpjm" mz="n50">Draw Cards Animation</string>
+  <string name="j90wpcmnvpjmv-n28_vpjm" mz="btn_Skip">Skip-&gt;</string>
+  <string name="j90wpcmn11biq21-n97_11biq" mz="txt_UpDesc">Rate Up!</string>
+  <string name="j90wpcmnvjqjqq3m-n2_vjqj" mz="txt_UpDesc">-Rerun-</string>
+  <string name="j90wpcmnvjqjqq3m-n4_vjqj" mz="txt_Up">Rate UP ↑↑</string>
+  <string name="j90wpcmnvjqjqq3k-n7_vjqj" mz="btn_GachaMulti">Roll x 10</string>
+  <string name="j90wpcmni82zqq39-n0_i82z" mz="txt_title">Claim after [color=#FFFFFF]{count=10}[/color] draws</string>
+  <string name="j90wpcmni82zqq39-n1_i82z" mz="txt_canget">Receive</string>
+  <string name="j90wpcmnvlgj1t-n71_vlgj" mz="txt_PoolRecord">Record</string>
+  <string name="j90wpcmnvlgj1t-n76_vlgj" mz="txt_Explain">Only the last 40 gacha records of the current account are displayed</string>
+  <string name="j90wpcmnvlgj1t-n87_vlgj" mz="n87">Type</string>
+  <string name="j90wpcmnvlgj1t-n88_vlgj" mz="n88">Name</string>
+  <string name="j90wpcmnvlgj1t-n89_vlgj" mz="n89">Amount</string>
+  <string name="j90wpcmnvlgj1t-n90_vlgj" mz="n90">Time</string>
+  <string name="j90wpcmnfs8hqq2l-n3_fs8h" mz="n3">Claim</string>
+  <string name="j90wpcmnfs8hqq2l-n5_fs8h" mz="n5">Obtained</string>
+  <string name="j90wpcmng6uw0-n26_vpjm" mz="btn_Excharge">Exchange</string>
+  <string name="j90wpcmng6uw0-n25_vpjm" mz="btn_Info">Details</string>
+  <string name="j90wpcmng6uw0-n68_vlgj" mz="btn_Record">Record</string>
+  <string name="j90wpcmng6uw0-n39_vpjm" mz="btn_GachaMulti">Roll x 10</string>
+  <string name="j90wpcmng6uw0-n118_pzeu" mz="txt_rookieGachaCount">Remaining [color=#90ff11]{count=4}[/color] times</string>
+  <string name="j90wpcmng6uw0-n119_pzeu" mz="n119">★ 60 Draws → Select 1 Character</string>
+  <string name="j90wpcmng6uw0-n120_pzeu" mz="txt_rookieGachaProcess">{curCount=20}/[color=#90ff11]{maxCount=60}[/color]</string>
+  <string name="egrtucyhot0w6-n76_vlgj" mz="txt_Explain">Only the last 40 gacha records of the current account are displayed</string>
+  <string name="egrtucyhot0w6-n87_vlgj" mz="n87">Type</string>
+  <string name="egrtucyhot0w6-n88_vlgj" mz="n88">Name</string>
+  <string name="egrtucyhot0w6-n89_vlgj" mz="n89">Amount</string>
+  <string name="egrtucyhot0w6-n90_vlgj" mz="n90">Time</string>
+  <string name="egrtucyhnu3za-n12_nu3z" mz="btn_SkipSkin">Skip</string>
+  <string name="egrtucyhot0w0-n11_r3jj" mz="bottom">Gacha Info</string>
+  <string name="egrtucyhot0w0-n7_izsa" mz="btn_Skip">Skip</string>
+  <string name="q1a022ssjrp5qq38-n116_pzeu" mz="txt_receive">Claim</string>
+  <string name="q1a022ssjrp5qq38-n124_jrp5" mz="txt_uncomplet">Not Completed</string>
+  <string name="q1a022ssjrp5qq38-n125_jrp5" mz="txt_progress">{curCount=20}/[color=#09f84c]{maxCount=60}[/color]</string>
+  <string name="q1a022ssjrp5qq38-n127_u9hc" mz="txt_complet">Claim</string>
+  <string name="q1a022ssm48i0-n11_jrp5" mz="n11">Beginner Banner Character Selection</string>
+  <string name="d5a5wdik7wqn8-n118_91ym" mz="n118">Mechanism</string>
+  <string name="d5a5wdik7wqn8-n114_rz1o" mz="n114">Bio</string>
+  <string name="d5a5wdikzbf7l-n97_rigr" mz="txt_SkillName">Active: {skillName=}</string>
+  <string name="d5a5wdikzbf7l-n97_rigr-texts_0" mz="txt_SkillName">Active: {skillName=}</string>
+  <string name="d5a5wdikzbf7l-n97_rigr-texts_1" mz="txt_SkillName">Passive: {skillName=}</string>
+  <string name="d5a5wdik7wqn0-n29_ru20-0" mz="list_Labels">Card</string>
+  <string name="d5a5wdik7wqn0-n29_ru20-1" mz="list_Labels">Panel</string>
+  <string name="d5a5wdik7wqn0-n29_ru20-2" mz="list_Labels">Monster</string>
+  <string name="d5a5wdik7wqn0-n29_ru20-3" mz="list_Labels">Chips</string>
+  <string name="d5a5wdik7wqn0-n29_ru20-4" mz="list_Labels">Event</string>
+  <string name="w5bj58pzlwm12-n1_lwm1" mz="title">Back</string>
+  <string name="w5bj58pzg04jk-n6_rc48" mz="title">Join</string>
+  <string name="w5bj58pzg04jj-n1_g04j" mz="title">Report</string>
+  <string name="w5bj58pzlwm20-n2_lwm1" mz="txt_AnnouncementTitle">Notice</string>
+  <string name="w5bj58pzlwm20-n4_lwm1" mz="txt_AnnouncementUpdatedMeta">Last Modified: {time=2026/06/30}</string>
+  <string name="w5bj58pzlwm13-n3_lwm1-0" mz="list_GuildMainNavItems">Chat</string>
+  <string name="w5bj58pzlwm13-n3_lwm1-1" mz="list_GuildMainNavItems">Members</string>
+  <string name="w5bj58pzlwm13-n7_g04j" mz="btn_report">Report</string>
+  <string name="w5bj58pzlwm13-n8_g04j" mz="btn_rule">Rules</string>
+  <string name="w5bj58pzlwm19-n1_lwm1" mz="txt_GuildName">Guild Name: {name=XXXXXXX}</string>
+  <string name="w5bj58pzlwm19-n2_lwm1" mz="txt_GuildId">Guild ID: {id=123456789}</string>
+  <string name="w5bj58pzhtd12v-n18_qtyw" mz="n18">In Game</string>
+  <string name="w5bj58pzhtd12i-n11_htd1" mz="btn_Search">Search</string>
+  <string name="w5bj58pzhtd12i-n2_htd1" mz="btn_Friend">Friend</string>
+  <string name="w5bj58pzhtd12i-n3_htd1" mz="btn_LastTeam">Recent Players</string>
+  <string name="w5bj58pzhtd12i-n9_htd1" mz="btn_Invite">Invite</string>
+  <string name="w5bj58pzhtd12i-n13_htd1" mz="uid_input">Please enter UID</string>
+  <string name="w5bj58pzhtd12i-n14_htd1" mz="btn_search">Search</string>
+  <string name="w5bj58pzg04j10-n1_g04j" mz="memberTitle">[size=84]Member List[/size][size=42]({num=38}/{total=150})[/size]</string>
+  <string name="w5bj58pzg04j10-n6_g04j" mz="btn_memberChange">Member Changes</string>
+  <string name="w5bj58pzg04j10-n7_g04j" mz="btn_invite">Invite to Guild</string>
+  <string name="w5bj58pzg04j10-n8_g04j" mz="btn_approval">Review Applications</string>
+  <string name="w5bj58pzg04j17-n6_g04j" mz="active">This Week's Activity: {active=999}</string>
+  <string name="w5bj58pzhtd11m-n1_htd1" mz="n1">Guild Store</string>
+  <string name="w5bj58pzhtd11l-n1_htd1" mz="n1">Guild Missions</string>
+  <string name="w5bj58pzhtd11p-n38_htd1" mz="btn_taskStatus">Go Complete</string>
+  <string name="w5bj58pzhtd11p-n38_htd1-texts_0" mz="btn_taskStatus">Go Complete</string>
+  <string name="w5bj58pzhtd11p-n38_htd1-texts_1" mz="btn_taskStatus">Claim</string>
+  <string name="w5bj58pzhtd135-n7_htd1" mz="txt_approvaTime">Application Time: {time=2026/05/08 12:00}</string>
+  <string name="w5bj58pzhtd135-n4_htd1" mz="btn_see">Check</string>
+  <string name="w5bj58pzhtd135-n5_htd1" mz="btn_refuse">Reject</string>
+  <string name="w5bj58pzhtd135-n6_htd1" mz="btn_agree">Accept</string>
+  <string name="w5bj58pzhtd12j-n0_htd1" mz="bottom">Review Applications</string>
+  <string name="w5bj58pzhtd12j-n3_htd1" mz="n3">Applications from the Last 7 Days</string>
+  <string name="w5bj58pzhtd12j-n5_htd1" mz="btn_refuseall">Reject All</string>
+  <string name="w5bj58pzhtd12c-n0_htd1" mz="bottom">Member Changes</string>
+  <string name="w5bj58pzhtd12c-n3_htd1" mz="n3">Member changes from the last 30 days (up to 300 entries)</string>
+  <string name="w5bj58pzhtd12b-n0_htd1" mz="bottom">Member Settings</string>
+  <string name="w5bj58pzhtd12b-n4_htd1" mz="txt_memberJob">Current Position: {job=Elite}</string>
+  <string name="w5bj58pzhtd12b-n5_htd1" mz="txt_memberTime">Last Login: {time=2026/05/08}</string>
+  <string name="w5bj58pzhtd12b-n6_htd1" mz="txt_memberActive">This Week's Activity: {num=999}</string>
+  <string name="w5bj58pzhtd12b-n7_htd1" mz="btn_memberDetail">View Details</string>
+  <string name="w5bj58pzhtd12b-n9_htd1" mz="btn_expelGuild">Remove from Guild</string>
+  <string name="w5bj58pzhtd12b-n8_htd1" mz="btn_exitGuild">Leave Guild</string>
+  <string name="w5bj58pzhtd12a-n0_htd1" mz="bottom">Internal Announcement</string>
+  <string name="w5bj58pzhtd12a-n3_htd1" mz="input_notice">NoTranslate</string>
+  <string name="w5bj58pzhtd12a-n4_htd1" mz="btn_notice_sure">Confirm</string>
+  <string name="w5bj58pzhtd12a-n6_htd1" mz="txt_editerName">Last Modified by: {name=名字XXXX}</string>
+  <string name="w5bj58pzhtd12a-n9_htd1" mz="n9">Daily edit limit: 3 times</string>
+  <string name="w5bj58pzhtd129-n0_htd1" mz="bottom">Guild Settings</string>
+  <string name="w5bj58pzhtd129-n2_htd1" mz="n2">Guild Tags</string>
+  <string name="w5bj58pzhtd129-n5_htd1" mz="n5">Recruitment Notice</string>
+  <string name="w5bj58pzhtd129-n6_htd1" mz="n6">Multiple selections allowed. Choose up to 5.</string>
+  <string name="w5bj58pzhtd129-n8_htd1" mz="recruit_notice">NoTranslate</string>
+  <string name="w5bj58pzhtd129-n9_htd1" mz="btn_dissolve">Disband Guild</string>
+  <string name="w5bj58pzhtd129-n10_htd1" mz="btn_settingsure">Confirm</string>
+  <string name="w5bj58pzhtd129-n12_htd1" mz="txt_editerName">Last Modified: {name=name XXXX}</string>
+  <string name="w5bj58pzhtd129-n15_htd1" mz="n15">Daily edit limit: 3 times</string>
+  <string name="w5bj58pzg04j1i-n0_g04j" mz="tips">2026/06/01 Name xxxxx promoted xxxxx to Vice Leader</string>
+  <string name="w5bj58pzlwm11-n3_lwm1" mz="btn_Back">Back</string>
+  <string name="gldisc01gd007-n7_hmn1" mz="n7">Application Records</string>
+  <string name="gldisc01gd007-n8_hmn1" mz="n8">Each application expires after 7 days.</string>
+  <string name="gldisc01rc48v-n4_y9qn" mz="n4">Back</string>
+  <string name="gldisc01gd002-n9_rc48" mz="title">Create Guild</string>
+  <string name="gldisc01rc4816-n6_rc48" mz="title">Join</string>
+  <string name="gldisc01gd009-n21_hmn1" mz="n21">Guild Name</string>
+  <string name="gldisc01gd009-n23_hmn1" mz="input_GuildName">NoTranslate</string>
+  <string name="gldisc01gd009-n26_hmn1" mz="txt_hint1">Cannot exceed 20 characters.</string>
+  <string name="gldisc01gd009-n28_hmn1" mz="txt_hint2">The guild name cannot be changed after creation.</string>
+  <string name="gldisc01gd009-n33_hmn1" mz="n33">Guild Tags</string>
+  <string name="gldisc01gd009-n35_hmn1" mz="txt_hint3">Multiple selections allowed. Choose up to 5.</string>
+  <string name="gldisc01gd009-n37_hmn1" mz="n37">Recruitment Notice</string>
+  <string name="gldisc01gd009-n39_hmn1" mz="txt_notice">NoTranslate</string>
+  <string name="gldisc01gd009-n43_hmn1" mz="n43">Funds Required</string>
+  <string name="gldisc01gd009-n44_hmn1" mz="btn_Confirm">Confirm Creation</string>
+  <string name="gldisc01gd008-n10_hmn1" mz="n10">Received Invites</string>
+  <string name="gldisc01gd008-n11_hmn1" mz="n11">Guild invites received in the last 7 days</string>
+  <string name="gldisc01gd008-n13_hmn1" mz="btn_AcceptInvite">Accept</string>
+  <string name="gldisc01gd008-n14_hmn1" mz="btn_RejectInvite">Reject</string>
+  <string name="gldisc01gd008-n15_hmn1" mz="btn_RejectAllInvites">Reject all</string>
+  <string name="gldisc01gd014-n2_gd" mz="txt_GuildName">Guild Name {name=xxxxxxx}</string>
+  <string name="gldisc01gd014-n4_gd" mz="txt_GuildLeader">Leader: {leaderName=XXXXXXX}</string>
+  <string name="gldisc01gd014-n3_gd" mz="txt_GuildId">Guild ID: {ID=123456789}</string>
+  <string name="gldisc01gd014-n5_gd" mz="txt_GuildMemberCount">Total Members: {num=999}</string>
+  <string name="gldisc01gd014-n6_gd" mz="txt_GuildActiveCount">Last Week's Activity: {activeNum=666}</string>
+  <string name="gldisc01gd014-n10_gd" mz="txt_GuildEditedInfo">Last Edited by: {name=停车坐爱枫林晚} {time=2026/08/30 12:30}</string>
+  <string name="gldisc01gd016-n8_rc48" mz="txt_SectionTitle">Select Guild Tags</string>
+  <string name="gldisc01gd016-n12_rc48" mz="txtField_GuildKeyword">Enter the guild you want to search for</string>
+  <string name="gldisc01gd016-n12_rc48-prompt" mz="txtField_GuildKeyword">[color=#aaaaaa]Please enter the guild name or guild ID to search[/color]</string>
+  <string name="gldisc01gd016-n15_hmn1" mz="btn_SearchGuild">Search</string>
+  <string name="gldisc01gd016-n18_hmn1" mz="btn_ReportGuild">Report</string>
+  <string name="gldisc01gd016-n19_hmn1" mz="btn_ApplyJoinGuild">Join</string>
+  <string name="gldisc01gd005-n2_gd" mz="txt_GuildName">NoTranslate</string>
+  <string name="gldisc01gd005-n16_hmn1" mz="n16">Applied</string>
+  <string name="gldisc01gd005-n5_gd" mz="txt_GuildMember">Total Members: {num=999}</string>
+  <string name="gldisc01gd005-n10_hmn1" mz="txt_GuildActiveMember">Last Week's Activity: {num=666}</string>
+  <string name="gldisc01gd001-n7_gd-0" mz="list_GuildSideNavItems">Join Guild</string>
+  <string name="gldisc01gd001-n7_gd-1" mz="list_GuildSideNavItems">Application Records</string>
+  <string name="gldisc01gd001-n7_gd-2" mz="list_GuildSideNavItems">Received Invites</string>
+  <string name="gldisc01gd001-n7_gd-3" mz="list_GuildSideNavItems">Create Guild</string>
+  <string name="vflhnh8dorg7e-n50_j73t" mz="n50">GO GO GO</string>
+  <string name="vflhnh8dorg7e-n48_j73t" mz="n48">Move</string>
+  <string name="vflhnh8dqs184n-n5_qs18" mz="txt_Name">SKILL</string>
+  <string name="vflhnh8dorg71-n69_imo3" mz="txt_CardState">Play Card {curCard=0}/{maxCard=0}</string>
+  <string name="7qkd4lqxg1lk18-n96_j0fu" mz="txt_Num">[color=#{color=ff0000}]{curNum=00}[/color]/{target=00}</string>
+  <string name="7qkd4lqxq93cq2t-n123_q93c" mz="n123">Using</string>
+  <string name="7qkd4lqxg1lkm-n138_kp9f" mz="btn_Skill">Skill</string>
+  <string name="7qkd4lqxg1lkm-n147_bfwl" mz="btn_Upgrade">Level up</string>
+  <string name="7qkd4lqxg1lkm-n148_bfwl" mz="btn_Talent">Potential</string>
+  <string name="7qkd4lqxg1lkm-n149_bfwl" mz="btn_Archive">Profile</string>
+  <string name="7qkd4lqxg1lkm-n154_jhcl" mz="txt_CollectTip">Set it as favorite character</string>
+  <string name="7qkd4lqxkp9fq36-n139_bfwl" mz="n139">Co-op Challenge</string>
+  <string name="7qkd4lqxkp9fq36-n144_bfwl" mz="n144">Potential Activation</string>
+  <string name="7qkd4lqxbfwlq3i-n140_bfwl" mz="n140">Level</string>
+  <string name="7qkd4lqxkqgjq2f-n97_rigr" mz="txt_SkillName">Active:{skillName=}</string>
+  <string name="7qkd4lqxkqgjq2f-n97_rigr-texts_0" mz="txt_SkillName">Active:{skillName=}</string>
+  <string name="7qkd4lqxkqgjq2f-n97_rigr-texts_1" mz="txt_SkillName">Passive:{skillName=}</string>
+  <string name="7qkd4lqxbfwlq3k-n1_bfwl" mz="title">Activation</string>
+  <string name="7qkd4lqxkp9fq39-n125_bfwl" mz="txt_DescTitle">{name=Character Name}——Potential Activation</string>
+  <string name="7qkd4lqxkp9fq39-n120_dxtj" mz="txt_Tips">Requires Co-op LV {lv=0}(Not achieved)</string>
+  <string name="7qkd4lqxkp9fq39-n120_dxtj-texts_0" mz="txt_Tips">Requires Co-op LV {lv=0}</string>
+  <string name="7qkd4lqxkp9fq39-n120_dxtj-texts_def" mz="txt_Tips">Requires Co-op LV {lv=0} (Not achieved)</string>
+  <string name="7qkd4lqxbfwlq3t-n96_j0fu" mz="txt_Num">[color=#{color=ff0000}]{curNum=00}[/color]/{target=00}</string>
+  <string name="7qkd4lqxbfwlq44-n1_bfwl" mz="title">Level up</string>
+  <string name="7qkd4lqxkp9fq37-n138_kp9f" mz="btn_AutoUpgrade">Auto-select</string>
+  <string name="7qkd4lqxkp9fq37-n139_kp9f" mz="btn_CancelUpgrade">Clear All</string>
+  <string name="7qkd4lqxl6o6q1t-n122_l6o6" mz="n122">Switch Item</string>
+  <string name="7qkd4lqxg1lkn-n83_j0fu" mz="n83">Friendship Level</string>
+  <string name="7qkd4lqxg1lkn-n79_j0fu" mz="btn_GiftTab">Gift</string>
+  <string name="7qkd4lqxg1lkn-n90_j0fu" mz="btn_OperateBreak">Bond Forged</string>
+  <string name="7qkd4lqxg1lkn-n53_ym7c" mz="btn_giveGift">Confirm</string>
+  <string name="7qkd4lqxg1lkn-n107_rz1o" mz="txt_CurFavorValue">{color=[color=#ffffff]}{cur=1200}[/color]/{max=2000}</string>
+  <string name="7qkd4lqxg1lkn-n119_bhbh" mz="n119">REWARDS</string>
+  <string name="7qkd4lqxg1lkn-n91_j0fu" mz="btn_breakThrough">Confirm</string>
+  <string name="7qkd4lqxg1lkn-n120_dxtj" mz="n120">Need Friendship LV5</string>
+  <string name="7qkd4lqxot0wq28-n11_micc" mz="title">Profile</string>
+  <string name="7qkd4lqxot0wq27-n11_micc" mz="title">Level up</string>
+  <string name="7qkd4lqxot0wq29-n137_bfwl" mz="n137">Level</string>
+  <string name="7qkd4lqxot0wq2a-n6_ot0w" mz="n6">Co-op Challenge Leveled up</string>
+  <string name="7qkd4lqxot0wq2a-n10_ot0w" mz="btn_Upgrade">Level up</string>
+  <string name="7qkd4lqxot0wq2a-n11_ot0w" mz="btn_AutoUpgrade">Auto-select</string>
+  <string name="7qkd4lqxot0wq2a-n12_ot0w" mz="btn_CancelUpgrade">Clear All</string>
+  <string name="7qkd4lqxot0wq2c-n61_ot0w" mz="n61">MAX</string>
+  <string name="7qkd4lqxot0wq2c-n56_ot0w" mz="txt_Cur">Level{Lv=1}</string>
+  <string name="7qkd4lqxot0wq2c-n57_ot0w" mz="txt_Next">Level{Lv=2}</string>
+  <string name="7qkd4lqxbfwlq3o-n61_ot0w" mz="n61">MAX</string>
+  <string name="7qkd4lqxbfwlq3o-n62_l2yf" mz="txt_Cur">Level{Lv=1}</string>
+  <string name="7qkd4lqxbfwlq3o-n63_l2yf" mz="txt_Next">Level{Lv=2}</string>
+  <string name="7qkd4lqxq93cq2y-n4_o97f" mz="title">CONFIRM</string>
+  <string name="7qkd4lqxg1lkb-n39_isj1" mz="txt_Trial">Trial!</string>
+  <string name="7qkd4lqx11biq1h-n33_gbr1" mz="n33">Preview</string>
+  <string name="7qkd4lqxg1lk7-n200_fxdf" mz="txt_MAX">Max</string>
+  <string name="7qkd4lqxg1lk0-n51_q93c" mz="n51">Emoji</string>
+  <string name="7qkd4lqxg1lk0-n25_rz1o" mz="n25">Skin</string>
+  <string name="7qkd4lqxg1lk0-n24_rz1o" mz="btn_GiftTab">Bond</string>
+  <string name="7qkd4lqxg1lk0-n23_rz1o" mz="n23">Profile</string>
+  <string name="7qkd4lqxg1lk0-n6_o97f" mz="btn_Detail">Details</string>
+  <string name="7qkd4lqxg1lk0-n59_jhcl" mz="com_HeroSort">Default Sorting</string>
+  <string name="u7xbdcgujz24q2q-n50_jz24" mz="n50">NEXT PASS LEVEL</string>
+  <string name="u7xbdcgukrvoq4g-n1_krvo" mz="title">Reset</string>
+  <string name="u7xbdcguezynq2l-n8_thbm" mz="n8">Event</string>
+  <string name="u7xbdcguthbm1s-n39_thbm" mz="title">BAG</string>
+  <string name="u7xbdcguthbm1s-n42_grcm" mz="n42">Unused Chest!</string>
+  <string name="u7xbdcgusjg4c-n39_thbm" mz="n39">Character</string>
+  <string name="u7xbdcgusjg4c-n40_thbm" mz="n40">Check character info and friendship</string>
+  <string name="u7xbdcgul83jq3s-n56_cdd1" mz="title">No_Translate</string>
+  <string name="u7xbdcgu11biq2e-n40_kgmo" mz="title">Event</string>
+  <string name="u7xbdcgu11biq2e-n44_o11d-texts_0" mz="n44">UP</string>
+  <string name="u7xbdcgu11biq2e-n44_o11d-texts_1" mz="n44">SKIN</string>
+  <string name="u7xbdcgusjg4d-n43_thbm" mz="n35">Store</string>
+  <string name="u7xbdcgusjg4d-n44_thbm" mz="n44">Purchase characters and items</string>
+  <string name="u7xbdcgusjg4b-n40_thbm" mz="n40">CUSTOM</string>
+  <string name="u7xbdcgumyupq5o-n7_z6ms" mz="title">1</string>
+  <string name="u7xbdcguih3cq34-n3_ih3c" mz="txt_title">新年签到</string>
+  <string name="u7xbdcguwrrd1k-n8_thbm" mz="n8">Task/Achieve</string>
+  <string name="u7xbdcgukrvoq4f-n1_krvo" mz="Btn_Confirm">Confirm</string>
+  <string name="u7xbdcgukrvoq4f-n2_krvo" mz="Btn_Cancel">Cancel</string>
+  <string name="u7xbdcgukrvoq4f-n3_krvo" mz="Btn_Reset">Reset</string>
+  <string name="u7xbdcgusjg4a-n33_of8v" mz="n33">PLAY GAME</string>
+  <string name="u7xbdcgusjg4a-n34_of8v" mz="n34">LET'S PARTY!</string>
+  <string name="u7xbdcguq9rv0-n56_nysp" mz="btn_DouYinGroupChat">Join Community</string>
+  <string name="u7xbdcguq9rv0-n57_nysp" mz="btn_DouYinShareReward">Share &amp; Earn</string>
+  <string name="u7xbdcguq9rv0-n58_hfc0" mz="btn_DouYinSubscribeReward">No_Translate</string>
+  <string name="u7xbdcguq9rv0-n38_qdq5" mz="btn_Gacha">Gacha</string>
+  <string name="zhzrfum9dtry7-n2_dtry" mz="txt_Title">User Agreement</string>
+  <string name="24mdqppqmp96d-n46_debj" mz="title">Confirm</string>
+  <string name="24mdqppqmp96c-n46_debj" mz="title">Back</string>
+  <string name="24mdqppqns6kb-n62_r3jj" mz="bottom">Audit Login</string>
+  <string name="24mdqppqns6kb-n62_r3jj-cp-btn_Sure" mz="bottom">Confirm</string>
+  <string name="24mdqppqns6kb-n62_r3jj-texts_0" mz="bottom">Join Room</string>
+  <string name="24mdqppqns6kb-n62_r3jj-texts_1" mz="bottom">Audit Login</string>
+  <string name="24mdqppqns6kb-n28_qb3s" mz="n28">Password：</string>
+  <string name="24mdqppqns6kb-n53_mp96" mz="n53">Account:</string>
+  <string name="24mdqppqns6kb-n57_mp96" mz="n57">Password：</string>
+  <string name="24i5r2i07h6sa-n11_micc" mz="title">Confirm</string>
+  <string name="24i5r2i07h6s5-n18_qtyw" mz="n18">In Game</string>
+  <string name="24i5r2i07h6s8-n8_7h6s" mz="btn_Join">Join</string>
+  <string name="24i5r2i07h6s8-n9_7h6s" mz="n9">Expired</string>
+  <string name="24i5r2i07h6s0-n28_r26s" mz="btn_LastTeam">Recent Players</string>
+  <string name="24i5r2i07h6s0-n2_7h6s" mz="btn_Invite">Invite</string>
+  <string name="24i5r2i07h6s0-n15_7h6s" mz="btn_ClearInfo">Ignore All</string>
+  <string name="dc8zac77rum7c-n19_gn3o" mz="n19">[b]FIRE[/b]</string>
+  <string name="dc8zac77rum79-n19_gn3o" mz="n19">[b]EXIT[/b]</string>
+  <string name="dc8zac77hmjfi-n28_tlsf" mz="n28">Choose the target</string>
+  <string name="dc8zac77hmjfi-n29_tlsf" mz="btn_Leave">[b]EXIT[/b]</string>
+  <string name="dc8zac77hmjfi-n37_tlsf" mz="n37">Railgun aiming to the target!</string>
+  <string name="dc8zac77hmjfi-n37_tlsf-texts_0" mz="n37">Railgun aiming to the target!</string>
+  <string name="dc8zac77hmjfi-n37_tlsf-texts_1" mz="n37">Hit the target?</string>
+  <string name="dc8zac77hmjfi-n37_tlsf-texts_2" mz="n37">Fire to the target!</string>
+  <string name="dngx84d5rum70-n23_y0e5" mz="n99">Choosing the predeterminate fortune</string>
+  <string name="dngx84d5rum70-n27_y0e5" mz="n100">The fortune will fall on…?</string>
+  <string name="dngx84d5rum70-n24_y0e5" mz="txt_Tip">[size=40][color=#{color=ff0000}]{playerName=PLAYER NAME}[/color][/size]</string>
+  <string name="duzt7gzkp4oi6-n23_p4oi" mz="txt_AddGold">{gold=+00}</string>
+  <string name="duzt7gzkp4oi6-n27_sr9v" mz="txt_SubGold">{gold=+00}</string>
+  <string name="duzt7gzkl7ax8-n15_oenb" mz="txt_Gold">{gold=10}</string>
+  <string name="duzt7gzkrum70-n29_kxm5" mz="n29">Select a Card</string>
+  <string name="dhoi6vx2rum70-n5_r94h" mz="btn_Continue">Move</string>
+  <string name="d1prfn9srum78-n2_fscm" mz="n2">Roll the dice</string>
+  <string name="d1prfn9srum77-n2_ia4r" mz="n2">Even</string>
+  <string name="d1prfn9srum73-n2_ia4r" mz="n2">Odd</string>
+  <string name="d1prfn9srum7b-n36_ia4r" mz="n36">Odd</string>
+  <string name="d1prfn9srum7b-n36_ia4r-texts_0" mz="n36">Even</string>
+  <string name="d1prfn9srum7b-n36_ia4r-texts_1" mz="n36">Unable to join</string>
+  <string name="d1prfn9srum7b-n36_ia4r-texts_def" mz="n36">Odd</string>
+  <string name="d1prfn9srum70-n3_np1r" mz="txt_Prize">Rewards  {prize=15}</string>
+  <string name="d1prfn9srum70-n15_np1r" mz="btn_Dice">Roll the dice</string>
+  <string name="d1prfn9srum70-n32_ia4r-texts_0" mz="n32">Waiting for others to play…</string>
+  <string name="d1prfn9srum70-n32_ia4r-texts_1" mz="n32">Waiting for others to roll…</string>
+  <string name="d1prfn9srum70-n46_popk" mz="n46">Total: </string>
+  <string name="d1prfn9srum70-n49_kia1-texts_1" mz="n49">(Even)</string>
+  <string name="d1prfn9srum70-n49_kia1-texts_def" mz="n49">(Odd)</string>
+  <string name="daex1j06rum77-n2_fscm" mz="n2">[b]CHECK[/b]</string>
+  <string name="daex1j06rum74-n2_fscm" mz="n2">[b]I`m well[/b]</string>
+  <string name="daex1j06rum70-n15_izbs" mz="n15">Not a big deal,
+You can go after an injection.</string>
+  <string name="daex1j06rum70-n15_izbs-texts_0" mz="n15">You cannot leave without finishing the check-up. 
+Got it?</string>
+  <string name="daex1j06rum70-n15_izbs-texts_1" mz="n15">Let me have a check on you…</string>
+  <string name="daex1j06rum70-n15_izbs-texts_2" mz="n15">You are seriously ill!
+You need to stay in hospital for observation!</string>
+  <string name="daex1j06rum70-n15_izbs-texts_3" mz="n15">Not a big deal,
+You can go after an injection.</string>
+  <string name="daex1j06rum70-n15_izbs-texts_def" mz="n15">You look terrible, 
+needing a general check-up!</string>
+  <string name="daex1j06rum70-n17_fscm" mz="btn_noSick">[b]I`m well[/b]</string>
+  <string name="daex1j06rum70-n30_fscm" mz="n30">[b]INJECTION[/b]</string>
+  <string name="daex1j06rum70-n26_fscm" mz="n26">[b]HOSPITAL[/b]</string>
+  <string name="d6gnxdx1rum7i-n4_ud9x" mz="txt">That's it!</string>
+  <string name="d6gnxdx1rum70-n23_h0ek" mz="n23">No winner! Rewards will accumulate!</string>
+  <string name="d6gnxdx1rum70-n45_gukp" mz="n45">Accumulated Award</string>
+  <string name="b48mmxv7iorl1-n2_fscm" mz="n2">Check</string>
+  <string name="b48mmxv7iorl0-n5_iorl" mz="btn_Cancel">Exit</string>
+  <string name="b48mmxv7iorl0-n6_iorl" mz="btn_Sure">Wish</string>
+  <string name="dkvy8z1orum7c-n19_gn3o" mz="n19">[b]GO![/b]</string>
+  <string name="dkvy8z1orum70-n25_b5tv" mz="n25">May I ask who are you chasing?</string>
+  <string name="dkvy8z1orum70-n25_b5tv-texts_0" mz="n25">Just let me know the target and no car can escape me.</string>
+  <string name="dkvy8z1orum70-n25_b5tv-texts_1" mz="n25">Honk honk! Hitman at your service!</string>
+  <string name="dkvy8z1orum70-n25_b5tv-texts_2" mz="n25">Is it him you want to chase?</string>
+  <string name="dkvy8z1orum70-n25_b5tv-texts_3" mz="n25">Grab your chair!</string>
+  <string name="dkvy8z1orum70-n25_b5tv-texts_def" mz="n25">May I ask who are you chasing?</string>
+  <string name="dkvy8z1orum70-n5_r94h" mz="btn_Stay">Exit</string>
+  <string name="dkvy8z1orum70-n28_et9r" mz="n28">Select the target</string>
+  <string name="dkvy8z1orum70-n29_qpnt" mz="n29">Hide</string>
+  <string name="dkvy8z1orum70-n30_qpnt" mz="n30">Show</string>
+  <string name="avtf6i27y7ym4-n19_gn3o" mz="n19">Purchase</string>
+  <string name="avtf6i27y7ym4-n22_o812" mz="txt_Desc">{needGold=0}&lt;img src='ui://xuaw6o8jmmmw3x' width='45' height='45'/&gt;</string>
+  <string name="avtf6i27y7ym9-n25_b5tv" mz="n25">Looking to grab something cool from me?
+Sure, but it’s gonna cost ya.</string>
+  <string name="avtf6i27y7ym9-n5_r94h" mz="btn_Cancel">Exit</string>
+  <string name="avtf6i27y7ym9-n29_qpnt" mz="n29">Hide</string>
+  <string name="avtf6i27y7ym9-n30_qpnt" mz="n30">Show</string>
+  <string name="dfabevk6p4oi6-n21_p4oi" mz="txt_Gold">Get {gold=0}</string>
+  <string name="d5ngzgeuhmjfd-n16_j73t" mz="n16">Shop</string>
+  <string name="d5ngzgeurum76-n22_micc" mz="txt_Cost">-{gold=00}</string>
+  <string name="d5ngzgeurum76-n11_micc" mz="n11">Purchase!</string>
+  <string name="d5ngzgeurum7a-n15_micc" mz="n15">Exit</string>
+  <string name="d5ngzgeurum70-n23_rex7" mz="n23">Your</string>
+  <string name="d5ngzgeurum70-n33_bnng" mz="btn_Transfer">Transfer Star Coin</string>
+  <string name="d5ngzgeurum70-n30_irxr" mz="n30">Hide</string>
+  <string name="d5ngzgeurum70-n31_irxr" mz="n31">Show</string>
+  <string name="fqs3emmdheyw3-n19_gn3o" mz="n19">Open！</string>
+  <string name="fqs3emmdheyw3-n22_o812" mz="txt_Desc">{needGold=0}&lt;img src='ui://xuaw6o8jmmmw3x' width='45' height='45'/&gt;</string>
+  <string name="fqs3emmdheyw0-n25_b5tv" mz="n25">Quirky Candy Machine</string>
+  <string name="fqs3emmdheyw0-n43_heyw" mz="n43">Draw to obtain a quirky candy!</string>
+  <string name="fqs3emmdheyw0-n44_heyw" mz="n44">Your</string>
+  <string name="fqs3emmdheyw0-n5_r94h" mz="btn_Cancel">Leave</string>
+  <string name="fqs3emmdheyw0-n29_qpnt" mz="n29">Hide</string>
+  <string name="fqs3emmdheyw0-n30_qpnt" mz="n30">Show</string>
+  <string name="bzunkg3bq6a56-n93_kel5" mz="n93">(∠・ω&lt;)⌒</string>
+  <string name="bzunkg3bq6a56-n94_kel5" mz="n94">☆</string>
+  <string name="bzunkg3bq6a56-n95_kel5" mz="n95">L</string>
+  <string name="bzunkg3bq6a56-n96_kel5" mz="n96">o</string>
+  <string name="bzunkg3bq6a56-n97_kel5" mz="n97">a</string>
+  <string name="bzunkg3bq6a56-n98_kel5" mz="n98">d</string>
+  <string name="bzunkg3bq6a56-n99_kel5" mz="n99">i</string>
+  <string name="bzunkg3bq6a56-n100_kel5" mz="n100">n</string>
+  <string name="bzunkg3bq6a56-n101_kel5" mz="n101">g</string>
+  <string name="bzunkg3bq6a56-n102_kel5" mz="n102">。</string>
+  <string name="bzunkg3bq6a56-n103_kel5" mz="n103">。</string>
+  <string name="bzunkg3bq6a56-n104_kel5" mz="n104">。</string>
+  <string name="bzunkg3bq6a56-n106_u6bm" mz="n106">Lo</string>
+  <string name="bzunkg3bq6a56-n108_u6bm" mz="n108">ad</string>
+  <string name="bzunkg3bq6a56-n109_u6bm" mz="n109">ing</string>
+  <string name="bzunkg3bq6a56-n110_u6bm" mz="n110">.</string>
+  <string name="bzunkg3bq6a56-n111_u6bm" mz="n111">.</string>
+  <string name="bzunkg3bq6a56-n112_u6bm" mz="n112">.</string>
+  <string name="tgr7xz46uspw1j-n9_x3gv" mz="n9">Account</string>
+  <string name="tgr7xz46uspw1j-n30_ryjl" mz="txt_Version_01">© 2023 Shanghai Electric Cicada. All rights reserved.</string>
+  <string name="tgr7xz46uspw1j-n51_uspw" mz="btn_Logout">Log Out</string>
+  <string name="tgr7xz46uspw1j-n56_q5xf" mz="txt_Version_02">游戏著作权人：上海电蝉网络科技有限公司 出版服务单位：华中科技大学电子音像出版社 审批文号：国新出审[2025]1975 号 
+著作权登记号：2025SR0346866 出版物号：ISBN 978-7-498-15751-5 ICP备案：[color=#ffffff][url]沪ICP备2023032422号-4A[/url][/color] 运营单位：上海电蝉网络科技有限公司</string>
+  <string name="tgr7xz46somd16-n30_ryjl" mz="txt_Version_01">© 2023 Shanghai Electric Cicada. All rights reserved.</string>
+  <string name="tgr7xz46somd16-n41_65x1" mz="btn_ShowNotice">1</string>
+  <string name="tgr7xz46somd16-n42_65x1" mz="btn_CleanCache">1</string>
+  <string name="tgr7xz46somd16-n125_hfhg" mz="n125">1</string>
+  <string name="tgr7xz46somd16-n128_hfhg" mz="btn_StartGame">1</string>
+  <string name="tgr7xz46somd16-n131_w6jf" mz="btn_SwitchTransfer">1</string>
+  <string name="tgr7xz46somd16-n46_sbsb" mz="btn_Logout">Log Out</string>
+  <string name="tgr7xz46t0k31e-n3_ayrm" mz="txt">CLEAN CACHE</string>
+  <string name="tgr7xz46t0k31d-n3_ayrm" mz="txt">NOTICE</string>
+  <string name="tgr7xz465g1r0-n9_x3gv" mz="n9">Account</string>
+  <string name="tgr7xz465g1r0-n30_ryjl" mz="txt_Version_01">© 2023 Shanghai Electric Cicada. All rights reserved.</string>
+  <string name="tgr7xz465g1r0-n46_sbsb" mz="btn_Quit_Mobile">Logout</string>
+  <string name="tgr7xz465g1r0-n47_sbsb" mz="btn_InspectionLogin">Audit Login</string>
+  <string name="tgr7xz465g1r0-n51_uspw" mz="btn_Logout">Log Out</string>
+  <string name="tgr7xz465g1r0-n56_q5xf" mz="txt_Version_02">游戏著作权人：上海电蝉网络科技有限公司 出版服务单位：华中科技大学电子音像出版社 审批文号：国新出审[2025]1975 号 
+著作权登记号：2025SR0346866 出版物号：ISBN 978-7-498-15751-5 ICP备案：[color=#ffffff][url]沪ICP备2023032422号-4A[/url][/color] 运营单位：上海电蝉网络科技有限公司</string>
+  <string name="tgr7xz46sbsbx-n47_dtry" mz="n47">I have read and agree to the</string>
+  <string name="tgr7xz46sbsbx-n51_q60h" mz="n51">and</string>
+  <string name="tgr7xz46sbsbx-n49_dtry" mz="txt_UserAgreements">"User Agreement"</string>
+  <string name="tgr7xz46sbsbx-n48_dtry" mz="txt_PrivacyPolicys">"Information and Privacy Policy"</string>
+  <string name="vxuz3wbohaf52-n3_qb3s" mz="title">Discard</string>
+  <string name="vxuz3wboorg70-n46_nbo6" mz="btn_Lose">Discard</string>
+  <string name="vxuz3wboorg70-n50_axwd" mz="btn_Cancel">Cancel</string>
+  <string name="vxuz3wboorg70-n49_axwd" mz="btn_Bestow">Gift</string>
+  <string name="vxuz3wboorg70-n52_uzzv" mz="btn_Mix">Mixing</string>
+  <string name="vxuz3wboorg70-n48_p4oi" mz="txt_CardNum">{cur=[color=#ff0000]00[/color]}/{max=00}</string>
+  <string name="2p754tqkilj51d-n3_ilj5" mz="title">Collapse</string>
+  <string name="2p754tqkilj51d-n3_ilj5-texts_0" mz="title">Expand All</string>
+  <string name="2p754tqkilj51d-n3_ilj5-texts_1" mz="title">Expand All</string>
+  <string name="2p754tqkilj51d-n3_ilj5-texts_def" mz="title">Collapse</string>
+  <string name="2p754tqkrc482e-n4_hmn1" mz="n4">Gift</string>
+  <string name="2p754tqkilj517-n4_ilj5" mz="txt_Price">USD 0.00</string>
+  <string name="2p754tqkilj517-n7_lwm1" mz="txt_OriginalPrice">USD 0.00</string>
+  <string name="2p754tqkilj517-n6_lwm1" mz="n6">20%OFF</string>
+  <string name="2p754tqkilj58-n1_ilj5" mz="btn_buy">Purchase</string>
+  <string name="2p754tqkilj519-n1_ilj5" mz="desc">名片-原野汉娜</string>
+  <string name="91v7tm5dthbm0-n3_abqa" mz="btn_Delete">Delete Read</string>
+  <string name="91v7tm5dthbm0-n4_abqa" mz="btn_All">Receive All</string>
+  <string name="91v7tm5dthbm0-n20_abqa" mz="n20">Sender:</string>
+  <string name="91v7tm5dthbm0-n34_s2pw" mz="n34">Attachments</string>
+  <string name="91v7tm5dthbm0-n8_abqa" mz="btn_Reward">Receive</string>
+  <string name="91v7tm5dthbm0-n14_abqa" mz="txt_MailNum">{cur=0}/{max=200}</string>
+  <string name="91v7tm5dthbm0-n37_s2pw" mz="n37">None</string>
+  <string name="qxwapsemgib2x-n38_gib2" mz="n38">BOSS</string>
+  <string name="qxwapsemgib2x-n43_mpjv" mz="txt_NEW">NEW</string>
+  <string name="qxwapsemr26s1o-n82_ayrm" mz="title">Prepare</string>
+  <string name="qxwapsemr26s1o-n82_ayrm-texts_0" mz="title">Cancel Prepare</string>
+  <string name="qxwapsemr26s1o-n82_ayrm-texts_def" mz="title">Prepare</string>
+  <string name="qxwapsemd828g-n77_r26s" mz="btn_Ready">Prepare</string>
+  <string name="qxwapsemd828g-n50_jo0y" mz="btn_ExitTeam">Leave</string>
+  <string name="qxwapsemd828g-n41_jo0y" mz="btn_StartMatch">Start Matchmaking</string>
+  <string name="qxwapsemd828g-n48_jo0y" mz="btn_CancelMatch">Cancel Match</string>
+  <string name="lrvlamcas2pw13-n16_s2pw" mz="title">Match！</string>
+  <string name="lrvlamcafois2-n6_kqgj" mz="n6">Current Selection:</string>
+  <string name="lrvlamcaeyouc-n12_r26s" mz="n12">Play Solo to Learn the Game</string>
+  <string name="lrvlamcaeyouc-n13_r26s" mz="n13">Solo Mode</string>
+  <string name="lrvlamcar26s11-n12_r26s" mz="n12">Create rooms to play against other players</string>
+  <string name="lrvlamcar26s11-n13_r26s" mz="n13">Lobby</string>
+  <string name="lrvlamcakqgju-n12_r26s" mz="n12">PVE</string>
+  <string name="lrvlamcakqgju-n13_r26s" mz="n13">Co-op Challenge</string>
+  <string name="lrvlamcakqgju-n14_r26s" mz="n14">Cooperate with other players to clear stages</string>
+  <string name="lrvlamcakqgju-n15_s2pw" mz="n15">Match！</string>
+  <string name="lrvlamcadx5u14-n12_r26s" mz="n12">PVE</string>
+  <string name="lrvlamcadx5u14-n13_r26s" mz="n13">Co-op Challenge</string>
+  <string name="lrvlamcadx5u14-n14_r26s" mz="n14">Cooperate with other players to clear stages</string>
+  <string name="lrvlamcadx5u14-n15_s2pw" mz="n15">Match！</string>
+  <string name="lrvlamcar26s10-n12_r26s" mz="n12">PVP</string>
+  <string name="lrvlamcar26s10-n13_r26s" mz="n13">Player Battle</string>
+  <string name="lrvlamcar26s10-n14_r26s" mz="n14">Compete Against Other Players and Win!</string>
+  <string name="lrvlamcar26s10-n15_s2pw" mz="n15">Match！</string>
+  <string name="lrvlamcadx5u15-n12_r26s" mz="n12">PVP</string>
+  <string name="lrvlamcadx5u15-n13_r26s" mz="n13">Player Battle</string>
+  <string name="lrvlamcadx5u15-n14_r26s" mz="n14">Compete Against Other Players and Win!</string>
+  <string name="lrvlamcadx5u15-n15_s2pw" mz="n15">Match！</string>
+  <string name="lrvlamcafois5-n17_kqgj" mz="n17">Lobby</string>
+  <string name="lrvlamcafois5-n11_kqgj" mz="n11">Create rooms to play against other players</string>
+  <string name="lrvlamcafois5-n12_kqgj" mz="n12">PING:</string>
+  <string name="lrvlamcarc2u19-n12_r26s" mz="n12">PVE</string>
+  <string name="lrvlamcarc2u19-n13_r26s" mz="n13">Sports Meet Co-op Challenge</string>
+  <string name="lrvlamcarc2u19-n14_r26s" mz="n14">Cooperate with other players to clear stages</string>
+  <string name="lrvlamcarc2u19-n15_s2pw" mz="n15">Match！</string>
+  <string name="lrvlamcakqgjs-n9_kqgj" mz="n9">Brand new Co-Op Challenge Mode!</string>
+  <string name="lrvlamcakqgjt-n9_kqgj" mz="n9">Classic 4-Player Battle Mode!</string>
+  <string name="6fn6dj8bq2ux0-n82_h28z" mz="txt_matchTime">[size=48]Matching[/size] [size=42]{time=30:08}[/size]</string>
+  <string name="6fn6dj8bq2ux0-n45_jo0y" mz="txt_estimatedTime">Estimated Wait {time=00: 00}</string>
+  <string name="6fn6dj8bq2ux0-n44_jo0y" mz="n44">Team</string>
+  <string name="aepd0gr2jo0y10-n63_jo0y" mz="btn_StartGame">Start Game</string>
+  <string name="fvoxvgwsgwbaa-n2_8mwx" mz="title">Cancel</string>
+  <string name="fvoxvgwshc1o0-n18_ubkw" mz="bottom">Tips</string>
+  <string name="fvoxvgwshc1o0-n14_tiv3" mz="btn_DoubleStatus">Don’t show again</string>
+  <string name="na6sy4s6kqgjj-n40_kqgj" mz="n40">[color=#EA0BE7,#7B0DE0]Purchase[/color]</string>
+  <string name="na6sy4s6kqgjj-n40_kqgj-texts_0" mz="n40">[color=#EA0BE7,#7B0DE0]Character Purchase[/color]</string>
+  <string name="na6sy4s6kqgjj-n40_kqgj-texts_1" mz="n40">[color=#EA0BE7,#7B0DE0]Skin Purchase[/color]</string>
+  <string name="na6sy4s6kqgjk-n33_gbr1" mz="n33">Preview</string>
+  <string name="na6sy4s6kqgjk-n33_gbr1-texts_0" mz="n33">Skin Preview</string>
+  <string name="na6sy4s6kqgjk-n33_gbr1-texts_def" mz="n33">Preview</string>
+  <string name="na6sy4s6kqgji-n52_jhcl" mz="btn_GoSkinStore">Skin Purchase</string>
+  <string name="mc0y3plupj0z2o-n1_pj0z" mz="title">Exclusive</string>
+  <string name="mc0y3plupj0z25-n83_pj0z" mz="btn_all">Overview</string>
+  <string name="mc0y3plupj0z25-n84_pj0z" mz="btn_monster">Monster</string>
+  <string name="mc0y3plupj0z25-n85_pj0z" mz="btn_relic">Chips</string>
+  <string name="mc0y3plupj0z25-n86_pj0z" mz="btn_card">Card</string>
+  <string name="mc0y3plupj0z25-n88_pj0z" mz="btn_event">Event</string>
+  <string name="mc0y3plupj0z25-n87_pj0z" mz="btn_land">Panel</string>
+  <string name="mc0y3plupj0z2m-n36_pj0z" mz="Btn_Exclusive">Exclusive</string>
+  <string name="mc0y3plupj0z2m-n37_pj0z" mz="Btn_Common">General</string>
+  <string name="mc0y3plupj0z1m-n8_rj85" mz="Text_NoSearch">No results found</string>
+  <string name="mc0y3plupj0z1m-n9_s8o9-0" mz="DropDown_Filter">All</string>
+  <string name="mc0y3plupj0z1m-n9_s8o9-1" mz="DropDown_Filter">Alt. Illustration Cards</string>
+  <string name="mc0y3plupj0z1m-n9_s8o9-2" mz="DropDown_Filter">Unlocked Alt. Illustration Cards</string>
+  <string name="mc0y3plupj0z1m-n9_s8o9-3" mz="DropDown_Filter">Character Exclusive Cards</string>
+  <string name="mc0y3plupj0z1p-n9_rj85" mz="Text_NoSearch">No results found</string>
+  <string name="mc0y3plupj0z1r-n9_rj85" mz="Text_NoSearch">No results found</string>
+  <string name="mc0y3plupj0z1k-n4_pj0z" mz="n4">Event</string>
+  <string name="mc0y3plupj0z1k-n5_pj0z" mz="Text_des">Event Info</string>
+  <string name="mc0y3plupj0z1j-n4_pj0z" mz="n4">Panel</string>
+  <string name="mc0y3plupj0z1j-n5_pj0z" mz="Text_des">Map Panel Info</string>
+  <string name="mc0y3plupj0z1l-n4_pj0z" mz="n4">Map</string>
+  <string name="mc0y3plupj0z1l-n5_pj0z" mz="Text_des">Info Sorted by Map</string>
+  <string name="mc0y3plupj0z1i-n4_pj0z" mz="n4">Card</string>
+  <string name="mc0y3plupj0z1i-n5_pj0z" mz="Text_des">Player Hand Info</string>
+  <string name="mc0y3plupj0z1h-n4_pj0z" mz="n4">Chips</string>
+  <string name="mc0y3plupj0z1h-n5_pj0z" mz="Text_des">Player Chip Info</string>
+  <string name="bwvbo0x0dx3g3-n2_dx3g" mz="n2">Loading</string>
+  <string name="bwvbo0x0dx3g7-n34_grcm" mz="n34">NOTICE</string>
+  <string name="z8uldgkyqdq5b-n18_qdq5" mz="n18">Exchange</string>
+  <string name="z8uldgkyqdq5a-n17_qdq5" mz="n17">Purchase</string>
+  <string name="z8uldgkyqdq5c-n14_z52s" mz="txt_Remaining">Limit {remainingNum=1}/{limitNum=1}</string>
+  <string name="z8uldgkyqdq5c-n23_z52s" mz="n23">Owned</string>
+  <string name="z8uldgkyqdq5c-n39_hcgi" mz="txt_soldout">Sold Out!</string>
+  <string name="z8uldgkyqdq5c-n43_hcgi" mz="n43">x</string>
+  <string name="z8uldgkyqdq5k-n35_hcgi" mz="txt_TokenSymbol">USD</string>
+  <string name="z8uldgkyqdq5k-n38_hcgi" mz="txt_DiscountPercent">{discount=35}% OFF</string>
+  <string name="z8uldgkyqdq5k-n48_qdq5" mz="n48">Claim</string>
+  <string name="307oxfbqdx3g1q-n92_dx3g" mz="txt_Title">Obtain Via-{way=暂无}</string>
+  <string name="307oxfbquins15-n107_ubkw" mz="bottom">Detail</string>
+  <string name="307oxfbquins15-n107_ubkw-cp-btn_Sure" mz="bottom">Use</string>
+  <string name="307oxfbquins15-n107_ubkw-cp-btn_Cancel" mz="bottom">Cancel</string>
+  <string name="307oxfbquins15-n107_ubkw-cp-btn_Sure_Only" mz="bottom">Back</string>
+  <string name="307oxfbquins15-n107_ubkw-texts_0" mz="bottom">Detail</string>
+  <string name="307oxfbquins15-n107_ubkw-texts_1" mz="bottom"> Obtain Via</string>
+  <string name="307oxfbquins15-n55_hymc" mz="btn_Max">Max</string>
+  <string name="cu17piy4hhk60-n114_ubkw" mz="bottom">Purchase</string>
+  <string name="cu17piy4hhk60-n114_ubkw-texts_0" mz="bottom">Purchase Pass Level</string>
+  <string name="cu17piy4hhk60-n114_ubkw-texts_def" mz="bottom">Purchase</string>
+  <string name="cu17piy4hhk60-n4_d386" mz="txt_itemNum">Quantity {curNum=9999}</string>
+  <string name="cu17piy4hhk60-n55_hymc" mz="btn_Max">Max</string>
+  <string name="cu17piy4hhk60-n69_ozsk" mz="n69">Unit Price</string>
+  <string name="cu17piy4hhk60-n75_ozsk" mz="txt_DiscountPercent">{discountPercent=35}%OFF</string>
+  <string name="cu17piy4hhk60-n70_ozsk" mz="n70">Total Price</string>
+  <string name="cu17piy4hhk60-n97_jz24" mz="n97">Total Price</string>
+  <string name="c20i191crle7o-n13_rle7" mz="btn_Max">Max</string>
+  <string name="c20i191crle7o-n24_rle7" mz="btn_Purchase">Charge</string>
+  <string name="c20i191crle7u-n74_m48i" mz="btn_Purchase">Charge</string>
+  <string name="287pjyadwin50-n57_egku" mz="txt_Title">Age Verification</string>
+  <string name="287pjyadwin50-n58_egku" mz="txt_Explain">1</string>
+  <string name="287pjyadwin50-n75_prr3" mz="btn_Cancel">1</string>
+  <string name="287pjyadwin50-n59_egku" mz="btn_Sure">OK</string>
+  <string name="kjm6oxy2o8128-n4_bnng" mz="title">Refresh</string>
+  <string name="kjm6oxy2o8128-n5_iorl" mz="txt_Count">x[size=34]{count=2}[/size]</string>
+  <string name="kjm6oxy2iorl3-n7_o812" mz="n7">Please select a battle chip</string>
+  <string name="kjm6oxy2iorl3-n8_o812" mz="n8">Confirm</string>
+  <string name="kjm6oxy2l6o60-n5_l6o6" mz="n5">Please select a battle chip</string>
+  <string name="kjm6oxy2l6o60-n16_pj0z" mz="n16">Hide</string>
+  <string name="kjm6oxy2l6o60-n17_pj0z" mz="n17">Show</string>
+  <string name="r5u0087tm1i7o-n2_csvx" mz="txt_Name">Monthly Pass Reward</string>
+  <string name="r5u0087t929s0-n61_nm0k" mz="Title">OBTAIN REWARDS</string>
+  <string name="r5u0087tvau3q-n78_kh2p" mz="n78">Items below have expired and been auto-converted</string>
+  <string name="mrtmoyvhgzhq0-n6_f9sn" mz="bottom">Beginner Quest Rewards</string>
+  <string name="672kmwr2m49i0-n5_m49i" mz="n5">Choose Difficulty for Quick Match</string>
+  <string name="672kmwr2m49i0-n6_m49i" mz="btn_Sure">Confirm</string>
+  <string name="l82hrmsqqzg8w-n38_mj58" mz="n38">Confirm</string>
+  <string name="l82hrmsqqzg8g-n35_vagh" mz="n35">Selecting…</string>
+  <string name="l82hrmsqqzg8g-n36_vagh" mz="n36">Select your character!</string>
+  <string name="l82hrmsqqzg8g-n24_s6rj" mz="txt_progress">{progress=0}%</string>
+  <string name="l82hrmsqqzg8g-n46_m49i" mz="n46">PVE</string>
+  <string name="l82hrmsqkqgj1h-n8_pn6s" mz="txt_SkillName">Passive:{skillName=}</string>
+  <string name="l82hrmsqkqgj1h-n8_pn6s-texts_0" mz="txt_SkillName">Passive:{skillName=}</string>
+  <string name="l82hrmsqkqgj1h-n8_pn6s-texts_def" mz="txt_SkillName">Active:{skillName=}</string>
+  <string name="l82hrmsqdx5u31-n85_dx5u" mz="title">Win the Finals</string>
+  <string name="l82hrmsqdx5u31-n85_dx5u-texts_0" mz="title">Clear the Knockout Rounds</string>
+  <string name="l82hrmsqdx5u31-n85_dx5u-texts_1" mz="title">Win the Finals</string>
+  <string name="l82hrmsqdx5u31-n85_dx5u-texts_def" mz="title">Clear the Qualifiers</string>
+  <string name="l82hrmsqqzg8p-n55_vagh" mz="n55">SELECTED</string>
+  <string name="l82hrmsqm49i1c-n5_eyou" mz="txt_Trial">Trial!</string>
+  <string name="l82hrmsqdx5u2n-n11_dx5u" mz="txt_content">Unlocked by clearing a lower-tier match with this character.</string>
+  <string name="l82hrmsqiorl1a-n55_vagh" mz="n55">SELECTED</string>
+  <string name="5rtgb50em49ij99-n153_m49i" mz="btn_QuickJoin">Quick Match</string>
+  <string name="5rtgb50em49ij9a-n146_m49i" mz="n146">Choose Difficulty</string>
+  <string name="5rtgb50eq6fh7u-n90_m2t8" mz="n90">Full</string>
+  <string name="5rtgb50eqb3s8-n34_qb3s" mz="btn_Return">Back</string>
+  <string name="5rtgb50eqb3s8-n36_ojoq" mz="btn_JoinTargetRoom">Join</string>
+  <string name="5rtgb50eqb3s8-n48_xq4k-prompt" mz="txtField_Search">[size=20][color=#999999]Enter Room ID[/color][/size]</string>
+  <string name="5rtgb50eqb3s8-n20_qb3s" mz="btn_Refresh">Refresh</string>
+  <string name="5rtgb50eqb3s8-n21_qb3s" mz="btn_OpenCreateRoom">Create Room</string>
+  <string name="tzpop51dejjwb-n10_i01u" mz="n10">Abnormal data intrusion detected</string>
+  <string name="tzpop51dejjwr-n21_ejjw" mz="title">Close</string>
+  <string name="tskjvvjlayrmx-n82_ayrm" mz="title">Prepare</string>
+  <string name="tskjvvjlayrmx-n82_ayrm-texts_0" mz="title">Cancel Prepare</string>
+  <string name="tskjvvjlayrmx-n82_ayrm-texts_def" mz="title">Prepare</string>
+  <string name="tskjvvjlp4oi0-n1_qb3s" mz="btn_Return">Close Room</string>
+  <string name="tskjvvjlp4oi0-n69_kjte" mz="btn_Leave">Exit Room</string>
+  <string name="tskjvvjlp4oi0-n2_qb3s" mz="btn_Start">Start</string>
+  <string name="tskjvvjlp4oi0-n80_ayrm" mz="btn_Ready">Ready</string>
+  <string name="pr2pbkngeduv1-n7_ubkw" mz="bottom">Tutorial</string>
+  <string name="pr2pbkngeduv1-n2_eduv" mz="btn_GuideLevel1">[Tutorial - Foundation ]</string>
+  <string name="pr2pbkngeduv1-n3_eduv" mz="btn_GuideLevel2">[Tutorial - Battle]</string>
+  <string name="iy1joavto1n81f-n16_iy9w" mz="title">Display</string>
+  <string name="iy1joavtl38o2a-n1_l38o" mz="title">Not Set</string>
+  <string name="iy1joavto1n810-n1_u0xa-prompt" mz="title">[size=28][color=#999999]Input the Redemption code[/color][/size]</string>
+  <string name="iy1joavto1n8l-n0_u0xa" mz="title">Free Camera</string>
+  <string name="iy1joavto1n88-n1_u0xa" mz="lable_title">Refresh Rate</string>
+  <string name="iy1joavtl38o2b-n1_l38o" mz="bottom">Custom Keybinds</string>
+  <string name="iy1joavtl38o2b-n2_l38o" mz="txt_BingButton">Please enter the key you want to rebind to</string>
+  <string name="iy1joavtp5xi1s-n88_u0xa" mz="uid">UID：</string>
+  <string name="iy1joavtl38o29-n1_l38o-cp-lable_title" mz="n1">Skill</string>
+  <string name="iy1joavtl38o29-n2_l38o-cp-lable_title" mz="n2">Move</string>
+  <string name="iy1joavtl38o29-n3_l38o-cp-lable_title" mz="n3">Mark</string>
+  <string name="iy1joavtl38o29-n4_l38o-cp-lable_title" mz="n4">View Tools</string>
+  <string name="iy1joavtl38o29-n5_l38o" mz="btn_reset">Default Settings</string>
+  <string name="iy1joavto1n8k-n54_u0xa-cp-lable_title" mz="n54">Camera</string>
+  <string name="iy1joavto1n8k-n56_u0xa-cp-title" mz="com_MouseSwither">Mouse controls</string>
+  <string name="iy1joavto1n8k-n55_u0xa-cp-title" mz="com_FreeCameraSwither">Free Camera</string>
+  <string name="iy1joavto1n8k-n57_u0xa-cp-title" mz="com_KeyBoardSwither">Keyboard controls</string>
+  <string name="iy1joavto18025-n28_o180" mz="n28">Fair Play Score Rules</string>
+  <string name="iy1joavto1n8o-n60_u0xa-cp-lable_title" mz="n60">Power Saving Mode</string>
+  <string name="iy1joavto1n8o-n62_u0xa" mz="n62">※When enabled, the game will use lower graphics quality and frame rate to reduce battery consumption</string>
+  <string name="iy1joavto1n81c-n40_u0xa-cp-title" mz="com_CoverSwither">Anonymity</string>
+  <string name="iy1joavto1n81c-n42_u0xa-cp-title" mz="com_AdultSwither">Naive Angel Mode</string>
+  <string name="iy1joavto1n81c-n43_u0xa-cp-lable_title" mz="n43">Beginner Assist Settings</string>
+  <string name="iy1joavto1n81c-n44_u0xa" mz="com_CardSuggestSwither">Card Recommendation</string>
+  <string name="iy1joavto1n81c-n44_u0xa-cp-title" mz="com_CardSuggestSwither">Card Recommendation</string>
+  <string name="iy1joavto1n81c-n45_u0xa" mz="com_RoadSuggestSwither">Path Recommendation</string>
+  <string name="iy1joavto1n81c-n45_u0xa-cp-title" mz="com_RoadSuggestSwither">Route Recommendation</string>
+  <string name="iy1joavto1n81c-n46_u0xa" mz="com_RelicSuggestSwither">Chip Recommendation</string>
+  <string name="iy1joavto1n81c-n46_u0xa-cp-title" mz="com_RelicSuggestSwither">Chip Recommendation</string>
+  <string name="iy1joavto1n81c-n48_hnp5" mz="com_AutoShortChatSwither">Recieve Auto Messages</string>
+  <string name="iy1joavto1n81c-n48_hnp5-cp-title" mz="com_AutoShortChatSwither">Recieve Auto Messages</string>
+  <string name="iy1joavto1n81c-n50_10ruo" mz="com_ActionSuggestSwither">Action Timeout</string>
+  <string name="iy1joavto1n81c-n50_10ruo-cp-title" mz="com_ActionSuggestSwither">AFK Timeout Reminder</string>
+  <string name="iy1joavto1n81c-n51_l38o" mz="com_DistanceHelperSwither">Auto Distance Assist</string>
+  <string name="iy1joavto1n81c-n51_l38o-cp-title" mz="com_DistanceHelperSwither">Auto Distance Assist</string>
+  <string name="iy1joavto1801z-n56_o180" mz="txt_desc">Excellent Fair Play</string>
+  <string name="iy1joavto1801z-n57_o180" mz="btn_check">View Fair Play Score Rules</string>
+  <string name="iy1joavto1n87-n59_u0xa-cp-lable_title" mz="n59">Resolution</string>
+  <string name="iy1joavto1n87-n60_u0xa" mz="com_Resolution">1920x1080</string>
+  <string name="iy1joavto1n87-n61_u0xa-cp-lable_title" mz="Screen_Refresh_Item">Refresh Rate</string>
+  <string name="iy1joavto1n87-n62_u0xa-cp-title" mz="com_vSyncCount">V-Sync</string>
+  <string name="iy1joavto1n87-n63_u0xa" mz="com_FrameRate">60FPS</string>
+  <string name="iy1joavto1n87-n64_u0xa-cp-lable_title" mz="n64">Display Mode</string>
+  <string name="iy1joavto1n87-n72_s6b4" mz="com_Window">FullScreen</string>
+  <string name="iy1joavto1n87-n67_u0xa-cp-lable_title" mz="n67">Language</string>
+  <string name="iy1joavto1n87-n68_u0xa" mz="com_Language">无需翻译</string>
+  <string name="iy1joavto1n87-n69_u0xa-cp-lable_title" mz="n69">GRAPHIC</string>
+  <string name="iy1joavto1n87-n70_u0xa" mz="com_Quality">GRAPHIC</string>
+  <string name="iy1joavto1n8z-n51_u0xa-cp-lable_title" mz="n51">Redemption code</string>
+  <string name="iy1joavto1n8z-n54_u0xa" mz="btn_CDK">Confirm</string>
+  <string name="iy1joavto1n8z-n55_u0xa-cp-lable_title" mz="n55">Term of service</string>
+  <string name="iy1joavto1n8z-n56_u0xa" mz="btn_UserAgreement">User Agreement</string>
+  <string name="iy1joavto1n8z-n57_u0xa" mz="btn_Policy">Information and Privacy Policy</string>
+  <string name="iy1joavto1n8z-n59_u0xa" mz="btn_Developers">Credit</string>
+  <string name="iy1joavto1n8z-n60_u0xa" mz="btn_Gratitude">Special Thanks</string>
+  <string name="iy1joavto1n8z-n58_u0xa" mz="btn_AccountCenter">Account Settings</string>
+  <string name="iy1joavto1n8z-n73_sn0j" mz="btn_QuitGame">Log Out</string>
+  <string name="iy1joavto1n8z-n77_sn0j" mz="n77">Feedback Mailbox:</string>
+  <string name="iy1joavto1n8z-n78_sn0j" mz="txt_mail">astralpartysupport@feimogames.com</string>
+  <string name="iy1joavto1n8z-n74_sn0j" mz="btn_ContactService">Contact Support</string>
+  <string name="iy1joavto1n8z-n68_u0xa" mz="btn_DeleteAccount">Delete Account</string>
+  <string name="iy1joavtodf71t-n54_u0xa-cp-lable_title" mz="n54">Vibration</string>
+  <string name="iy1joavtodf71t-n56_u0xa-cp-title" mz="com_messagevibrate">Vibrate on message</string>
+  <string name="iy1joavtodf71t-n57_u0xa-cp-title" mz="com_tipsvibrate">Vibrate on notification</string>
+  <string name="iy1joavto1n8q-n40_u0xa-cp-lable_title" mz="n40">Global Volume</string>
+  <string name="iy1joavto1n8q-n42_u0xa-cp-lable_title" mz="n42">BGM</string>
+  <string name="iy1joavto1n8q-n44_u0xa-cp-lable_title" mz="n44">Audio</string>
+  <string name="iy1joavto1n8q-n46_u0xa-cp-lable_title" mz="Character_Voice_Settings">Character Voice</string>
+  <string name="iy1joavto1n8q-n48_dzvf-cp-lable_title" mz="n48">Voice</string>
+  <string name="iy1joavto1n8q-n49_dzvf" mz="com_VoiceLanguages">无需翻译</string>
+  <string name="iy1joavthm5n27-n16_o180" mz="txt_1">90-100: Model player. No restrictions. Match rewards are earned normally.</string>
+  <string name="iy1joavthm5n27-n18_o180" mz="txt_2">80-89: A 3-minute matchmaking cooldown will be applied, and a warning pop-up will appear. End of game rewards are earned normally.</string>
+  <string name="iy1joavthm5n27-n19_o180" mz="txt_3">70-79: A 15-minute matchmaking cooldown will be applied, and a warning pop-up will appear. End of game rewards are earned normally.</string>
+  <string name="iy1joavthm5n27-n20_o180" mz="txt_4">60-69: A 30-minute matchmaking cooldown will be applied, and a warning pop-up will appear. End of game rewards are reduced by 50%.</string>
+  <string name="iy1joavthm5n27-n21_o180" mz="txt_5">Below 60: A 60-minute matchmaking cooldown will be applied, and a warning pop-up will appear. No end of game rewards will be earned.</string>
+  <string name="iy1joavthm5n27-n23_o180" mz="txt_6">◆ Point Deduction Rules
+Exiting the game during character selection: -5 points
+Surrendering and exiting mid-match: -5 points
+Disconnecting during a match and failing to reconnect within 3 minutes: -5 points
+Closing the game during a match without reconnecting: -10 points
+Being removed from the game due to multiple AFK timeouts during a match: -10 points</string>
+  <string name="iy1joavtwh311r-n33_jzri" mz="n33">Display</string>
+  <string name="iy1joavtwh311r-n34_jzri" mz="n34">Sound</string>
+  <string name="iy1joavtwh311r-n35_jzri" mz="n35">Setting</string>
+  <string name="iy1joavtwh311r-n44_efox" mz="n44">User</string>
+  <string name="iy1joavtwh311r-n108_o180" mz="n108">Fair Play Score</string>
+  <string name="iy1joavtwh311r-n116_l38o" mz="n116">Keybind Settings</string>
+  <string name="iy1joavtwh311r-n0_jzri" mz="btn_Return">Back</string>
+  <string name="h88onq8cgzvsf-n8_gzvs" mz="title">星引擎缔造者</string>
+  <string name="h88onq8cd11o0-n10_gzvs" mz="n10">星引擎拥有者</string>
+  <string name="h88onq8cd11o0-n11_gzvs" mz="n11">星趴大师</string>
+  <string name="h88onq8cd11o0-n12_gzvs" mz="n12">星趴高手</string>
+  <string name="h88onq8cd11o0-n13_gzvs" mz="n13">星趴爱好者</string>
+  <string name="h88onq8cd11o0-n14_gzvs" mz="n14">星趴入门者</string>
+  <string name="h88onq8cd11o0-n15_gzvs" mz="n15">无偿支持者</string>
+  <string name="zfulrgf7ofajqqd-n13_ofaj" mz="n13">Preview</string>
+  <string name="zfulrgf7ofajqqd-n14_ofaj" mz="n14">Story</string>
+  <string name="zfulrgf7cabpqqc-n6_qdq5" mz="txt_LabelName">Profile Card Preview</string>
+  <string name="zfulrgf7cabpqqc-n7_qdq5" mz="n7">Skin Preview</string>
+  <string name="zfulrgf7cabpqqc-n17_ofaj" mz="n17">Obtain Via</string>
+  <string name="zfulrgf7ofajqqe-n17_ofaj" mz="n17">Skin Description</string>
+  <string name="dqu5kxbpg9kn3-n9_q18c" mz="n9">Receive</string>
+  <string name="dqu5kxbpg9kn3-n9_q18c-texts_0" mz="n9">Obtained</string>
+  <string name="dqu5kxbpg9kn3-n9_q18c-texts_def" mz="n9">get</string>
+  <string name="dqu5kxbpg9kn3-n12_q18c" mz="txt_number">x100</string>
+  <string name="dqu5kxbpg9kn0-n17_q18c" mz="txt_headline">st Anniversary Star Fortune Week</string>
+  <string name="dqu5kxbpg9kn0-n18_q18c" mz="txt_desc">Limited-Time Check-in Event</string>
+  <string name="dqu5kxbpg9kn0-n19_q18c" mz="txt_duration">2.21~3.7</string>
+  <string name="3bkg2bqqpjcy3-n3_rr35" mz="text_no">Claim</string>
+  <string name="3bkg2bqqpjcy3-n9_rr35" mz="text_yes">Obtained</string>
+  <string name="3bkg2bqqpjcy3-n7_rr35" mz="txt_number">x100</string>
+  <string name="ik9iuwgyb1ak1y-n3_rr35" mz="text_no">Claim</string>
+  <string name="ik9iuwgyb1ak1y-n9_rr35" mz="text_yes">Obtained</string>
+  <string name="ik9iuwgyb1ak1y-n7_rr35" mz="txt_number">x100</string>
+  <string name="mi9vm3w0fo1bq3z-n80_tvj1" mz="btn_Sell">Sell</string>
+  <string name="mi9vm3w0fo1bq3z-n84_tvj1" mz="txt_Price">+{price=0}</string>
+  <string name="mi9vm3w0fo1bq3z-n86_e7ps" mz="btn_Buy">Purchase</string>
+  <string name="mi9vm3w0oazx1-n48_j73t" mz="n48">Move</string>
+  <string name="mi9vm3w0oazx1-n65_tvj1" mz="txt_Progress">{current=1} /[size=40]{max=50}[/size]</string>
+  <string name="mi9vm3w0wcumq61-n2_wcum" mz="n2">Refresh</string>
+  <string name="mi9vm3w0wcumq62-n11_tvj1" mz="n11">Buy</string>
+  <string name="mi9vm3w0oai4q52-n107_dajb" mz="n107">Empty</string>
+  <string name="mi9vm3w0oai4q52-n108_dajb" mz="txt_SoldOutCN">Sold Out</string>
+  <string name="mi9vm3w0oai4q52-n109_dajb" mz="txt_SoldOutEN">SOLDOUT</string>
+  <string name="mi9vm3w0tvj1q7w-n140_tvj1" mz="txt_Green">{value=0}%</string>
+  <string name="mi9vm3w0tvj1q7w-n146_tvj1" mz="txt_Bule">{value=0}%</string>
+  <string name="mi9vm3w0tvj1q7w-n149_tvj1" mz="txt_Purple">{value=0}%</string>
+  <string name="mi9vm3w0tvj1q7w-n152_tvj1" mz="txt_Gold">{value=0}%</string>
+  <string name="mi9vm3w0wcumq6u-n111_me3j" mz="btn_Confirm">Confirm</string>
+  <string name="mi9vm3w0tvj1q7e-n7_tvj1" mz="txt_MissionProgress">{cur=0}/[size=32]{max=0}[/size] Level</string>
+  <string name="mi9vm3w0fx3oq71-n6_fx3o" mz="n6">Mission Rewards</string>
+  <string name="mi9vm3w0fx3oq72-n9_jsh0" mz="btn_Confirm">Confirm</string>
+  <string name="mi9vm3w0oazx0-n132_tvj1" mz="txt_RemainingRounds">{round=0}&lt;img src='ui://mi9vm3w0tvj1q7c' width='60' height='60'/&gt; to reach the goal</string>
+  <string name="r680i7z8qogv0-n39_gott" mz="btn_Continue">Continue</string>
+  <string name="r680i7z8qogv0-n40_gott" mz="btn_OpenSetting">Option</string>
+  <string name="r680i7z8qogv0-n83_qogv" mz="btn_Reset">Restart</string>
+  <string name="r680i7z8qogv0-n47_tu3p" mz="btn_LeaveRoom">Leave Match</string>
+  <string name="r680i7z8qogv0-n41_gott" mz="btn_QuitGame">Exit Game</string>
+  <string name="wwhrkd30f0pvq-n1_f0pv" mz="title">Play Again</string>
+  <string name="wwhrkd30f0pvo-n1_f0pv" mz="title">Exit</string>
+  <string name="wwhrkd30f0pvp-n1_f0pv" mz="title">Ranking</string>
+  <string name="wwhrkd30hh8o14-n1_f0pv" mz="title">Details</string>
+  <string name="wwhrkd30hh8o11-n8_hh8o" mz="title">名字名字名字</string>
+  <string name="wwhrkd30hh8oz-n8_hh8o" mz="title">Level Progress</string>
+  <string name="wwhrkd30hh8oy-n2_hh8o" mz="n2">Star Coin Income</string>
+  <string name="wwhrkd30hh8oy-n3_hh8o" mz="n3">Score Summary</string>
+  <string name="wwhrkd30hh8oy-n4_hh8o" mz="btn_score_1">Progress Score</string>
+  <string name="wwhrkd30hh8oy-n5_hh8o" mz="btn_score_2">Star Coin Score</string>
+  <string name="wwhrkd30hh8oy-n6_hh8o" mz="btn_score_3">Building Score</string>
+  <string name="wwhrkd30uytml-n5_uytm" mz="n5">New Record</string>
+  <string name="wwhrkd30uytml-n6_uytm" mz="n6">Match Score</string>
+  <string name="wwhrkd30uytml-n10_uytm" mz="n10">Rank</string>
+  <string name="wwhrkd30uytml-n29_llhh" mz="n29">NEW</string>
+  <string name="wwhrkd30uytml-n14_uytm" mz="n14">Record</string>
+  <string name="wwhrkd30uytml-n18_uytm" mz="n18">Rank</string>
+  <string name="wwhrkd30uytml-n35_hh8o" mz="Next_Btn">Next Match</string>
+  <string name="xsairahjhh8oq9y-n15_hh8o" mz="n15">Back</string>
+  <string name="xsairahjhh8oqa8-n27_hh8o" mz="title">Level 3</string>
+  <string name="xsairahjhh8oqa8-n20_hh8o" mz="btn_1">Level 1</string>
+  <string name="xsairahjhh8oqa8-n21_hh8o" mz="btn_2">Level 2</string>
+  <string name="xsairahjhh8oqa8-n22_hh8o" mz="btn_3">Level 3</string>
+  <string name="xsairahjhh8oqa8-n23_hh8o" mz="btn_4">Max Level</string>
+  <string name="xsairahjti1tq94-n12_ti1t" mz="n12">Gallery</string>
+  <string name="xsairahjti1tq94-n13_ti1t" mz="n13">Cancel</string>
+  <string name="xsairahjti1tq94-n14_ti1t" mz="n14">Confirm</string>
+  <string name="xsairahjhh8oqa9-n16_hh8o" mz="title">Max Level</string>
+  <string name="xsairahjhh8oq9v-n23_hh8o" mz="n23">Coming Soon</string>
+  <string name="xsairahjti1tq95-n13_hh8o" mz="n13">Card Pack Selection</string>
+  <string name="xsairahjti1tq8o-n3_ti1t" mz="title">Luck</string>
+  <string name="xsairahjhh8oq9z-n15_hh8o" mz="title">Buildings</string>
+  <string name="xsairahjhh8oq96-n8_hh8o" mz="btn_relic">Stands</string>
+  <string name="xsairahjhh8oq96-n4_hh8o" mz="n4">Gallery</string>
+  <string name="xsairahjti1tq8p-n3_ti1t" mz="n3">Please select at least 3 card packs:</string>
+  <string name="xsairahjhh8oqak-n1_f0pv" mz="title">Exit</string>
+  <string name="xsairahjpmrnq8k-n149_pmrn" mz="btn_Continue">Continue</string>
+  <string name="xsairahjpmrnq8k-n156_pmrn" mz="btn_Start">Start Game</string>
+  <string name="xsairahjpmrnq8k-n176_k4vu" mz="btn_Reset">Abandon Progress</string>
+  <string name="xsairahjpmrnq8k-n171_hh8o" mz="btn_book">Gallery</string>
+  <string name="xsairahjpmrnq8k-n151_pmrn" mz="btn_FriendRankList">Ranking</string>
+  <string name="xsairahjpmrnq8k-n152_pmrn" mz="btn_Back">Exit</string>
+  <string name="hmljxqy1ub0x1-n33_gbr1" mz="n33">Preview</string>
+  <string name="hmljxqy1ub0x4-n18_fu2t" mz="n18">Purchase Complete</string>
+  <string name="hmljxqy1ub0x4-n29_k34r" mz="n29">Purchase</string>
+  <string name="hmljxqy1ub0x4-n16_ub0x" mz="n16">25% OFF</string>
+  <string name="xuxzg1y1mgsn1-n2_mgsn" mz="n2">Basic Challenge</string>
+  <string name="xuxzg1y1mgsn1-n4_es7g" mz="n4">Tutorial Collection</string>
+  <string name="xuxzg1y1cgxz11-n3_cgxz" mz="des_txt">Build Your Own City!</string>
+  <string name="xuxzg1y1cgxz11-n4_ua6n" mz="n4">Astral Town</string>
+  <string name="xuxzg1y1mgsn2-n2_mgsn" mz="n2">Practice Mode</string>
+  <string name="xuxzg1y1mgsn2-n3_cgxz" mz="txt_Tip">Existing Maps：{mapNumb=7}</string>
+  <string name="zyd0rl0011biqv-n16_11biq" mz="txt_DiscountPercent">{discount=35}% OFF</string>
+  <string name="zyd0rl0011biq1r-n23_11biq" mz="n23">Claim</string>
+  <string name="zyd0rl0011biqy-n32_11biq" mz="txt_Day">Day {day=1}</string>
+  <string name="zyd0rl0011biqy-n30_11biq" mz="txt_Name_2">Space Badge</string>
+  <string name="zyd0rl00qw8hqq5q-n75_ekc0-cp-txt_OriginalCount" mz="btn_day1">x10</string>
+  <string name="zyd0rl00qw8hqq5q-n76_ekc0-cp-txt_OriginalCount" mz="btn_day2">x5</string>
+  <string name="zyd0rl00qw8hqq5q-n77_ekc0-cp-txt_OriginalCount" mz="btn_day3">x10</string>
+  <string name="zyd0rl00qw8hqq5q-n78_ekc0-cp-txt_OriginalCount" mz="btn_day4">x5</string>
+  <string name="zyd0rl00qw8hqq5q-n79_ekc0-cp-txt_OriginalCount" mz="btn_day5">x10</string>
+  <string name="zyd0rl00qw8hqq5q-n80_ekc0-cp-txt_OriginalCount" mz="btn_day6">x5</string>
+  <string name="zyd0rl00qw8hqq5q-n81_ekc0-cp-txt_OriginalCount" mz="btn_day7">x10</string>
+  <string name="zyd0rl0011biq20-n7_11biq" mz="txt_Time">Only 1 time</string>
+  <string name="zyd0rl00qdq5c-n47_aif6" mz="n47">First Bonus+</string>
+  <string name="zyd0rl00qdq5c-n14_z52s" mz="txt_Remaining">Limit {remainingNum=1} / {limitNum=1}</string>
+  <string name="zyd0rl00qdq5c-n23_z52s" mz="n23">Owned</string>
+  <string name="zyd0rl00qdq5c-n39_hcgi" mz="txt_soldout">Sold Out!</string>
+  <string name="zyd0rl00qdq5c-n24_z52s" mz="txt_timeTip">Refresh: {day=00}d{hour=00}h</string>
+  <string name="zyd0rl00qdq5c-n43_hcgi" mz="n43">x</string>
+  <string name="zyd0rl00qdq5l-n35_hcgi" mz="txt_TokenSymbol">USD</string>
+  <string name="zyd0rl00qdq5l-n38_hcgi" mz="txt_DiscountPercent">{discount=35}% OFF</string>
+  <string name="zyd0rl00r3jjqq4t-n8_r3jj" mz="title">Profile Card</string>
+  <string name="zyd0rl00r3jjqq4g-n3_r3jj" mz="title">无需翻译</string>
+  <string name="zyd0rl00vs31qq50-n9_vs31" mz="text_itemName">无需翻译</string>
+  <string name="zyd0rl00vs31qq50-n19_vs31" mz="n19">Great Value</string>
+  <string name="zyd0rl00vs31qq50-n15_vs31" mz="txt_Remaining">Limit  {remainingNum=1} / {limitNum=1}</string>
+  <string name="zyd0rl00vs31qq50-n18_vs31" mz="txt_timeTip">Refresh：{day=00}d{hour=00}h</string>
+  <string name="zyd0rl00vs31qq50-n20_vs31" mz="txt_soldout">Sold Out!</string>
+  <string name="zyd0rl00n9cwqq2q-n32_n9cw" mz="n32">Rules</string>
+  <string name="zyd0rl00m1i7qq24-n22_csvx" mz="n22">Renew</string>
+  <string name="zyd0rl00m1i7qq24-n22_csvx-texts_0" mz="n22">Renew</string>
+  <string name="zyd0rl00m1i7qq24-n22_csvx-texts_def" mz="n22">Purchase</string>
+  <string name="zyd0rl00m1i7qq25-n13_csvx" mz="n13"> Today’s Reward is Claimed</string>
+  <string name="zyd0rl007h6sqq36-n16_11biq" mz="txt_DiscountPercent">{discount=35}% OFF</string>
+  <string name="zyd0rl00qdq5r-n43_qdq5" mz="txt_Remaining">Limit {remainingNum=1} / {limitNum=1}</string>
+  <string name="zyd0rl00qdq5r-n50_rpwn" mz="n50">Limited Time Skin Sale</string>
+  <string name="zyd0rl00qdq5r-n47_11biq" mz="txt_soldout">Sold Out!</string>
+  <string name="zyd0rl00qdq5r-n48_11biq" mz="n48">Owned</string>
+  <string name="zyd0rl00h0atqq5b-n11_h0at" mz="title">No Translate-Ignore</string>
+  <string name="zyd0rl00r3jjqq4h-n13_r3jj" mz="txt_timeTip">No Translate-Ignore</string>
+  <string name="zyd0rl00r3jjqq4v-n13_r3jj" mz="txt_timeTip">No Translate-Ignore</string>
+  <string name="zyd0rl00qdq50-n54_o1g0" mz="btn_SpecifiedCommercialTransactions">1</string>
+  <string name="zyd0rl00qdq50-n55_o1g0" mz="btn_PaymentServicesAct">1</string>
+  <string name="s9p4q57hmyup3-n11_micc" mz="title">1</string>
+  <string name="s9p4q57hmyup8-n13_dez3" mz="title">Novice Task</string>
+  <string name="s9p4q57hmyup2-n14_myup" mz="n14">1</string>
+  <string name="s9p4q57hmyup2-n15_myup" mz="txt_tip">1</string>
+  <string name="s9p4q57hmyup0-n13_myup" mz="bottom">1</string>
+  <string name="hhpzjcmzh38b4g-n11_h38b" mz="n11">Enter Invitation Code~</string>
+  <string name="hhpzjcmzh38b4g-n14_h38b" mz="btn_SureCode">Confirm</string>
+  <string name="hhpzjcmzh38b4g-n15_h38b" mz="n15">Enter an invitation code to receive</string>
+  <string name="hhpzjcmzh38b4g-n17_h38b" mz="n17">New User Invitation Task</string>
+  <string name="hhpzjcmzh38b4g-n23_cif0" mz="n23">（Activate after entering the invitation code）</string>
+  <string name="hhpzjcmzh38b4h-n11_h38b" mz="n11">My Invitation Code</string>
+  <string name="hhpzjcmzh38b4h-n14_h38b" mz="btn_CopyCode">Copy</string>
+  <string name="hhpzjcmzh38b4h-n15_h38b" mz="n15">Invitation Rewards</string>
+  <string name="hhpzjcmzl6o63u-n29_dez3" mz="n29">DAY</string>
+  <string name="hhpzjcmzl6o63v-n49_k9r7" mz="n49">Task Not Available Yet</string>
+  <string name="hhpzjcmzthbm37-n168_thbm" mz="n168">RECEIVE</string>
+  <string name="hhpzjcmzthbm37-n169_thbm" mz="n169">Received</string>
+  <string name="hhpzjcmzthbm2n-n13_dez3" mz="title">Novice Task</string>
+  <string name="hhpzjcmzthbm2v-n156_thbm" mz="n156">Ongoing</string>
+  <string name="hhpzjcmzthbm2v-n157_thbm" mz="n157">RECEIVE</string>
+  <string name="hhpzjcmzthbm34-n152_thbm" mz="n152">Weekly Activeness</string>
+  <string name="hhpzjcmzthbm34-n147_ndgh" mz="txt_liveValue">[size=52]{cur=000}[/size]/[size=29]{max=000}[/size]</string>
+  <string name="hhpzjcmzthbm2j-n18_hetx" mz="n18">Refresh: 4:00 AM Every Monday UTC+8</string>
+  <string name="1jtcsp8ml8aas83-n0_103c7" mz="txt_Content">Movement order changes randomly!</string>
+  <string name="1jtcsp8mine4s7t-n39_k0ar" mz="n39">Star Got!</string>
+  <string name="1jtcsp8mmques86-n53_mque" mz="n53">Announcing lottery results!</string>
+  <string name="1jtcsp8mmques86-n54_mque" mz="n54">WINNER   WINNER  CHICKEN   DINNER</string>
+  <string name="1jtcsp8mine4s7r-n23_kjte" mz="n23">Passive</string>
+  <string name="1jtcsp8mine4s7r-n26_kjte" mz="n26">Unleash!</string>
+  <string name="1jtcsp8mine4s7q-n11_kjte" mz="txt_RoundRewardTitle">Rewards</string>
+  <string name="1jtcsp8mou6os82-n0_103c7" mz="txt_Content">[color=#FFB346][size=100]Your[/size][/color] turn!</string>
+  <string name="1jtcsp8mou6os82-n0_103c7-texts_0" mz="txt_Content">[color=#FF4646][size=100]Your[/size][/color] turn!</string>
+  <string name="1jtcsp8mou6os82-n0_103c7-texts_1" mz="txt_Content">[color=#94FF46][size=100]Your[/size][/color] turn!</string>
+  <string name="1jtcsp8mou6os82-n0_103c7-texts_2" mz="txt_Content">[color=#4386F4][size=100]Your[/size][/color] turn!</string>
+  <string name="1jtcsp8mou6os82-n0_103c7-texts_3" mz="txt_Content">[color=#FFB346][size=100]Your[/size][/color] turn!</string>
+  <string name="xds9qwo0mgsn1-n4_mgsn-texts_0" mz="n4">Co-op Challenge</string>
+  <string name="xds9qwo0mgsn1-n4_mgsn-texts_def" mz="n4">Player Battle</string>
+  <string name="b96qpoz6iu43p-n1_iu43" mz="txt_0">Congratulations!</string>
+  <string name="b96qpoz6iu43p-n16_j7u8" mz="txt_1">No Translate-Ignore</string>
+  <string name="b96qpoz6iu43p-n2_iu43" mz="txt_2">No Translate-Ignore</string>
+  <string name="b96qpoz6ia9gg-n38_mj58" mz="n38">Confirm</string>
+  <string name="b96qpoz6ia9ga-n55_vagh" mz="n55">SELECTED</string>
+  <string name="b96qpoz6ia9ga-n75_oy11" mz="txt_Trial">Trial!</string>
+  <string name="6vzgbzmwesjwv-n38_esjw" mz="n38">got a [color=#FFDC92]new[/color] star</string>
+  <string name="6vzgbzmwesjwv-n39_esjw" mz="txt_First">1st</string>
+  <string name="6vzgbzmwesjwv-n40_esjw" mz="txt_Second">2nd</string>
+  <string name="6vzgbzmwesjwv-n41_esjw" mz="txt_Thirth">3rd</string>
+  <string name="6vzgbzmwesjwv-n42_esjw" mz="txt_Forth">4th</string>
+  <string name="6vzgbzmwot0w28-n39_esjw" mz="txt_First">1st</string>
+  <string name="6vzgbzmwot0w28-n40_esjw" mz="txt_Second">2nd</string>
+  <string name="6vzgbzmwot0w28-n41_esjw" mz="txt_Thirth">3rd</string>
+  <string name="6vzgbzmwot0w28-n42_esjw" mz="txt_Forth">4th</string>
+  <string name="6vzgbzmwot0w28-n38_esjw" mz="n38">got a [color=#FFDC92]new[/color] star</string>
+  <string name="sv6gwhbej6om1-n35_vagh" mz="n35">Selecting…</string>
+  <string name="sv6gwhbej6om1-n36_vagh" mz="n36">Select your character!</string>
+  <string name="sv6gwhbej6om1-n24_s6rj" mz="txt_progress">{progress=0}%</string>
+  <string name="sv6gwhbej6om1-n45_m49i" mz="n45">PVE</string>
+  <string name="sv6gwhbekqgjn-n8_pn6s" mz="txt_SkillName">Passive Skill: {skillName=}</string>
+  <string name="sv6gwhbekqgjn-n8_pn6s-texts_0" mz="txt_SkillName">Passive Skill: {skillName=}</string>
+  <string name="sv6gwhbekqgjn-n8_pn6s-texts_def" mz="txt_SkillName">Active Skill: {skillName=}</string>
+  <string name="sv6gwhbej6om0-n1_j6om" mz="btn_SerachPlay">Search</string>
+  <string name="sv6gwhbej6om0-n3_j6om-prompt" mz="txtField_Search">[color=#999999]Spectate Code[/color]</string>
+  <string name="sv6gwhbej6om0-n11_lw40" mz="btn_Watch">Spectate</string>
+  <string name="hn2q98k6kqgjj-n40_kqgj" mz="n40">Purchase</string>
+  <string name="hn2q98k6kqgjk-n33_gbr1" mz="n33">Skin Preview</string>
+  <string name="hn2q98k6kqgji-n44_kqgj" mz="com_TaiDao">Misaki</string>
+  <string name="hn2q98k6kqgji-n40_kqgj" mz="com_XiuNv">Alana</string>
+  <string name="hn2q98k6kqgjm-n40_kqgj" mz="txt_Name">Witch's Weapon</string>
+  <string name="y0luzhk8l38o1r-n6_l38o" mz="txt_MapName">Dreama</string>
+  <string name="y0luzhk8l38o1r-n13_l38o" mz="txt_RoomMember">Players [color=#02BD06]{num=3}[/color]/{maxnum=4}</string>
+  <string name="w5bj58pzhtd136-n5_l38o" mz="n5">Report Target</string>
+  <string name="w5bj58pzhtd136-n6_l38o" mz="n6">Report Reason</string>
+  <string name="w5bj58pzhtd136-n7_l38o" mz="n7">Additional Details</string>
+  <string name="w5bj58pzhtd136-n12_l38o" mz="n12">Attach Guild Chat Logs</string>
+  <string name="w5bj58pzhtd136-n18_l38o" mz="combobox_target">Select Player/Guild</string>
+  <string name="w5bj58pzhtd136-n19_l38o" mz="combobox_reason">Select Reason</string>
+  <string name="w5bj58pzhtd136-n13_l38o" mz="btn_OpenRecord">Open Chat Logs</string>
+  <string name="w5bj58pzl38o3a-n3_l38o" mz="title">Select Player/Guild</string>
+  <string name="w5bj58pzl38o38-n2_l38o" mz="title">Hello</string>
+  <string name="w5bj58pzl38o3c-n2_l38o" mz="n2">Select up to 10 chat messages at a time</string>
+  <string name="w5bj58pzl38o3h-n17_l38o-prompt" mz="txt_ExpectExplanation">Enter up to 300 characters</string>
+  <string name="gldisc01mnrq1h-n6_l38o" mz="n6">Report Reason</string>
+  <string name="gldisc01mnrq1h-n19_l38o" mz="combobox_reason">Select Reason</string>
+  <string name="gldisc01mnrq1h-n7_l38o" mz="n7">Additional Details</string>
+  <string name="gldisc01mnrq1o-n3_l38o" mz="title">Select Player/Guild</string>
+  <string name="gldisc01mnrq1s-n2_l38o" mz="title">Hello</string>
+  <string name="gldisc01mnrq1t-n17_l38o-prompt" mz="txt_ExpectExplanation">Enter up to 300 characters</string>
+  <string name="24i5r2i07h6s0-n35_l38o" mz="txt_NotGuildMember">No guild members online</string>
+  <string name="24i5r2i07h6s0-n36_l38o" mz="btn_ShareGuild">Share to Guild Channel</string>
+  <string name="iy1joavto1n81c-n53_l38o" mz="com_refuseGuildInvite">Block Guild Invitations</string>
+  <string name="iy1joavto1n81c-n54_l38o" mz="com_guildMsgPrompt">Guild Channel Message Notifications</string>
+  <string name="y0luzhk8l38o1q-n0_g04j" mz="tips">2026/06/01 Name xxxxx promoted xxxxx to Vice Leader</string>
+  <string name="y0luzhk8x1udb-n49_l38o" mz="btn_tagGuild">Guild</string>
+  <string name="y0luzhk8x1udb-n50_l38o" mz="btn_tagFriend">Friend</string>
+  <string name="y0luzhk8l38o1r-n8_l38o" mz="txt_MapModel">Co-op Challenge</string>
+  <string name="y0luzhk8l38o1r-n15_l38o" mz="n15">Full</string>
+  <string name="y0luzhk8l38o1r-n14_l38o" mz="btn_Join">Join Room</string>
+  <string name="y0luzhk8l38o1n-n5_l38o" mz="title">Guild</string>
+  <string name="w5bj58pzhtd136-n0_htd1" mz="bottom">Report</string>
+  <string name="w5bj58pzhtd136-n2_htd1" mz="btn_report">Confirm</string>
+  <string name="w5bj58pzl38o3c-n4_l38o" mz="btn_sure">Confirm</string>
+  <string name="w5bj58pzmnrq3j-n0_mnrq" mz="bottom">Rules</string>
+  <string name="gldisc01mnrq1w-n1_g04j" mz="title">Report</string>
+  <string name="gldisc01gd009-n46_mnrq" mz="btn_rule">Rules</string>
+  <string name="gldisc01gd016-n22_mnrq" mz="btn_Refresh">Refresh</string>
+  <string name="gldisc01mnrq1h-n0_htd1" mz="bottom">Report</string>
+  <string name="gldisc01mnrq1h-n27_mnrq" mz="btn_report">Confirm</string>
+  <string name="gldisc01mnrq1y-n0_mnrq" mz="bottom">Rules</string>
+  <string name="24i5r2i07h6s0-n34_l38o" mz="btn_Guild">Guild</string>
+  <string name="vxuz3wboorg70-n54_mnrq" mz="btn_Sure">Confirm</string>
+  <string name="iy1joavto1n81c-n52_l38o-cp-lable_title" mz="n52">Guild Settings</string>
+  <string name="iy1joavto1n81c-n53_l38o-cp-title" mz="com_refuseGuildInvite">Card Recommendation</string>
+  <string name="iy1joavto1n81c-n54_l38o-cp-title" mz="com_guildMsgPrompt">Card Recommendation</string>
+</resources>
