@@ -1,0 +1,1 @@
+{"id":"UnlockFrameRateMod","name":"帧率解锁","version":"1.1.0","author":"CesiumLoader","description":"在游戏「设置→屏幕→帧率」列表里追加 144 / 165 / 240 / 360 / 不限帧 选项，选中后由游戏自己应用；关闭本模组即恢复原版列表。","permissions":0,"sdkVersion":"2.8.10","dependencies":[]}

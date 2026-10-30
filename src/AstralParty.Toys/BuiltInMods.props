@@ -1,7 +1,7 @@
 <Project>
   <!-- Public distribution list shared by embedded resources and release packaging. -->
   <ItemGroup>
-    <BuiltInMod Include="ActivityLogMod;FreeCameraMod;SpeedHackMod;CombatOddsMod;CardSkinMod;CharacterSkinMod;AutoThanksMod;ForkDirectionMod;TurnFocusMod;LanguageUnlockMod" />
+    <BuiltInMod Include="ActivityLogMod;FreeCameraMod;SpeedHackMod;TurnClockMod;CombatOddsMod;CardSkinMod;CharacterSkinMod;AutoThanksMod;ForkDirectionMod;TurnFocusMod;HideHudMod;QuickChatPlusMod;HomeBottomBarMod;UnlockFrameRateMod;LanguageUnlockMod" />
   </ItemGroup>
 </Project>
 

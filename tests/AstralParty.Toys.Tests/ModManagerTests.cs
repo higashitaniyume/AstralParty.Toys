@@ -66,7 +66,7 @@ public sealed class ModManagerTests
 
         // 状态里的列表
         Assert.Single(status.Sdk);
-        Assert.Equal(ModManager.BuiltInModIds.Count, status.Mods.Count); // 行为日志 + 自由相机 + 变速热键 mod
+        Assert.Equal(ModManager.BuiltInModIds.Count, status.Mods.Count); // 内置 mod 全部落地
         Assert.Contains(status.Mods, m => m.FileName == ModManager.SampleModDllName);
         Assert.Contains(status.Mods, m => m.FileName == "FreeCameraMod.dll");
         Assert.Contains(status.Mods, m => m.FileName == "SpeedHackMod.dll");
@@ -1518,9 +1518,11 @@ public sealed class ModManagerTests
         Assert.True(File.Exists(Path.Combine(modsRoot, "OptionalMod", "OptionalMod.dll")));
         Assert.True(File.Exists(Path.Combine(modsRoot, "OptionalMod", "OptionalMod.json")));
         Assert.True(File.Exists(Path.Combine(modsRoot, "OptionalMod", "OptionalMod.pdb")));
-        Assert.Equal(10, ModManager.EmbeddedBuiltInModIdList.Count);
+        Assert.Equal(15, ModManager.EmbeddedBuiltInModIdList.Count);
         Assert.Equal(new[] { "ActivityLogMod", "AutoThanksMod", "CardSkinMod", "CharacterSkinMod",
-            "CombatOddsMod", "ForkDirectionMod", "FreeCameraMod", "LanguageUnlockMod", "SpeedHackMod", "TurnFocusMod" },
+            "CombatOddsMod", "ForkDirectionMod", "FreeCameraMod", "HideHudMod", "HomeBottomBarMod",
+            "LanguageUnlockMod", "QuickChatPlusMod", "SpeedHackMod", "TurnClockMod", "TurnFocusMod",
+            "UnlockFrameRateMod" },
             ModManager.EmbeddedBuiltInModIdList);
     }
 

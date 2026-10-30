@@ -1,0 +1,2 @@
+{"id":"TurnClockMod","name":"回合时钟","version":"1.3.0","author":"CesiumLoader","description":"变速时只把我的操作倒计时按真实时间走: 2 倍速下 30 秒的回合窗口仍是 30 秒真实时间, 动画、战斗、别人回合与怪物回合照常加速","permissions":16,"sdkVersion":"2.8.6","dependencies":[]}
+

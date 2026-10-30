@@ -1,0 +1,1 @@
+{"id":"QuickChatPlusMod","name":"快捷短语扩展","version":"1.0.0","author":"CesiumLoader","description":"战斗内快捷短语面板补入 Chat 配置里的全部既有短语（房间等待、结算与其他模式），列表超出屏幕时自动限高并支持滚轮或拖动滚动；文本与发送沿用游戏原版。","permissions":25,"sdkVersion":"2.8.6","dependencies":[]}
