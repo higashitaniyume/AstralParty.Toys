@@ -1518,11 +1518,11 @@ public sealed class ModManagerTests
         Assert.True(File.Exists(Path.Combine(modsRoot, "OptionalMod", "OptionalMod.dll")));
         Assert.True(File.Exists(Path.Combine(modsRoot, "OptionalMod", "OptionalMod.json")));
         Assert.True(File.Exists(Path.Combine(modsRoot, "OptionalMod", "OptionalMod.pdb")));
-        Assert.Equal(15, ModManager.EmbeddedBuiltInModIdList.Count);
+        Assert.Equal(16, ModManager.EmbeddedBuiltInModIdList.Count);
         Assert.Equal(new[] { "ActivityLogMod", "AutoThanksMod", "CardSkinMod", "CharacterSkinMod",
-            "CombatOddsMod", "ForkDirectionMod", "FreeCameraMod", "HideHudMod", "HomeBottomBarMod",
-            "LanguageUnlockMod", "QuickChatPlusMod", "SpeedHackMod", "TurnClockMod", "TurnFocusMod",
-            "UnlockFrameRateMod" },
+            "ChatDurationMod", "CombatOddsMod", "ForkDirectionMod", "FreeCameraMod", "HideHudMod",
+            "HomeBottomBarMod", "LanguageUnlockMod", "QuickChatPlusMod", "SpeedHackMod", "TurnClockMod",
+            "TurnFocusMod", "UnlockFrameRateMod" },
             ModManager.EmbeddedBuiltInModIdList);
     }
 

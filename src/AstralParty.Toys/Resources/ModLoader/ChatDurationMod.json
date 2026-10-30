@@ -1,0 +1,1 @@
+{"id":"ChatDurationMod","name":"消息停留时间","version":"1.0.0","author":"CesiumLoader","description":"让战斗中的快捷消息和表情按真实时间停留更久；默认 15 秒，不受变速影响，可配置。","permissions":17,"sdkVersion":"2.8.6","dependencies":[]}
