@@ -95,6 +95,8 @@ function runPageHook(pageName) {
     window.UtilitiesModule?.onShowUtilities?.();
   } else if (pageName === 'mods') {
     window.ModsModule?.onShowMods?.();
+  } else if (pageName === 'workshop') {
+    window.WorkshopModule?.onShow?.();
   } else if (pageName === 'skins') {
     window.SkinsModule?.onShowSkins?.();
   }
@@ -356,6 +358,35 @@ host?.addEventListener('message', event => {
     case 'modUpdateCheck':
       // 「检查更新」的联网结果（最新版本号 / 错误）
       if (window.ModsModule) window.ModsModule.renderUpdateCheck(msg.payload);
+      break;
+
+    case 'workshopList':
+      window.WorkshopModule?.renderList(msg.payload);
+      break;
+
+    case 'workshopConsentRequired':
+      window.WorkshopModule?.requireConsent(msg.payload);
+      break;
+
+    case 'workshopConsent':
+      window.WorkshopModule?.renderConsent(msg.payload);
+      break;
+
+    case 'workshopDetail':
+      window.WorkshopModule?.renderDetail(msg.payload);
+      break;
+
+    case 'workshopProgress':
+      window.WorkshopModule?.renderProgress(msg.payload);
+      break;
+
+    case 'workshopResult':
+      window.WorkshopModule?.renderResult(msg.payload);
+      break;
+
+    case 'workshopInstallConfirm':
+      // 包内版本比已装旧：确认后才真正写入
+      window.WorkshopModule?.openInstallConfirm(msg.payload);
       break;
 
     case 'modLoaderConfig':

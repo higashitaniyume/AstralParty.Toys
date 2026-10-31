@@ -19,10 +19,10 @@ public partial class HybridWindow
             using var document = JsonDocument.Parse(e.WebMessageAsJson);
             var root = document.RootElement;
             var type = root.TryGetProperty("type", out var typeElement) ? typeElement.GetString() : null;
-            if ((_loaderRecoveryBusy || _modPackageImportRunning || _modUpdateRunning || _modImportRunning)
+            if ((_loaderRecoveryBusy || _modPackageImportRunning || _modUpdateRunning || _modImportRunning || _workshopBusy)
                 && type is "modInstall" or "modUninstall" or "modDisableLoader" or "modRestoreLoader"
                     or "modDownloadUpdate" or "modImportPackage" or "modImport" or "modPickImport" or "modDelete" or "modToggle"
-                    or "speedhackInstall" or "speedhackUninstall")
+                    or "speedhackInstall" or "speedhackUninstall" or "workshopInstall")
             {
                 if (type is "modDisableLoader" or "modRestoreLoader") Post(new { type = "modRecoveryDone" });
                 throw new InvalidOperationException("游戏文件操作正在进行（安装 / 更新 / 导入），请等待完成后再修改。");
@@ -148,7 +148,8 @@ public partial class HybridWindow
                             LibraryRoot = _libraryService.Settings.LibraryRoot,
                             AutoMaintain = _libraryService.Settings.AutoMaintain,
                             KeepInGame = _libraryService.Settings.KeepInGame,
-                            Language = normLang
+                            Language = normLang,
+                            WorkshopUrl = _libraryService.Settings.WorkshopUrl
                         });
                         _analyzer?.Reload(normLang);
                         Post(new { type = "librarySettings", payload = BuildLibrarySettingsPayload() });
@@ -443,6 +444,35 @@ public partial class HybridWindow
                             Post(new { type = "toast", message = $"保存加载器设置失败：{ex.Message}" });
                         }
                     }
+                    break;
+                case "workshopList":
+                    await HandleWorkshopListAsync(root);
+                    break;
+                case "workshopConsent":
+                    HandleWorkshopConsent(root.TryGetProperty("accept", out var workshopConsentAccept)
+                                          && workshopConsentAccept.GetBoolean());
+                    break;
+                case "workshopDetail":
+                    if (root.TryGetProperty("id", out var workshopDetailId) &&
+                        workshopDetailId.GetString() is { Length: > 0 } workshopDetailValue)
+                        await HandleWorkshopDetailAsync(workshopDetailValue);
+                    break;
+                case "workshopInstall":
+                    if (root.TryGetProperty("id", out var workshopInstallId) &&
+                        workshopInstallId.GetString() is { Length: > 0 } workshopInstallValue)
+                    {
+                        var workshopVersion = root.TryGetProperty("version", out var workshopVersionElement)
+                            ? workshopVersionElement.GetString()
+                            : null;
+                        _ = HandleWorkshopInstallAsync(workshopInstallValue, workshopVersion);
+                    }
+                    break;
+                case "workshopCancelDownload":
+                    CancelWorkshopDownload();
+                    break;
+                case "workshopInstallConfirmAnswer":
+                    HandleWorkshopInstallConfirmAnswer(
+                        root.TryGetProperty("accept", out var workshopAccept) && workshopAccept.GetBoolean());
                     break;
                 case "modCheckUpdate":
                     _ = HandleModCheckUpdateAsync();

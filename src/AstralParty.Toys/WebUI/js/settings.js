@@ -56,6 +56,7 @@
         toast(`自动托管已${event.target.checked ? '开启' : '关闭'}`);
       });
       $('libraryKeepInput')?.addEventListener('change', () => this.pushLibrarySettings());
+      $('workshopUrlInput')?.addEventListener('change', () => this.pushLibrarySettings());
       $('libraryMaintainNowBtn')?.addEventListener('click', () => {
         this.pushLibrarySettings();
         post({ type: 'libraryMaintain' });
@@ -75,7 +76,8 @@
         type: 'librarySaveSettings',
         libraryRoot: ($('libraryRootInput')?.value || '').trim() || null,
         autoMaintain: !!$('libraryAutoMaintainToggle')?.checked,
-        keepInGame: keep
+        keepInGame: keep,
+        workshopUrl: ($('workshopUrlInput')?.value || '').trim() || null
       });
     },
 
@@ -90,6 +92,13 @@
       }
       const autoToggle = $('libraryAutoMaintainToggle');
       if (autoToggle) autoToggle.checked = !!settings.autoMaintain;
+
+      const workshopInput = $('workshopUrlInput');
+      if (workshopInput) {
+        const fallback = settings.defaultWorkshopUrl || 'http://localhost:15555';
+        workshopInput.value = settings.workshopUrl || fallback;
+        workshopInput.placeholder = fallback;
+      }
 
       const capacity = settings.capacity || 10;
       const keep = settings.keepInGame || capacity;

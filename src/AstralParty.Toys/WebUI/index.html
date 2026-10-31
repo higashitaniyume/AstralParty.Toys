@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="css/settings.css" />
     <link rel="stylesheet" href="css/utilities.css" />
     <link rel="stylesheet" href="css/mods.css" />
+    <link rel="stylesheet" href="css/workshop.css" />
     <link rel="stylesheet" href="css/skins.css" />
     <link rel="stylesheet" href="css/resource-mods.css" />
   </head>
@@ -56,6 +57,13 @@
                 d="M200-200h520v-184l45-22q16-8 25.5-22t9.5-32q0-17-9.5-31.5T765-514l-45-21v-185H528l-10-68q-3-22-19.5-37T460-840q-23 0-39.5 15T401-788l-10 68H200v86q56 21 88 68t32 106q0 60-32 107t-88 68v85Zm0 80q-34 0-57-23t-23-57v-152q48 0 84-30.5t36-77.5q0-46-36-76t-84-32v-152q0-33 23.5-56.5T200-800h122q7-51 46-85.5t92-34.5q52 0 91 34.5t47 85.5h122q33 0 56.5 23.5T800-720v134q36 18 58 52t22 74q0 41-22 75t-58 51v134q0 34-23.5 57T720-120H200Zm300-340Z"
               /></svg
             ><span data-i18n="nav.mods">模组</span>
+          </button>
+          <button class="nav-crumb-btn" data-page="workshop">
+            <svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true">
+              <path
+                d="m760-600-50-110-110-50 110-50 50-110 50 110 110 50-110 50-50 110Zm0 560-50-110-110-50 110-50 50-110 50 110 110 50-110 50-50 110ZM360-160 260-380 40-480l220-100 100-220 100 220 220 100-220 100-100 220Zm0-194 40-86 86-40-86-40-40-86-40 86-86 40 86 40 40 86Zm0-126Z"
+              /></svg
+            ><span data-i18n="nav.workshop">创意工坊</span>
           </button>
           <button class="nav-crumb-btn" data-page="skins">
             <svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true">
@@ -1270,6 +1278,70 @@
           </div>
         </section>
 
+        <!-- 4.4. WORKSHOP VIEW (Community mod catalog) -->
+        <section id="workshopView" class="page-view workshop-page hidden">
+          <div class="utilities-header workshop-header">
+            <div class="utilities-title-group">
+              <button class="back-btn" id="workshopBackHomeBtn" data-i18n="replay.back_to_lobby">‹ 返回大厅</button>
+              <h2 data-i18n="nav.workshop">创意工坊</h2>
+              <span class="utilities-tagline" data-i18n="workshop.tagline"
+                >社区模组目录 · 下载 / 校验 / 一键安装</span
+              >
+            </div>
+            <div class="utilities-header-actions">
+              <span class="workshop-source" id="workshopSourceUrl"></span>
+              <button class="secondary-btn" id="workshopRefreshBtn">
+                <span class="mi" data-icon="refresh"></span>
+                <span data-i18n="common.refresh">刷新</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="workshop-toolbar">
+            <label class="workshop-search">
+              <span class="mi" data-icon="search"></span>
+              <input
+                id="workshopSearchInput"
+                type="search"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="搜索模组、作者或简介"
+                data-i18n-placeholder="workshop.search_placeholder"
+              />
+            </label>
+            <select
+              id="workshopTagSelect"
+              class="workshop-select"
+              aria-label="标签筛选"
+            >
+              <option value="" data-i18n="workshop.tags_all">全部标签</option>
+            </select>
+            <select
+              id="workshopSortSelect"
+              class="workshop-select"
+              aria-label="排序方式"
+            >
+              <option value="updated" data-i18n="workshop.sort_updated">最近更新</option>
+              <option value="name" data-i18n="workshop.sort_name">名称</option>
+              <option value="downloads" data-i18n="workshop.sort_downloads">下载量</option>
+            </select>
+          </div>
+
+          <div class="workshop-scroll">
+            <div id="workshopNotice" class="workshop-notice hidden" role="status"></div>
+            <div id="workshopGrid" class="workshop-grid" aria-live="polite"></div>
+            <div id="workshopPager" class="workshop-pager hidden">
+              <button class="secondary-btn" id="workshopPrevBtn" data-i18n="workshop.prev_page">
+                上一页
+              </button>
+              <span id="workshopPageInfo"></span>
+              <button class="secondary-btn" id="workshopNextBtn" data-i18n="workshop.next_page">
+                下一页
+              </button>
+            </div>
+          </div>
+        </section>
+
         <!-- 4.5. SKINS VIEW (Card Skin Profiles & Management) -->
         <section id="skinsView" class="page-view skins-page hidden">
           <div class="utilities-header skins-header">
@@ -1718,6 +1790,33 @@
             <article class="settings-card">
               <div class="settings-card-head">
                 <h3>
+                  <span class="mi" data-icon="shopping_cart"></span>
+                  <span data-i18n="settings.workshop">创意工坊</span>
+                </h3>
+              </div>
+              <p class="settings-card-note" data-i18n="settings.workshop_note">
+                模组目录由 Forge 提供；模组包仍由作者托管，下载后会校验 SHA-256。
+              </p>
+              <div class="settings-field">
+                <label for="workshopUrlInput" data-i18n="settings.workshop_url">工坊地址</label>
+                <div class="settings-field-row">
+                  <input
+                    type="url"
+                    class="library-input wide"
+                    id="workshopUrlInput"
+                    spellcheck="false"
+                    placeholder="http://localhost:15555"
+                  />
+                </div>
+                <p class="settings-field-hint" data-i18n="settings.workshop_url_hint">
+                  默认 http://localhost:15555；正式地址发布后在这里替换，留空或格式不正确会回退到默认值。
+                </p>
+              </div>
+            </article>
+
+            <article class="settings-card">
+              <div class="settings-card-head">
+                <h3>
                   <span class="mi" data-icon="auto_awesome"></span> <span data-i18n="settings.motion">动画偏好</span>
                 </h3>
               </div>
@@ -1986,6 +2085,29 @@
         <span class="op-toast-percent" id="opToastPercent"></span>
         <button class="op-toast-cancel hidden" id="opToastCancel">取消</button>
       </div>
+
+      <!-- 创意工坊安装进度（右下角，切到其它页面也能看到） -->
+      <div class="wit" id="workshopInstallToast" role="status" aria-live="polite" aria-atomic="true" aria-hidden="true">
+        <div class="wit-head">
+          <span class="mi" data-icon="download"></span>
+          <div class="wit-heading">
+            <strong id="workshopInstallTitle">正在安装…</strong>
+            <span id="workshopInstallSubtitle"></span>
+          </div>
+          <span class="wit-percent" id="workshopInstallPercent"></span>
+          <button class="wit-close" id="workshopInstallClose" aria-label="关闭">×</button>
+        </div>
+        <ol class="wit-steps" id="workshopInstallSteps">
+          <li data-phase="download"><span class="wit-dot"></span><span class="wit-label"></span></li>
+          <li data-phase="verify"><span class="wit-dot"></span><span class="wit-label"></span></li>
+          <li data-phase="install"><span class="wit-dot"></span><span class="wit-label"></span></li>
+        </ol>
+        <div class="wit-bar"><span id="workshopInstallBar"></span></div>
+        <div class="wit-foot">
+          <span class="wit-text" id="workshopInstallText"></span>
+          <button class="wit-cancel" id="workshopInstallCancel">取消</button>
+        </div>
+      </div>
     </div>
 
     <style>
@@ -2005,6 +2127,7 @@
     <script src="js/settings.js"></script>
     <script src="js/utilities.js"></script>
     <script src="js/mods.js"></script>
+    <script src="js/workshop.js"></script>
     <link rel="stylesheet" href="css/character-skins.css" />
     <script src="js/character-schemes.js"></script>
     <script src="js/character-skins.js"></script>

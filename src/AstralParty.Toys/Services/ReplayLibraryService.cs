@@ -194,13 +194,23 @@ public sealed class ReplayLibraryService
         settings.KeepInGame = Math.Clamp(settings.KeepInGame, 1, GameSlotCapacity);
         if (string.IsNullOrWhiteSpace(settings.LibraryRoot)) settings.LibraryRoot = null;
         settings.Language = AppLanguage.Normalize(settings.Language);
+        settings.WorkshopUrl = WorkshopService.NormalizeBaseUrl(settings.WorkshopUrl);
+        settings.WorkshopConsentVersion = Math.Max(0, settings.WorkshopConsentVersion);
         return settings;
     }
 
     public void SaveSettings(ReplayLibrarySettings settings)
     {
         var prevLang = Settings?.Language;
-        Settings = Normalize(settings);
+        var normalized = Normalize(settings);
+        // 同意记录没有撤销入口：普通设置保存（语言、库目录、工坊地址）不能把它抹掉。
+        if (normalized.WorkshopConsentVersion < Settings.WorkshopConsentVersion)
+        {
+            normalized.WorkshopConsentVersion = Settings.WorkshopConsentVersion;
+            normalized.WorkshopConsentAt ??= Settings.WorkshopConsentAt;
+        }
+
+        Settings = normalized;
         Directory.CreateDirectory(_profileDirectory);
         WriteAtomic(SettingsPath, JsonSerializer.Serialize(Settings, StoreJson));
         LibraryRoot = ResolveLibraryRoot(Settings.LibraryRoot);

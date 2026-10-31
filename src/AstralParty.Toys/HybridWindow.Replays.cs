@@ -291,7 +291,9 @@ public partial class HybridWindow
         {
             LibraryRoot = folder,
             AutoMaintain = _libraryService.Settings.AutoMaintain,
-            KeepInGame = _libraryService.Settings.KeepInGame
+            KeepInGame = _libraryService.Settings.KeepInGame,
+            Language = _libraryService.Settings.Language,
+            WorkshopUrl = _libraryService.Settings.WorkshopUrl
         });
         Post(new { type = "toast", message = $"回放库已切换到：{folder}" });
         Post(new { type = "librarySettings", payload = BuildLibrarySettingsPayload() });
@@ -307,13 +309,17 @@ public partial class HybridWindow
         var lang = root.TryGetProperty("language", out var langElement)
             ? langElement.GetString()
             : _libraryService.Settings.Language;
+        var workshopUrl = root.TryGetProperty("workshopUrl", out var workshopElement)
+            ? workshopElement.GetString()
+            : _libraryService.Settings.WorkshopUrl;
 
         _libraryService.SaveSettings(new ReplayLibrarySettings
         {
             LibraryRoot = string.IsNullOrWhiteSpace(root_) ? null : root_,
             AutoMaintain = autoMaintain,
             KeepInGame = Math.Clamp(keepInGame, 1, ReplayLibraryService.GameSlotCapacity),
-            Language = AppLanguage.Normalize(lang)
+            Language = AppLanguage.Normalize(lang),
+            WorkshopUrl = WorkshopService.NormalizeBaseUrl(workshopUrl)
         });
         Post(new { type = "librarySettings", payload = BuildLibrarySettingsPayload() });
         Post(new { type = "toast", message = "设置已保存。" });
@@ -326,7 +332,12 @@ public partial class HybridWindow
         autoMaintain = _libraryService.Settings.AutoMaintain,
         keepInGame = _libraryService.Settings.KeepInGame,
         capacity = ReplayLibraryService.GameSlotCapacity,
-        language = _libraryService.Settings.Language
+        language = _libraryService.Settings.Language,
+        workshopUrl = _libraryService.Settings.WorkshopUrl,
+        defaultWorkshopUrl = WorkshopService.DefaultBaseUrl,
+        workshopConsentVersion = _libraryService.Settings.WorkshopConsentVersion,
+        workshopConsented = WorkshopConsent.IsGranted(_libraryService.Settings),
+        workshopConsentAt = _libraryService.Settings.WorkshopConsentAt
     };
 
 
