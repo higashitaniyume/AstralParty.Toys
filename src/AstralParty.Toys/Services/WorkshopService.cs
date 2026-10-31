@@ -7,15 +7,15 @@ using System.Text.Json;
 namespace AstralParty.Toys.Services;
 
 /// <summary>
-/// 创意工坊客户端：拉取 Forge 的模组目录、缓存封面、下载作者托管的模组包。
+/// 市场客户端：拉取 Forge 的模组目录、缓存封面、下载作者托管的模组包。
 ///
 /// 所有网络访问都留在 WPF 宿主里（页面只收到已经整理好的数据），封面通过
 /// <c>https://workshop.astral.local/{name}.webp</c> 虚拟域名提供给页面。
 /// </summary>
 public sealed class WorkshopService
 {
-    /// <summary>默认工坊地址；正式域名由用户在设置里替换。</summary>
-    public const string DefaultBaseUrl = "http://localhost:15555";
+    /// <summary>默认市场地址；可在设置里改成别的部署地址。</summary>
+    public const string DefaultBaseUrl = "https://forge.hiynet.com";
 
     /// <summary>封面的虚拟域名（页面用 &lt;img&gt; 直接引用）。</summary>
     public const string CoverOrigin = "https://workshop.astral.local/";
@@ -27,7 +27,7 @@ public sealed class WorkshopService
     public const long MaxPackageBytes = 256L * 1024 * 1024;
 
     /// <summary>
-    /// 工坊请求的用户代理，Forge 用它统计客户端版本。
+    /// 市场请求的用户代理，Forge 用它统计客户端版本。
     /// 格式与 Forge 的解析规则一致：<c>AstralParty Toys/1.2.0</c>。
     /// </summary>
     public static string UserAgent { get; } = BuildUserAgent();
@@ -64,7 +64,7 @@ public sealed class WorkshopService
 
     private string CoverRoot => CoverDirectoryOverride ?? CoverDirectory;
 
-    /// <summary>规范化用户填写的工坊地址；非法输入回退到默认地址。</summary>
+    /// <summary>规范化用户填写的市场地址；非法输入回退到默认地址。</summary>
     public static string NormalizeBaseUrl(string? value)
     {
         var text = (value ?? "").Trim().TrimEnd('/');
@@ -105,11 +105,11 @@ public sealed class WorkshopService
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            throw new WorkshopException("连接创意工坊超时，请检查工坊地址或网络。");
+            throw new WorkshopException("连接市场超时，请检查市场地址或网络。");
         }
         catch (HttpRequestException ex)
         {
-            throw new WorkshopException($"无法连接创意工坊：{ex.Message}");
+            throw new WorkshopException($"无法连接市场：{ex.Message}");
         }
     }
 
@@ -132,11 +132,11 @@ public sealed class WorkshopService
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            throw new WorkshopException("连接创意工坊超时，请检查工坊地址或网络。");
+            throw new WorkshopException("连接市场超时，请检查市场地址或网络。");
         }
         catch (HttpRequestException ex)
         {
-            throw new WorkshopException($"无法连接创意工坊：{ex.Message}");
+            throw new WorkshopException($"无法连接市场：{ex.Message}");
         }
     }
 
@@ -200,7 +200,7 @@ public sealed class WorkshopService
         if (response.StatusCode == HttpStatusCode.NotFound)
             throw new WorkshopException("下载地址返回 404：作者可能已删除这个版本。");
         if (response.StatusCode == HttpStatusCode.ServiceUnavailable)
-            throw new WorkshopException("创意工坊暂时关闭了接口，请稍后再试。");
+            throw new WorkshopException("市场暂时关闭了接口，请稍后再试。");
         if (!response.IsSuccessStatusCode)
             throw new WorkshopException($"下载失败：HTTP {(int)response.StatusCode}");
 
@@ -274,9 +274,9 @@ public sealed class WorkshopService
         if (response.IsSuccessStatusCode) return;
         throw response.StatusCode switch
         {
-            HttpStatusCode.NotFound => new WorkshopException($"{action}失败：创意工坊没有这个模组。"),
+            HttpStatusCode.NotFound => new WorkshopException($"{action}失败：市场里没有这个模组。"),
             HttpStatusCode.ServiceUnavailable => new WorkshopException(
-                $"{action}失败：创意工坊暂时关闭了接口，请稍后再试。"),
+                $"{action}失败：市场暂时关闭了接口，请稍后再试。"),
             _ => new WorkshopException($"{action}失败：HTTP {(int)response.StatusCode}")
         };
     }

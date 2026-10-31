@@ -5,14 +5,14 @@ using AstralParty.Toys.Services;
 namespace AstralParty.Toys;
 
 /// <summary>
-/// 创意工坊：把 Forge 公共目录搬进玩具箱，并把作者的发布包按「下载 → 校验 →
+/// 市场：把 Forge 公共目录搬进工具箱，并把作者的发布包按「下载 → 校验 →
 /// 预检 → 导入」的同一套模组安装链路落盘。
 /// </summary>
 public partial class HybridWindow
 {
     private readonly WorkshopService _workshopService = new();
 
-    /// <summary>下载中的取消源；同一时刻只允许一个工坊安装。</summary>
+    /// <summary>下载中的取消源；同一时刻只允许一个市场安装。</summary>
     private CancellationTokenSource? _workshopDownloadCts;
 
     private bool _workshopBusy;
@@ -27,7 +27,7 @@ public partial class HybridWindow
 
     private bool WorkshopConsentGranted => WorkshopConsent.IsGranted(_libraryService.Settings);
 
-    /// <summary>没有同意时一律拒绝：任何工坊请求（含封面缓存）都不会发出去。</summary>
+    /// <summary>没有同意时一律拒绝：任何市场请求（含封面缓存）都不会发出去。</summary>
     private bool RequireWorkshopConsent()
     {
         if (WorkshopConsentGranted) return true;
@@ -232,7 +232,7 @@ public partial class HybridWindow
 
         if (ModManager.BuiltInModIds.Contains(id, StringComparer.OrdinalIgnoreCase))
         {
-            Post(new { type = "workshopResult", payload = new { success = false, id, message = "这是随玩具箱内置的模组，不能从创意工坊安装。" } });
+            Post(new { type = "workshopResult", payload = new { success = false, id, message = "这是随工具箱内置的模组，不能从市场安装。" } });
             return;
         }
 
@@ -265,7 +265,7 @@ public partial class HybridWindow
                 : version!.Trim();
             var selected = detail.Versions.FirstOrDefault(item =>
                                item.Version.Equals(targetVersion, StringComparison.OrdinalIgnoreCase))
-                           ?? throw new WorkshopException($"工坊里已经没有 v{targetVersion} 这个版本。");
+                           ?? throw new WorkshopException($"市场里已经没有 v{targetVersion} 这个版本。");
 
             var url = WorkshopService.ResolveUrl(baseUrl, selected.DownloadUrl);
 
@@ -296,7 +296,7 @@ public partial class HybridWindow
 
             if (!sha256.Equals(selected.Sha256, StringComparison.OrdinalIgnoreCase))
                 throw new WorkshopException(
-                    "下载到的文件与工坊登记的 SHA-256 不一致，已拒绝安装。可能是作者替换了同版本文件，请联系登记人重新校验。");
+                    "下载到的文件与市场登记的 SHA-256 不一致，已拒绝安装。可能是作者替换了同版本文件，请联系登记人重新校验。");
 
             Post(new { type = "workshopProgress", payload = new { id, phase = "verify", percent = (int?)null } });
 
@@ -450,7 +450,7 @@ public partial class HybridWindow
     private static string DescribeWorkshopError(Exception ex)
         => ex is WorkshopException or InvalidOperationException or IOException
             ? ex.Message
-            : $"创意工坊请求失败：{ex.Message}";
+            : $"市场请求失败：{ex.Message}";
 
     private static void TryDeleteFile(string path)
     {

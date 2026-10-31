@@ -95,7 +95,7 @@
 
       const workshopInput = $('workshopUrlInput');
       if (workshopInput) {
-        const fallback = settings.defaultWorkshopUrl || 'http://localhost:15555';
+        const fallback = settings.defaultWorkshopUrl || 'https://forge.hiynet.com';
         workshopInput.value = settings.workshopUrl || fallback;
         workshopInput.placeholder = fallback;
       }

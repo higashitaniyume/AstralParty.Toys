@@ -8,7 +8,7 @@ using AstralParty.Toys.Tests.Support;
 namespace AstralParty.Toys.Tests;
 
 /// <summary>
-/// 创意工坊客户端：工坊地址规范化、版本比较、地址拼接、目录/详情解析、封面缓存与包下载。
+/// 市场客户端：市场地址规范化、版本比较、地址拼接、目录/详情解析、封面缓存与包下载。
 /// 全部走本地假 HTTP 管道，默认离线可跑；不碰用户真实的封面缓存目录。
 /// </summary>
 public sealed class WorkshopServiceTests
@@ -91,8 +91,8 @@ public sealed class WorkshopServiceTests
     // ============================== 地址规范化 ==============================
 
     [Theory]
-    [InlineData("http://localhost:15555", Default)]
-    [InlineData("http://localhost:15555/", Default)]
+    [InlineData("http://localhost:15555", "http://localhost:15555")]
+    [InlineData("http://localhost:15555/", "http://localhost:15555")]
     [InlineData(" https://mods.example.com/workshop/ ", "https://mods.example.com/workshop")]
     [InlineData("HTTPS://Mods.Example.com", "HTTPS://Mods.Example.com")]
     [InlineData("", Default)]
@@ -436,7 +436,7 @@ public sealed class WorkshopServiceTests
 
     // ============================== 夹具 ==============================
 
-    /// <summary>沙箱化的工坊客户端：假 HTTP 管道 + 独立封面目录。</summary>
+    /// <summary>沙箱化的市场客户端：假 HTTP 管道 + 独立封面目录。</summary>
     private sealed class Harness : IDisposable
     {
         /// <summary>最小合法 WebP 头（RIFF....WEBP），封面缓存只接受这种内容。</summary>

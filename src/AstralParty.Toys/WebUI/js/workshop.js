@@ -1,4 +1,4 @@
-// workshop.js - Creative workshop (community mod catalog) page logic
+// workshop.js - Mod market (community catalog) page logic
 (function () {
   'use strict';
 
@@ -414,7 +414,7 @@
   function syncSource() {
     const node = $('workshopSourceUrl');
     if (!node) return;
-    const base = state.baseUrl || AppState.librarySettings?.workshopUrl || 'http://localhost:15555';
+    const base = state.baseUrl || AppState.librarySettings?.workshopUrl || 'https://forge.hiynet.com';
     node.textContent = base;
     node.title = base;
   }

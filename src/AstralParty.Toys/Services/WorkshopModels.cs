@@ -1,6 +1,6 @@
 namespace AstralParty.Toys.Services;
 
-/// <summary>创意工坊公共接口的返回模型（与 ForgeHiynet 的 <c>/api/mods</c> 对应）。</summary>
+/// <summary>市场公共接口的返回模型（与 ForgeHiynet 的 <c>/api/mods</c> 对应）。</summary>
 public sealed class WorkshopListResponse
 {
     public int ApiVersion { get; set; }
@@ -87,5 +87,5 @@ public sealed class WorkshopDownloadProgress
         : null;
 }
 
-/// <summary>工坊请求失败时抛出的用户可读错误。</summary>
+/// <summary>市场请求失败时抛出的用户可读错误。</summary>
 public sealed class WorkshopException(string message) : Exception(message);

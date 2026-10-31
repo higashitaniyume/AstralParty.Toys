@@ -15,11 +15,11 @@ public sealed class ReplayLibrarySettings
     /// <summary>应用与配表语言代码（zh-Hans, en, ja, zh-Hant）。</summary>
     public string Language { get; set; } = AppLanguage.SimplifiedChinese;
 
-    /// <summary>创意工坊地址（Forge 公共站点根地址）。空值或非法值时回退到本机默认地址。</summary>
+    /// <summary>市场地址（Forge 公共站点根地址）。空值或非法值时回退到本机默认地址。</summary>
     public string WorkshopUrl { get; set; } = WorkshopService.DefaultBaseUrl;
 
     /// <summary>
-    /// 已同意的创意工坊免责说明版本；小于当前版本（或 0）时进入工坊会先询问。
+    /// 已同意的市场免责说明版本；小于当前版本（或 0）时进入市场会先询问。
     /// </summary>
     public int WorkshopConsentVersion { get; set; }
 

@@ -203,7 +203,7 @@ public sealed class ReplayLibraryService
     {
         var prevLang = Settings?.Language;
         var normalized = Normalize(settings);
-        // 同意记录没有撤销入口：普通设置保存（语言、库目录、工坊地址）不能把它抹掉。
+        // 同意记录没有撤销入口：普通设置保存（语言、库目录、市场地址）不能把它抹掉。
         if (normalized.WorkshopConsentVersion < Settings.WorkshopConsentVersion)
         {
             normalized.WorkshopConsentVersion = Settings.WorkshopConsentVersion;

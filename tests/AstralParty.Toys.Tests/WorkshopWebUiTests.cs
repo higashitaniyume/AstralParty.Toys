@@ -6,7 +6,7 @@ using Xunit;
 namespace AstralParty.Toys.Tests;
 
 /// <summary>
-/// 创意工坊页面的接线与文案：页面确实挂进了导航/路由、宿主消息都有人接、
+/// 市场页面的接线与文案：页面确实挂进了导航/路由、宿主消息都有人接、
 /// 用到的翻译键在四种语言里都有。真正的交互仍在 WebView2 里验证，这里只守住容易漏的接线。
 /// </summary>
 public sealed class WorkshopWebUiTests
@@ -30,7 +30,7 @@ public sealed class WorkshopWebUiTests
         Assert.Contains("id=\"workshopGrid\"", html);
         Assert.Contains("css/workshop.css", html);
         Assert.Contains("js/workshop.js", html);
-        // 设置页要能改工坊地址
+        // 设置页要能改市场地址
         Assert.Contains("id=\"workshopUrlInput\"", html);
         // 右下角安装进度浮窗
         Assert.Contains("id=\"workshopInstallToast\"", html);

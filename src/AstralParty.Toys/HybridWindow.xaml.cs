@@ -113,7 +113,7 @@ public partial class HybridWindow : Window
             for (var index = 0; index < _materialDirectories.Count; index++)
                 WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
                     $"materials{index}.astral.local", _materialDirectories[index], CoreWebView2HostResourceAccessKind.Allow);
-            // 创意工坊封面：宿主下载到本地缓存目录，页面只读这个虚拟域名。
+            // 市场封面：宿主下载到本地缓存目录，页面只读这个虚拟域名。
             WorkshopService.EnsureCoverDirectory();
             WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
                 "workshop.astral.local", WorkshopService.CoverDirectory, CoreWebView2HostResourceAccessKind.DenyCors);

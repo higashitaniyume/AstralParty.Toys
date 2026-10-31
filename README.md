@@ -69,14 +69,14 @@ winget upgrade Hiynet.AstralParty.Toys
 | 卡牌皮肤 | 自定义卡面与多方案管理；导入视频/GIF 制作动态卡面 |
 | 模组管理 | 安装、更新、卸载 CesiumLoader；导入模组包（ZIP）或单个 DLL、编辑配置与绑定热键；升级保留配置与停用状态、旧版本残留移入回收站，降级需确认 |
 | 资源模组 | 导入 RML 格式 ZIP；内置 RML 引擎解析 `.bundle`、`mod.json`、`replace.txt`、图片与 Patch，改写 Addressables catalog；显示进度、文件日志，可暂停/取消并还原；支持启停、删除与还原官方资源 |
-| 创意工坊 | 浏览社区模组目录：搜索、标签筛选、排序与分页；查看版本、SHA-256、权限、依赖与下载量；下载后校验哈希再安装，更新与降级都有确认，保留配置与停用状态；安装时右下角显示步骤与进度；首次使用需阅读并同意第三方内容说明 |
+| 市场 | 浏览社区模组目录：搜索、标签筛选、排序与分页；查看版本、SHA-256、权限、依赖与下载量；下载后校验哈希再安装，更新与降级都有确认，保留配置与停用状态；安装时右下角显示步骤与进度；首次使用需阅读并同意第三方内容说明 |
 | 启动与变速 | 管理多个游戏版本，选择 Steam 或绕过 Steam 启动，设置基础倍率与游戏内变速热键 |
 
 CesiumLoader 随附 16 个内置模组：行为日志、自由相机、变速热键、回合倒计时、战斗胜率助手、卡牌皮肤、角色皮肤、自动感谢、岔路标记、回合置前、隐藏 HUD、快捷短语、消息停留、主页底栏、帧率解锁与多语言支持。功能与配置详见 [加载器文档](https://github.com/higashitaniyume/CesiumLoader#内置模组)。安装与模组配置变更通常需要重启游戏。
 
 变速范围为 **1–100 倍**，建议不超过 3 倍；倍率会影响动画、演出、回合与网络超时。默认 `Delete` 切换正常速度与上次倍率，`Alt` + `=` / `Alt` + `-` 调整倍率。
 
-创意工坊默认连接 `http://localhost:15555`，可在「系统设置 → 创意工坊」换成正式地址。首次进入会展示第三方模组说明，同意后才会连接工坊服务；关闭说明只对本次生效，下次进入会再次询问。模组包由作者托管，玩具箱只负责下载、校验 SHA-256 并安装；随附的内置模组不能从创意工坊安装或覆盖。
+市场默认连接 `https://forge.hiynet.com`，可在「系统设置 → 市场」换成其它部署地址。首次进入会展示第三方模组说明，同意后才会连接市场服务；关闭说明只对本次生效，下次进入会再次询问。模组包由作者托管，工具箱只负责下载、校验 SHA-256 并安装；随附的内置模组不能从市场安装或覆盖。
 
 ### 动态卡面
 
@@ -91,7 +91,7 @@ CesiumLoader 随附 16 个内置模组：行为日志、自由相机、变速热
 | 回放库与工具配置 | `%USERPROFILE%\Documents\AstralPartyReplays` |
 | 游戏回放缓存（国服） | `%USERPROFILE%\AppData\LocalLow\feimo\AstralParty_CN\Temp\Replay` |
 | WebView2 数据 | `%LOCALAPPDATA%\AstralParty.Toys\WebView2` |
-| 创意工坊封面缓存 | `%LOCALAPPDATA%\AstralParty.Toys\workshop-covers` |
+| 市场封面缓存 | `%LOCALAPPDATA%\AstralParty.Toys\workshop-covers` |
 | 加载器、模组与日志 | 游戏目录下的 `version.dll` 与 `AstralParty_ModLoader\` |
 | 资源模组与备份 | 游戏目录下的 `AstralParty_ResourceMods\` |
 

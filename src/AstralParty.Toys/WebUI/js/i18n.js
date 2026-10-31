@@ -18,7 +18,7 @@
       'nav.mods': '模组',
       'nav.skins': '皮肤',
       'nav.wiki': '维基攻略',
-      'nav.workshop': '创意工坊',
+      'nav.workshop': '市场',
       'nav.settings': '系统设置',
       'nav.version_tooltip': '查看详细版本信息',
 
@@ -263,18 +263,18 @@
 
       // Workshop
       'workshop.tagline': '社区模组目录 · 下载 / 校验 / 一键安装',
-      'workshop.consent_title': '使用创意工坊前请阅读',
-      'workshop.consent_lead': '创意工坊里的模组由其他玩家开发，不属于玩具箱或加载器的官方内容。',
-      'workshop.consent_point_third_party': '模组的内容、行为与后续更新由作者负责，玩具箱与加载器作者不承担任何责任。',
+      'workshop.consent_title': '使用市场前请阅读',
+      'workshop.consent_lead': '市场里的模组由其他玩家开发，不属于工具箱或加载器的官方内容。',
+      'workshop.consent_point_third_party': '模组的内容、行为与后续更新由作者负责，工具箱与加载器作者不承担任何责任。',
       'workshop.consent_point_risk': '安装第三方模组可能影响游戏稳定性、账号或存档，请自行评估风险。',
-      'workshop.consent_point_network': '继续使用会连接创意工坊服务；下载的模组包会先校验 SHA-256，通过后才会安装。',
+      'workshop.consent_point_network': '继续使用会连接市场服务；下载的模组包会先校验 SHA-256，通过后才会安装。',
       'workshop.consent_agree': '同意并继续',
       'workshop.consent_agreeing': '正在启用…',
       'workshop.consent_skip': '本次不用',
-      'workshop.consent_blocked_title': '本次未启用创意工坊',
-      'workshop.consent_blocked_body': '你关闭了说明弹窗，本次不会连接工坊服务。重新查看说明即可启用。',
+      'workshop.consent_blocked_title': '本次未启用市场',
+      'workshop.consent_blocked_body': '你关闭了说明弹窗，本次不会连接市场服务。重新查看说明即可启用。',
       'workshop.consent_open': '查看说明',
-      'workshop.consent_granted': '已启用创意工坊。',
+      'workshop.consent_granted': '已启用市场。',
       'workshop.downloads_7d': '近 7 天 {count}',
       'workshop.version_downloads': '下载 {count}',
       'workshop.install_toast_title': '正在安装 {name}',
@@ -287,7 +287,7 @@
       'workshop.sort_updated': '最近更新',
       'workshop.sort_name': '名称',
       'workshop.sort_downloads': '下载量',
-      'workshop.loading': '正在读取创意工坊…',
+      'workshop.loading': '正在读取市场…',
       'workshop.empty': '这里还没有模组。',
       'workshop.error': '无法加载模组目录',
       'workshop.retry': '重试',
@@ -353,10 +353,10 @@
       'workshop.perm_debug': '调试接口',
 
       // Workshop settings
-      'settings.workshop': '创意工坊',
+      'settings.workshop': '市场',
       'settings.workshop_note': '模组目录由 Forge 提供；模组包仍由作者托管，下载后会校验 SHA-256。',
-      'settings.workshop_url': '工坊地址',
-      'settings.workshop_url_hint': '默认 http://localhost:15555；正式地址发布后在这里替换，留空或格式不正确会回退到默认值。'
+      'settings.workshop_url': '市场地址',
+      'settings.workshop_url_hint': '默认 https://forge.hiynet.com；留空或格式不正确会回退到默认值。'
     },
 
     'en': {
@@ -367,7 +367,7 @@
       'nav.mods': 'Mods',
       'nav.skins': 'Skins',
       'nav.wiki': 'Wiki',
-      'nav.workshop': 'Workshop',
+      'nav.workshop': 'Market',
       'nav.settings': 'Settings',
       'nav.version_tooltip': 'View detailed version info',
 
@@ -612,18 +612,18 @@
 
       // Workshop
       'workshop.tagline': 'Community mod catalog · download / verify / install',
-      'workshop.consent_title': 'Read before using the workshop',
-      'workshop.consent_lead': 'Mods in the workshop are built by other players and are not official AstralParty Toys or loader content.',
-      'workshop.consent_point_third_party': 'The author is responsible for what a mod does and how it is updated. The Toys and loader authors accept no responsibility.',
+      'workshop.consent_title': 'Read before using the market',
+      'workshop.consent_lead': 'Mods in the market are built by other players and are not official AstralParty Toys or loader content.',
+      'workshop.consent_point_third_party': 'The author is responsible for what a mod does and how it is updated. The AstralParty Toys and loader authors accept no responsibility.',
       'workshop.consent_point_risk': 'Installing third-party mods can affect game stability, your account or your saves. Please judge the risk yourself.',
-      'workshop.consent_point_network': 'Continuing connects to the workshop service. Downloaded packages are verified against SHA-256 before installation.',
+      'workshop.consent_point_network': 'Continuing connects to the market service. Downloaded packages are verified against SHA-256 before installation.',
       'workshop.consent_agree': 'Agree and continue',
       'workshop.consent_agreeing': 'Enabling…',
       'workshop.consent_skip': 'Not now',
-      'workshop.consent_blocked_title': 'Workshop is off for now',
-      'workshop.consent_blocked_body': 'You closed the notice, so nothing will connect to the workshop in this session. Open the notice again to enable it.',
+      'workshop.consent_blocked_title': 'Market is off for now',
+      'workshop.consent_blocked_body': 'You closed the notice, so nothing will connect to the market in this session. Open the notice again to enable it.',
       'workshop.consent_open': 'View notice',
-      'workshop.consent_granted': 'Workshop enabled.',
+      'workshop.consent_granted': 'Market enabled.',
       'workshop.downloads_7d': 'Last 7 days {count}',
       'workshop.version_downloads': '{count} downloads',
       'workshop.install_toast_title': 'Installing {name}',
@@ -636,7 +636,7 @@
       'workshop.sort_updated': 'Recently updated',
       'workshop.sort_name': 'Name',
       'workshop.sort_downloads': 'Downloads',
-      'workshop.loading': 'Loading the workshop…',
+      'workshop.loading': 'Loading the market…',
       'workshop.empty': 'No mods here yet.',
       'workshop.error': 'Could not load the mod catalog',
       'workshop.retry': 'Retry',
@@ -702,10 +702,10 @@
       'workshop.perm_debug': 'Debug hooks',
 
       // Workshop settings
-      'settings.workshop': 'Workshop',
+      'settings.workshop': 'Market',
       'settings.workshop_note': 'The catalog is provided by Forge; mod packages stay on the author’s host and are verified against SHA-256 after download.',
-      'settings.workshop_url': 'Workshop address',
-      'settings.workshop_url_hint': 'Defaults to http://localhost:15555. Replace it once the public address is available; blank or invalid values fall back to the default.'
+      'settings.workshop_url': 'Market address',
+      'settings.workshop_url_hint': 'Defaults to https://forge.hiynet.com. A blank or invalid value falls back to the default.'
     },
 
     'ja': {
@@ -716,7 +716,7 @@
       'nav.mods': 'Mod管理',
       'nav.skins': 'スキン',
       'nav.wiki': '攻略Wiki',
-      'nav.workshop': 'クリエイティブ工房',
+      'nav.workshop': 'マーケット',
       'nav.settings': '設定',
       'nav.version_tooltip': 'バージョン詳細を確認',
 
@@ -961,18 +961,18 @@
 
       // Workshop
       'workshop.tagline': 'コミュニティMODカタログ · ダウンロード / 検証 / インストール',
-      'workshop.consent_title': 'クリエイティブ工房を使う前に',
-      'workshop.consent_lead': '工房のMODは他のプレイヤーが制作したもので、AstralParty Toys やローダーの公式コンテンツではありません。',
-      'workshop.consent_point_third_party': 'MODの内容・動作・更新は作者の責任です。Toys とローダーの作者は一切責任を負いません。',
+      'workshop.consent_title': 'マーケットを使う前に',
+      'workshop.consent_lead': 'マーケットのMODは他のプレイヤーが制作したもので、AstralParty Toys やローダーの公式コンテンツではありません。',
+      'workshop.consent_point_third_party': 'MODの内容・動作・更新は作者の責任です。AstralParty Toys とローダーの作者は一切責任を負いません。',
       'workshop.consent_point_risk': 'サードパーティMODのインストールはゲームの安定性・アカウント・セーブに影響する可能性があります。自己判断でお願いします。',
-      'workshop.consent_point_network': '続行すると工房サービスに接続します。ダウンロードしたパッケージは SHA-256 で検証してからインストールします。',
+      'workshop.consent_point_network': '続行するとマーケットサービスに接続します。ダウンロードしたパッケージは SHA-256 で検証してからインストールします。',
       'workshop.consent_agree': '同意して続行',
       'workshop.consent_agreeing': '有効化中…',
       'workshop.consent_skip': '今回は使わない',
-      'workshop.consent_blocked_title': '今回は工房を有効にしていません',
-      'workshop.consent_blocked_body': '説明を閉じたため、今回は工房に接続しません。もう一度説明を開くと有効にできます。',
+      'workshop.consent_blocked_title': '今回はマーケットを有効にしていません',
+      'workshop.consent_blocked_body': '説明を閉じたため、今回はマーケットに接続しません。もう一度説明を開くと有効にできます。',
       'workshop.consent_open': '説明を見る',
-      'workshop.consent_granted': 'クリエイティブ工房を有効にしました。',
+      'workshop.consent_granted': 'マーケットを有効にしました。',
       'workshop.downloads_7d': '過去7日 {count}',
       'workshop.version_downloads': 'ダウンロード {count}',
       'workshop.install_toast_title': '{name} をインストール中',
@@ -985,7 +985,7 @@
       'workshop.sort_updated': '更新が新しい順',
       'workshop.sort_name': '名前',
       'workshop.sort_downloads': 'ダウンロード数',
-      'workshop.loading': 'クリエイティブ工房を読み込み中…',
+      'workshop.loading': 'マーケットを読み込み中…',
       'workshop.empty': 'まだMODがありません。',
       'workshop.error': 'MODカタログを読み込めません',
       'workshop.retry': '再試行',
@@ -1051,10 +1051,10 @@
       'workshop.perm_debug': 'デバッグ機能',
 
       // Workshop settings
-      'settings.workshop': 'クリエイティブ工房',
+      'settings.workshop': 'マーケット',
       'settings.workshop_note': 'カタログは Forge が提供します。MODパッケージは作者のホストにあり、ダウンロード後に SHA-256 で検証します。',
-      'settings.workshop_url': '工房アドレス',
-      'settings.workshop_url_hint': '既定は http://localhost:15555 です。公開アドレスが決まったらここで変更してください。空欄や不正な値は既定値に戻ります。'
+      'settings.workshop_url': 'マーケットアドレス',
+      'settings.workshop_url_hint': '既定は https://forge.hiynet.com です。空欄や不正な値は既定値に戻ります。'
     },
 
     'zh-Hant': {
@@ -1065,7 +1065,7 @@
       'nav.mods': '模組',
       'nav.skins': '皮膚',
       'nav.wiki': '維基攻略',
-      'nav.workshop': '創意工坊',
+      'nav.workshop': '市場',
       'nav.settings': '系統設定',
       'nav.version_tooltip': '查看詳細版本資訊',
 
@@ -1310,18 +1310,18 @@
 
       // Workshop
       'workshop.tagline': '社群模組目錄 · 下載 / 校驗 / 一鍵安裝',
-      'workshop.consent_title': '使用創意工坊前請閱讀',
-      'workshop.consent_lead': '創意工坊裡的模組由其他玩家開發，不屬於玩具箱或載入器的官方內容。',
-      'workshop.consent_point_third_party': '模組的內容、行為與後續更新由作者負責，玩具箱與載入器作者不承擔任何責任。',
+      'workshop.consent_title': '使用市場前請閱讀',
+      'workshop.consent_lead': '市場裡的模組由其他玩家開發，不屬於工具箱或載入器的官方內容。',
+      'workshop.consent_point_third_party': '模組的內容、行為與後續更新由作者負責，工具箱與載入器作者不承擔任何責任。',
       'workshop.consent_point_risk': '安裝第三方模組可能影響遊戲穩定性、帳號或存檔，請自行評估風險。',
-      'workshop.consent_point_network': '繼續使用會連線創意工坊服務；下載的模組包會先校驗 SHA-256，通過後才會安裝。',
+      'workshop.consent_point_network': '繼續使用會連線市場服務；下載的模組包會先校驗 SHA-256，通過後才會安裝。',
       'workshop.consent_agree': '同意並繼續',
       'workshop.consent_agreeing': '正在啟用…',
       'workshop.consent_skip': '本次不用',
-      'workshop.consent_blocked_title': '本次未啟用創意工坊',
-      'workshop.consent_blocked_body': '你關閉了說明彈窗，本次不會連線工坊服務。重新查看說明即可啟用。',
+      'workshop.consent_blocked_title': '本次未啟用市場',
+      'workshop.consent_blocked_body': '你關閉了說明彈窗，本次不會連線市場服務。重新查看說明即可啟用。',
       'workshop.consent_open': '查看說明',
-      'workshop.consent_granted': '已啟用創意工坊。',
+      'workshop.consent_granted': '已啟用市場。',
       'workshop.downloads_7d': '近 7 天 {count}',
       'workshop.version_downloads': '下載 {count}',
       'workshop.install_toast_title': '正在安裝 {name}',
@@ -1334,7 +1334,7 @@
       'workshop.sort_updated': '最近更新',
       'workshop.sort_name': '名稱',
       'workshop.sort_downloads': '下載量',
-      'workshop.loading': '正在讀取創意工坊…',
+      'workshop.loading': '正在讀取市場…',
       'workshop.empty': '這裡還沒有模組。',
       'workshop.error': '無法載入模組目錄',
       'workshop.retry': '重試',
@@ -1400,10 +1400,10 @@
       'workshop.perm_debug': '偵錯介面',
 
       // Workshop settings
-      'settings.workshop': '創意工坊',
+      'settings.workshop': '市場',
       'settings.workshop_note': '模組目錄由 Forge 提供；模組套件仍由作者託管，下載後會校驗 SHA-256。',
-      'settings.workshop_url': '工坊位址',
-      'settings.workshop_url_hint': '預設 http://localhost:15555；正式位址發布後在這裡替換，留空或格式不正確會回到預設值。'
+      'settings.workshop_url': '市場位址',
+      'settings.workshop_url_hint': '預設 https://forge.hiynet.com；留空或格式不正確會回到預設值。'
     }
   };
 
