@@ -4,7 +4,7 @@
 
 ## 感谢您选择 AstralParty.Toys！
 
-### 反馈问题与建议：企鹅群 **1078464597**
+### 反馈问题与建议：企鹅群 **1078464597** ｜ [Discord](https://discord.gg/SZaYSwGX94)
 
 <img width="128" height="128" alt="UT_AccountHeadShot_70902" src="https://github.com/user-attachments/assets/5033cec1-86a9-41ef-8bda-af56f36a3a0e" />
 
@@ -117,7 +117,7 @@ dotnet publish src/AstralParty.Toys/AstralParty.Toys.csproj -c Release -r win-x6
 
 ## 交流与许可
 
-企鹅：**1078464597**。反馈问题时可在程序「版本信息」中复制构建与环境信息。
+企鹅：**1078464597** ／ Discord：<https://discord.gg/SZaYSwGX94>。反馈问题时可在程序「版本信息」中复制构建与环境信息。
 
 原创代码以 [GNU AGPL-3.0](LICENSE) 发布。Copyright © 2026 Yume Higashitani。
 
