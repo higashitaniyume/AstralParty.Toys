@@ -201,13 +201,14 @@ public sealed class ReplayLibraryService
 
     public void SaveSettings(ReplayLibrarySettings settings)
     {
-        var prevLang = Settings?.Language;
+        var current = Settings;
+        var prevLang = current.Language;
         var normalized = Normalize(settings);
         // 同意记录没有撤销入口：普通设置保存（语言、库目录、市场地址）不能把它抹掉。
-        if (normalized.WorkshopConsentVersion < Settings.WorkshopConsentVersion)
+        if (normalized.WorkshopConsentVersion < current.WorkshopConsentVersion)
         {
-            normalized.WorkshopConsentVersion = Settings.WorkshopConsentVersion;
-            normalized.WorkshopConsentAt ??= Settings.WorkshopConsentAt;
+            normalized.WorkshopConsentVersion = current.WorkshopConsentVersion;
+            normalized.WorkshopConsentAt ??= current.WorkshopConsentAt;
         }
 
         Settings = normalized;
