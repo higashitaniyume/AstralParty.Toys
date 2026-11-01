@@ -1,0 +1,10 @@
+{
+  "id": "PveWaveForecastMod",
+  "name": "PVE 波次预告",
+  "version": "1.1.0",
+  "author": "CesiumLoader",
+  "description": "在 PVE 地图上按回合显示任务波次的刷新内容与地块预告，默认 O 键开关",
+  "permissions": 1,
+  "sdkVersion": "2.8.6",
+  "dependencies": []
+}
