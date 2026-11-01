@@ -1,0 +1,182 @@
+/* markdown.css —— README / 更新说明的 GitHub 风格排版。
+ *
+ * 结构来自 vendor/github-markdown-dark.css 与 vendor/highlight-github-dark.min.css，
+ * 这里只把底色、字体和链接色接回工具箱自己的主题。
+ */
+
+.markdown-body {
+  background: transparent;
+  color: var(--gp-text-sub);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.7;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.markdown-body > :first-child {
+  margin-top: 0 !important;
+}
+
+.markdown-body > :last-child {
+  margin-bottom: 0 !important;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  color: var(--gp-text-main);
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.markdown-body h1,
+.markdown-body h2 {
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.markdown-body h1 {
+  font-size: 1.6em;
+}
+
+.markdown-body h2 {
+  font-size: 1.35em;
+}
+
+.markdown-body h3 {
+  font-size: 1.15em;
+}
+
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  font-size: 1em;
+}
+
+.markdown-body a {
+  color: var(--gp-blue);
+  text-decoration: none;
+}
+
+.markdown-body a:hover {
+  text-decoration: underline;
+}
+
+.markdown-body strong {
+  color: var(--gp-text-main);
+}
+
+.markdown-body hr {
+  height: 1px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.markdown-body blockquote {
+  margin: 0 0 14px;
+  padding: 2px 14px;
+  border-left: 3px solid rgba(56, 189, 248, 0.45);
+  border-radius: 0 6px 6px 0;
+  background: rgba(56, 189, 248, 0.06);
+  color: var(--gp-text-muted);
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  padding-left: 1.6em;
+}
+
+.markdown-body li + li {
+  margin-top: 0.25em;
+}
+
+.markdown-body li.task-list-item {
+  list-style: none;
+}
+
+.markdown-body li.task-list-item input[type='checkbox'] {
+  margin: 0 0.4em 0 -1.3em;
+  vertical-align: middle;
+  accent-color: var(--gp-blue);
+}
+
+.markdown-body code {
+  padding: 0.15em 0.4em;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fbcfe8;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.92em;
+}
+
+.markdown-body pre {
+  overflow: auto;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--gp-radius-md);
+  background: rgba(8, 11, 20, 0.75);
+}
+
+.markdown-body pre code {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* highlight.js 的主题会给 .hljs 铺一层深色底，这里跟着容器走。 */
+.markdown-body pre code.hljs {
+  background: transparent;
+  padding: 0;
+}
+
+.markdown-body table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow: auto;
+  border-collapse: collapse;
+  margin: 0 0 16px;
+}
+
+.markdown-body th,
+.markdown-body td {
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.markdown-body th {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--gp-text-main);
+  font-weight: 600;
+}
+
+.markdown-body tr:nth-child(2n) td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.markdown-body img {
+  max-width: 100%;
+  border-radius: var(--gp-radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.markdown-body .workshop-md-fallback {
+  white-space: pre-wrap;
+}
+
+/* 详情页里的 README 容器 */
+.workshop-readme {
+  padding: 18px 20px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-md);
+  background: rgba(255, 255, 255, 0.02);
+}

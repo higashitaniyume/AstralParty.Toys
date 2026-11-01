@@ -11,6 +11,9 @@
     <link rel="stylesheet" href="css/settings.css" />
     <link rel="stylesheet" href="css/utilities.css" />
     <link rel="stylesheet" href="css/mods.css" />
+    <link rel="stylesheet" href="vendor/github-markdown-dark.css" />
+    <link rel="stylesheet" href="vendor/highlight-github-dark.min.css" />
+    <link rel="stylesheet" href="css/markdown.css" />
     <link rel="stylesheet" href="css/workshop.css" />
     <link rel="stylesheet" href="css/skins.css" />
     <link rel="stylesheet" href="css/resource-mods.css" />
@@ -1342,6 +1345,28 @@
           </div>
         </section>
 
+        <!-- 4.4.1 WORKSHOP DETAIL VIEW (one mod, full metadata) -->
+        <section id="workshopDetailView" class="page-view workshop-page workshop-detail-page hidden">
+          <div class="utilities-header workshop-header">
+            <div class="utilities-title-group">
+              <button class="back-btn" id="workshopDetailBackBtn" data-i18n="workshop.back_to_list">
+                ‹ 返回市场
+              </button>
+              <h2 id="workshopDetailTitle" data-i18n="workshop.detail_title">模组详情</h2>
+              <span class="utilities-tagline" id="workshopDetailSource"></span>
+            </div>
+            <div class="utilities-header-actions">
+              <button class="secondary-btn" id="workshopDetailRefreshBtn">
+                <span class="mi" data-icon="refresh"></span>
+                <span data-i18n="common.refresh">刷新</span>
+              </button>
+            </div>
+          </div>
+          <div class="workshop-scroll" id="workshopDetailScroll">
+            <div id="workshopDetailContent" class="workshop-detail-content" aria-live="polite"></div>
+          </div>
+        </section>
+
         <!-- 4.5. SKINS VIEW (Card Skin Profiles & Management) -->
         <section id="skinsView" class="page-view skins-page hidden">
           <div class="utilities-header skins-header">
@@ -2127,6 +2152,10 @@
     <script src="js/settings.js"></script>
     <script src="js/utilities.js"></script>
     <script src="js/mods.js"></script>
+    <script src="vendor/marked.umd.js"></script>
+    <script src="vendor/purify.min.js"></script>
+    <script src="vendor/highlight.min.js"></script>
+    <script src="js/markdown.js"></script>
     <script src="js/workshop.js"></script>
     <link rel="stylesheet" href="css/character-skins.css" />
     <script src="js/character-schemes.js"></script>

@@ -235,6 +235,10 @@ public sealed class WorkshopServiceTests
           "description": "详细说明",
           "author": "某人",
           "tags": ["界面"],
+          "repositoryUrl": "https://github.com/a/hand-viewer",
+          "license": "AGPL-3.0",
+          "licenseText": "GNU AFFERO GENERAL PUBLIC LICENSE",
+          "readme": "# 手牌查看器",
           "coverUrl": "/api/mods/HandViewerMod/cover?v=abc12345",
           "featured": false,
           "latestVersion": "2.0.0",
@@ -242,6 +246,8 @@ public sealed class WorkshopServiceTests
           "versions": [{
             "version": "2.0.0",
             "downloadUrl": "/api/mods/HandViewerMod/download?v=2.0.0",
+            "sourceUrl": "https://github.com/a/b/releases/download/v2.0.0/HandViewerMod.zip",
+            "hosted": false,
             "sha256": "abc123",
             "sizeBytes": 4096,
             "sdkVersion": "2.5.1",
@@ -261,6 +267,13 @@ public sealed class WorkshopServiceTests
         Assert.Equal(3, version.Permissions);
         Assert.Equal("/api/mods/HandViewerMod/download?v=2.0.0", version.DownloadUrl);
         Assert.Equal("LanguageUnlockMod", Assert.Single(version.Dependencies).Id);
+        // 详情页要用的元信息也要完整取回来。
+        Assert.Equal("https://github.com/a/hand-viewer", detail.RepositoryUrl);
+        Assert.Equal("AGPL-3.0", detail.License);
+        Assert.Equal("GNU AFFERO GENERAL PUBLIC LICENSE", detail.LicenseText);
+        Assert.Equal("# 手牌查看器", detail.Readme);
+        Assert.Equal("https://github.com/a/b/releases/download/v2.0.0/HandViewerMod.zip", version.SourceUrl);
+        Assert.False(version.Hosted);
     }
 
     [Fact]

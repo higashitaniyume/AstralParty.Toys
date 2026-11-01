@@ -209,21 +209,18 @@ body:not(.reduce-motion) #workshopView:not(.page-entering) .workshop-scroll {
   overflow: hidden;
 }
 
+/* 封面必须完整显示：按原比例缩放，留出的空隙用容器的渐变底填充。
+   不做 hover 放大，否则边缘会被容器裁掉。 */
 .workshop-cover img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
-  transition: transform 0.3s ease;
 }
 
 .workshop-cover:focus-visible {
   outline: 2px solid var(--gp-blue);
   outline-offset: -2px;
-}
-
-.workshop-card:hover .workshop-cover img {
-  transform: scale(1.03);
 }
 
 .workshop-cover-fallback {
@@ -462,10 +459,11 @@ body:not(.reduce-motion) #workshopView:not(.page-entering) .workshop-scroll {
   background: linear-gradient(135deg, rgba(255, 23, 118, 0.18), rgba(56, 189, 248, 0.12));
 }
 
+/* 详情页同样完整显示封面，不裁切。 */
 .workshop-detail-cover img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .workshop-detail-cover .workshop-cover-fallback {
@@ -1073,4 +1071,243 @@ body:not(.reduce-motion) #workshopView:not(.page-entering) .workshop-scroll {
     flex: 0 0 auto;
     width: 100%;
   }
+}
+
+/* ============================== 详情页 ============================== */
+
+.workshop-detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 20px 26px 34px;
+}
+
+.workshop-detail-page .workshop-detail-hero {
+  padding: 18px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-lg);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.workshop-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--gp-border);
+}
+
+.workshop-tab {
+  flex: 0 0 auto;
+  padding: 9px 16px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--gp-text-muted);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.workshop-tab:hover {
+  color: var(--gp-text-sub);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.workshop-tab.is-active {
+  border-bottom-color: var(--gp-pink);
+  color: var(--gp-text-main);
+}
+
+.workshop-tab:focus-visible {
+  outline: 2px solid var(--gp-blue);
+  outline-offset: -2px;
+}
+
+.workshop-tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.workshop-tab-panel[hidden] {
+  display: none;
+}
+
+.workshop-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px 24px;
+  margin: 0;
+  padding: 16px 18px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-md);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.workshop-fact {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.workshop-fact dt {
+  flex: 0 0 auto;
+  color: var(--gp-text-muted);
+}
+
+.workshop-fact dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--gp-text-sub);
+  overflow-wrap: anywhere;
+}
+
+.workshop-fact dd.is-mono {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.workshop-fact dd a {
+  color: var(--gp-blue);
+  text-decoration: none;
+}
+
+.workshop-fact dd a:hover {
+  text-decoration: underline;
+}
+
+.workshop-detail-section {
+  padding: 16px 18px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-md);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.workshop-detail-section h4 {
+  margin: 0;
+  color: var(--gp-text-main);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.workshop-download-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.workshop-download-link {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--gp-blue);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11.5px;
+  text-decoration: none;
+}
+
+.workshop-download-link:hover {
+  text-decoration: underline;
+}
+
+.workshop-download-note {
+  color: var(--gp-text-muted);
+  font-size: 12px;
+}
+
+.workshop-detail-text {
+  margin: 10px 0 0;
+  white-space: pre-line;
+  color: var(--gp-text-sub);
+  font-size: 13px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.workshop-panel-empty {
+  margin: 0;
+  padding: 26px 18px;
+  border: 1px dashed var(--gp-border);
+  border-radius: var(--gp-radius-md);
+  color: var(--gp-text-muted);
+  font-size: 12.5px;
+  text-align: center;
+}
+
+.workshop-version-notes.markdown-body {
+  margin-top: 10px;
+  white-space: normal;
+}
+
+.workshop-version-notes.is-empty {
+  color: var(--gp-text-muted);
+}
+
+.workshop-license-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.workshop-license-tag {
+  padding: 2px 9px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-full);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--gp-text-sub);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11px;
+}
+
+.workshop-license-text {
+  max-height: 460px;
+  margin: 12px 0 0;
+  overflow: auto;
+  padding: 14px 16px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  background: rgba(8, 11, 20, 0.7);
+  color: var(--gp-text-sub);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11.5px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* 详情页的封面按图片自身比例撑开，不套固定画框：横图、方图、竖图都不会被裁，
+   也不会在上下留出一条明显的空带（列表卡片仍保持统一 16:9，方便排版）。 */
+.workshop-detail-page .workshop-detail-hero .workshop-detail-cover {
+  flex-basis: 300px;
+  aspect-ratio: auto;
+  height: auto;
+  min-height: 150px;
+}
+
+.workshop-detail-page .workshop-detail-cover img {
+  width: 100%;
+  height: auto;
+  max-height: 360px;
+  object-fit: contain;
+}
+
+.workshop-detail-hero .workshop-detail-main h3 {
+  font-size: 21px;
+}
+
+/* 详情页自己控制内边距，滚动容器不要再加一层。 */
+.workshop-detail-page .workshop-scroll {
+  padding: 0;
+}
+
+.workshop-detail-content .workshop-empty {
+  margin: 48px auto;
 }

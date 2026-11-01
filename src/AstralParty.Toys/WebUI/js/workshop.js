@@ -16,6 +16,12 @@
     tag: '',
     sort: 'updated',
     detail: null,
+    detailId: '',
+    detailTab: 'details',
+    detailError: '',
+    listScrollTop: 0,
+    pendingListScroll: null,
+    mdCache: new Map(),
     installingId: '',
     installName: '',
     installVersion: '',
@@ -24,7 +30,6 @@
     installPhase: '',
     progress: null,
     pendingPage: 0,
-    pendingDetailId: '',
     consent: 'unknown',
     details: new Map()
   };
@@ -439,27 +444,431 @@
     });
   }
 
+  // ============================== 模组详情页 ==============================
+
+  function skipMarkdown(markdown) {
+    return String(markdown || '').trim();
+  }
+
+  /** README / 更新说明按模组缓存渲染结果，切 tab 时不重复解析。 */
+  function markdownHtml(key, markdown) {
+    if (!skipMarkdown(markdown)) return '';
+
+    const cached = state.mdCache.get(key);
+    if (cached !== undefined) return cached;
+
+    let html = '';
+    try {
+      html = window.Markdown?.render(markdown) || '';
+    } catch {
+      html = `<pre class="workshop-md-fallback">${esc(markdown)}</pre>`;
+    }
+
+    state.mdCache.set(key, html);
+    return html;
+  }
+
+  /** 市场数据不可全信：只有 http(s) 才允许变成可点击链接。 */
+  function externalUrl(value) {
+    const text = String(value || '').trim();
+    return /^https?:\/\//i.test(text) ? text : '';
+  }
+
   function openDetail(id) {
     if (state.consent !== 'granted') {
       openConsentModal();
       return;
     }
+    if (!id) return;
+
+    const listScroll = document.querySelector('#workshopView .workshop-scroll');
+    state.listScrollTop = listScroll ? listScroll.scrollTop : 0;
+    state.detailId = id;
+    state.detailTab = 'details';
+    state.detailError = '';
 
     const cached = state.details.get(id);
-    if (cached) {
-      state.detail = cached;
-      showDetailModal(cached);
+    state.detail = cached || null;
+
+    showPage('workshopDetail');
+    renderDetailPage();
+
+    if (!cached) post({ type: 'workshopDetail', id });
+  }
+
+  function backToList() {
+    showPage('workshop');
+  }
+
+  function requestDetail(id) {
+    state.detailError = '';
+    state.detailId = id;
+    state.detail = null;
+    renderDetailPage();
+    post({ type: 'workshopDetail', id });
+  }
+
+  function detailActionMarkup(mod) {
+    const installing = state.installingId === mod.id;
+    const action = actionFor(mod);
+    const latest = mod.latestVersion || '';
+
+    if (mod.builtIn) {
+      return `<span class="workshop-chip is-builtin">${esc(t('workshop.builtin'))}</span>`;
+    }
+    if (installing) {
+      return `<button class="secondary-btn is-busy" id="workshopDetailCancelBtn" type="button">${esc(
+        t('workshop.cancel')
+      )}</button>`;
+    }
+    if (action.disabled) {
+      return `<button class="secondary-btn" type="button" disabled>${esc(action.label)}</button>`;
+    }
+    return `<button class="primary-btn" type="button" data-install="${esc(mod.id)}" data-version="${esc(
+      latest
+    )}">${esc(action.label)}</button>`;
+  }
+
+  function detailFacts(mod) {
+    const latest = (mod.versions || []).find(version => version.version === mod.latestVersion);
+    const dependencies = Array.isArray(latest?.dependencies) ? latest.dependencies : [];
+    const permissions = describePermissions(latest?.permissions || 0);
+
+    const fact = (label, value, extra) =>
+      `<div class="workshop-fact"><dt>${esc(label)}</dt><dd${
+        extra ? ` class="${extra}"` : ''
+      }>${value}</dd></div>`;
+
+    const repositoryUrl = externalUrl(mod.repositoryUrl);
+    const repository = repositoryUrl
+      ? `<a href="${esc(repositoryUrl)}" target="_blank" rel="noopener noreferrer" title="${esc(
+          repositoryUrl
+        )}">${esc(repositoryUrl)}</a>`
+      : esc(t('workshop.not_provided'));
+
+    return `
+      <dl class="workshop-facts">
+        ${fact(t('workshop.mod_id'), esc(mod.id), 'is-mono')}
+        ${fact(t('workshop.author'), esc(mod.author || t('workshop.anonymous')))}
+        ${fact(t('workshop.latest'), latest ? `v${esc(latest.version)}` : '—', 'is-mono')}
+        ${fact(t('workshop.package_size'), latest ? formatBytes(latest.sizeBytes) : '—')}
+        ${fact(t('workshop.downloads'), fmt(mod.downloads))}
+        ${fact(t('workshop.updated'), formatDate(mod.updatedAt))}
+        ${fact(t('workshop.repository'), repository)}
+        ${fact(
+          t('workshop.license'),
+          esc(mod.license || t('workshop.license_none')),
+          mod.license ? 'is-mono' : ''
+        )}
+        ${latest ? fact(t('workshop.sdk'), esc(latest.sdkVersion || t('workshop.undeclared'))) : ''}
+        ${
+          permissions.length
+            ? fact(t('workshop.permissions'), esc(permissions.join(' / ')))
+            : ''
+        }
+        ${
+          dependencies.length
+            ? fact(
+                t('workshop.dependencies'),
+                esc(
+                  dependencies
+                    .map(dependency =>
+                      dependency.minVersion
+                        ? `${dependency.id} ≥ ${dependency.minVersion}`
+                        : dependency.id
+                    )
+                    .join(' / ')
+                )
+              )
+            : ''
+        }
+        ${fact(
+          t('workshop.hosting'),
+          esc(latest?.hosted ? t('workshop.hosted_by_market') : t('workshop.hosted_by_author'))
+        )}
+      </dl>
+    `;
+  }
+
+  function detailDownloadBlock(mod) {
+    const latest = (mod.versions || []).find(version => version.version === mod.latestVersion);
+    if (!latest) return '';
+
+    const sourceUrl = externalUrl(latest.sourceUrl);
+    const source = latest.hosted || !sourceUrl
+      ? `<span class="workshop-download-note">${esc(t('workshop.hosted_by_market_hint'))}</span>`
+      : `<a class="workshop-download-link" href="${esc(sourceUrl)}" target="_blank" rel="noopener noreferrer" title="${esc(
+          sourceUrl
+        )}">${esc(sourceUrl)}</a>`;
+
+    return `
+      <section class="workshop-detail-section">
+        <h4>${esc(t('workshop.download_address'))}</h4>
+        <div class="workshop-download-row">${source}</div>
+        <code class="workshop-sha" title="${esc(latest.sha256)}">SHA-256 ${esc(latest.sha256)}</code>
+      </section>
+    `;
+  }
+
+  function detailDescriptionBlock(mod) {
+    return `
+      <section class="workshop-detail-section">
+        <h4>${esc(t('workshop.description'))}</h4>
+        <p class="workshop-detail-text">${esc(mod.description || t('workshop.no_description'))}</p>
+      </section>
+    `;
+  }
+
+  function detailVersionNotes(version) {
+    const html = markdownHtml(`${state.detailId}:${version.version}`, version.changelog);
+    return html
+      ? `<div class="workshop-version-notes markdown-body">${html}</div>`
+      : `<p class="workshop-version-notes is-empty">${esc(t('workshop.no_changelog'))}</p>`;
+  }
+
+  function detailVersionsPanel(mod) {
+    const versions = Array.isArray(mod.versions) ? mod.versions : [];
+    const latest = mod.latestVersion || '';
+    const canInstall = !mod.builtIn;
+
+    if (!versions.length) {
+      return `<p class="workshop-panel-empty">${esc(t('workshop.no_versions'))}</p>`;
+    }
+
+    return versions
+      .map(version => {
+        const permissions = describePermissions(version.permissions);
+        const dependencies = Array.isArray(version.dependencies) ? version.dependencies : [];
+        const isLatest = version.version === latest;
+
+        return `
+          <div class="workshop-version-row">
+            <div class="workshop-version-head">
+              <strong>v${esc(version.version)}</strong>
+              ${isLatest ? `<span class="workshop-mini-badge">${esc(t('workshop.latest'))}</span>` : ''}
+              <span class="workshop-version-date">${formatDate(version.publishedAt)}</span>
+              <span class="workshop-version-size">${formatBytes(version.sizeBytes)}</span>
+              <span class="workshop-version-size">${esc(
+                t('workshop.version_downloads', { count: fmt(version.downloads) })
+              )}</span>
+              ${
+                canInstall
+                  ? `<button class="secondary-btn workshop-version-install" data-install="${esc(
+                      mod.id
+                    )}" data-version="${esc(version.version)}" type="button">${esc(
+                      t('workshop.install')
+                    )}</button>`
+                  : ''
+              }
+            </div>
+            ${detailVersionNotes(version)}
+            <div class="workshop-version-meta">
+              <span>${esc(t('workshop.sdk'))} ${esc(version.sdkVersion || t('workshop.undeclared'))}</span>
+              ${
+                permissions.length
+                  ? `<span>${esc(t('workshop.permissions'))} ${esc(permissions.join(' / '))}</span>`
+                  : ''
+              }
+              <span>${esc(t('workshop.dependencies'))} ${
+                dependencies.length
+                  ? esc(
+                      dependencies
+                        .map(dependency =>
+                          dependency.minVersion
+                            ? `${dependency.id} ≥ ${dependency.minVersion}`
+                            : dependency.id
+                        )
+                        .join(' / ')
+                    )
+                  : esc(t('workshop.no_dependencies'))
+              }</span>
+            </div>
+            <code class="workshop-sha" title="${esc(version.sha256)}">SHA-256 ${esc(
+              version.sha256
+            )}</code>
+          </div>
+        `;
+      })
+      .join('');
+  }
+
+  function detailReadmePanel(mod) {
+    const html = markdownHtml(`${state.detailId}:readme`, mod.readme);
+    return html
+      ? `<div class="workshop-readme markdown-body">${html}</div>`
+      : `<p class="workshop-panel-empty">${esc(t('workshop.no_readme'))}</p>`;
+  }
+
+  function detailLicensePanel(mod) {
+    return `
+      <div class="workshop-detail-section">
+        <div class="workshop-license-head">
+          <h4>${esc(t('workshop.license'))}</h4>
+          <span class="workshop-license-tag">${esc(mod.license || t('workshop.license_none'))}</span>
+        </div>
+        ${
+          mod.licenseText
+            ? `<pre class="workshop-license-text">${esc(mod.licenseText)}</pre>`
+            : `<p class="workshop-panel-empty">${esc(t('workshop.no_license'))}</p>`
+        }
+      </div>
+    `;
+  }
+
+  function detailTabsMarkup(mod) {
+    const versions = Array.isArray(mod.versions) ? mod.versions.length : 0;
+    const tabs = [
+      ['details', t('workshop.tab_details')],
+      ['versions', t('workshop.tab_versions', { count: versions })],
+      ['readme', t('workshop.tab_readme')],
+      ['license', t('workshop.tab_license')]
+    ];
+
+    const buttons = tabs
+      .map(([id, label]) => {
+        const active = state.detailTab === id;
+        return `<button class="workshop-tab${active ? ' is-active' : ''}" role="tab"
+            id="workshopTab-${id}" data-tab="${id}" aria-selected="${active}"
+            aria-controls="workshopPanel-${id}" tabindex="${active ? '0' : '-1'}">${esc(label)}</button>`;
+      })
+      .join('');
+
+    const panels = tabs
+      .map(([id]) => {
+        const active = state.detailTab === id;
+        let body = '';
+        if (id === 'details') body = detailFacts(mod) + detailDownloadBlock(mod) + detailDescriptionBlock(mod);
+        else if (id === 'versions') body = detailVersionsPanel(mod);
+        else if (id === 'readme') body = detailReadmePanel(mod);
+        else body = detailLicensePanel(mod);
+
+        return `<section class="workshop-tab-panel" role="tabpanel" id="workshopPanel-${id}"
+            aria-labelledby="workshopTab-${id}"${active ? '' : ' hidden'}>${body}</section>`;
+      })
+      .join('');
+
+    return `
+      <div class="workshop-tabs" role="tablist" aria-label="${esc(
+        t('workshop.tablist_label')
+      )}">${buttons}</div>
+      <div class="workshop-tab-panels">${panels}</div>
+    `;
+  }
+
+  function detailHeroMarkup(mod) {
+    return `
+      <div class="workshop-detail-hero">
+        <div class="workshop-detail-cover">${coverMarkup(mod)}</div>
+        <div class="workshop-detail-main">
+          <div class="workshop-detail-title">
+            <h3>${esc(mod.name || mod.id)}</h3>
+            ${mod.featured ? `<span class="workshop-mini-badge">${esc(t('workshop.featured'))}</span>` : ''}
+          </div>
+          <p class="workshop-detail-summary">${esc(mod.summary || t('workshop.no_summary'))}</p>
+          ${
+            mod.tags && mod.tags.length
+              ? `<div class="workshop-tags">${mod.tags
+                  .map(tag => `<span>${esc(tag)}</span>`)
+                  .join('')}</div>`
+              : ''
+          }
+          <div class="workshop-detail-meta">
+            <span>${esc(t('workshop.author'))} ${esc(mod.author || t('workshop.anonymous'))}</span>
+            <span>${esc(t('workshop.latest'))} v${esc(mod.latestVersion || '—')}</span>
+            <span>${t('workshop.downloads_short', { count: fmt(mod.downloads) })}</span>
+            <span>${esc(t('workshop.updated'))} ${formatDate(mod.updatedAt)}</span>
+          </div>
+          <div class="workshop-detail-actions">
+            ${chipFor({
+              installedVersion: mod.installedVersion,
+              enabled: mod.enabled,
+              builtIn: mod.builtIn
+            })}
+            <span id="workshopDetailAction">${detailActionMarkup(mod)}</span>
+          </div>
+          <div class="workshop-progress hidden" id="workshopDetailProgress">
+            <div class="workshop-progress-bar"><span id="workshopDetailProgressBar"></span></div>
+            <span class="workshop-progress-text" id="workshopDetailProgressText"></span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderDetailPage() {
+    const host = $('workshopDetailContent');
+    if (!host) return;
+
+    const source = $('workshopDetailSource');
+    if (source) {
+      source.textContent = state.baseUrl || AppState.librarySettings?.workshopUrl || '';
+    }
+
+    if (!state.detail) {
+      const title = $('workshopDetailTitle');
+      if (title) title.textContent = t('workshop.detail_title');
+    }
+
+    if (state.detailError) {
+      host.innerHTML = `
+        <div class="workshop-empty">
+          <span class="mi" data-icon="warning"></span>
+          <p>${esc(state.detailError)}</p>
+          <button class="secondary-btn" data-detail-retry="1" type="button">${esc(
+            t('workshop.retry')
+          )}</button>
+        </div>
+      `;
+      window.Icons?.hydrate(host);
       return;
     }
 
-    post({ type: 'workshopDetail', id });
-    state.pendingDetailId = id;
-    openModal(t('workshop.detail_loading_title'), `<p class="workshop-modal-loading">${esc(
-      t('workshop.loading')
-    )}</p>`, 'auto_awesome', 'modal-wide');
-    // 用户等不及关掉弹窗：结果回来时不要再自己弹开。
-    const modal = $('globalModal');
-    if (modal) modal._onClose = () => { state.pendingDetailId = ''; };
+    if (!state.detail) {
+      host.innerHTML = `<div class="workshop-empty"><span class="mi" data-icon="hourglass_empty"></span><p>${esc(
+        t('workshop.loading')
+      )}</p></div>`;
+      window.Icons?.hydrate(host);
+      return;
+    }
+
+    host.innerHTML = `${detailHeroMarkup(state.detail)}${detailTabsMarkup(state.detail)}`;
+    window.Icons?.hydrate(host);
+
+    const title = $('workshopDetailTitle');
+    if (title) title.textContent = state.detail.name || t('workshop.detail_title');
+
+    updateDetailProgress();
+  }
+
+  /** 只切换 tab 的显示状态，不重画面板（滚动位置和图片都保持不变）。 */
+  function selectDetailTab(tab) {
+    if (!tab || tab === state.detailTab) return;
+    state.detailTab = tab;
+
+    document.querySelectorAll('#workshopDetailContent [data-tab]').forEach(button => {
+      const active = button.getAttribute('data-tab') === tab;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-selected', active ? 'true' : 'false');
+      button.setAttribute('tabindex', active ? '0' : '-1');
+    });
+
+    document.querySelectorAll('#workshopDetailContent .workshop-tab-panel').forEach(panel => {
+      panel.hidden = panel.id !== `workshopPanel-${tab}`;
+    });
+  }
+
+  /** 只刷新安装按钮和进度，避免整页重画抢走焦点。 */
+  function syncDetailActions() {
+    const mod = state.detail;
+    if (!mod) return;
+
+    const holder = $('workshopDetailAction');
+    if (holder) holder.innerHTML = detailActionMarkup(mod);
+
+    updateDetailProgress();
+
+    const title = $('workshopDetailTitle');
+    if (title) title.textContent = mod.name || t('workshop.detail_title');
   }
 
   // ============================== 使用同意 ==============================
@@ -525,134 +934,6 @@
     hideNotice();
   }
 
-  function showDetailModal(mod) {
-    openModal(mod.name, detailBody(mod), 'auto_awesome', 'modal-wide');
-    if (window.Icons) window.Icons.hydrate($('modalBody'));
-    updateDetailProgress();
-  }
-
-  function detailBody(mod) {
-    state.detail = mod;
-    const versions = Array.isArray(mod.versions) ? mod.versions : [];
-    const latest = mod.latestVersion || '';
-    const canInstall = !mod.builtIn;
-    const installing = state.installingId === mod.id;
-
-    const versionRows = versions.length
-      ? versions
-          .map(version => {
-            const permissions = describePermissions(version.permissions);
-            const dependencies = Array.isArray(version.dependencies) ? version.dependencies : [];
-            const isLatest = version.version === latest;
-
-            return `
-              <div class="workshop-version-row">
-                <div class="workshop-version-head">
-                  <strong>v${esc(version.version)}</strong>
-                  ${isLatest ? `<span class="workshop-mini-badge">${esc(t('workshop.latest'))}</span>` : ''}
-                  <span class="workshop-version-date">${formatDate(version.publishedAt)}</span>
-                  <span class="workshop-version-size">${formatBytes(version.sizeBytes)}</span>
-                  ${
-                    canInstall
-                      ? `<button class="secondary-btn workshop-version-install" data-install="${esc(
-                          mod.id
-                        )}" data-version="${esc(version.version)}">${esc(
-                          t('workshop.install')
-                        )}</button>`
-                      : ''
-                  }
-                </div>
-                <p class="workshop-version-notes">${esc(
-                  version.changelog || t('workshop.no_changelog')
-                )}</p>
-                <div class="workshop-version-meta">
-                  <span>${esc(t('workshop.sdk'))} ${esc(version.sdkVersion || t('workshop.undeclared'))}</span>
-                  <span>${esc(t('workshop.version_downloads', { count: fmt(version.downloads) }))}</span>
-                  ${
-                    permissions.length
-                      ? `<span>${esc(t('workshop.permissions'))} ${esc(permissions.join(' / '))}</span>`
-                      : ''
-                  }
-                  <span>${esc(t('workshop.dependencies'))} ${
-                    dependencies.length
-                      ? esc(
-                          dependencies
-                            .map(dependency =>
-                              dependency.minVersion
-                                ? `${dependency.id} ≥ ${dependency.minVersion}`
-                                : dependency.id
-                            )
-                            .join(' / ')
-                        )
-                      : esc(t('workshop.no_dependencies'))
-                  }</span>
-                </div>
-                <code class="workshop-sha" title="${esc(version.sha256)}">SHA-256 ${esc(
-                  version.sha256
-                )}</code>
-              </div>
-            `;
-          })
-          .join('')
-      : `<p class="workshop-modal-loading">${esc(t('workshop.no_versions'))}</p>`;
-
-    const installButton =
-      canInstall && latest
-        ? installing
-          ? `<button class="secondary-btn" id="workshopModalCancelBtn">${esc(t('workshop.cancel'))}</button>`
-          : `<button class="primary-btn" id="workshopModalInstallBtn" data-install="${esc(
-              mod.id
-            )}" data-version="${esc(latest)}">${esc(t('workshop.install_version', { version: latest }))}</button>`
-        : mod.builtIn
-          ? `<span class="workshop-chip is-builtin">${esc(t('workshop.builtin'))}</span>`
-          : '';
-
-    const html = `
-      <div class="workshop-detail">
-        <div class="workshop-detail-hero">
-          <div class="workshop-detail-cover">${coverMarkup(mod)}</div>
-          <div class="workshop-detail-main">
-            <div class="workshop-detail-title">
-              <h3>${esc(mod.name)}</h3>
-              ${mod.featured ? `<span class="workshop-mini-badge">${esc(t('workshop.featured'))}</span>` : ''}
-            </div>
-            <p class="workshop-detail-summary">${esc(mod.summary || t('workshop.no_summary'))}</p>
-            <div class="workshop-detail-meta">
-              <span>${esc(t('workshop.author'))} ${esc(mod.author || t('workshop.anonymous'))}</span>
-              <span>${esc(t('workshop.latest'))} v${esc(latest || '—')}</span>
-              <span>${t('workshop.downloads_short', { count: fmt(mod.downloads) })}</span>
-              <span>${esc(t('workshop.updated'))} ${formatDate(mod.updatedAt)}</span>
-            </div>
-            <div class="workshop-detail-actions">
-              ${chipFor({
-                installedVersion: mod.installedVersion,
-                enabled: mod.enabled,
-                builtIn: mod.builtIn
-              })}
-              ${installButton}
-            </div>
-            <div class="workshop-progress hidden" id="workshopDetailProgress">
-              <div class="workshop-progress-bar"><span id="workshopDetailProgressBar"></span></div>
-              <span class="workshop-progress-text" id="workshopDetailProgressText"></span>
-            </div>
-          </div>
-        </div>
-
-        <div class="workshop-detail-description">
-          <h4>${esc(t('workshop.description'))}</h4>
-          <p>${esc(mod.description || t('workshop.no_description'))}</p>
-        </div>
-
-        <div class="workshop-detail-versions">
-          <h4>${esc(t('workshop.versions'))} <span>${versions.length}</span></h4>
-          ${versionRows}
-        </div>
-      </div>
-    `;
-
-    return html;
-  }
-
   function updateDetailProgress() {
     const box = $('workshopDetailProgress');
     if (!box) return;
@@ -669,16 +950,6 @@
     if (text) text.textContent = progressLabel(state.progress);
   }
 
-  // 详情弹窗开着时按最新状态原地重画（不重开弹窗、不重置关闭回调）。
-  function refreshDetailBody() {
-    const modal = $('globalModal');
-    const body = $('modalBody');
-    if (!state.detail || !modal?.classList.contains('open') || !body?.querySelector('.workshop-detail')) return;
-    body.innerHTML = detailBody(state.detail);
-    if (window.Icons) window.Icons.hydrate(body);
-    updateDetailProgress();
-    if (state.installingId) $('workshopModalCancelBtn')?.focus();
-  }
 
   function install(id, version) {
     if (state.consent !== 'granted') {
@@ -701,7 +972,7 @@
     state.progress = { id, phase: 'prepare', percent: null };
     renderInstallToast();
     syncCards();
-    if (state.detail?.id === id) refreshDetailBody();
+    if (state.detail?.id === id) syncDetailActions();
     updateDetailProgress();
 
     post({ type: 'workshopInstall', id, version: version || '' });
@@ -720,6 +991,11 @@
 
       $('workshopBackHomeBtn')?.addEventListener('click', () => showPage('home'));
       $('workshopRefreshBtn')?.addEventListener('click', () => load(1));
+
+      $('workshopDetailBackBtn')?.addEventListener('click', () => backToList());
+      $('workshopDetailRefreshBtn')?.addEventListener('click', () => {
+        if (state.detailId) requestDetail(state.detailId);
+      });
 
       let searchTimer = 0;
       $('workshopSearchInput')?.addEventListener('input', event => {
@@ -782,9 +1058,24 @@
         }
       });
 
-      $('modalBody')?.addEventListener('click', event => {
-        if (event.target.closest('#workshopModalCancelBtn')) {
+      // 详情页：切 tab、安装、取消、重试都在这一层做委托。
+      const detailHost = $('workshopDetailContent');
+
+      detailHost?.addEventListener('click', event => {
+        const retry = event.target.closest('[data-detail-retry]');
+        if (retry) {
+          if (state.detailId) requestDetail(state.detailId);
+          return;
+        }
+
+        if (event.target.closest('#workshopDetailCancelBtn')) {
           cancel();
+          return;
+        }
+
+        const tab = event.target.closest('[data-tab]');
+        if (tab) {
+          selectDetailTab(tab.getAttribute('data-tab'));
           return;
         }
 
@@ -795,13 +1086,38 @@
         }
       });
 
+      detailHost?.addEventListener('keydown', event => {
+        if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) return;
+
+        const tabs = [...document.querySelectorAll('#workshopDetailContent [data-tab]')];
+        const current = tabs.indexOf(document.activeElement);
+        if (current < 0) return;
+
+        let next = current;
+        if (event.key === 'ArrowRight') next = (current + 1) % tabs.length;
+        else if (event.key === 'ArrowLeft') next = (current - 1 + tabs.length) % tabs.length;
+        else if (event.key === 'Home') next = 0;
+        else next = tabs.length - 1;
+
+        event.preventDefault();
+        selectDetailTab(tabs[next].getAttribute('data-tab'));
+        $('workshopTab-' + tabs[next].getAttribute('data-tab'))?.focus();
+      });
+
       window.addEventListener('appLanguageChanged', () => {
         // 名称/简介/更新说明都是服务端按语言返回的，必须重新取，不能只重画旧数据。
         state.details.clear();
+        state.mdCache.clear();
         const detailId = state.detail?.id;
         state.detail = null;
         state.loaded = false;
         renderInstallToast();
+
+        if (AppState.currentPage === 'workshopDetail') {
+          if (detailId) requestDetail(detailId);
+          return;
+        }
+
         if (AppState.currentPage === 'workshop') {
           load(1);
         } else {
@@ -809,8 +1125,6 @@
           renderGrid();
           renderPager();
         }
-        // 详情弹窗还开着就刷新它的内容。
-        if (detailId) post({ type: 'workshopDetail', id: detailId });
       });
     },
 
@@ -822,7 +1136,22 @@
       } else {
         renderGrid();
         renderPager();
+        // 从详情页返回时回到原来的滚动位置。
+        if (state.pendingListScroll !== null) {
+          const scroller = document.querySelector('#workshopView .workshop-scroll');
+          if (scroller) scroller.scrollTop = state.pendingListScroll;
+          state.pendingListScroll = null;
+        }
       }
+    },
+
+    onShowDetail() {
+      this.init();
+      // 无论是点「返回市场」还是面包屑，回到列表时都回到原来的位置。
+      state.pendingListScroll = state.listScrollTop;
+      renderDetailPage();
+      const scroller = $('workshopDetailScroll');
+      if (scroller) scroller.scrollTop = 0;
     },
 
     requireConsent() {
@@ -901,38 +1230,27 @@
     renderDetail(payload) {
       if (!payload) return;
 
-      const modal = $('globalModal');
-      const body = $('modalBody');
-      const modalOpen = !!modal?.classList.contains('open');
-      const showingDetail = !!body?.querySelector('.workshop-detail');
       const expectedId = payload.mod?.id || payload.id || '';
+      // 已经打开了别的模组：这条是上一次请求的迟到回复，丢掉。
+      // 注意不要用 AppState.currentPage 判断——页面切换动画期间它还是旧值。
+      if (expectedId && state.detailId && expectedId !== state.detailId) return;
 
       if (payload.error) {
-        // 等的是别的模组：这条是上一次请求的迟到回复，丢掉。
-        if (state.pendingDetailId && expectedId && state.pendingDetailId !== expectedId) return;
-        state.pendingDetailId = '';
-        openModal(t('workshop.detail_failed_title'), `<p class="workshop-modal-loading">${esc(
-          payload.error
-        )}</p>`, 'warning');
+        state.detailError = payload.error;
+        renderDetailPage();
         return;
       }
 
       const mod = payload.mod;
       if (!mod) return;
+
+      state.detailError = '';
+      state.detail = mod;
+      state.detailId = mod.id;
       state.details.set(mod.id, mod);
+      state.mdCache.delete(`${mod.id}:readme`);
 
-      const requested = state.pendingDetailId === mod.id;
-      state.pendingDetailId = '';
-
-      if (modalOpen && showingDetail) {
-        // 弹窗已经开着（例如安装完回来刷新）：原地换内容，不重新抢焦点。
-        state.detail = mod;
-        refreshDetailBody();
-        return;
-      }
-
-      if (!requested) return;
-      showDetailModal(mod);
+      renderDetailPage();
     },
 
     renderProgress(payload) {

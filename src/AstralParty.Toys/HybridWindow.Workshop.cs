@@ -163,6 +163,10 @@ public partial class HybridWindow
                         description = detail.Description,
                         author = detail.Author,
                         tags = detail.Tags,
+                        repositoryUrl = detail.RepositoryUrl,
+                        license = detail.License,
+                        licenseText = detail.LicenseText,
+                        readme = detail.Readme,
                         coverUrl = cover ?? "",
                         featured = detail.Featured,
                         updatedAt = detail.UpdatedAt,
@@ -174,6 +178,8 @@ public partial class HybridWindow
                         versions = detail.Versions.Select(version => new
                         {
                             version = version.Version,
+                            sourceUrl = version.SourceUrl,
+                            hosted = version.Hosted,
                             sha256 = version.Sha256,
                             sizeBytes = version.SizeBytes,
                             sdkVersion = version.SdkVersion,

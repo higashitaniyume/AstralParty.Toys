@@ -30,6 +30,15 @@ public sealed class WorkshopWebUiTests
         Assert.Contains("id=\"workshopGrid\"", html);
         Assert.Contains("css/workshop.css", html);
         Assert.Contains("js/workshop.js", html);
+        // 详情是独立页面，不再是弹窗。
+        Assert.Contains("id=\"workshopDetailView\"", html);
+        Assert.Contains("id=\"workshopDetailContent\"", html);
+        Assert.Contains("id=\"workshopDetailBackBtn\"", html);
+        Assert.Contains("js/markdown.js", html);
+        Assert.Contains("css/markdown.css", html);
+        Assert.Contains("vendor/marked.umd.js", html);
+        Assert.Contains("vendor/purify.min.js", html);
+        Assert.Contains("vendor/highlight.min.js", html);
         // 设置页要能改市场地址
         Assert.Contains("id=\"workshopUrlInput\"", html);
         // 右下角安装进度浮窗
@@ -40,6 +49,8 @@ public sealed class WorkshopWebUiTests
         var core = Read("js/core.js");
         Assert.Contains("pageName === 'workshop'", core);
         Assert.Contains("WorkshopModule?.onShow", core);
+        Assert.Contains("pageName === 'workshopDetail'", core);
+        Assert.Contains("WorkshopModule?.onShowDetail", core);
 
         // 宿主回推的每条消息都要有分支，否则页面永远停在加载中
         foreach (var message in new[]
@@ -120,6 +131,27 @@ public sealed class WorkshopWebUiTests
     {
         Assert.Contains("js/workshop.js", EmbeddedWebStore.Paths);
         Assert.Contains("css/workshop.css", EmbeddedWebStore.Paths);
+        // README 渲染依赖的内嵌第三方资源，缺一个页面就只剩纯文本。
+        Assert.Contains("js/markdown.js", EmbeddedWebStore.Paths);
+        Assert.Contains("css/markdown.css", EmbeddedWebStore.Paths);
+        Assert.Contains("vendor/marked.umd.js", EmbeddedWebStore.Paths);
+        Assert.Contains("vendor/purify.min.js", EmbeddedWebStore.Paths);
+        Assert.Contains("vendor/highlight.min.js", EmbeddedWebStore.Paths);
+        Assert.Contains("vendor/github-markdown-dark.css", EmbeddedWebStore.Paths);
+    }
+
+    [Fact]
+    public void WorkshopDetailPage_UsesTabsAndRendersMarkdown()
+    {
+        var js = Read("js/workshop.js");
+
+        // 四个 tab 与各自的容器都在页面脚本里生成。
+        foreach (var tab in new[] { "details", "versions", "readme", "license" })
+            Assert.Contains($"['{tab}',", js);
+
+        Assert.Contains("window.Markdown?.render", js);
+        Assert.Contains("state.detailTab", js);
+        Assert.Contains("workshopDetailContent", js);
     }
 
     private static string Read(string relativePath)

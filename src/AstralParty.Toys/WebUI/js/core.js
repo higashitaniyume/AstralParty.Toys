@@ -97,6 +97,8 @@ function runPageHook(pageName) {
     window.ModsModule?.onShowMods?.();
   } else if (pageName === 'workshop') {
     window.WorkshopModule?.onShow?.();
+  } else if (pageName === 'workshopDetail') {
+    window.WorkshopModule?.onShowDetail?.();
   } else if (pageName === 'skins') {
     window.SkinsModule?.onShowSkins?.();
   }
@@ -104,8 +106,10 @@ function runPageHook(pageName) {
 
 function updateNavigation(pageName) {
   document.body.classList.toggle('page-home-active', pageName === 'home');
+  // 模组详情是「市场」下面的子页面，面包屑仍然高亮市场。
+  const activePage = pageName === 'workshopDetail' ? 'workshop' : pageName;
   document.querySelectorAll('.nav-crumb-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.page === pageName);
+    btn.classList.toggle('active', btn.dataset.page === activePage);
   });
 }
 

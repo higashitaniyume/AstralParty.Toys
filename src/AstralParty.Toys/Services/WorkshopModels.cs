@@ -40,6 +40,10 @@ public sealed class WorkshopModDetail
     public string Description { get; set; } = "";
     public string Author { get; set; } = "";
     public List<string> Tags { get; set; } = new();
+    public string RepositoryUrl { get; set; } = "";
+    public string License { get; set; } = "";
+    public string LicenseText { get; set; } = "";
+    public string Readme { get; set; } = "";
     public string? CoverUrl { get; set; }
     public bool Featured { get; set; }
     public string CreatedAt { get; set; } = "";
@@ -53,6 +57,13 @@ public sealed class WorkshopModVersion
 {
     public string Version { get; set; } = "";
     public string DownloadUrl { get; set; } = "";
+
+    /// <summary>作者托管的原始直链；市场自己托管包时为空。</summary>
+    public string SourceUrl { get; set; } = "";
+
+    /// <summary>包是否由市场保存（不是 302 到作者）。</summary>
+    public bool Hosted { get; set; }
+
     public string Sha256 { get; set; } = "";
     public long SizeBytes { get; set; }
     public string SdkVersion { get; set; } = "";
