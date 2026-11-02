@@ -16,7 +16,7 @@ public partial class HybridWindow
 
     private void HandleAudioSkinMessage(string type, JsonElement root)
     {
-        var game = RequireModGameDirectory();
+        var game = ResolveAudioGameDirectory();
 
         switch (type)
         {
@@ -268,29 +268,39 @@ public partial class HybridWindow
                     var id = root.TryGetProperty("id", out var idProp) ? idProp.GetInt32() : 0;
                     var name = root.TryGetProperty("name", out var nProp) ? nProp.GetString() ?? "" : "";
                     var cacheDir = AudioSkinSchemeManager.AudioCacheDirectory(game);
-                    var oggPath = Path.Combine(cacheDir, $"{id}.ogg");
-                    if (!File.Exists(oggPath))
+                    var targetFile = Path.Combine(cacheDir, $"{id}.ogg");
+                    if (!File.Exists(targetFile)) targetFile = Path.Combine(cacheDir, $"{id}.wav");
+                    if (!File.Exists(targetFile))
                     {
                         var catItem = _audioSkins.LoadCatalog().FirstOrDefault(x => x.Id == id);
                         var exportRoot = AudioSkinSchemeManager.FindExportRoot(game);
                         if (catItem != null && !string.IsNullOrEmpty(catItem.RelOgg) && exportRoot != null)
                         {
                             var src = Path.Combine(exportRoot, catItem.RelOgg);
-                            if (File.Exists(src)) oggPath = src;
+                            if (File.Exists(src)) targetFile = src;
                         }
                     }
 
-                    if (File.Exists(oggPath))
+                    if (File.Exists(targetFile))
                     {
+                        var ext = Path.GetExtension(targetFile);
+                        if (string.IsNullOrEmpty(ext)) ext = ".ogg";
+                        var filter = ext.Equals(".wav", StringComparison.OrdinalIgnoreCase)
+                            ? "WAV 音频 (*.wav)|*.wav|所有文件 (*.*)|*.*"
+                            : "OGG 音频 (*.ogg)|*.ogg|所有文件 (*.*)|*.*";
+
+                        var cleanName = string.Join("_", name.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries)).Trim();
+                        var fileName = string.IsNullOrEmpty(cleanName) ? $"{id}{ext}" : $"{id}_{cleanName}{ext}";
+
                         var dialog = new SaveFileDialog
                         {
                             Title = "保存原版音频",
-                            Filter = "OGG 音频 (*.ogg)|*.ogg|所有文件 (*.*)|*.*",
-                            FileName = $"{id}_{name}.ogg"
+                            Filter = filter,
+                            FileName = fileName
                         };
                         if (dialog.ShowDialog(this) == true)
                         {
-                            File.Copy(oggPath, dialog.FileName, true);
+                            File.Copy(targetFile, dialog.FileName, true);
                             Post(new { type = "toast", message = $"已保存音频: {Path.GetFileName(dialog.FileName)}" });
                         }
                     }
@@ -346,16 +356,35 @@ public partial class HybridWindow
         }
     }
 
+    private string ResolveAudioGameDirectory()
+    {
+        try
+        {
+            var dir = _modManager.GetStatus().GameDirectory;
+            if (!string.IsNullOrWhiteSpace(dir) && Directory.Exists(dir)) return dir;
+        }
+        catch { }
+
+        try
+        {
+            var detected = SpeedhackManager.DetectGameDirectory();
+            if (!string.IsNullOrWhiteSpace(detected) && Directory.Exists(detected)) return detected;
+        }
+        catch { }
+
+        return AppContext.BaseDirectory;
+    }
+
     private CoreWebView2WebResourceResponse CreateAudioResponse(Uri uri)
     {
         try
         {
-            var gameDirectory = RequireModGameDirectory();
+            var gameDirectory = ResolveAudioGameDirectory();
             var path = uri.AbsolutePath.TrimStart('/');
             var parts = path.Split(['/'], 3);
 
-            // 1. /scheme/{schemeId}/{fileName}
-            if (parts.Length == 3 && string.Equals(parts[0], "scheme", StringComparison.OrdinalIgnoreCase))
+            // 1. /scheme/{schemeId}/{fileName} or /preview/{schemeId}/{fileName}
+            if (parts.Length == 3 && (string.Equals(parts[0], "scheme", StringComparison.OrdinalIgnoreCase) || string.Equals(parts[0], "preview", StringComparison.OrdinalIgnoreCase)))
             {
                 var schemeId = Uri.UnescapeDataString(parts[1]);
                 var fileName = Uri.UnescapeDataString(parts[2]);
@@ -370,9 +399,10 @@ public partial class HybridWindow
                         ".mp3" => "audio/mpeg",
                         _ => "audio/wav"
                     };
+                    var fi = new FileInfo(fullPath);
                     return WebView.CoreWebView2.Environment.CreateWebResourceResponse(
                         new WebResourceStream(File.OpenRead(fullPath)), 200, "OK",
-                        $"Content-Type: {mime}\r\nCache-Control: no-store\r\nAccess-Control-Allow-Origin: *");
+                        $"Content-Type: {mime}\r\nContent-Length: {fi.Length}\r\nAccept-Ranges: bytes\r\nCache-Control: no-store\r\nAccess-Control-Allow-Origin: *");
                 }
             }
             // 2. /original/{id}
@@ -402,9 +432,10 @@ public partial class HybridWindow
                 {
                     var ext = Path.GetExtension(targetFile).ToLowerInvariant();
                     var mime = ext == ".ogg" ? "audio/ogg" : "audio/wav";
+                    var fi = new FileInfo(targetFile);
                     return WebView.CoreWebView2.Environment.CreateWebResourceResponse(
                         new WebResourceStream(File.OpenRead(targetFile)), 200, "OK",
-                        $"Content-Type: {mime}\r\nCache-Control: no-store\r\nAccess-Control-Allow-Origin: *");
+                        $"Content-Type: {mime}\r\nContent-Length: {fi.Length}\r\nAccept-Ranges: bytes\r\nCache-Control: no-store\r\nAccess-Control-Allow-Origin: *");
                 }
             }
 

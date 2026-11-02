@@ -89,6 +89,7 @@ public sealed class AudioSkinSchemeManager
         {
             Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "audio-export"),
             @"C:\src\Study\astralparty\audio-export",
+            Path.Combine(gameDirectory, "audio-export"),
             Path.Combine(gameDirectory, "AstralParty_ModLoader", "audio-export")
         };
         foreach (var c in candidates)

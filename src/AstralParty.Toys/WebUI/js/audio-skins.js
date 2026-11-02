@@ -722,12 +722,14 @@
         console.error('Audio playback failed for:', url, e);
         if (button) button.textContent = button.textContent.replace('⏸', '▶');
         this.currentAudio = null;
+        post({ type: 'toast', message: '音频播放失败，请确认文件是否存在或格式是否受支持' });
       };
 
       audio.play().catch(err => {
         console.warn('Playback blocked or failed:', err);
         if (button) button.textContent = button.textContent.replace('⏸', '▶');
         this.currentAudio = null;
+        post({ type: 'toast', message: '音频播放失败: ' + (err?.message || err) });
       });
     },
 

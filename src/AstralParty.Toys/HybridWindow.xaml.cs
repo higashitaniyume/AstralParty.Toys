@@ -109,6 +109,8 @@ public partial class HybridWindow : Window
                 "https://skins.astral.local/*", CoreWebView2WebResourceContext.Image);
             WebView.CoreWebView2.AddWebResourceRequestedFilter(
                 "https://characters.astral.local/*", CoreWebView2WebResourceContext.Image);
+            WebView.CoreWebView2.AddWebResourceRequestedFilter(
+                "https://audio.astral.local/*", CoreWebView2WebResourceContext.All);
             WebView.CoreWebView2.WebResourceRequested += EmbeddedRequested;
             for (var index = 0; index < _materialDirectories.Count; index++)
                 WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
