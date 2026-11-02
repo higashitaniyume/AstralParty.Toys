@@ -456,6 +456,22 @@ host?.addEventListener('message', event => {
       if (window.SkinsModule) window.SkinsModule.renderCards(msg.payload);
       break;
 
+    case 'audioSkinProfiles':
+      window.AudioSkinsModule?.renderProfiles(msg.payload);
+      break;
+
+    case 'audioSkinItems':
+      window.AudioSkinsModule?.renderItems(msg.payload);
+      break;
+
+    case 'audioSkinExtractProgress':
+      window.AudioSkinsModule?.renderExtractProgress(msg.payload);
+      break;
+
+    case 'audioSkinExtractDone':
+      window.AudioSkinsModule?.renderExtractDone();
+      break;
+
     case 'skinsExportConfirm':
       window.SkinsModule?.confirmAction('覆盖已有 ZIP？', `文件 ${msg.payload.fileName} 已存在，继续将覆盖它。`, { type: 'skinsExportConfirmed', token: msg.payload.token });
       break;

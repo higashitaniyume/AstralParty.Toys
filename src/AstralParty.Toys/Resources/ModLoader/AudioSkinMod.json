@@ -1,0 +1,10 @@
+{
+  "id": "AudioSkinMod",
+  "name": "音效方案替换",
+  "version": "1.0.0",
+  "author": "CesiumLoader",
+  "description": "音效方案替换模组，支持自定义 UI、对局、技能、战斗、语音及背景音乐，支持多方案切换",
+  "entryDll": "AudioSkinMod.dll",
+  "entryType": "AudioSkinMod.ModEntry",
+  "entryMethod": "Main"
+}

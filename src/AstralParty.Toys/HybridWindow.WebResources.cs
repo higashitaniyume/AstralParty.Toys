@@ -22,6 +22,8 @@ public partial class HybridWindow
             e.Response = CreateCharacterSkinResponse(uri);
         else if (uri.Host.Equals("skins.astral.local", StringComparison.OrdinalIgnoreCase))
             e.Response = CreateSkinResponse(uri);
+        else if (uri.Host.Equals("audio.astral.local", StringComparison.OrdinalIgnoreCase))
+            e.Response = CreateAudioResponse(uri);
     }
 
     private CoreWebView2WebResourceResponse CreateSkinResponse(Uri uri)

@@ -13,6 +13,7 @@
     init() {
       $('cardSkinTab').onclick=()=>this.switchTab('cards');
       $('characterSkinTab').onclick=()=>this.switchTab('characters');
+      if ($('audioSkinTab')) $('audioSkinTab').onclick=()=>this.switchTab('audio');
       $('resourceModTab').onclick=()=>this.switchTab('resource');
       for(const [id,other] of [['cardSkinTab','characterSkinTab'],['characterSkinTab','resourceModTab'],['resourceModTab','cardSkinTab']]) $(id).addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();$(other).click();$(other).focus();}});
       $('characterImport').onclick=()=>this.send('characterSkinsImport');
@@ -34,11 +35,12 @@
     },
     switchTab(tab) {
       this.tab=tab;this.stop();
-      $('cardSkinPanel').classList.toggle('hidden',tab!=='cards');$('characterSkinPanel').classList.toggle('hidden',tab!=='characters');$('resourceModPanel')?.classList.toggle('hidden',tab!=='resource');
-      for(const [id,on] of [['cardSkinTab',tab==='cards'],['characterSkinTab',tab==='characters'],['resourceModTab',tab==='resource']]){$(id).classList.toggle('active',on);$(id).setAttribute('aria-selected',on);$(id).tabIndex=on?0:-1;}
+      $('cardSkinPanel').classList.toggle('hidden',tab!=='cards');$('characterSkinPanel').classList.toggle('hidden',tab!=='characters');$('audioSkinPanel')?.classList.toggle('hidden',tab!=='audio');$('resourceModPanel')?.classList.toggle('hidden',tab!=='resource');
+      for(const [id,on] of [['cardSkinTab',tab==='cards'],['characterSkinTab',tab==='characters'],['audioSkinTab',tab==='audio'],['resourceModTab',tab==='resource']]){if($(id)){$(id).classList.toggle('active',on);$(id).setAttribute('aria-selected',on);$(id).tabIndex=on?0:-1;}}
       document.querySelector('.skins-header .utilities-header-actions').classList.toggle('hidden',tab!=='cards');
-      document.querySelector('.skins-header .utilities-tagline').textContent=tab==='cards'?'卡牌皮肤 · 方案与卡面管理':tab==='characters'?'角色皮肤 · 图片 / 文案 / 精灵动画':'资源模组 · RML 格式 ZIP / 目录替换';
+      document.querySelector('.skins-header .utilities-tagline').textContent=tab==='cards'?'卡牌皮肤 · 方案与卡面管理':tab==='characters'?'角色皮肤 · 图片 / 文案 / 精灵动画':tab==='audio'?'音效方案 · UI / 对局 / 技能 / 语音多方案替换':'资源模组 · RML 格式 ZIP / 目录替换';
       if(tab==='characters')this.send('characterSkinsGet');
+      if(tab==='audio')window.AudioSkinsModule?.onShow();
       if(tab==='resource')window.ResourceModsModule?.onShow();
     },
     render(payload) {

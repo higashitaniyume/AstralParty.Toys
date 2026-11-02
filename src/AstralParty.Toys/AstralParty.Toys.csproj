@@ -44,6 +44,7 @@
     </EmbeddedResource>
     <!-- 内置资源仅来自 BuiltInMods.props 中的公开分发清单。 -->
     <EmbeddedResource Include="Resources\Skins\character-image-sizes.json" LogicalName="AstralParty.Toys.CharacterImageSizes.json" />
+    <EmbeddedResource Include="Resources\AudioCatalog.json" LogicalName="AstralParty.Toys.AudioCatalog.json" />
     <EmbeddedResource Include="Resources\Skins\default-skins.zip">
       <LogicalName>AstralParty.Toys.DefaultSkins.zip</LogicalName>
     </EmbeddedResource>

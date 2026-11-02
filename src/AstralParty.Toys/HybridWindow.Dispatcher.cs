@@ -522,6 +522,23 @@ public partial class HybridWindow
                 case "characterSkinsInstall":
                     HandleCharacterSkins(root);
                     break;
+                case "audioSkinsGetProfiles":
+                case "audioSkinsSetActive":
+                case "audioSkinsCreate":
+                case "audioSkinsDuplicate":
+                case "audioSkinsDelete":
+                case "audioSkinsUpdateMeta":
+                case "audioSkinsOpenFolder":
+                case "audioSkinsGetItems":
+                case "audioSkinsPickAndReplace":
+                case "audioSkinsRevertAudio":
+                case "audioSkinsSetMute":
+                case "audioSkinsSetVolume":
+                case "audioSkinsExportZip":
+                case "audioSkinsImportZip":
+                case "audioSkinsExtractGameAudio":
+                    HandleAudioSkinMessage(type, root);
+                    break;
                 case "skinsGetProfiles":
                     PushSkinProfiles();
                     break;
