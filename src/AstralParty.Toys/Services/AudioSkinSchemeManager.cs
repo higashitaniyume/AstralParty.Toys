@@ -36,6 +36,13 @@ public sealed class AudioSkinCatalogItem
     public bool HasOriginal { get; set; }
     public string PreviewUrl { get; set; } = "";
     public string OriginalPreviewUrl { get; set; } = "";
+    public string? RelOgg { get; set; }
+    public int? CharacterId { get; set; }
+    public string? CharacterName { get; set; }
+    public string? SkinId { get; set; }
+    public string? SkinName { get; set; }
+    public string? Slot { get; set; }
+    public string? SlotName { get; set; }
 }
 
 public sealed class AudioSkinRule
@@ -75,6 +82,25 @@ public sealed class AudioSkinSchemeManager
 
     public static string AudioCacheDirectory(string gameDirectory) =>
         Path.Combine(gameDirectory, "AstralParty_ModLoader", "audio-cache");
+
+    public static string? FindExportRoot(string gameDirectory)
+    {
+        var candidates = new[]
+        {
+            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "audio-export"),
+            @"C:\src\Study\astralparty\audio-export",
+            Path.Combine(gameDirectory, "AstralParty_ModLoader", "audio-export")
+        };
+        foreach (var c in candidates)
+        {
+            try
+            {
+                if (Directory.Exists(c)) return Path.GetFullPath(c);
+            }
+            catch { }
+        }
+        return null;
+    }
 
     public static string SchemeDirectory(string gameDirectory, string schemeId)
     {
@@ -383,19 +409,40 @@ public sealed class AudioSkinSchemeManager
                 Label = c.Label,
                 WwiseId = c.WwiseId,
                 Action = "none",
-                Volume = 1.0f
+                Volume = 1.0f,
+                RelOgg = c.RelOgg,
+                CharacterId = c.CharacterId,
+                CharacterName = c.CharacterName,
+                SkinId = c.SkinId,
+                SkinName = c.SkinName,
+                Slot = c.Slot,
+                SlotName = c.SlotName
             };
 
-            // Check original audio cache availability
+            // Check original audio cache availability or relOgg fallback
+            bool hasOriginal = false;
             if (Directory.Exists(cacheDir))
             {
                 var oggPath = Path.Combine(cacheDir, $"{c.Id}.ogg");
                 var wavPath = Path.Combine(cacheDir, $"{c.Id}.wav");
                 if (File.Exists(oggPath) || File.Exists(wavPath))
                 {
-                    item.HasOriginal = true;
-                    item.OriginalPreviewUrl = $"https://audio.astral.local/original/{c.Id}";
+                    hasOriginal = true;
                 }
+            }
+            if (!hasOriginal && !string.IsNullOrEmpty(c.RelOgg))
+            {
+                var exportRoot = FindExportRoot(gameDirectory);
+                if (exportRoot != null && File.Exists(Path.Combine(exportRoot, c.RelOgg)))
+                {
+                    hasOriginal = true;
+                }
+            }
+
+            if (hasOriginal)
+            {
+                item.HasOriginal = true;
+                item.OriginalPreviewUrl = $"https://audio.astral.local/original/{c.Id}";
             }
 
             // Check active rule
@@ -575,64 +622,86 @@ public sealed class AudioSkinSchemeManager
         var cacheDir = AudioCacheDirectory(gameDirectory);
         Directory.CreateDirectory(cacheDir);
 
-        progress?.Invoke("正在扫描游戏音频素材…", 0.1);
+        progress?.Invoke("正在扫描游戏音频素材…", 0.05);
 
         int count = 0;
+        var exportRoot = FindExportRoot(gameDirectory);
 
-        // Check local pre-extracted export folder if available (C:\src\Study\astralparty\audio-export\ogg)
-        var preExportOgg = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "audio-export", "ogg");
-        if (!Directory.Exists(preExportOgg))
-        {
-            preExportOgg = @"C:\src\Study\astralparty\audio-export\ogg";
-        }
-
-        if (Directory.Exists(preExportOgg))
+        if (exportRoot != null)
         {
             var catalog = LoadCatalog();
             var total = catalog.Count;
             int i = 0;
 
-            // Search files by event name or wwise id
-            var oggFiles = Directory.GetFiles(preExportOgg, "*.ogg", SearchOption.AllDirectories);
-            var oggByFileName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var f in oggFiles)
-            {
-                oggByFileName[Path.GetFileNameWithoutExtension(f)] = f;
-            }
-
             foreach (var c in catalog)
             {
                 i++;
-                if (i % 50 == 0)
+                if (i % 25 == 0)
                 {
-                    progress?.Invoke($"正在整理原版音频: {c.Name}", 0.1 + 0.85 * ((double)i / total));
+                    progress?.Invoke($"正在整理原版音频: {c.Label}", 0.05 + 0.90 * ((double)i / total));
                 }
 
                 string? src = null;
-                // Match by event name (e.g. BGM_Battle_Fight)
-                if (oggByFileName.TryGetValue(c.Name, out var byName))
+                if (!string.IsNullOrEmpty(c.RelOgg))
                 {
-                    src = byName;
-                }
-                // Or match by wwise id
-                else if (c.WwiseId != 0 && oggByFileName.TryGetValue(c.WwiseId.ToString(), out var byWid))
-                {
-                    src = byWid;
+                    var candidate = Path.Combine(exportRoot, c.RelOgg);
+                    if (File.Exists(candidate)) src = candidate;
                 }
 
                 if (src != null)
                 {
                     var dest = Path.Combine(cacheDir, $"{c.Id}.ogg");
-                    if (!File.Exists(dest))
+                    if (!File.Exists(dest) || new FileInfo(dest).Length != new FileInfo(src).Length)
                     {
                         File.Copy(src, dest, true);
-                        count++;
                     }
+                    count++;
                 }
             }
         }
 
-        progress?.Invoke("原版音频整理完成", 1.0);
+        progress?.Invoke($"原版音频整理完成，共提取 {count} 首音频", 1.0);
         return count;
+    }
+
+    /// <summary>
+    /// 将提取好的原版音频打包导出为 ZIP 文件。
+    /// </summary>
+    public int ExportOriginalAudioZip(string gameDirectory, string destZipPath, Action<string, double>? progress = null)
+    {
+        ExtractGameAudio(gameDirectory, progress);
+
+        var cacheDir = AudioCacheDirectory(gameDirectory);
+        var catalog = LoadCatalog();
+        int exported = 0;
+
+        progress?.Invoke("正在打包原版音频压缩包…", 0.95);
+
+        if (File.Exists(destZipPath)) File.Delete(destZipPath);
+        using (var zip = ZipFile.Open(destZipPath, ZipArchiveMode.Create))
+        {
+            foreach (var c in catalog)
+            {
+                var cached = Path.Combine(cacheDir, $"{c.Id}.ogg");
+                if (File.Exists(cached))
+                {
+                    string entryName;
+                    if (c.Category == "Voice" && !string.IsNullOrEmpty(c.CharacterName))
+                    {
+                        var s = string.IsNullOrEmpty(c.SkinName) ? "常规默认" : c.SkinName;
+                        entryName = $"Voice/{c.CharacterName}/{s}/{c.Id}_{c.Name}.ogg";
+                    }
+                    else
+                    {
+                        entryName = $"{c.Category}/{c.Id}_{c.Name}.ogg";
+                    }
+                    zip.CreateEntryFromFile(cached, entryName);
+                    exported++;
+                }
+            }
+        }
+
+        progress?.Invoke($"原版音频导出完成，共打包 {exported} 首音频", 1.0);
+        return exported;
     }
 }

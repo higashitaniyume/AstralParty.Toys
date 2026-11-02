@@ -229,6 +229,77 @@ public partial class HybridWindow
                     }
                 });
                 break;
+
+            case "audioSkinsExportOriginalZip":
+                {
+                    var dialog = new SaveFileDialog
+                    {
+                        Title = "导出全部原版音频为 ZIP",
+                        Filter = "ZIP 压缩文件 (*.zip)|*.zip|所有文件 (*.*)|*.*",
+                        FileName = "AstralParty_Original_Audio.zip"
+                    };
+                    if (dialog.ShowDialog(this) == true)
+                    {
+                        var zipPath = dialog.FileName;
+                        _ = Task.Run(() =>
+                        {
+                            try
+                            {
+                                Post(new { type = "audioSkinExtractProgress", payload = new { message = "正在准备打包原版音频…", progress = 0.05 } });
+                                int count = _audioSkins.ExportOriginalAudioZip(game, zipPath, (msg, prog) =>
+                                {
+                                    Post(new { type = "audioSkinExtractProgress", payload = new { message = msg, progress = prog } });
+                                });
+                                Post(new { type = "toast", message = $"已成功导出 {count} 首原版音频至 ZIP！" });
+                                Post(new { type = "audioSkinExtractDone" });
+                            }
+                            catch (Exception ex)
+                            {
+                                Post(new { type = "error", message = "导出原版音频失败: " + ex.Message });
+                                Post(new { type = "audioSkinExtractDone" });
+                            }
+                        });
+                    }
+                }
+                break;
+
+            case "audioSkinsExportSingleOriginal":
+                {
+                    var id = root.TryGetProperty("id", out var idProp) ? idProp.GetInt32() : 0;
+                    var name = root.TryGetProperty("name", out var nProp) ? nProp.GetString() ?? "" : "";
+                    var cacheDir = AudioSkinSchemeManager.AudioCacheDirectory(game);
+                    var oggPath = Path.Combine(cacheDir, $"{id}.ogg");
+                    if (!File.Exists(oggPath))
+                    {
+                        var catItem = _audioSkins.LoadCatalog().FirstOrDefault(x => x.Id == id);
+                        var exportRoot = AudioSkinSchemeManager.FindExportRoot(game);
+                        if (catItem != null && !string.IsNullOrEmpty(catItem.RelOgg) && exportRoot != null)
+                        {
+                            var src = Path.Combine(exportRoot, catItem.RelOgg);
+                            if (File.Exists(src)) oggPath = src;
+                        }
+                    }
+
+                    if (File.Exists(oggPath))
+                    {
+                        var dialog = new SaveFileDialog
+                        {
+                            Title = "保存原版音频",
+                            Filter = "OGG 音频 (*.ogg)|*.ogg|所有文件 (*.*)|*.*",
+                            FileName = $"{id}_{name}.ogg"
+                        };
+                        if (dialog.ShowDialog(this) == true)
+                        {
+                            File.Copy(oggPath, dialog.FileName, true);
+                            Post(new { type = "toast", message = $"已保存音频: {Path.GetFileName(dialog.FileName)}" });
+                        }
+                    }
+                    else
+                    {
+                        Post(new { type = "error", message = "未找到该音频的原版文件" });
+                    }
+                }
+                break;
         }
     }
 
@@ -312,6 +383,20 @@ public partial class HybridWindow
                 var oggPath = Path.Combine(cacheDir, $"{id}.ogg");
                 var wavPath = Path.Combine(cacheDir, $"{id}.wav");
                 var targetFile = File.Exists(oggPath) ? oggPath : (File.Exists(wavPath) ? wavPath : null);
+
+                if (targetFile == null && int.TryParse(id, out var numId))
+                {
+                    var catItem = _audioSkins.LoadCatalog().FirstOrDefault(x => x.Id == numId);
+                    if (catItem != null && !string.IsNullOrEmpty(catItem.RelOgg))
+                    {
+                        var exportRoot = AudioSkinSchemeManager.FindExportRoot(gameDirectory);
+                        if (exportRoot != null)
+                        {
+                            var candidate = Path.Combine(exportRoot, catItem.RelOgg);
+                            if (File.Exists(candidate)) targetFile = candidate;
+                        }
+                    }
+                }
 
                 if (targetFile != null)
                 {

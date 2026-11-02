@@ -7,6 +7,8 @@
     items: [],
     category: 'all',
     statusFilter: 'all',
+    voiceChar: 'all',
+    voiceSkin: 'all',
     keyword: '',
     pageSize: 48,
     currentPage: 1,
@@ -28,6 +30,7 @@
         post({ type: 'audioSkinsSetActive', id: this.selectedSchemeId });
       });
 
+      // New Scheme Dialog
       $('audioNewSchemeBtn')?.addEventListener('click', () => {
         const dialog = $('audioCreateDialog');
         if (dialog) {
@@ -54,13 +57,39 @@
         }
       });
 
+      // Duplicate Scheme Dialog (Replaces prompt)
       $('audioDuplicateBtn')?.addEventListener('click', () => {
-        const newId = prompt('请输入新方案目录标识 (英文/数字):', this.selectedSchemeId + '_copy');
-        if (!newId) return;
-        const newName = prompt('请输入新方案名称:', this.selectedSchemeId + ' (副本)');
-        post({ type: 'audioSkinsDuplicate', sourceId: this.selectedSchemeId, newId: newId.trim(), name: (newName || newId).trim() });
+        const dialog = $('audioDuplicateDialog');
+        if (dialog) {
+          $('audioDuplicateSourceId').value = this.selectedSchemeId;
+          $('audioDuplicateSourceDisplay').value = this.selectedSchemeId;
+          $('audioDuplicateNewId').value = this.selectedSchemeId + '_copy';
+          $('audioDuplicateNewName').value = this.selectedSchemeId + ' (副本)';
+          dialog.showModal();
+        }
       });
 
+      $('audioDuplicateCancel')?.addEventListener('click', () => {
+        $('audioDuplicateDialog')?.close();
+      });
+
+      $('audioDuplicateForm')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const f = new FormData(e.target);
+        const newId = (f.get('newId') || '').toString().trim();
+        const newName = (f.get('newName') || '').toString().trim();
+        if (newId) {
+          post({
+            type: 'audioSkinsDuplicate',
+            sourceId: this.selectedSchemeId,
+            newId,
+            name: newName || newId
+          });
+          $('audioDuplicateDialog')?.close();
+        }
+      });
+
+      // Edit Scheme Metadata Dialog
       $('audioEditMetaBtn')?.addEventListener('click', () => {
         const profile = this.profiles.find(p => p.id === this.selectedSchemeId);
         if (!profile) return;
@@ -88,16 +117,30 @@
         $('audioEditMetaDialog')?.close();
       });
 
+      // Delete Scheme Dialog (Replaces confirm/alert)
       $('audioDeleteSchemeBtn')?.addEventListener('click', () => {
         if (this.selectedSchemeId === 'default') {
-          alert('默认方案不可删除！');
+          post({ type: 'toast', message: '默认方案不可删除！' });
           return;
         }
-        if (confirm(`确定要删除方案 [${this.selectedSchemeId}] 及其包含的所有自定义音频吗？此操作不可撤销。`)) {
-          post({ type: 'audioSkinsDelete', id: this.selectedSchemeId });
+        const dialog = $('audioDeleteConfirmDialog');
+        if (dialog) {
+          $('audioDeleteSchemeTargetName').textContent = this.selectedSchemeId;
+          dialog.showModal();
         }
       });
 
+      $('audioDeleteConfirmCancel')?.addEventListener('click', () => {
+        $('audioDeleteConfirmDialog')?.close();
+      });
+
+      $('audioDeleteConfirmForm')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        post({ type: 'audioSkinsDelete', id: this.selectedSchemeId });
+        $('audioDeleteConfirmDialog')?.close();
+      });
+
+      // Scheme Folder & ZIP Import / Export
       $('audioOpenFolderBtn')?.addEventListener('click', () => {
         post({ type: 'audioSkinsOpenFolder' });
       });
@@ -110,13 +153,32 @@
         post({ type: 'audioSkinsImportZip' });
       });
 
+      // Extract Game Audio Dialog (Custom Dialog replaces browser confirm)
       $('audioExtractGameBtn')?.addEventListener('click', () => {
-        if (confirm('是否从游戏资源中整理与提取全部原版音频？\n这将允许你在界面中直接试听原版音效进行对比。')) {
-          post({ type: 'audioSkinsExtractGameAudio' });
-        }
+        $('audioExtractConfirmDialog')?.showModal();
       });
 
-      // Categories
+      $('audioExtractCancelBtn')?.addEventListener('click', () => {
+        $('audioExtractConfirmDialog')?.close();
+      });
+
+      $('audioExtractConfirmForm')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        post({ type: 'audioSkinsExtractGameAudio' });
+        $('audioExtractConfirmDialog')?.close();
+      });
+
+      // Direct Export Original Audio to ZIP
+      $('audioExportZipDirectBtn')?.addEventListener('click', () => {
+        post({ type: 'audioSkinsExportOriginalZip' });
+        $('audioExtractConfirmDialog')?.close();
+      });
+
+      $('audioExportOriginalBtn')?.addEventListener('click', () => {
+        post({ type: 'audioSkinsExportOriginalZip' });
+      });
+
+      // Category filter tabs
       const catTabs = document.querySelectorAll('#audioCategoryTabs .gallery-tab');
       catTabs.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -127,6 +189,27 @@
           this.renderList();
         });
       });
+
+      // Voice Character & Skin sub-filters
+      const charSelect = $('audioVoiceCharSelect');
+      if (charSelect) {
+        charSelect.addEventListener('change', () => {
+          this.voiceChar = charSelect.value;
+          this.voiceSkin = 'all';
+          this.updateVoiceSkinDropdown();
+          this.currentPage = 1;
+          this.renderList();
+        });
+      }
+
+      const skinSelect = $('audioVoiceSkinSelect');
+      if (skinSelect) {
+        skinSelect.addEventListener('change', () => {
+          this.voiceSkin = skinSelect.value;
+          this.currentPage = 1;
+          this.renderList();
+        });
+      }
 
       // Status filters
       document.querySelectorAll('input[name="audioStatusFilter"]').forEach(radio => {
@@ -244,13 +327,80 @@
       if ($('audioCountBGM')) $('audioCountBGM').textContent = counts.BGM;
       if ($('audioCountMisc')) $('audioCountMisc').textContent = counts.Misc;
 
+      this.updateVoiceDropdowns();
       this.renderList();
     },
 
+    updateVoiceDropdowns() {
+      const charSelect = $('audioVoiceCharSelect');
+      if (!charSelect) return;
+
+      const voiceItems = this.items.filter(x => x.category === 'Voice');
+      const charMap = new Map();
+      voiceItems.forEach(item => {
+        const cname = item.characterName || '其它';
+        if (!charMap.has(cname)) {
+          charMap.set(cname, { id: item.characterId, count: 0 });
+        }
+        charMap.get(cname).count++;
+      });
+
+      let charHtml = '<option value="all">全部角色 (全部)</option>';
+      const sortedChars = Array.from(charMap.entries()).sort((a, b) => {
+        const idA = a[1].id || 99999;
+        const idB = b[1].id || 99999;
+        return idA - idB;
+      });
+
+      sortedChars.forEach(([cname, info]) => {
+        const sel = (cname === this.voiceChar) ? 'selected' : '';
+        charHtml += `<option value="${escapeHtml(cname)}" ${sel}>${escapeHtml(cname)} (${info.count})</option>`;
+      });
+      charSelect.innerHTML = charHtml;
+
+      this.updateVoiceSkinDropdown();
+    },
+
+    updateVoiceSkinDropdown() {
+      const skinSelect = $('audioVoiceSkinSelect');
+      if (!skinSelect) return;
+
+      const voiceItems = this.items.filter(x => {
+        if (x.category !== 'Voice') return false;
+        if (this.voiceChar !== 'all' && x.characterName !== this.voiceChar) return false;
+        return true;
+      });
+
+      const skinMap = new Map();
+      voiceItems.forEach(item => {
+        const sname = item.skinName || '常规默认';
+        skinMap.set(sname, (skinMap.get(sname) || 0) + 1);
+      });
+
+      let skinHtml = '<option value="all">全部皮肤</option>';
+      Array.from(skinMap.entries()).forEach(([sname, count]) => {
+        const sel = (sname === this.voiceSkin) ? 'selected' : '';
+        skinHtml += `<option value="${escapeHtml(sname)}" ${sel}>${escapeHtml(sname)} (${count})</option>`;
+      });
+      skinSelect.innerHTML = skinHtml;
+    },
+
     getFilteredItems() {
+      const isVoice = (this.category === 'Voice');
+      const voiceRow = $('audioVoiceFilterRow');
+      if (voiceRow) {
+        voiceRow.style.display = isVoice ? 'flex' : 'none';
+      }
+
       return this.items.filter(item => {
         // Category filter
         if (this.category !== 'all' && item.category !== this.category) return false;
+
+        // Voice sub-filters
+        if (isVoice) {
+          if (this.voiceChar !== 'all' && item.characterName !== this.voiceChar) return false;
+          if (this.voiceSkin !== 'all' && item.skinName !== this.voiceSkin) return false;
+        }
 
         // Status filter
         if (this.statusFilter === 'replaced' && item.action !== 'replace') return false;
@@ -261,7 +411,9 @@
           const matchId = ('#' + item.id).includes(this.keyword) || item.id.toString() === this.keyword;
           const matchName = (item.name || '').toLowerCase().includes(this.keyword);
           const matchLabel = (item.label || '').toLowerCase().includes(this.keyword);
-          if (!matchId && !matchName && !matchLabel) return false;
+          const matchChar = (item.characterName || '').toLowerCase().includes(this.keyword);
+          const matchSkin = (item.skinName || '').toLowerCase().includes(this.keyword);
+          if (!matchId && !matchName && !matchLabel && !matchChar && !matchSkin) return false;
         }
 
         return true;
@@ -277,6 +429,9 @@
 
       if ($('audioGalleryCount')) {
         $('audioGalleryCount').textContent = `共 ${total} 个音效条目`;
+      }
+      if ($('audioVoiceFilterCount')) {
+        $('audioVoiceFilterCount').textContent = `当前筛选: ${total} 条语音`;
       }
 
       if (total === 0) {
@@ -352,6 +507,17 @@
 
       const categoryBadge = `<span class="badge" style="background:var(--cs-hover); color:var(--cs-secondary); font-size:11px;">${item.category}</span>`;
 
+      let voiceTags = '';
+      if (item.category === 'Voice' && item.characterName) {
+        voiceTags = `
+          <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px;">
+            <span class="badge" style="background:var(--cs-hover); color:var(--cs-text); font-weight:600;">${escapeHtml(item.characterName)}</span>
+            <span class="badge" style="background:var(--cs-input); color:var(--cs-secondary);">${escapeHtml(item.skinName || '常规默认')}</span>
+            ${item.slotName ? `<span class="badge" style="background:var(--cs-card); border:1px solid var(--cs-border); color:var(--cs-text);">${escapeHtml(item.slotName)}</span>` : ''}
+          </div>
+        `;
+      }
+
       return `
         <div class="audio-item-card" data-id="${item.id}" data-name="${escapeHtml(item.name)}" style="
           background: var(--cs-card);
@@ -364,8 +530,8 @@
         ">
           <!-- Card Header -->
           <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
-            <div style="min-width: 0;">
-              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+            <div style="min-width: 0; flex: 1;">
+              <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 4px;">
                 <span style="font-weight: bold; color: var(--cs-accent); font-size: 13px;">#${item.id}</span>
                 ${categoryBadge}
                 ${statusBadge}
@@ -373,7 +539,8 @@
               <h4 style="margin: 0; font-size: 14px; color: var(--cs-text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(item.label || item.name)}">
                 ${escapeHtml(item.label || item.name)}
               </h4>
-              <div style="font-size: 11px; color: var(--cs-muted); margin-top: 2px; font-family: monospace;" title="${escapeHtml(item.name)}">
+              ${voiceTags}
+              <div style="font-size: 11px; color: var(--cs-muted); margin-top: 3px; font-family: monospace;" title="${escapeHtml(item.name)}">
                 ${escapeHtml(item.name)}
               </div>
             </div>
@@ -385,8 +552,11 @@
               <button class="secondary-btn btn-play-original" data-url="${escapeHtml(item.originalPreviewUrl)}" style="padding: 4px 10px; font-size: 12px;">
                 ▶ 试听原版
               </button>
+              <button class="secondary-btn btn-export-original" data-id="${item.id}" data-name="${escapeHtml(item.name)}" style="padding: 4px 8px; font-size: 12px;" title="保存此原版音频文件到本地">
+                ⤓ 保存
+              </button>
             ` : `
-              <button class="secondary-btn" disabled style="padding: 4px 10px; font-size: 12px; opacity: 0.5;" title="原版音频未提取，点击上方「提取原版音频」按钮可就绪试听">
+              <button class="secondary-btn" disabled style="padding: 4px 10px; font-size: 12px; opacity: 0.5;" title="原版未提取，点击上方「提取原版音频」按钮整理">
                 原版未提取
               </button>
             `}
@@ -430,6 +600,15 @@
         btn.addEventListener('click', () => {
           const url = btn.getAttribute('data-url');
           this.playAudio(url, btn);
+        });
+      });
+
+      // Export Single Original
+      container.querySelectorAll('.btn-export-original').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = Number(btn.getAttribute('data-id'));
+          const name = btn.getAttribute('data-name') || '';
+          post({ type: 'audioSkinsExportSingleOriginal', id, name });
         });
       });
 

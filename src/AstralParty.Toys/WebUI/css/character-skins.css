@@ -56,14 +56,14 @@
   color: var(--gp-blue);
 }
 #characterSkinPanel .primary-btn,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) .primary-btn {
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) .primary-btn {
   background: var(--cs-accent);
   border-color: transparent;
   color: white;
   box-shadow: none;
 }
 #characterSkinPanel .primary-btn:hover,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) .primary-btn:hover {
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) .primary-btn:hover {
   background: color-mix(in srgb, var(--cs-accent) 88%, black);
 }
 .character-skin-tabs {
@@ -106,14 +106,14 @@
   padding-bottom: 20px;
 }
 #characterSkinPanel .secondary-btn,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) .secondary-btn {
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) .secondary-btn {
   color: var(--cs-text);
   background: var(--cs-input);
   border: 1px solid var(--cs-border-strong);
   box-shadow: none;
 }
 #characterSkinPanel .secondary-btn:hover,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) .secondary-btn:hover {
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) .secondary-btn:hover {
   color: var(--cs-text);
   background: var(--cs-hover);
   border-color: var(--cs-border-strong);
@@ -283,7 +283,7 @@
   gap: 16px;
 }
 .character-detail label,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) label {
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) label {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -296,9 +296,9 @@
 .character-detail select,
 .character-detail textarea,
 .character-list-panel input,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) input,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) select,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) textarea {
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) input,
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) select,
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) textarea {
   width: 100%;
   max-width: 100%;
   min-height: 44px;
@@ -314,15 +314,15 @@
     box-shadow 0.18s;
 }
 .character-detail select option,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) select option {
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) select option {
   color: var(--cs-text);
   background: var(--cs-input);
 }
 .character-detail input::placeholder,
 .character-detail textarea::placeholder,
 .character-list-panel input::placeholder,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) input::placeholder,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) textarea::placeholder {
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) input::placeholder,
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) textarea::placeholder {
   color: var(--cs-muted);
   opacity: 1;
 }
@@ -335,9 +335,9 @@
 .character-detail select:focus,
 .character-detail textarea:focus,
 .character-list-panel input:focus,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) input:focus,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) select:focus,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) textarea:focus {
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) input:focus,
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) select:focus,
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) textarea:focus {
   outline: 2px solid var(--gp-blue);
   outline-offset: 2px;
   border-color: var(--gp-blue);
@@ -452,7 +452,7 @@
   font-weight: 600;
   margin-left: 8px;
 }
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) {
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) {
   width: min(480px, calc(100vw - 48px));
   max-height: calc(100vh - 64px);
   padding: 28px;
@@ -463,11 +463,11 @@
   box-shadow: var(--gp-shadow-lg);
   overflow: auto;
 }
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog)::backdrop {
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog)::backdrop {
   background: rgb(0 0 0 / 0.6);
   backdrop-filter: blur(3px);
 }
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) .character-template-toggle {
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) .character-template-toggle {
   flex-direction: row;
   align-items: center;
 }
@@ -481,11 +481,11 @@
 #characterTemplateProgress {
   overflow-wrap: anywhere;
 }
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) h3 {
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) h3 {
   font-size: 22px;
   margin: 0 0 24px;
 }
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) p {
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) p {
   font-size: 13px;
   line-height: 1.6;
   color: var(--cs-secondary);
@@ -515,7 +515,7 @@
 .character-detail button:focus-visible,
 .character-skin-tabs button:focus-visible,
 .character-package:focus-visible,
-:is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) button:focus-visible {
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) button:focus-visible {
   outline: 2px solid var(--gp-blue);
   outline-offset: 3px;
 }
@@ -581,7 +581,7 @@
 @media (prefers-reduced-motion: reduce) {
   .character-skin-tabs *,
   #characterSkinPanel *,
-  :is(#characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) * {
+  :is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) * {
     transition: none !important;
   }
 }

@@ -136,4 +136,41 @@ public sealed class AudioSkinSchemeTests : IDisposable
         Assert.Equal(8, copied.Rules[0].ConfigId);
         Assert.Equal("dice.wav", copied.Rules[0].File);
     }
+
+    [Fact]
+    public void Catalog_Loads1322Items_WithCharacterAndSkinAndRelOgg()
+    {
+        var catalog = _manager.LoadCatalog();
+        Assert.Equal(1322, catalog.Count);
+
+        var voiceItems = catalog.Where(c => c.Category == "Voice").ToList();
+        Assert.True(voiceItems.Count > 900);
+        Assert.All(voiceItems, v =>
+        {
+            Assert.False(string.IsNullOrEmpty(v.CharacterName));
+            Assert.False(string.IsNullOrEmpty(v.SkinName));
+        });
+
+        int withOgg = catalog.Count(c => !string.IsNullOrEmpty(c.RelOgg));
+        Assert.True(withOgg >= 1200, $"Expected >= 1200 relOgg entries, but got {withOgg}");
+    }
+
+    [Fact]
+    public void ExtractGameAudio_And_ExportOriginalZip_Works()
+    {
+        var exportRoot = AudioSkinSchemeManager.FindExportRoot(_gameDir);
+        if (exportRoot == null || !Directory.Exists(exportRoot)) return; // Skip if audio-export not on host
+
+        int extracted = _manager.ExtractGameAudio(_gameDir);
+        Assert.True(extracted >= 1200, $"Expected >= 1200 extracted files, got {extracted}");
+
+        var cacheDir = AudioSkinSchemeManager.AudioCacheDirectory(_gameDir);
+        Assert.True(Directory.Exists(cacheDir));
+        Assert.True(Directory.GetFiles(cacheDir, "*.ogg").Length >= 1200);
+
+        string zipPath = Path.Combine(_gameDir, "original_all.zip");
+        int exported = _manager.ExportOriginalAudioZip(_gameDir, zipPath);
+        Assert.True(File.Exists(zipPath));
+        Assert.True(exported >= 1200);
+    }
 }
