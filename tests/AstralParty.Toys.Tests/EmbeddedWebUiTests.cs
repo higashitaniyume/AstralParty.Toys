@@ -166,4 +166,28 @@ public sealed class EmbeddedWebUiTests
 
         Assert.Contains(".mods-search", css);
     }
+
+    [Fact]
+    public void AudioOriginalImport_IsWiredInWebUi()
+    {
+        using var stream = EmbeddedWebStore.Open("index.html");
+        Assert.NotNull(stream);
+        using var reader = new StreamReader(stream!);
+        var html = reader.ReadToEnd();
+
+        Assert.Contains("id=\"audioImportOriginalZipBtn\"", html);
+        Assert.Contains("id=\"audioImportOriginalZipBtnBar\"", html);
+
+        using var jsStream = EmbeddedWebStore.Open("js/audio-skins.js");
+        Assert.NotNull(jsStream);
+        using var jsReader = new StreamReader(jsStream!);
+        var js = jsReader.ReadToEnd();
+
+        Assert.Contains("audioSkinsImportOriginalZip", js);
+        Assert.Contains("audioImportOriginalZipBtn", js);
+        Assert.Contains("audioImportOriginalZipBtnBar", js);
+
+        var dispatcher = File.ReadAllText(Path.Combine(TestPaths.AppSourceDirectory, "HybridWindow.Dispatcher.cs"));
+        Assert.Contains("case \"audioSkinsImportOriginalZip\":", dispatcher);
+    }
 }

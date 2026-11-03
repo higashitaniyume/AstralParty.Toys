@@ -536,6 +536,7 @@ public partial class HybridWindow
                 case "audioSkinsSetVolume":
                 case "audioSkinsExportZip":
                 case "audioSkinsImportZip":
+                case "audioSkinsImportOriginalZip":
                 case "audioSkinsExtractGameAudio":
                 case "audioSkinsExportOriginalZip":
                 case "audioSkinsExportSingleOriginal":
