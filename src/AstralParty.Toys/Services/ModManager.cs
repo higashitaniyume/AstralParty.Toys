@@ -451,15 +451,26 @@ public sealed partial class ModManager
 
             // 内置 mod（可选）：每 mod 一个文件夹 mods\{ModId}\{ModId}.dll + sidecar
             // 已存在的同名文件会被覆盖为随包版本（升级工具时一并升级内置 mod）。
+            // ★ 保留用户原先设置的 enabled 开关状态，避免更新加载器时把已禁用的内置 mod 重置为开启。
             if (includeSampleMod)
             {
+                var preservedEnabled = CaptureInstalledModsEnabled(loaderRoot);
                 foreach (var mod in EmbeddedBuiltInMods)
                 {
                     var modDir = Path.Combine(loaderRoot, ModsFolderName, mod.Id);
                     Directory.CreateDirectory(modDir);
                     WriteAllBytesProtected(Path.Combine(modDir, mod.Id + ".dll"), mod.Dll);
                     if (mod.Sidecar is not null)
-                        WriteAllBytesProtected(Path.Combine(modDir, mod.Id + ".json"), mod.Sidecar);
+                    {
+                        var sidecarBytes = mod.Sidecar;
+                        if (preservedEnabled.TryGetValue(mod.Id, out var previousEnabled))
+                        {
+                            var sidecarText = System.Text.Encoding.UTF8.GetString(mod.Sidecar);
+                            var updatedJson = SetJsonBool(sidecarText, "enabled", previousEnabled);
+                            sidecarBytes = System.Text.Encoding.UTF8.GetBytes(updatedJson);
+                        }
+                        WriteAllBytesProtected(Path.Combine(modDir, mod.Id + ".json"), sidecarBytes);
+                    }
                     if (mod.Data.Count > 0)
                     {
                         var dataDir = Path.Combine(modDir, "data");
@@ -894,7 +905,9 @@ public sealed partial class ModManager
             ExtractDirectoryEntries(archive, "AstralParty_ModLoader/bootstrap/", loaderRoot);
             // mod：每 mod 一个文件夹，发布包里有什么就装什么；
             // 同时拒绝含 ".." 的条目，避免 zip 路径穿越写出 mods\ 之外。
-            ExtractDirectoryEntries(archive, PackageModsPrefix, loaderRoot);
+            // ★ 保留用户已有 mod 的 enabled 开关与 config.json，避免更新加载器时重置用户设置。
+            var preservedModEnabled = CaptureInstalledModsEnabled(loaderRoot);
+            ExtractModDirectoryEntries(archive, PackageModsPrefix, loaderRoot, preservedModEnabled);
 
             // 写入安装清单（记录版本，供 GetStatus 显示/对比）
             var manifestEntry = archive.GetEntry(InstalledManifestFileName);
@@ -929,6 +942,106 @@ public sealed partial class ModManager
         var entry = archive.GetEntry(entryName);
         if (entry is null || string.IsNullOrEmpty(entry.Name)) return;
         WriteAllBytesProtected(targetPath, ReadEntryBytes(entry));
+    }
+
+    /// <summary>收集 mods 目录下所有已装 mod 的用户启用状态（显式设置了 enabled 的）。
+    /// 键为 mod 标识符（文件夹名或文件名不含扩展名），不区分大小写。</summary>
+    private static Dictionary<string, bool> CaptureInstalledModsEnabled(string loaderRoot)
+    {
+        var states = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+        var modsDir = Path.Combine(loaderRoot, ModsFolderName);
+        if (!Directory.Exists(modsDir)) return states;
+
+        // 1. 旧布局平铺: mods/*.json
+        try
+        {
+            foreach (var file in Directory.EnumerateFiles(modsDir, "*.json"))
+            {
+                var fileName = Path.GetFileName(file);
+                if (string.Equals(fileName, ModConfigFileName, StringComparison.OrdinalIgnoreCase)) continue;
+                var modId = Path.GetFileNameWithoutExtension(fileName);
+                var enabled = ReadSidecarEnabled(file);
+                if (enabled.HasValue) states[modId] = enabled.Value;
+            }
+        }
+        catch { }
+
+        // 2. 新布局: mods/{folder}/{folder}.json (新布局优先覆盖平铺)
+        try
+        {
+            foreach (var subDir in Directory.EnumerateDirectories(modsDir))
+            {
+                var folderName = Path.GetFileName(subDir);
+                var sidecar = Path.Combine(subDir, folderName + ".json");
+                if (File.Exists(sidecar))
+                {
+                    var enabled = ReadSidecarEnabled(sidecar);
+                    if (enabled.HasValue) states[folderName] = enabled.Value;
+                }
+                else
+                {
+                    // 兼容文件夹内 sidecar 与文件夹名不完全一致但为 mod 主配置的情况
+                    foreach (var file in Directory.EnumerateFiles(subDir, "*.json"))
+                    {
+                        var name = Path.GetFileName(file);
+                        if (string.Equals(name, ModConfigFileName, StringComparison.OrdinalIgnoreCase)) continue;
+                        var modId = Path.GetFileNameWithoutExtension(name);
+                        var enabled = ReadSidecarEnabled(file);
+                        if (enabled.HasValue)
+                        {
+                            states[modId] = enabled.Value;
+                            states[folderName] = enabled.Value;
+                        }
+                    }
+                }
+            }
+        }
+        catch { }
+
+        return states;
+    }
+
+    /// <summary>把 zip 内 mods 前缀下的全部文件条目提取到 loaderRoot，保留目录层级。
+    /// 保留用户已装 mod 的 enabled 开关状态（不因发布包更新重置为默认启用），且不覆盖已存在的 mod config.json。</summary>
+    private static void ExtractModDirectoryEntries(ZipArchive archive, string entryPrefix, string loaderRoot, IReadOnlyDictionary<string, bool> preservedEnabled)
+    {
+        var packageRootLength = LoaderFolderName.Length + 1;   // 去掉 "AstralParty_ModLoader/" 前缀
+        foreach (var entry in archive.Entries)
+        {
+            if (!entry.FullName.StartsWith(entryPrefix, StringComparison.OrdinalIgnoreCase)) continue;
+            if (string.IsNullOrEmpty(entry.Name)) continue;   // 目录条目
+            var relative = entry.FullName.Substring(packageRootLength).Replace('/', Path.DirectorySeparatorChar);
+            if (!IsSafeRelativePath(relative))
+                throw new InvalidDataException($"发布包含有非法路径：{entry.FullName}");
+            var target = Path.Combine(loaderRoot, relative);
+            var fileName = Path.GetFileName(target);
+
+            // 1. 保留已有 mod 配置（config.json）：发布包内默认配置不覆盖用户已调整的值
+            if (string.Equals(fileName, ModConfigFileName, StringComparison.OrdinalIgnoreCase) && File.Exists(target))
+            {
+                continue;
+            }
+
+            var bytes = ReadEntryBytes(entry);
+
+            // 2. 如果是 sidecar 文件且用户先前设置过启用/禁用：保留其状态
+            if (fileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(fileName, ModConfigFileName, StringComparison.OrdinalIgnoreCase))
+            {
+                var modId = Path.GetFileNameWithoutExtension(fileName);
+                var parentDir = Path.GetFileName(Path.GetDirectoryName(target));
+                if (preservedEnabled.TryGetValue(modId, out var previousEnabled) ||
+                    (!string.IsNullOrEmpty(parentDir) && preservedEnabled.TryGetValue(parentDir, out previousEnabled)))
+                {
+                    var jsonText = System.Text.Encoding.UTF8.GetString(bytes);
+                    var updatedJson = SetJsonBool(jsonText, "enabled", previousEnabled);
+                    bytes = System.Text.Encoding.UTF8.GetBytes(updatedJson);
+                }
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            WriteAllBytesProtected(target, bytes);
+        }
     }
 
     /// <summary>把 zip 内某个前缀（如 AstralParty_ModLoader/mods/ 或 …/bootstrap/）下的全部文件条目

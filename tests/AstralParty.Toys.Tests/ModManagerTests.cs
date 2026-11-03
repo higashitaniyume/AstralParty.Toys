@@ -1405,7 +1405,7 @@ public sealed class ModManagerTests
     // ============================== 联网更新：包解析 / 校验 / 安装 ==============================
 
     /// <summary>构造一个符合发布布局的内存 zip（version.dll Doorstop 式，含清单，可带/不带哈希校验）。</summary>
-    private static byte[] BuildFakePackage(string version, bool includeHashes = true, string? configSdkVersion = null, bool includeSymbols = false, bool includeOptionalMod = false)
+    private static byte[] BuildFakePackage(string version, bool includeHashes = true, string? configSdkVersion = null, bool includeSymbols = false, bool includeOptionalMod = false, IEnumerable<(string Name, byte[] Data)>? extraEntries = null)
     {
         using var memory = new MemoryStream();
         using (var archive = new ZipArchive(memory, ZipArchiveMode.Create, leaveOpen: true))
@@ -1447,6 +1447,10 @@ public sealed class ModManagerTests
                 entries.Add(("AstralParty_ModLoader/sdk/CesiumLoader.SDK.pdb", new byte[] { 0x50, 0x53, 0x01 }));
                 entries.Add(("AstralParty_ModLoader/bootstrap/CesiumLoader.Bootstrap.dll", new byte[] { 0x42, 0x54, 0x01 }));
                 entries.Add(("AstralParty_ModLoader/bootstrap/CesiumLoader.Bootstrap.pdb", new byte[] { 0x42, 0x50, 0x01 }));
+            }
+            if (extraEntries is not null)
+            {
+                entries.AddRange(extraEntries);
             }
             foreach (var (name, data) in entries) Add(name, data);
 
@@ -1618,6 +1622,83 @@ public sealed class ModManagerTests
         Assert.Throws<InvalidOperationException>(() => harness.Manager.ImportReleaseFile(harness.GameDirectory, zip, overwriteDll: true));
         Assert.False(File.Exists(Path.Combine(harness.GameDirectory, "version.dll")));
         Assert.False(Directory.Exists(Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName)));
+    }
+
+    [Fact]
+    public void Install_PreservesModEnabledState_AcrossReinstalls()
+    {
+        using var harness = new ModHarness("ap-mod-install-preserve-enabled");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: true);
+
+        // 默认情况下所有内置 mod 均处于启用状态
+        var status = harness.Manager.GetStatus();
+        var activityMod = status.Mods.FirstOrDefault(m => m.Name == "ActivityLogMod");
+        Assert.NotNull(activityMod);
+        Assert.True(activityMod.Enabled);
+
+        // 用户在界面上关闭 ActivityLogMod
+        harness.Manager.ToggleMod(harness.GameDirectory, "ActivityLogMod.dll", false);
+        status = harness.Manager.GetStatus();
+        Assert.False(status.Mods.First(m => m.Name == "ActivityLogMod").Enabled);
+
+        // 重新安装/更新内置加载器（模拟覆盖更新）
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: true);
+
+        // 验证：已禁用的 mod 状态得到保留，未改动的 mod 依然保持启用
+        status = harness.Manager.GetStatus();
+        Assert.False(status.Mods.First(m => m.Name == "ActivityLogMod").Enabled, "更新内置加载器后已禁用的 mod 被重置为开启");
+        Assert.True(status.Mods.First(m => m.Name == "SpeedHackMod").Enabled, "其余正常 mod 状态异常");
+
+        // 重新开启后再更新，依然保持开启
+        harness.Manager.ToggleMod(harness.GameDirectory, "ActivityLogMod.dll", true);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: true);
+        status = harness.Manager.GetStatus();
+        Assert.True(status.Mods.First(m => m.Name == "ActivityLogMod").Enabled);
+    }
+
+    [Fact]
+    public void InstallPackage_PreservesModEnabledState()
+    {
+        using var harness = new ModHarness("ap-mod-pkg-preserve-enabled");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: true);
+
+        // 用户禁用 ActivityLogMod
+        harness.Manager.ToggleMod(harness.GameDirectory, "ActivityLogMod.dll", false);
+        Assert.False(harness.Manager.GetStatus().Mods.First(m => m.Name == "ActivityLogMod").Enabled);
+
+        // 从发布包更新（包内包含 ActivityLogMod 但没有 enabled 字段即默认启用，且带可选的新 mod）
+        var packageBytes = BuildFakePackage("9.0.0", includeSymbols: true, includeOptionalMod: true);
+        harness.Manager.InstallPackage(harness.GameDirectory, packageBytes, overwriteDll: true);
+
+        // 验证：更新加载器后，已禁用的 mod 依然保持禁用，新增加的 mod 默认启用
+        var status = harness.Manager.GetStatus();
+        Assert.Equal("9.0.0", status.InstalledVersion);
+        Assert.False(status.Mods.First(m => m.Name == "ActivityLogMod").Enabled, "发布包更新重置了 mod 开关");
+        Assert.True(status.Mods.First(m => m.Name == "OptionalMod").Enabled, "包内新 mod 应该默认启用");
+    }
+
+    [Fact]
+    public void InstallPackage_PreservesExistingModConfigFile()
+    {
+        using var harness = new ModHarness("ap-mod-pkg-preserve-config");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: true);
+
+        // 用户给 ActivityLogMod 写入自定义配置
+        var modDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName, "ActivityLogMod");
+        var configPath = Path.Combine(modDir, "config.json");
+        File.WriteAllText(configPath, "{\"userCustom\": 12345}");
+
+        // 发布包内带了一份默认 config.json（{"default": 0}）
+        var extra = new[]
+        {
+            ("AstralParty_ModLoader/mods/ActivityLogMod/config.json", System.Text.Encoding.UTF8.GetBytes("{\"default\": 0}"))
+        };
+        var packageBytes = BuildFakePackage("9.0.0", extraEntries: extra);
+        harness.Manager.InstallPackage(harness.GameDirectory, packageBytes, overwriteDll: true);
+
+        // 验证：用户的 config.json 未被覆盖
+        Assert.True(File.Exists(configPath));
+        Assert.Equal("{\"userCustom\": 12345}", File.ReadAllText(configPath));
     }
 
     /// <summary>重建 zip 并把指定条目内容换成别的字节（清单哈希不变 → 校验必失败）。</summary>
