@@ -138,4 +138,32 @@ public sealed class EmbeddedWebUiTests
 
         return string.Join('/', segments);
     }
+
+    [Fact]
+    public void ModSearchBox_IsWiredInWebUi()
+    {
+        using var stream = EmbeddedWebStore.Open("index.html");
+        Assert.NotNull(stream);
+        using var reader = new StreamReader(stream!);
+        var html = reader.ReadToEnd();
+
+        Assert.Contains("id=\"modSearchInput\"", html);
+        Assert.Contains("data-i18n-placeholder=\"mods.search_placeholder\"", html);
+
+        using var jsStream = EmbeddedWebStore.Open("js/mods.js");
+        Assert.NotNull(jsStream);
+        using var jsReader = new StreamReader(jsStream!);
+        var js = jsReader.ReadToEnd();
+
+        Assert.Contains("modSearchInput", js);
+        Assert.Contains("renderFilteredMods", js);
+        Assert.Contains("searchQuery", js);
+
+        using var cssStream = EmbeddedWebStore.Open("css/mods.css");
+        Assert.NotNull(cssStream);
+        using var cssReader = new StreamReader(cssStream!);
+        var css = cssReader.ReadToEnd();
+
+        Assert.Contains(".mods-search", css);
+    }
 }

@@ -43,6 +43,7 @@
 
   const ModsModule = {
     modStatus: null,
+    searchQuery: '',
     // 联网检查更新的结果（跨页面切换保留；state: idle | checking | done）
     updateInfo: { state: 'idle', latest: '', error: '' },
     builtInMods: [],
@@ -262,6 +263,28 @@
           if (fileName) post({ type: 'modToggle', fileName, enabled: toggle.checked });
         }
       });
+      const searchInput = $('modSearchInput');
+      if (searchInput) {
+        const onSearch = () => {
+          this.searchQuery = (searchInput.value || '').trim().toLowerCase();
+          this.renderFilteredMods();
+        };
+        searchInput.addEventListener('input', onSearch);
+        searchInput.addEventListener('search', onSearch);
+        searchInput.addEventListener('keydown', e => {
+          if (e.key === 'Escape') {
+            searchInput.value = '';
+            this.searchQuery = '';
+            this.renderFilteredMods();
+            searchInput.blur();
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+          }
+        });
+      }
+      window.addEventListener('appLanguageChanged', () => {
+        if (this.modStatus) this.renderFilteredMods();
+      });
     },
 
     // ---------- 状态 ----------
@@ -292,11 +315,9 @@
       this.renderGameDirectory(status);
       this.renderAdvancedWarnings(status);
 
-      const mods = status.mods || [];
-      this.renderModList($('modListContainer'), mods, 'mod');
+      this.searchQuery = ($('modSearchInput')?.value || '').trim().toLowerCase();
+      this.renderFilteredMods();
       this.renderModList($('modSdkContainer'), status.sdk || [], 'sdk');
-      const count = $('modModsCount');
-      if (count) count.textContent = String(mods.length);
       if (this.recoveryBusy) this.lockRecoveryButtons();
     },
 
@@ -597,13 +618,56 @@
 
     // ---------- 模组列表 ----------
 
-    renderModList(container, entries, kind) {
+    renderFilteredMods() {
+      const allMods = this.modStatus?.mods || [];
+      const query = this.searchQuery;
+      let filtered = allMods;
+      if (query) {
+        const terms = query.split(/\s+/).filter(Boolean);
+        filtered = allMods.filter(entry => {
+          const haystacks = [
+            entry.displayName,
+            entry.name,
+            entry.fileName,
+            entry.id,
+            entry.author,
+            entry.description,
+            entry.directoryName
+          ];
+          if (this.isBuiltInMod(entry)) {
+            haystacks.push('内置', 'builtin');
+          }
+          if (entry.enabled === false) {
+            haystacks.push('禁用', '已禁用', 'disabled');
+          } else {
+            haystacks.push('启用', '已启用', 'enabled');
+          }
+          const lower = haystacks.map(s => String(s ?? '').toLowerCase());
+          return terms.every(term => lower.some(h => h.includes(term)));
+        });
+      }
+
+      this.renderModList($('modListContainer'), filtered, 'mod', Boolean(query && allMods.length > 0));
+      const count = $('modModsCount');
+      if (count) {
+        count.textContent = query && allMods.length > 0
+          ? `${filtered.length} / ${allMods.length}`
+          : String(allMods.length);
+      }
+    },
+
+    renderModList(container, entries, kind, isSearchEmpty) {
       if (!container) return;
       const list = entries || [];
       if (list.length === 0) {
-        container.innerHTML = kind === 'mod'
-          ? '<p class="mods-empty">还没有模组 —— 点「导入模组」添加 DLL 或 ZIP 模组包，或重新安装加载器时勾选内置模组</p>'
-          : '<p class="mods-empty">sdk 目录为空（重新安装加载器会写入 CesiumLoader.SDK.dll）</p>';
+        if (kind === 'mod') {
+          const emptyText = isSearchEmpty
+            ? (window.i18n ? window.i18n.t('mods.empty_search') : '没有找到匹配的模组')
+            : '还没有模组 —— 点「导入模组」添加 DLL 或 ZIP 模组包，或重新安装加载器时勾选内置模组';
+          container.innerHTML = `<p class="mods-empty">${esc(emptyText)}</p>`;
+        } else {
+          container.innerHTML = '<p class="mods-empty">sdk 目录为空（重新安装加载器会写入 CesiumLoader.SDK.dll）</p>';
+        }
         return;
       }
       container.innerHTML = list

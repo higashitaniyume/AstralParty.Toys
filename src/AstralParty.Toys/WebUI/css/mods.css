@@ -241,9 +241,52 @@ body:not(.reduce-motion) #modsView:not(.page-entering) .mods-advanced {
   align-items: center;
   gap: 8px;
 }
-.mods-panel-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.mods-panel-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .mods-panel-actions .primary-btn,
 .mods-panel-actions .secondary-btn { padding: 7px 14px; font-size: 12.5px; }
+
+.mods-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  height: 32px;
+  width: 180px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-full);
+  background: rgba(10, 13, 24, 0.65);
+  color: var(--gp-text-muted);
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, width 0.2s ease;
+}
+
+.mods-search:focus-within {
+  border-color: var(--gp-border-pink);
+  box-shadow: 0 0 0 3px rgba(255, 23, 118, 0.12);
+  width: 220px;
+}
+
+.mods-search .mi {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
+.mods-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--gp-text-main);
+  font-size: 12.5px;
+  font-family: inherit;
+}
+
+.mods-search input::placeholder {
+  color: var(--gp-text-muted);
+}
 
 .mods-count {
   display: inline-flex;

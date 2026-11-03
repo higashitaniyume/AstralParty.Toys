@@ -173,6 +173,8 @@
       'mods.current_game': '当前游戏',
       'mods.manage_game_dirs': '管理游戏目录…',
       'mods.import_package': '导入发布包',
+      'mods.search_placeholder': '搜索模组…',
+      'mods.empty_search': '没有找到匹配的模组',
 
       // Skins
       'skins.title': '角色与卡牌皮肤工坊',
@@ -556,6 +558,8 @@
       'mods.current_game': 'Current Game',
       'mods.manage_game_dirs': 'Manage Directories…',
       'mods.import_package': 'Import Package',
+      'mods.search_placeholder': 'Search mods…',
+      'mods.empty_search': 'No matching mods found',
 
       // Skins
       'skins.title': 'Character & Card Skins Workshop',
@@ -938,6 +942,8 @@
       'mods.current_game': '現在のゲーム',
       'mods.manage_game_dirs': 'ゲームディレクトリ管理…',
       'mods.import_package': 'パッケージを導入',
+      'mods.search_placeholder': 'Modを検索…',
+      'mods.empty_search': '一致するModが見つかりませんでした',
 
       // Skins
       'skins.title': 'キャラ＆カードスキン工房',
@@ -1320,6 +1326,8 @@
       'mods.current_game': '目前遊戲',
       'mods.manage_game_dirs': '管理遊戲目錄…',
       'mods.import_package': '匯入發布包',
+      'mods.search_placeholder': '搜尋模組…',
+      'mods.empty_search': '沒有找到相符的模組',
 
       // Skins
       'skins.title': '角色與卡面造型工坊',
