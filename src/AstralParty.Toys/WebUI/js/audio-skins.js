@@ -168,6 +168,14 @@
         $('audioExtractConfirmDialog')?.close();
       });
 
+      // Import Original Audio ZIP package
+      const triggerImportOriginal = () => {
+        $('audioExtractConfirmDialog')?.close();
+        post({ type: 'audioSkinsImportOriginalZip' });
+      };
+      $('audioImportOriginalZipBtn')?.addEventListener('click', triggerImportOriginal);
+      $('audioImportOriginalZipBtnBar')?.addEventListener('click', triggerImportOriginal);
+
       // Direct Export Original Audio to ZIP
       $('audioExportZipDirectBtn')?.addEventListener('click', () => {
         post({ type: 'audioSkinsExportOriginalZip' });

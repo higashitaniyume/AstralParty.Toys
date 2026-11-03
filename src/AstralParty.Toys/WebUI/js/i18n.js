@@ -242,6 +242,8 @@
       'audio_skins.export_zip': '导出 ZIP',
       'audio_skins.import_zip': '导入 ZIP',
       'audio_skins.extract_game': '提取原版音频',
+      'audio_skins.import_original_zip': '导入原版音频',
+      'audio_skins.export_original_zip': '导出原版音频',
       'audio_skins.delete_scheme': '删除此方案',
       'audio_skins.new_scheme_title': '新建音效方案',
 
@@ -626,6 +628,8 @@
       'audio_skins.export_zip': 'Export ZIP',
       'audio_skins.import_zip': 'Import ZIP',
       'audio_skins.extract_game': 'Extract Original Audio',
+      'audio_skins.import_original_zip': 'Import Original Audio',
+      'audio_skins.export_original_zip': 'Export Original Audio',
       'audio_skins.delete_scheme': 'Delete Scheme',
       'audio_skins.new_scheme_title': 'New Sound Scheme',
 
@@ -1010,6 +1014,8 @@
       'audio_skins.export_zip': 'ZIP をエクスポート',
       'audio_skins.import_zip': 'ZIP をインポート',
       'audio_skins.extract_game': 'オリジナル音声を抽出',
+      'audio_skins.import_original_zip': 'オリジナル音声をインポート',
+      'audio_skins.export_original_zip': 'オリジナル音声をエクスポート',
       'audio_skins.delete_scheme': 'このスキームを削除',
       'audio_skins.new_scheme_title': '新規効果音スキーム',
 
@@ -1394,6 +1400,8 @@
       'audio_skins.export_zip': '匯出 ZIP',
       'audio_skins.import_zip': '匯入 ZIP',
       'audio_skins.extract_game': '擷取原版音訊',
+      'audio_skins.import_original_zip': '匯入原版音訊',
+      'audio_skins.export_original_zip': '匯出原版音訊',
       'audio_skins.delete_scheme': '刪除此方案',
       'audio_skins.new_scheme_title': '新建音效方案',
 

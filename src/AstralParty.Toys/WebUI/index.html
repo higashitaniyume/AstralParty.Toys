@@ -1677,6 +1677,9 @@
                 <button class="secondary-btn" id="audioExtractGameBtn" data-i18n="audio_skins.extract_game" title="从游戏资源中整理与提取全部原版音频用于试听和参考">
                   <span class="mi" data-icon="download"></span> 提取原版音频
                 </button>
+                <button class="secondary-btn" id="audioImportOriginalZipBtnBar" data-i18n="audio_skins.import_original_zip" title="从外部下载的原版音频 ZIP 压缩包快速导入至本地试听缓存">
+                  <span class="mi" data-icon="folder_zip"></span> 导入原版音频
+                </button>
                 <button class="secondary-btn" id="audioExportOriginalBtn" title="将游戏全部原版音频按角色与分类打包导出为 ZIP 文件">
                   <span class="mi" data-icon="archive"></span> 导出原版音频
                 </button>
@@ -1824,8 +1827,12 @@
                   <div>• 覆盖范围：全量 7 大分类，共 1,278 项有效原声音频</div>
                   <div>• 角色语音：包含全部 37 位角色、全皮肤形态语音</div>
                   <div>• 目标目录：游戏运行目录下的 <code>audio-cache/</code></div>
+                  <div>• 离线音频包：如本地游戏未包含预提取素材，可直接点击<b>「导入音频包」</b>选择下载的官方原版 ZIP 快速就绪</div>
                 </div>
                 <div class="character-toolbar" style="gap:10px;">
+                  <button type="button" class="secondary-btn" id="audioImportOriginalZipBtn" title="从外部下载的原版音频 ZIP 压缩包快速导入至本地试听缓存">
+                    <span class="mi" data-icon="folder_zip"></span> 导入音频包 (.zip)
+                  </button>
                   <button type="button" class="secondary-btn" id="audioExportZipDirectBtn" title="将全部原版音频打包为 ZIP 文件保存到本地">
                     <span class="mi" data-icon="archive"></span> 导出为 ZIP
                   </button>

@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System;
 using System.IO;
 using System.Linq;
@@ -172,5 +173,59 @@ public sealed class AudioSkinSchemeTests : IDisposable
         int exported = _manager.ExportOriginalAudioZip(_gameDir, zipPath);
         Assert.True(File.Exists(zipPath));
         Assert.True(exported >= 1200);
+
+        // Test importing the exported zip into a fresh game directory
+        string freshGameDir = Path.Combine(Path.GetTempPath(), "toys_audio_test_fresh_" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(freshGameDir);
+            int imported = _manager.ImportOriginalAudioZip(freshGameDir, zipPath);
+            Assert.True(imported >= 1200, $"Expected >= 1200 imported files, got {imported}");
+            var freshCache = AudioSkinSchemeManager.AudioCacheDirectory(freshGameDir);
+            Assert.True(Directory.Exists(freshCache));
+            Assert.True(Directory.GetFiles(freshCache, "*.ogg").Length >= 1200);
+        }
+        finally
+        {
+            if (Directory.Exists(freshGameDir)) try { Directory.Delete(freshGameDir, true); } catch { }
+        }
+    }
+
+    [Fact]
+    public void ImportOriginalAudioZip_FromCustomZip_ExtractsExpectedIds()
+    {
+        string tempGameDir = Path.Combine(Path.GetTempPath(), "toys_audio_custom_" + Guid.NewGuid().ToString("N"));
+        string zipPath = Path.Combine(Path.GetTempPath(), "custom_audio_" + Guid.NewGuid().ToString("N") + ".zip");
+        try
+        {
+            Directory.CreateDirectory(tempGameDir);
+            using (var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+            {
+                // 1. Prefixed with id: 1_UI_Common_Click01.ogg
+                var e1 = zip.CreateEntry("UI/1_UI_Common_Click01.ogg");
+                using (var s = e1.Open()) { s.Write(new byte[] { 1, 2, 3 }); }
+
+                // 2. Nested voice with id: Voice/Baphomet/常规默认/1001_Voice_Baphomet_Atk01.ogg
+                var e2 = zip.CreateEntry("Voice/Baphomet/常规默认/1001_Voice_Baphomet_Atk01.ogg");
+                using (var s = e2.Open()) { s.Write(new byte[] { 4, 5, 6 }); }
+
+                // 3. Name-only matching catalog item: UI_Common_ChooseError.ogg (Id 2)
+                var e3 = zip.CreateEntry("UI_Common_ChooseError.ogg");
+                using (var s = e3.Open()) { s.Write(new byte[] { 7, 8, 9 }); }
+            }
+
+            int imported = _manager.ImportOriginalAudioZip(tempGameDir, zipPath);
+            Assert.Equal(3, imported);
+
+            var cacheDir = AudioSkinSchemeManager.AudioCacheDirectory(tempGameDir);
+            Assert.True(File.Exists(Path.Combine(cacheDir, "1.ogg")));
+            Assert.True(File.Exists(Path.Combine(cacheDir, "1001.ogg")));
+            Assert.True(File.Exists(Path.Combine(cacheDir, "2.ogg")));
+        }
+        finally
+        {
+            if (File.Exists(zipPath)) try { File.Delete(zipPath); } catch { }
+            if (Directory.Exists(tempGameDir)) try { Directory.Delete(tempGameDir, true); } catch { }
+        }
     }
 }

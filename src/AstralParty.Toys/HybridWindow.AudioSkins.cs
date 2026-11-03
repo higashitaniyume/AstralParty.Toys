@@ -230,6 +230,40 @@ public partial class HybridWindow
                 });
                 break;
 
+            case "audioSkinsImportOriginalZip":
+                {
+                    var dialog = new OpenFileDialog
+                    {
+                        Title = "导入原版音频压缩包",
+                        Filter = "ZIP 压缩文件 (*.zip)|*.zip|所有文件 (*.*)|*.*"
+                    };
+                    if (dialog.ShowDialog(this) == true)
+                    {
+                        var zipPath = dialog.FileName;
+                        _ = Task.Run(() =>
+                        {
+                            try
+                            {
+                                Post(new { type = "audioSkinExtractProgress", payload = new { message = "正在准备导入原版音频…", progress = 0.05 } });
+                                int count = _audioSkins.ImportOriginalAudioZip(game, zipPath, (msg, prog) =>
+                                {
+                                    Post(new { type = "audioSkinExtractProgress", payload = new { message = msg, progress = prog } });
+                                });
+                                var active = _audioSkins.GetActiveSchemeId(game);
+                                PushAudioSkinItems(game, active);
+                                Post(new { type = "toast", message = $"已成功导入 {count} 首原版音频至试听缓存！" });
+                                Post(new { type = "audioSkinExtractDone" });
+                            }
+                            catch (Exception ex)
+                            {
+                                Post(new { type = "error", message = "导入原版音频失败: " + ex.Message });
+                                Post(new { type = "audioSkinExtractDone" });
+                            }
+                        });
+                    }
+                }
+                break;
+
             case "audioSkinsExportOriginalZip":
                 {
                     var dialog = new SaveFileDialog

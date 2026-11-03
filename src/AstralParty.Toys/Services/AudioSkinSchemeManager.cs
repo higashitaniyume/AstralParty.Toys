@@ -681,6 +681,19 @@ public sealed class AudioSkinSchemeManager
         if (File.Exists(destZipPath)) File.Delete(destZipPath);
         using (var zip = ZipFile.Open(destZipPath, ZipArchiveMode.Create))
         {
+            try
+            {
+                var asm = Assembly.GetExecutingAssembly();
+                using var stream = asm.GetManifestResourceStream("AstralParty.Toys.AudioCatalog.json");
+                if (stream != null)
+                {
+                    var entry = zip.CreateEntry("AudioCatalog.json");
+                    using var entryStream = entry.Open();
+                    stream.CopyTo(entryStream);
+                }
+            }
+            catch { }
+
             foreach (var c in catalog)
             {
                 var cached = Path.Combine(cacheDir, $"{c.Id}.ogg");
@@ -704,5 +717,71 @@ public sealed class AudioSkinSchemeManager
 
         progress?.Invoke($"原版音频导出完成，共打包 {exported} 首音频", 1.0);
         return exported;
+    }
+    /// <summary>
+    /// 从外部原版音频 ZIP 压缩包导入音频至本地 audio-cache 目录。
+    /// </summary>
+    public int ImportOriginalAudioZip(string gameDirectory, string zipPath, Action<string, double>? progress = null)
+    {
+        if (!File.Exists(zipPath)) throw new FileNotFoundException("ZIP 文件未找到: " + zipPath);
+
+        var cacheDir = AudioCacheDirectory(gameDirectory);
+        Directory.CreateDirectory(cacheDir);
+
+        var catalog = LoadCatalog();
+        var byName = catalog.GroupBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
+                            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+        progress?.Invoke("正在读取原版音频压缩包…", 0.05);
+
+        int imported = 0;
+        using (var zip = ZipFile.OpenRead(zipPath))
+        {
+            var validEntries = zip.Entries.Where(e =>
+                !string.IsNullOrEmpty(e.Name) &&
+                (e.Name.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase) ||
+                 e.Name.EndsWith(".wav", StringComparison.OrdinalIgnoreCase))).ToList();
+
+            var total = validEntries.Count;
+            int i = 0;
+
+            foreach (var entry in validEntries)
+            {
+                i++;
+                if (i % 25 == 0 || i == total)
+                {
+                    progress?.Invoke($"正在导入音频素材 ({i}/{total})…", 0.05 + 0.90 * ((double)i / total));
+                }
+
+                var stem = Path.GetFileNameWithoutExtension(entry.Name);
+                int targetId = 0;
+
+                var underscoreIdx = stem.IndexOf('_');
+                var idStr = underscoreIdx > 0 ? stem.Substring(0, underscoreIdx) : stem;
+                if (int.TryParse(idStr, out int num) && num > 0)
+                {
+                    targetId = num;
+                }
+                else if (byName.TryGetValue(stem, out var catItem))
+                {
+                    targetId = catItem.Id;
+                }
+                else if (underscoreIdx > 0 && byName.TryGetValue(stem.Substring(underscoreIdx + 1), out var catItem2))
+                {
+                    targetId = catItem2.Id;
+                }
+
+                if (targetId > 0)
+                {
+                    var ext = Path.GetExtension(entry.Name).ToLowerInvariant();
+                    var dest = Path.Combine(cacheDir, $"{targetId}{ext}");
+                    entry.ExtractToFile(dest, overwrite: true);
+                    imported++;
+                }
+            }
+        }
+
+        progress?.Invoke($"原版音频导入完成，共导入 {imported} 首音频", 1.0);
+        return imported;
     }
 }
