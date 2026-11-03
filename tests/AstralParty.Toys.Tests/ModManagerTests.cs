@@ -28,6 +28,7 @@ public sealed class ModManagerTests
         Assert.Contains("SpeedHackMod", ModManager.EmbeddedBuiltInModIdList);
         Assert.Contains("CombatOddsMod", ModManager.EmbeddedBuiltInModIdList);
         Assert.Contains("PveWaveForecastMod", ModManager.EmbeddedBuiltInModIdList);
+        Assert.Contains("StarCoinShopMod", ModManager.EmbeddedBuiltInModIdList);
         // 清单与安装用的那份必须是同一个来源(扫描内嵌资源), 不能各自维护
         Assert.Equal(ModManager.BuiltInModIds, ModManager.EmbeddedBuiltInModIdList);
     }
@@ -1523,10 +1524,10 @@ public sealed class ModManagerTests
         Assert.True(File.Exists(Path.Combine(modsRoot, "OptionalMod", "OptionalMod.dll")));
         Assert.True(File.Exists(Path.Combine(modsRoot, "OptionalMod", "OptionalMod.json")));
         Assert.True(File.Exists(Path.Combine(modsRoot, "OptionalMod", "OptionalMod.pdb")));
-        Assert.Equal(18, ModManager.EmbeddedBuiltInModIdList.Count);
+        Assert.Equal(19, ModManager.EmbeddedBuiltInModIdList.Count);
         Assert.Equal(new[] { "ActivityLogMod", "AudioSkinMod", "AutoThanksMod", "CardSkinMod", "CharacterSkinMod",
             "ChatDurationMod", "CombatOddsMod", "ForkDirectionMod", "FreeCameraMod", "HideHudMod",
-            "HomeBottomBarMod", "LanguageUnlockMod", "PveWaveForecastMod", "QuickChatPlusMod", "SpeedHackMod", "TurnClockMod",
+            "HomeBottomBarMod", "LanguageUnlockMod", "PveWaveForecastMod", "QuickChatPlusMod", "SpeedHackMod", "StarCoinShopMod", "TurnClockMod",
             "TurnFocusMod", "UnlockFrameRateMod" },
             ModManager.EmbeddedBuiltInModIdList);
     }
