@@ -1311,3 +1311,192 @@ body:not(.reduce-motion) #workshopView:not(.page-entering) .workshop-scroll {
 .workshop-detail-content .workshop-empty {
   margin: 48px auto;
 }
+
+
+/* ============================== 视图切换与列表视图 ============================== */
+
+.workshop-view-switch {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-full);
+  background: rgba(10, 13, 24, 0.65);
+  padding: 2px;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.view-switch-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--gp-radius-full);
+  background: transparent;
+  color: var(--gp-text-muted);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  padding: 0;
+}
+
+.view-switch-btn:hover {
+  color: var(--gp-text-main);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.view-switch-btn.active {
+  background: var(--gp-blue, #3b82f6);
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.view-switch-btn .mi {
+  width: 18px;
+  height: 18px;
+}
+
+/* 列表模式 */
+.workshop-grid.is-list-view {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.workshop-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-md);
+  background: linear-gradient(160deg, rgba(32, 40, 68, 0.75), rgba(20, 25, 44, 0.8));
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+}
+
+.workshop-row:hover {
+  transform: translateX(2px);
+  border-color: var(--gp-border-highlight);
+  background: linear-gradient(160deg, rgba(38, 48, 82, 0.88), rgba(25, 31, 56, 0.92));
+  box-shadow: var(--gp-shadow-sm);
+}
+
+.workshop-row.is-installing {
+  border-color: rgba(163, 230, 53, 0.6);
+}
+
+.workshop-row-thumb {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-radius: var(--gp-radius-sm);
+  background: linear-gradient(135deg, rgba(255, 23, 118, 0.18), rgba(56, 189, 248, 0.12));
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.workshop-row-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.workshop-row-thumb .workshop-cover-fallback {
+  font-size: 16px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.workshop-row-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.workshop-row-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.workshop-row-title {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--gp-text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workshop-row-desc {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--gp-text-sub);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.workshop-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11.5px;
+  color: var(--gp-text-muted);
+  flex-wrap: wrap;
+}
+
+.workshop-row-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.workshop-row-tags {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.workshop-row-tags span {
+  padding: 1px 6px;
+  border-radius: var(--gp-radius-full);
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 10.5px;
+  color: var(--gp-text-sub);
+}
+
+.workshop-row-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.workshop-row-progress {
+  width: 80px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--gp-radius-full);
+  overflow: hidden;
+}
+
+.workshop-row-progress span {
+  display: block;
+  height: 100%;
+  background: var(--gp-green);
+  transition: width 0.2s ease;
+}

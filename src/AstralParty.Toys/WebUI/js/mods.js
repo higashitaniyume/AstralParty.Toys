@@ -59,6 +59,43 @@
     },
 
     onShowMods() {
+      // 每次进入模组页面重置旧信息，显示读取中状态
+      const searchInput = $('modSearchInput');
+      if (searchInput) searchInput.value = '';
+      this.searchQuery = '';
+      this.modStatus = null;
+
+      const container = $('modListContainer');
+      if (container) {
+        const loadingText = window.i18n ? window.i18n.t('common.loading') : '正在读取模组信息…';
+        container.innerHTML = `<p class="mods-empty"><span class="mi" data-icon="hourglass_empty"></span> ${esc(loadingText)}</p>`;
+        window.Icons?.hydrate(container);
+      }
+      const sdkContainer = $('modSdkContainer');
+      if (sdkContainer) {
+        const loadingText = window.i18n ? window.i18n.t('common.loading') : '正在读取 SDK 信息…';
+        sdkContainer.innerHTML = `<p class="mods-empty"><span class="mi" data-icon="hourglass_empty"></span> ${esc(loadingText)}</p>`;
+        window.Icons?.hydrate(sdkContainer);
+      }
+      const count = $('modModsCount');
+      if (count) count.textContent = '…';
+
+      const badge = $('modStatusBadge');
+      if (badge) {
+        badge.textContent = window.i18n ? window.i18n.t('mods.detecting') || '检测中' : '检测中';
+        badge.className = 'badge badge-notice';
+      }
+      const title = $('modStatusTitle');
+      if (title) title.textContent = '正在检测安装状态…';
+      const text = $('modStatusText');
+      if (text) text.textContent = '请稍候';
+      const verdictText = $('modVersionVerdictText');
+      if (verdictText) verdictText.textContent = '正在读取版本信息…';
+      const instVer = $('modInstalledVersion');
+      if (instVer) instVer.textContent = '—';
+      const instNote = $('modInstalledNote');
+      if (instNote) instNote.textContent = '正在检测…';
+
       window.GameLibModule?.init?.();
       this.refreshModStatus();
       // 只同步变速栏状态(不弹设置窗口; 弹窗仅在点「⚙ 加载器设置」时出现)
@@ -204,6 +241,7 @@
       $('modOpenFolderTopBtn')?.addEventListener('click', () => post({ type: 'modOpenModsFolder' }));
       $('modOpenSdkBtn')?.addEventListener('click', () => post({ type: 'modOpenSdkFolder' }));
       $('modImportPackageBtn')?.addEventListener('click', () => this.openPackageImport());
+      $('modRefreshBtn')?.addEventListener('click', () => this.onShowMods());
       $('modOpenLogsBtn')?.addEventListener('click', () => post({ type: 'modOpenLogsFolder' }));
       $('modImportBtn')?.addEventListener('click', () => post({ type: 'modPickImport' }));
       $('modImportTopBtn')?.addEventListener('click', () => post({ type: 'modPickImport' }));

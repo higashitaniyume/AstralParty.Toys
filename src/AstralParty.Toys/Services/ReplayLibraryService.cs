@@ -1,4 +1,4 @@
-using System.Buffers;
+﻿using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Net;
@@ -196,6 +196,12 @@ public sealed class ReplayLibraryService
         settings.Language = AppLanguage.Normalize(settings.Language);
         settings.WorkshopUrl = WorkshopService.NormalizeBaseUrl(settings.WorkshopUrl);
         settings.WorkshopConsentVersion = Math.Max(0, settings.WorkshopConsentVersion);
+        settings.GitHubMirrorType = (settings.GitHubMirrorType ?? "").Trim().ToLowerInvariant();
+        if (settings.GitHubMirrorType is not (GitHubMirrorHelper.TypeDirect or GitHubMirrorHelper.TypeGhProxy or GitHubMirrorHelper.TypeGhFast or GitHubMirrorHelper.TypeCustom))
+        {
+            settings.GitHubMirrorType = GitHubMirrorHelper.DefaultMirrorType;
+        }
+        settings.CustomGitHubMirrorUrl = (settings.CustomGitHubMirrorUrl ?? "").Trim();
         return settings;
     }
 

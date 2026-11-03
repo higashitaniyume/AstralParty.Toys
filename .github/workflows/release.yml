@@ -257,17 +257,62 @@ jobs:
           path: artifacts
           merge-multiple: true
 
+      - name: Generate version manifest (version.json)
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = $tag -replace '^v', ''
+          $date = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+          $repo = "${{ github.repository }}"
+
+          $fwInstaller = Get-ChildItem artifacts -Filter "*-framework-dependent-installer.exe" | Select-Object -First 1
+          $scInstaller = Get-ChildItem artifacts -Filter "*-self-contained-installer.exe" | Select-Object -First 1
+
+          if (-not $fwInstaller -or -not $scInstaller) {
+            throw "Could not find installer executables in artifacts"
+          }
+
+          $fwHash = (Get-FileHash -Path $fwInstaller.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          $scHash = (Get-FileHash -Path $scInstaller.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+
+          $manifest = [ordered]@{
+            version = $version
+            releaseTag = $tag
+            releaseDate = $date
+            releaseNotes = ""
+            packages = [ordered]@{
+              frameworkDependentInstaller = [ordered]@{
+                fileName = $fwInstaller.Name
+                url = "https://github.com/$repo/releases/download/$tag/$($fwInstaller.Name)"
+                sha256 = $fwHash
+                size = $fwInstaller.Length
+              }
+              selfContainedInstaller = [ordered]@{
+                fileName = $scInstaller.Name
+                url = "https://github.com/$repo/releases/download/$tag/$($scInstaller.Name)"
+                sha256 = $scHash
+                size = $scInstaller.Length
+              }
+            }
+          }
+
+          $json = $manifest | ConvertTo-Json -Depth 5
+          [System.IO.File]::WriteAllText("artifacts/version.json", $json, [System.Text.Encoding]::UTF8)
+          Write-Host "Generated artifacts/version.json:"
+          Write-Host $json
+
       - name: Verify release assets
         shell: bash
         run: |
           set -euo pipefail
           mapfile -t assets < <(find artifacts -maxdepth 1 -type f -print | sort)
           printf '%s\n' "${assets[@]}"
-          test "${#assets[@]}" -eq 6
+          test "${#assets[@]}" -eq 7
           test "$(find artifacts -maxdepth 1 -type f -name '*.msi' | wc -l)" -eq 0
           test "$(find artifacts -maxdepth 1 -type f -name '*.zip' | wc -l)" -eq 2
           test "$(find artifacts -maxdepth 1 -type f -name '*.exe' | wc -l)" -eq 4
           test "$(find artifacts -maxdepth 1 -type f -name '*-installer.exe' | wc -l)" -eq 2
+          test "$(find artifacts -maxdepth 1 -type f -name 'version.json' | wc -l)" -eq 1
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2

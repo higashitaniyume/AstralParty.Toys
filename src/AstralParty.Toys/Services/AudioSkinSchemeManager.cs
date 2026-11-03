@@ -96,7 +96,7 @@ public sealed class AudioSkinSchemeManager
         {
             try
             {
-                if (Directory.Exists(c)) return Path.GetFullPath(c);
+                if (Directory.Exists(c) && Directory.Exists(Path.Combine(c, "voice"))) return Path.GetFullPath(c);
             }
             catch { }
         }

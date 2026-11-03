@@ -25,6 +25,21 @@ public sealed class ReplayLibrarySettings
 
     /// <summary>同意时间（UTC）。</summary>
     public DateTimeOffset? WorkshopConsentAt { get; set; }
+
+    /// <summary>每次启动时自动检查更新。</summary>
+    public bool AutoCheckUpdates { get; set; } = true;
+
+    /// <summary>检测到新版本时在后台自动下载安装包。</summary>
+    public bool AutoDownloadUpdates { get; set; } = false;
+
+    /// <summary>安装包下载完成后自动拉起安装器进行更新。</summary>
+    public bool AutoInstallUpdates { get; set; } = false;
+
+    /// <summary>GitHub 镜像加速源类型：gh-proxy, ghfast, custom, direct（默认 gh-proxy）。</summary>
+    public string GitHubMirrorType { get; set; } = GitHubMirrorHelper.DefaultMirrorType;
+
+    /// <summary>自定义的 GitHub 镜像加速前缀（当 GitHubMirrorType == custom 时使用）。</summary>
+    public string CustomGitHubMirrorUrl { get; set; } = "";
 }
 
 /// <summary>回放下载进度。宿主用 <see cref="IProgress{T}"/> 把它回推给界面（百分比在总量未知时为 null）。</summary>

@@ -15,6 +15,8 @@
     query: '',
     tag: '',
     sort: 'updated',
+    viewMode: localStorage.getItem('workshop_view_mode') || 'list',
+    statusFilter: 'all',
     detail: null,
     detailId: '',
     detailTab: 'details',
@@ -273,6 +275,61 @@
     return `<span class="workshop-cover-fallback">${esc(initials)}</span>`;
   }
 
+  function rowMarkup(item) {
+    return `
+      <article class="workshop-row" data-mod-id="${esc(item.id)}">
+        <div class="workshop-row-thumb">
+          ${coverMarkup(item)}
+        </div>
+        <div class="workshop-row-main">
+          <div class="workshop-row-header">
+            <h3 class="workshop-row-title" title="${esc(item.name)}">${esc(item.name)}</h3>
+            <span class="workshop-version">v${esc(item.latestVersion)}</span>
+            ${chipFor(item)}
+            ${item.featured ? `<span class="workshop-featured" style="position:static;padding:2px 8px;font-size:10.5px;">${esc(t('workshop.featured'))}</span>` : ''}
+          </div>
+          <p class="workshop-row-desc">${esc(item.summary || t('workshop.no_summary'))}</p>
+          <div class="workshop-row-meta">
+            <span>${esc(item.author || t('workshop.anonymous'))}</span>
+            <span aria-hidden="true">·</span>
+            <span>${formatBytes(item.sizeBytes)}</span>
+            <span aria-hidden="true">·</span>
+            <span>${t('workshop.downloads_short', { count: fmt(item.downloads) })}</span>
+            ${
+              item.tags && item.tags.length
+                ? `<div class="workshop-row-tags">${item.tags.slice(0, 3).map(tag => `<span>${esc(tag)}</span>`).join('')}</div>`
+                : ''
+            }
+          </div>
+        </div>
+        <div class="workshop-row-actions">
+          <div class="workshop-row-progress" hidden><span></span></div>
+          <button class="secondary-btn workshop-install-btn" data-role="action" type="button"></button>
+        </div>
+      </article>
+    `;
+  }
+
+  function filterItems(items) {
+    if (!Array.isArray(items)) return [];
+    const status = state.statusFilter || 'all';
+    if (status === 'all') return items;
+
+    return items.filter(item => {
+      const isBuiltIn = !!item.builtIn;
+      const installed = item.installedVersion || '';
+      const latest = item.latestVersion || '';
+      const isInstalled = !!installed && !isBuiltIn;
+      const isUpdatable = isInstalled && compareVersions(installed, latest) < 0;
+
+      if (status === 'updatable') return isUpdatable;
+      if (status === 'installed') return isInstalled;
+      if (status === 'not_installed') return !installed && !isBuiltIn;
+      if (status === 'builtin') return isBuiltIn;
+      return true;
+    });
+  }
+
   function cardMarkup(item) {
     return `
       <article class="workshop-card" data-mod-id="${esc(item.id)}">
@@ -324,7 +381,7 @@
     const installing = state.installingId === item.id;
     const action = actionFor(item);
     const button = card.querySelector('[data-role="action"]');
-    const bar = card.querySelector('.workshop-card-progress');
+    const bar = card.querySelector('.workshop-card-progress, .workshop-row-progress');
     const percent = installing ? progressPercent(state.progress) : null;
 
     card.classList.toggle('is-installing', installing);
@@ -363,7 +420,12 @@
     const grid = $('workshopGrid');
     if (!grid) return;
 
-    if (!state.items.length) {
+    const isList = state.viewMode === 'list';
+    grid.classList.toggle('is-list-view', isList);
+
+    const filtered = filterItems(state.items);
+
+    if (!filtered.length) {
       grid.innerHTML = state.loading
         ? `<div class="workshop-empty"><span class="mi" data-icon="hourglass_empty"></span><p>${esc(
             t('workshop.loading')
@@ -375,7 +437,9 @@
       return;
     }
 
-    grid.innerHTML = state.items.map(cardMarkup).join('');
+    grid.innerHTML = isList
+      ? filtered.map(rowMarkup).join('')
+      : filtered.map(cardMarkup).join('');
     syncCards();
     window.Icons?.hydrate(grid);
   }
@@ -384,7 +448,7 @@
   function syncCards() {
     const grid = $('workshopGrid');
     if (!grid) return;
-    grid.querySelectorAll('.workshop-card').forEach(card => {
+    grid.querySelectorAll('.workshop-card, .workshop-row').forEach(card => {
       const id = card.getAttribute('data-mod-id');
       const item = state.items.find(entry => entry.id === id);
       if (item) applyActionState(card, item);
@@ -990,7 +1054,19 @@
       this.initialized = true;
 
       $('workshopBackHomeBtn')?.addEventListener('click', () => showPage('home'));
-      $('workshopRefreshBtn')?.addEventListener('click', () => load(1));
+      $('workshopRefreshBtn')?.addEventListener('click', () => {
+        state.items = [];
+        const grid = $('workshopGrid');
+        if (grid) {
+          grid.innerHTML = `<div class="workshop-empty"><span class="mi" data-icon="hourglass_empty"></span><p>${esc(
+            t('workshop.loading')
+          )}</p></div>`;
+          window.Icons?.hydrate(grid);
+        }
+        const pager = $('workshopPager');
+        if (pager) pager.innerHTML = '';
+        load(1);
+      });
 
       $('workshopDetailBackBtn')?.addEventListener('click', () => backToList());
       $('workshopDetailRefreshBtn')?.addEventListener('click', () => {
@@ -1016,6 +1092,36 @@
         state.sort = event.target.value || 'updated';
         load(1);
       });
+
+      $('workshopStatusSelect')?.addEventListener('change', event => {
+        state.statusFilter = event.target.value || 'all';
+        renderGrid();
+      });
+
+      const listBtn = $('workshopViewListBtn');
+      const gridBtn = $('workshopViewGridBtn');
+
+      function syncViewSwitchButtons() {
+        const isList = state.viewMode === 'list';
+        listBtn?.classList.toggle('active', isList);
+        gridBtn?.classList.toggle('active', !isList);
+      }
+
+      listBtn?.addEventListener('click', () => {
+        state.viewMode = 'list';
+        localStorage.setItem('workshop_view_mode', 'list');
+        syncViewSwitchButtons();
+        renderGrid();
+      });
+
+      gridBtn?.addEventListener('click', () => {
+        state.viewMode = 'grid';
+        localStorage.setItem('workshop_view_mode', 'grid');
+        syncViewSwitchButtons();
+        renderGrid();
+      });
+
+      syncViewSwitchButtons();
 
       $('workshopPrevBtn')?.addEventListener('click', () => {
         if (state.page > 1) load(state.page - 1);
@@ -1051,9 +1157,9 @@
           return;
         }
 
-        const open = event.target.closest('[data-open], .workshop-card');
+        const open = event.target.closest('[data-open], .workshop-card, .workshop-row');
         if (open) {
-          const id = open.getAttribute('data-open') || open.closest('.workshop-card')?.getAttribute('data-mod-id');
+          const id = open.getAttribute('data-open') || open.closest('.workshop-card, .workshop-row')?.getAttribute('data-mod-id');
           if (id) openDetail(id);
         }
       });
@@ -1128,21 +1234,52 @@
       });
     },
 
+    clearDetailReturn() {
+      state.pendingListScroll = null;
+    },
+
     onShow() {
       this.init();
       syncSource();
-      if (!state.loaded) {
-        load(1);
-      } else {
+      if (state.pendingListScroll !== null) {
+        // 从详情页返回时回到原来的滚动位置。
         renderGrid();
         renderPager();
-        // 从详情页返回时回到原来的滚动位置。
-        if (state.pendingListScroll !== null) {
-          const scroller = document.querySelector('#workshopView .workshop-scroll');
-          if (scroller) scroller.scrollTop = state.pendingListScroll;
-          state.pendingListScroll = null;
-        }
+        const scroller = document.querySelector('#workshopView .workshop-scroll');
+        if (scroller) scroller.scrollTop = state.pendingListScroll;
+        state.pendingListScroll = null;
+        return;
       }
+
+      // 每次进入市场：清空老信息，重置筛选，拉取最新数据
+      state.items = [];
+      state.total = 0;
+      state.page = 1;
+      state.query = '';
+      state.tag = '';
+      state.statusFilter = 'all';
+      state.loaded = false;
+      state.details.clear();
+      state.mdCache.clear();
+
+      const searchInput = $('workshopSearchInput');
+      if (searchInput) searchInput.value = '';
+      const tagSelect = $('workshopTagSelect');
+      if (tagSelect) tagSelect.value = '';
+      const statusSelect = $('workshopStatusSelect');
+      if (statusSelect) statusSelect.value = 'all';
+
+      const grid = $('workshopGrid');
+      if (grid) {
+        grid.innerHTML = `<div class="workshop-empty"><span class="mi" data-icon="hourglass_empty"></span><p>${esc(
+          t('workshop.loading')
+        )}</p></div>`;
+        window.Icons?.hydrate(grid);
+      }
+      const pager = $('workshopPager');
+      if (pager) pager.innerHTML = '';
+
+      load(1);
     },
 
     onShowDetail() {

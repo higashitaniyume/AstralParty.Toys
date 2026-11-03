@@ -176,7 +176,12 @@ function showPage(pageName, options = {}) {
 document.addEventListener('DOMContentLoaded', () => {
   // Navigation breadcrumbs
   document.querySelectorAll('.nav-crumb-btn').forEach(btn => {
-    btn.addEventListener('click', () => showPage(btn.dataset.page));
+    btn.addEventListener('click', () => {
+      if (btn.dataset.page === 'workshop') {
+        window.WorkshopModule?.clearDetailReturn?.();
+      }
+      showPage(btn.dataset.page);
+    });
   });
 
   // Brand logo click returns to home（role=button，补上键盘 Enter/Space）
@@ -247,6 +252,11 @@ host?.addEventListener('message', event => {
     case 'replayDownloadState':
       // 「按 ID 下载」的进度与收尾（弹窗自己认领，见 ReplayModule.renderDownloadState）
       window.ReplayModule?.renderDownloadState(msg.payload);
+      break;
+
+    case 'appUpdateState':
+      AppState.appUpdateState = msg.payload;
+      window.SettingsModule?.renderUpdateState(msg.payload);
       break;
 
     case 'librarySettings':

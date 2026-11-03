@@ -313,13 +313,34 @@ public partial class HybridWindow
             ? workshopElement.GetString()
             : _libraryService.Settings.WorkshopUrl;
 
+        var autoCheckUpdates = root.TryGetProperty("autoCheckUpdates", out var checkEl)
+            ? checkEl.GetBoolean()
+            : _libraryService.Settings.AutoCheckUpdates;
+        var autoDownloadUpdates = root.TryGetProperty("autoDownloadUpdates", out var downEl)
+            ? downEl.GetBoolean()
+            : _libraryService.Settings.AutoDownloadUpdates;
+        var autoInstallUpdates = root.TryGetProperty("autoInstallUpdates", out var instEl)
+            ? instEl.GetBoolean()
+            : _libraryService.Settings.AutoInstallUpdates;
+        var mirrorType = root.TryGetProperty("githubMirrorType", out var mirrorEl)
+            ? mirrorEl.GetString()
+            : _libraryService.Settings.GitHubMirrorType;
+        var customMirrorUrl = root.TryGetProperty("customGitHubMirrorUrl", out var customEl)
+            ? customEl.GetString()
+            : _libraryService.Settings.CustomGitHubMirrorUrl;
+
         _libraryService.SaveSettings(new ReplayLibrarySettings
         {
             LibraryRoot = string.IsNullOrWhiteSpace(root_) ? null : root_,
             AutoMaintain = autoMaintain,
             KeepInGame = Math.Clamp(keepInGame, 1, ReplayLibraryService.GameSlotCapacity),
             Language = AppLanguage.Normalize(lang),
-            WorkshopUrl = WorkshopService.NormalizeBaseUrl(workshopUrl)
+            WorkshopUrl = WorkshopService.NormalizeBaseUrl(workshopUrl),
+            AutoCheckUpdates = autoCheckUpdates,
+            AutoDownloadUpdates = autoDownloadUpdates,
+            AutoInstallUpdates = autoInstallUpdates,
+            GitHubMirrorType = mirrorType ?? GitHubMirrorHelper.DefaultMirrorType,
+            CustomGitHubMirrorUrl = customMirrorUrl ?? ""
         });
         Post(new { type = "librarySettings", payload = BuildLibrarySettingsPayload() });
         Post(new { type = "toast", message = "设置已保存。" });
@@ -337,7 +358,12 @@ public partial class HybridWindow
         defaultWorkshopUrl = WorkshopService.DefaultBaseUrl,
         workshopConsentVersion = _libraryService.Settings.WorkshopConsentVersion,
         workshopConsented = WorkshopConsent.IsGranted(_libraryService.Settings),
-        workshopConsentAt = _libraryService.Settings.WorkshopConsentAt
+        workshopConsentAt = _libraryService.Settings.WorkshopConsentAt,
+        autoCheckUpdates = _libraryService.Settings.AutoCheckUpdates,
+        autoDownloadUpdates = _libraryService.Settings.AutoDownloadUpdates,
+        autoInstallUpdates = _libraryService.Settings.AutoInstallUpdates,
+        githubMirrorType = _libraryService.Settings.GitHubMirrorType,
+        customGitHubMirrorUrl = _libraryService.Settings.CustomGitHubMirrorUrl
     };
 
 

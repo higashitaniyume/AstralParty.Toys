@@ -6,6 +6,7 @@
       this.initialized = true;
 
       this.bindLibrary();
+      this.bindUpdates();
       window.GameLibModule?.init?.();
 
       const langSelect = $('langSelect');
@@ -20,19 +21,19 @@
       }
 
       const animToggle = $('animToggle');
-      if (!animToggle) return;
+      if (animToggle) {
+        const motionEnabled = window.localStorage.getItem('motionEnabled') !== 'false';
+        animToggle.checked = motionEnabled;
+        document.body.classList.toggle('reduce-motion', !motionEnabled);
+        animToggle.addEventListener('change', e => {
+          document.body.classList.toggle('reduce-motion', !e.target.checked);
+          window.localStorage.setItem('motionEnabled', String(e.target.checked));
+          toast(`界面动态效果已${e.target.checked ? '开启' : '关闭'}`);
+        });
+      }
 
       // 「关于」里的版本/提交/运行环境由 version.js 统一填（同一份数据源），这里只补一次兜底渲染
       window.VersionModule?.renderAbout?.();
-
-      const motionEnabled = window.localStorage.getItem('motionEnabled') !== 'false';
-      animToggle.checked = motionEnabled;
-      document.body.classList.toggle('reduce-motion', !motionEnabled);
-      animToggle.addEventListener('change', e => {
-        document.body.classList.toggle('reduce-motion', !e.target.checked);
-        window.localStorage.setItem('motionEnabled', String(e.target.checked));
-        toast(`界面动态效果已${e.target.checked ? '开启' : '关闭'}`);
-      });
 
       $('aboutRepositoryBtn')?.addEventListener('click', () => {
         window.open('https://github.com/higashitaniyume/AstralParty.Toys', '_blank', 'noopener');
@@ -77,7 +78,12 @@
         libraryRoot: ($('libraryRootInput')?.value || '').trim() || null,
         autoMaintain: !!$('libraryAutoMaintainToggle')?.checked,
         keepInGame: keep,
-        workshopUrl: ($('workshopUrlInput')?.value || '').trim() || null
+        workshopUrl: ($('workshopUrlInput')?.value || '').trim() || null,
+        autoCheckUpdates: !!$('autoCheckUpdatesToggle')?.checked,
+        autoDownloadUpdates: !!$('autoDownloadUpdatesToggle')?.checked,
+        autoInstallUpdates: !!$('autoInstallUpdatesToggle')?.checked,
+        githubMirrorType: $('githubMirrorSelect')?.value || 'gh-proxy',
+        customGitHubMirrorUrl: ($('customMirrorInput')?.value || '').trim()
       });
     },
 
@@ -116,6 +122,110 @@
         if (langSelect && langSelect.value !== settings.language) {
           langSelect.value = settings.language;
         }
+      }
+
+      const autoCheck = $('autoCheckUpdatesToggle');
+      if (autoCheck) autoCheck.checked = settings.autoCheckUpdates !== false;
+
+      const autoDown = $('autoDownloadUpdatesToggle');
+      if (autoDown) autoDown.checked = !!settings.autoDownloadUpdates;
+
+      const autoInst = $('autoInstallUpdatesToggle');
+      if (autoInst) autoInst.checked = !!settings.autoInstallUpdates;
+
+      const mirrorSelect = $('githubMirrorSelect');
+      if (mirrorSelect) {
+        mirrorSelect.value = settings.githubMirrorType || 'gh-proxy';
+        $('customMirrorRow')?.classList.toggle('hidden', mirrorSelect.value !== 'custom');
+      }
+
+      const customInput = $('customMirrorInput');
+      if (customInput) customInput.value = settings.customGitHubMirrorUrl || '';
+    },
+
+    bindUpdates() {
+      $('checkUpdateManualBtn')?.addEventListener('click', () => {
+        post({ type: 'checkAppUpdate' });
+      });
+
+      $('applyUpdateNowBtn')?.addEventListener('click', () => {
+        post({ type: 'applyAppUpdate' });
+      });
+
+      $('githubMirrorSelect')?.addEventListener('change', e => {
+        $('customMirrorRow')?.classList.toggle('hidden', e.target.value !== 'custom');
+        this.pushLibrarySettings();
+      });
+
+      $('customMirrorInput')?.addEventListener('change', () => this.pushLibrarySettings());
+      $('autoCheckUpdatesToggle')?.addEventListener('change', () => this.pushLibrarySettings());
+      $('autoDownloadUpdatesToggle')?.addEventListener('change', () => this.pushLibrarySettings());
+      $('autoInstallUpdatesToggle')?.addEventListener('change', () => this.pushLibrarySettings());
+
+      if (AppState.appUpdateState) {
+        this.renderUpdateState(AppState.appUpdateState);
+      } else {
+        post({ type: 'getAppUpdateState' });
+      }
+    },
+
+    renderUpdateState(payload) {
+      if (!payload) return;
+
+      const verNode = $('settingsCurrentVersion');
+      if (verNode) {
+        let text = payload.currentVersion ? `v${payload.currentVersion}` : (AppState.appInfo?.version ? `v${AppState.appInfo.version}` : '未知');
+        if (payload.runtimeKind) {
+          text += ` · ${payload.runtimeKind}`;
+        } else if (AppState.appInfo?.runtime) {
+          text += ` · ${AppState.appInfo.runtime}`;
+        }
+        if (payload.isInstaller) text += ' (安装包)';
+        verNode.textContent = text;
+      }
+
+      const msgNode = $('settingsUpdateMessage');
+      const progressRow = $('settingsUpdateProgressRow');
+      const progressBar = $('settingsUpdateProgressBar');
+      const progressPercent = $('settingsUpdateProgressPercent');
+      const applyRow = $('settingsUpdateApplyRow');
+      const checkBtn = $('checkUpdateManualBtn');
+
+      const status = (payload.status || 'idle').toLowerCase();
+
+      if (status === 'checking') {
+        if (msgNode) msgNode.textContent = '正在检查更新…';
+        if (checkBtn) checkBtn.disabled = true;
+        progressRow?.classList.add('hidden');
+        applyRow?.classList.add('hidden');
+      } else if (status === 'uptodate') {
+        if (msgNode) msgNode.textContent = '当前已是最新版本。';
+        if (checkBtn) checkBtn.disabled = false;
+        progressRow?.classList.add('hidden');
+        applyRow?.classList.add('hidden');
+      } else if (status === 'updateavailable') {
+        if (msgNode) msgNode.textContent = `发现新版本 v${payload.latestVersion}。`;
+        if (checkBtn) checkBtn.disabled = false;
+        progressRow?.classList.add('hidden');
+        applyRow?.classList.add('hidden');
+      } else if (status === 'downloading') {
+        if (msgNode) msgNode.textContent = `正在下载新版本 v${payload.latestVersion} 安装包…`;
+        if (checkBtn) checkBtn.disabled = true;
+        progressRow?.classList.remove('hidden');
+        applyRow?.classList.add('hidden');
+        const percent = payload.percent ?? 0;
+        if (progressBar) progressBar.style.width = `${percent}%`;
+        if (progressPercent) progressPercent.textContent = `${percent}%`;
+      } else if (status === 'readytoinstall') {
+        if (msgNode) msgNode.textContent = `新版本 v${payload.latestVersion} 安装包已就绪！`;
+        if (checkBtn) checkBtn.disabled = false;
+        progressRow?.classList.add('hidden');
+        applyRow?.classList.remove('hidden');
+      } else if (status === 'error') {
+        if (msgNode) msgNode.textContent = `更新出错：${payload.error || '网络连接失败'}`;
+        if (checkBtn) checkBtn.disabled = false;
+        progressRow?.classList.add('hidden');
+        applyRow?.classList.add('hidden');
       }
     }
   };

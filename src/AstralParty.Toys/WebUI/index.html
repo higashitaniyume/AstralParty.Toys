@@ -1089,6 +1089,9 @@
                       data-i18n-placeholder="mods.search_placeholder"
                     />
                   </label>
+                  <button class="secondary-btn" id="modRefreshBtn" title="刷新模组列表">
+                    <span class="mi" data-icon="refresh"></span> <span data-i18n="common.refresh">刷新</span>
+                  </button>
                   <button class="secondary-btn" id="modOpenModsBtn">
                     <span class="mi" data-icon="folder_open"></span> 打开 mods
                     目录
@@ -1324,6 +1327,17 @@
               />
             </label>
             <select
+              id="workshopStatusSelect"
+              class="workshop-select"
+              aria-label="状态筛选"
+            >
+              <option value="all" data-i18n="workshop.status_all">全部状态</option>
+              <option value="updatable" data-i18n="workshop.status_updatable">可更新</option>
+              <option value="not_installed" data-i18n="workshop.status_not_installed">未安装</option>
+              <option value="installed" data-i18n="workshop.status_installed">已安装</option>
+              <option value="builtin" data-i18n="workshop.status_builtin">官方内置</option>
+            </select>
+            <select
               id="workshopTagSelect"
               class="workshop-select"
               aria-label="标签筛选"
@@ -1339,6 +1353,28 @@
               <option value="name" data-i18n="workshop.sort_name">名称</option>
               <option value="downloads" data-i18n="workshop.sort_downloads">下载量</option>
             </select>
+            <div class="workshop-view-switch" role="group" aria-label="视图模式切换">
+              <button
+                type="button"
+                class="view-switch-btn active"
+                id="workshopViewListBtn"
+                data-mode="list"
+                data-i18n-title="workshop.view_list"
+                title="列表视图"
+              >
+                <span class="mi" data-icon="format_list_bulleted"></span>
+              </button>
+              <button
+                type="button"
+                class="view-switch-btn"
+                id="workshopViewGridBtn"
+                data-mode="grid"
+                data-i18n-title="workshop.view_grid"
+                title="卡片视图"
+              >
+                <span class="mi" data-icon="grid_view"></span>
+              </button>
+            </div>
           </div>
 
           <div class="workshop-scroll">
@@ -2017,78 +2053,6 @@
           </div>
 
           <div class="settings-grid">
-            <div class="settings-preferences">
-            <article class="settings-card">
-              <div class="settings-card-head">
-                <h3>
-                  <span class="mi" data-icon="translate"></span> <span data-i18n="settings.language">界面与配表语言</span>
-                </h3>
-              </div>
-              <div class="settings-select-row">
-                <div class="toggle-info">
-                  <h4 data-i18n="settings.language">界面与配表语言</h4>
-                  <p data-i18n="settings.lang_auto">支持简体中文、English、日本語、繁體中文</p>
-                </div>
-                <select id="langSelect" class="settings-select">
-                  <option value="zh-Hans">简体中文</option>
-                  <option value="en">English</option>
-                  <option value="ja">日本語</option>
-                  <option value="zh-Hant">繁體中文</option>
-                </select>
-              </div>
-            </article>
-
-            <article class="settings-card">
-              <div class="settings-card-head">
-                <h3>
-                  <span class="mi" data-icon="shopping_cart"></span>
-                  <span data-i18n="settings.workshop">市场</span>
-                </h3>
-              </div>
-              <p class="settings-card-note" data-i18n="settings.workshop_note">
-                模组目录由 Forge 提供；模组包仍由作者托管，下载后会校验 SHA-256。
-              </p>
-              <div class="settings-field">
-                <label for="workshopUrlInput" data-i18n="settings.workshop_url">市场地址</label>
-                <div class="settings-field-row">
-                  <input
-                    type="url"
-                    class="library-input wide"
-                    id="workshopUrlInput"
-                    spellcheck="false"
-                    placeholder="https://forge.hiynet.com"
-                  />
-                </div>
-                <p class="settings-field-hint" data-i18n="settings.workshop_url_hint">
-                  默认 https://forge.hiynet.com；留空或格式不正确会回退到默认值。
-                </p>
-              </div>
-            </article>
-
-            <article class="settings-card">
-              <div class="settings-card-head">
-                <h3>
-                  <span class="mi" data-icon="auto_awesome"></span> <span data-i18n="settings.motion">动画偏好</span>
-                </h3>
-              </div>
-              <div class="toggle-switch-row">
-                <div class="toggle-info">
-                  <h4 id="animToggleLabel" data-i18n="settings.motion">界面动态效果</h4>
-                  <p id="animToggleDesc" data-i18n="settings.motion_desc">开启看板立绘与页面切换动画</p>
-                </div>
-                <input
-                  type="checkbox"
-                  class="switch-input"
-                  id="animToggle"
-                  checked
-                  aria-labelledby="animToggleLabel"
-                  aria-describedby="animToggleDesc"
-                />
-              </div>
-            </article>
-
-            </div>
-
             <article class="settings-card game-dir-card">
               <div class="settings-card-head">
                 <h3>
@@ -2143,130 +2107,314 @@
               </div>
             </article>
 
-            <article class="settings-card">
-              <div class="settings-card-head">
-                <h3><span class="mi" data-icon="inventory_2"></span> <span data-i18n="settings.group_library">回放库</span></h3>
-              </div>
-              <p class="settings-card-note">
-                游戏自带的「本地回放」只有
-                <strong>10 个席位</strong
-                >——这是客户端写死的上限，和服务器无关：超了只是游戏拒绝保存新回放。把回放归档到下面的库目录即可腾出席位，需要时再一键放回游戏。
-              </p>
-              <div class="settings-field">
-                <label for="libraryRootInput" data-i18n="settings.library_root">库目录</label>
-                <div class="settings-field-row">
-                  <input
-                    type="text"
-                    class="library-input wide"
-                    id="libraryRootInput"
-                    spellcheck="false"
-                    placeholder="正在读取…"
-                  />
-                  <button class="secondary-btn" id="libraryRootBrowseBtn" data-i18n="common.browse">
-                    浏览…
-                  </button>
-                  <button class="secondary-btn" id="libraryRootOpenBtn" data-i18n="common.open_folder">
-                    打开
-                  </button>
+            <!-- 列 1: 软件更新与网络 -->
+            <div class="settings-col">
+              <article class="settings-card">
+                <div class="settings-card-head">
+                  <h3>
+                    <span class="mi" data-icon="system_update_alt"></span>
+                    <span data-i18n="settings.updates_title">软件更新与网络</span>
+                  </h3>
                 </div>
-                <p class="settings-field-hint">
-                  默认目录
-                  <code>文档\AstralPartyReplays</code>
-                  同时也是工具箱的<strong>配置文件夹</strong>：游戏库（多游戏目录
-                  /
-                  当前游戏）、变速器与加载器状态、回放库设置都存在这里。把库目录改到别处只会移动回放归档，上述配置文件仍留在默认目录。
+                <p class="settings-card-note" data-i18n="settings.updates_note">
+                  每次启动时可自动检查并下载最新安装包，解决国内网络下载慢的问题。
                 </p>
-              </div>
-              <div class="toggle-switch-row">
-                <div class="toggle-info">
-                  <h4 id="libraryAutoMaintainLabel" data-i18n="settings.auto_maintain">
-                    自动保持游戏内最近 10 局
-                  </h4>
-                  <p id="libraryAutoMaintainDesc" data-i18n="settings.auto_maintain_desc">
-                    每次打开本工具时，把超出保留名额的旧回放自动归档进库；最新的几局永远不会被动。
+
+                <div class="settings-field">
+                  <div class="settings-field-row" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                    <div>
+                      <div id="settingsUpdateVersionStatus" style="font-size: 13.5px; font-weight: 600; color: var(--gp-text-main);">
+                        当前版本：<span id="settingsCurrentVersion">正在读取…</span>
+                      </div>
+                      <div id="settingsUpdateMessage" style="font-size: 12px; color: var(--gp-text-muted); margin-top: 2px;">
+                        检查状态：点击右侧按钮检查更新
+                      </div>
+                    </div>
+                    <button class="secondary-btn" id="checkUpdateManualBtn" data-i18n="settings.check_update_btn">
+                      <span class="mi" data-icon="sync"></span>
+                      <span data-i18n="settings.check_update_text">检查更新</span>
+                    </button>
+                  </div>
+                  <div id="settingsUpdateProgressRow" class="hidden" style="margin-top: 10px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                      <span id="settingsUpdateProgressLabel">正在下载安装包…</span>
+                      <span id="settingsUpdateProgressPercent">0%</span>
+                    </div>
+                    <div style="height: 6px; background: rgba(255,255,255,0.08); border-radius: var(--gp-radius-full); overflow: hidden;">
+                      <div id="settingsUpdateProgressBar" style="height: 100%; width: 0%; background: var(--gp-green); transition: width 0.2s ease;"></div>
+                    </div>
+                  </div>
+                  <div id="settingsUpdateApplyRow" class="hidden" style="margin-top: 10px;">
+                    <button class="primary-btn" id="applyUpdateNowBtn" style="width: 100%; justify-content: center;">
+                      <span class="mi" data-icon="restart_alt"></span>
+                      <span data-i18n="settings.apply_update_now">新版本已就绪，立即安装并重启</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="settings-select-row" style="margin-top: 12px;">
+                  <div class="toggle-info">
+                    <h4 data-i18n="settings.mirror_source">GitHub 加速镜像源</h4>
+                    <p data-i18n="settings.mirror_source_desc">下载更新与 Release 资产时走反向代理加速，解决连接超时</p>
+                  </div>
+                  <select id="githubMirrorSelect" class="settings-select">
+                    <option value="gh-proxy" data-i18n="settings.mirror_ghproxy">GH-Proxy（推荐 - gh-proxy.com）</option>
+                    <option value="ghfast" data-i18n="settings.mirror_ghfast">GHFast 节点（ghfast.top）</option>
+                    <option value="direct" data-i18n="settings.mirror_direct">GitHub 直连（海外/科学上网）</option>
+                    <option value="custom" data-i18n="settings.mirror_custom">自定义加速前缀…</option>
+                  </select>
+                </div>
+
+                <div class="settings-field hidden" id="customMirrorRow" style="margin-top: 10px;">
+                  <label for="customMirrorInput" data-i18n="settings.mirror_custom_label">自定义加速代理前缀</label>
+                  <div class="settings-field-row">
+                    <input
+                      type="url"
+                      class="library-input wide"
+                      id="customMirrorInput"
+                      spellcheck="false"
+                      placeholder="https://gh-proxy.com/"
+                    />
+                  </div>
+                  <p class="settings-field-hint" data-i18n="settings.mirror_custom_hint">
+                    必须以 http:// 或 https:// 开头。请求时将自动拼接目标 GitHub 链接。
                   </p>
                 </div>
-                <input
-                  type="checkbox"
-                  class="switch-input"
-                  id="libraryAutoMaintainToggle"
-                  aria-labelledby="libraryAutoMaintainLabel"
-                  aria-describedby="libraryAutoMaintainDesc"
-                />
-              </div>
-              <div class="settings-field">
-                <label for="libraryKeepInput" data-i18n="settings.keep_count">游戏内保留局数</label>
-                <div class="settings-field-row">
+
+                <div class="toggle-switch-row" style="margin-top: 14px;">
+                  <div class="toggle-info">
+                    <h4 id="autoCheckUpdatesLabel" data-i18n="settings.auto_check_updates">自动检查更新</h4>
+                    <p id="autoCheckUpdatesDesc" data-i18n="settings.auto_check_updates_desc">每次打开软件时自动在后台检查是否有最新版本</p>
+                  </div>
                   <input
-                    type="number"
-                    class="library-input"
-                    id="libraryKeepInput"
-                    min="1"
-                    max="10"
-                    step="1"
+                    type="checkbox"
+                    class="switch-input"
+                    id="autoCheckUpdatesToggle"
+                    checked
+                    aria-labelledby="autoCheckUpdatesLabel"
+                    aria-describedby="autoCheckUpdatesDesc"
                   />
-                  <button class="secondary-btn" id="libraryMaintainNowBtn" data-i18n="settings.maintain_now">
-                    立即整理一次
+                </div>
+
+                <div class="toggle-switch-row">
+                  <div class="toggle-info">
+                    <h4 id="autoDownloadUpdatesLabel" data-i18n="settings.auto_download_updates">自动下载更新</h4>
+                    <p id="autoDownloadUpdatesDesc" data-i18n="settings.auto_download_updates_desc">检测到新版本时自动在后台下载对应的安装包</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    class="switch-input"
+                    id="autoDownloadUpdatesToggle"
+                    aria-labelledby="autoDownloadUpdatesLabel"
+                    aria-describedby="autoDownloadUpdatesDesc"
+                  />
+                </div>
+
+                <div class="toggle-switch-row">
+                  <div class="toggle-info">
+                    <h4 id="autoInstallUpdatesLabel" data-i18n="settings.auto_install_updates">自动安装更新</h4>
+                    <p id="autoInstallUpdatesDesc" data-i18n="settings.auto_install_updates_desc">安装包下载并校验完成后自动启动安装器完成更新</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    class="switch-input"
+                    id="autoInstallUpdatesToggle"
+                    aria-labelledby="autoInstallUpdatesLabel"
+                    aria-describedby="autoInstallUpdatesDesc"
+                  />
+                </div>
+              </article>
+            </div>
+
+            <!-- 列 2: 回放库托管 + 市场 -->
+            <div class="settings-col">
+              <article class="settings-card">
+                <div class="settings-card-head">
+                  <h3><span class="mi" data-icon="inventory_2"></span> <span data-i18n="settings.group_library">回放库托管</span></h3>
+                </div>
+                <p class="settings-card-note">
+                  游戏自带的「本地回放」只有
+                  <strong>10 个席位</strong>——这是客户端写死的上限，和服务器无关：超了只是游戏拒绝保存新回放。把回放归档到下面的库目录即可腾出席位，需要时再一键放回游戏。
+                </p>
+                <div class="settings-field">
+                  <label for="libraryRootInput" data-i18n="settings.library_root">回放存储目录</label>
+                  <div class="settings-field-row">
+                    <input
+                      type="text"
+                      class="library-input wide"
+                      id="libraryRootInput"
+                      spellcheck="false"
+                      placeholder="正在读取…"
+                    />
+                    <button class="secondary-btn" id="libraryRootBrowseBtn" data-i18n="common.browse">
+                      浏览…
+                    </button>
+                    <button class="secondary-btn" id="libraryRootOpenBtn" data-i18n="common.open_folder">
+                      打开目录
+                    </button>
+                  </div>
+                  <p class="settings-field-hint">
+                    默认目录
+                    <code>文档\AstralPartyReplays</code>
+                    同时也是工具箱的<strong>配置文件夹</strong>：游戏库（多游戏目录 / 当前游戏）、变速器与加载器状态、回放库设置都存在这里。把库目录改到别处只会移动回放归档，上述配置文件仍留在默认目录。
+                  </p>
+                </div>
+                <div class="toggle-switch-row">
+                  <div class="toggle-info">
+                    <h4 id="libraryAutoMaintainLabel" data-i18n="settings.auto_maintain">
+                      自动归档托管
+                    </h4>
+                    <p id="libraryAutoMaintainDesc" data-i18n="settings.auto_maintain_desc">
+                      自动将游戏产生的旧回放移入本地库，防止被游戏清理；最新的几局永远不会被动。
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    class="switch-input"
+                    id="libraryAutoMaintainToggle"
+                    aria-labelledby="libraryAutoMaintainLabel"
+                    aria-describedby="libraryAutoMaintainDesc"
+                  />
+                </div>
+                <div class="settings-field">
+                  <label for="libraryKeepInput" data-i18n="settings.keep_count">游戏目录保留局数</label>
+                  <div class="settings-field-row">
+                    <input
+                      type="number"
+                      class="library-input"
+                      id="libraryKeepInput"
+                      min="1"
+                      max="10"
+                      step="1"
+                    />
+                    <button class="secondary-btn" id="libraryMaintainNowBtn" data-i18n="settings.maintain_now">
+                      立即执行单次清理
+                    </button>
+                  </div>
+                </div>
+              </article>
+
+              <article class="settings-card">
+                <div class="settings-card-head">
+                  <h3>
+                    <span class="mi" data-icon="shopping_cart"></span>
+                    <span data-i18n="settings.workshop">市场</span>
+                  </h3>
+                </div>
+                <p class="settings-card-note" data-i18n="settings.workshop_note">
+                  模组目录由 Forge 提供；模组包仍由作者托管，下载后会校验 SHA-256。
+                </p>
+                <div class="settings-field">
+                  <label for="workshopUrlInput" data-i18n="settings.workshop_url">市场地址</label>
+                  <div class="settings-field-row">
+                    <input
+                      type="url"
+                      class="library-input wide"
+                      id="workshopUrlInput"
+                      spellcheck="false"
+                      placeholder="https://forge.hiynet.com"
+                    />
+                  </div>
+                  <p class="settings-field-hint" data-i18n="settings.workshop_url_hint">
+                    默认 https://forge.hiynet.com；留空或格式不正确会回退到默认值。
+                  </p>
+                </div>
+              </article>
+            </div>
+
+            <!-- 列 3: 通用偏好 + 关于 -->
+            <div class="settings-col">
+              <article class="settings-card">
+                <div class="settings-card-head">
+                  <h3>
+                    <span class="mi" data-icon="tune"></span>
+                    <span data-i18n="settings.group_general">通用偏好</span>
+                  </h3>
+                </div>
+                <div class="settings-select-row">
+                  <div class="toggle-info">
+                    <h4 data-i18n="settings.language">界面与配表语言</h4>
+                    <p data-i18n="settings.lang_auto">支持简体中文、English、日本語、繁體中文</p>
+                  </div>
+                  <select id="langSelect" class="settings-select">
+                    <option value="zh-Hans">简体中文</option>
+                    <option value="en">English</option>
+                    <option value="ja">日本語</option>
+                    <option value="zh-Hant">繁體中文</option>
+                  </select>
+                </div>
+                <div class="toggle-switch-row">
+                  <div class="toggle-info">
+                    <h4 id="animToggleLabel" data-i18n="settings.motion">界面平滑过渡动效</h4>
+                    <p id="animToggleDesc" data-i18n="settings.motion_desc">开启看板立绘与页面切换动画</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    class="switch-input"
+                    id="animToggle"
+                    checked
+                    aria-labelledby="animToggleLabel"
+                    aria-describedby="animToggleDesc"
+                  />
+                </div>
+              </article>
+
+              <article class="settings-card settings-about-card">
+                <div class="settings-card-head">
+                  <h3><span class="mi" data-icon="info"></span> <span data-i18n="settings.group_about">关于</span></h3>
+                </div>
+                <div class="about-app-heading">
+                  <img
+                    src="images/astral-party-logo.png"
+                    alt="Astral Party"
+                    class="about-game-logo"
+                  />
+                  <div>
+                    <h4>AstralParty.Toys</h4>
+                    <p>吉星派对回放与游戏工具箱</p>
+                  </div>
+                </div>
+                <p class="about-description">
+                  集成回放分析、协议帧查看、维基浏览和游戏变速器管理，数据均在本地处理。
+                </p>
+                <dl class="about-details">
+                  <div>
+                    <dt>应用版本</dt>
+                    <dd id="aboutVersion">正在读取…</dd>
+                  </div>
+                  <div>
+                    <dt>源码提交</dt>
+                    <dd id="aboutCommit">正在读取…</dd>
+                  </div>
+                  <div>
+                    <dt>运行环境</dt>
+                    <dd id="aboutRuntime">正在读取…</dd>
+                  </div>
+                  <div>
+                    <dt>内置加载器</dt>
+                    <dd id="aboutLoader">正在读取…</dd>
+                  </div>
+                  <div>
+                    <dt>项目主页</dt>
+                    <dd>github.com/higashitaniyume/AstralParty.Toys</dd>
+                  </div>
+                </dl>
+                <div class="about-actions">
+                  <button class="secondary-btn" id="aboutVersionDetailBtn">
+                    版本详情
+                  </button>
+                  <button class="secondary-btn" id="aboutChangelogBtn">
+                    <span class="mi" data-icon="description"></span> 更新日志
+                  </button>
+                  <button class="secondary-btn" id="aboutRepositoryBtn">
+                    <span class="mi" data-icon="open_in_new"></span> 项目主页
+                  </button>
+                  <button class="secondary-btn" id="aboutSpeedhackBtn">
+                    <span class="mi" data-icon="open_in_new"></span> speedhack-rs
                   </button>
                 </div>
-              </div>
-            </article>
-
-            <article class="settings-card settings-about-card">
-              <div class="settings-card-head">
-                <h3><span class="mi" data-icon="info"></span> <span data-i18n="settings.group_about">关于</span></h3>
-              </div>
-              <div class="about-app-heading">
-                <img
-                  src="images/astral-party-logo.png"
-                  alt="Astral Party"
-                  class="about-game-logo"
-                />
-                <div>
-                  <h4>AstralParty.Toys</h4>
-                  <p>吉星派对回放与游戏工具箱</p>
-                </div>
-              </div>
-              <p class="about-description">
-                集成回放分析、协议帧查看、维基浏览和游戏变速器管理，数据均在本地处理。
-              </p>
-              <dl class="about-details">
-                <div>
-                  <dt>应用版本</dt>
-                  <dd id="aboutVersion">正在读取…</dd>
-                </div>
-                <div>
-                  <dt>源码提交</dt>
-                  <dd id="aboutCommit">正在读取…</dd>
-                </div>
-                <div>
-                  <dt>运行环境</dt>
-                  <dd id="aboutRuntime">正在读取…</dd>
-                </div>
-                <div>
-                  <dt>内置加载器</dt>
-                  <dd id="aboutLoader">正在读取…</dd>
-                </div>
-                <div>
-                  <dt>项目主页</dt>
-                  <dd>github.com/higashitaniyume/AstralParty.Toys</dd>
-                </div>
-              </dl>
-              <div class="about-actions">
-                <button class="secondary-btn" id="aboutVersionDetailBtn">
-                  版本详情
-                </button>
-                <button class="secondary-btn" id="aboutChangelogBtn">
-                  <span class="mi" data-icon="description"></span> 更新日志
-                </button>
-                <button class="secondary-btn" id="aboutRepositoryBtn">
-                  <span class="mi" data-icon="open_in_new"></span> 项目主页
-                </button>
-                <button class="secondary-btn" id="aboutSpeedhackBtn">
-                  <span class="mi" data-icon="open_in_new"></span> speedhack-rs
-                </button>
-              </div>
-            </article>
+              </article>
+            </div>
           </div>
         </section>
       </main>

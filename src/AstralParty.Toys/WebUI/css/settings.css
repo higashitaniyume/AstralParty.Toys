@@ -51,24 +51,27 @@ body:not(.reduce-motion) #settingsView:not(.page-entering) .settings-card:nth-ch
   max-width: 1560px;
   margin-inline: auto;
 }
-/* 两张短卡独立堆叠，避免语言设置新增一行后，被回放库的高度撑出大片空白。 */
-.settings-preferences {
-  display: grid;
+
+.settings-col {
+  display: flex;
+  flex-direction: column;
   gap: 20px;
   min-width: 0;
-  align-content: start;
 }
+
 @media (max-width: 1180px) {
-  .settings-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .settings-preferences {
-    grid-column: 1 / -1;
+  .settings-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: start;
+  }
+  .settings-col:last-child {
+    grid-column: 1 / -1;
   }
 }
-@media (max-width: 720px) {
-  .settings-grid,
-  .settings-preferences { grid-template-columns: 1fr; }
+
+@media (max-width: 760px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* 游戏目录置顶并铺满整行；下方为界面偏好、回放库、关于三列。 */
