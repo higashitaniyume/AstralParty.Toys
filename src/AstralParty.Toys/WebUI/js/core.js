@@ -268,6 +268,9 @@ host?.addEventListener('message', event => {
         window.SettingsModule.init();
         window.SettingsModule.applyLibrarySettings(msg.payload);
       }
+      if (window.ModsModule) {
+        window.ModsModule.applyLibrarySettings?.(msg.payload);
+      }
       break;
 
     case 'characterExportTasks':

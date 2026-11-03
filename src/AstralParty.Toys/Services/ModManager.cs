@@ -731,9 +731,20 @@ public sealed partial class ModManager
     }
 
     /// <summary>下载最新发布包到字节数组（不落盘）。网络异常/无 Release 时抛异常。</summary>
-    public async Task<byte[]> DownloadLatestPackageAsync(CancellationToken cancellationToken = default)
+    public Task<byte[]> DownloadLatestPackageAsync(CancellationToken cancellationToken)
+        => DownloadLatestPackageAsync(mirrorType: null, customMirrorUrl: null, client: null, cancellationToken);
+
+    /// <summary>下载最新发布包到字节数组（不落盘），支持指定镜像加速源与测试客户端。网络异常/无 Release 时抛异常。</summary>
+    public async Task<byte[]> DownloadLatestPackageAsync(
+        string? mirrorType = null,
+        string? customMirrorUrl = null,
+        HttpClient? client = null,
+        CancellationToken cancellationToken = default)
     {
-        using var response = await Http.GetAsync(LatestPackageUrl, HttpCompletionOption.ResponseContentRead, cancellationToken)
+        var url = string.IsNullOrEmpty(mirrorType)
+            ? LatestPackageUrl
+            : GitHubMirrorHelper.ApplyMirror(LatestPackageUrl, mirrorType, customMirrorUrl);
+        using var response = await (client ?? Http).GetAsync(url, HttpCompletionOption.ResponseContentRead, cancellationToken)
             .ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {

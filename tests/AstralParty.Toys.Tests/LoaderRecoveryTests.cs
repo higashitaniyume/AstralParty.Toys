@@ -280,4 +280,72 @@ public sealed class LoaderRecoveryTests
     [InlineData("latest")]
     [InlineData("../../file")]
     public void UnknownOrInvalidVersion_CannotGenerateDownloadUrl(string version) => Assert.Throws<InvalidOperationException>(() => ModManager.VersionPackageUrl(version));
+
+    // ============================== 加速镜像源下载测试 ==============================
+
+    [Fact]
+    public async Task RestoreLoaderAsync_WithGhProxyMirror_AppliesMirrorPrefix()
+    {
+        using var h = new Harness(); h.Install();
+        h.Manager.DisableLoader(h.Game);
+        foreach (var file in Directory.GetFiles(h.Files)) File.Delete(file);
+        using var handler = new Handler(_ => new(HttpStatusCode.OK) { Content = new ByteArrayContent(Package("9.1.0")) });
+        using var http = new HttpClient(handler);
+        await h.Manager.RestoreLoaderAsync(h.Game, "gh-proxy", null, http);
+        Assert.Equal("https://gh-proxy.com/" + ModManager.VersionPackageUrl("9.1.0"), handler.Url);
+        Assert.Equal(Encoding.UTF8.GetBytes("loader 9.1.0"), File.ReadAllBytes(h.Dll));
+    }
+
+    [Fact]
+    public async Task RestoreLoaderAsync_WithGhFastMirror_AppliesMirrorPrefix()
+    {
+        using var h = new Harness(); h.Install();
+        h.Manager.DisableLoader(h.Game);
+        foreach (var file in Directory.GetFiles(h.Files)) File.Delete(file);
+        using var handler = new Handler(_ => new(HttpStatusCode.OK) { Content = new ByteArrayContent(Package("9.1.0")) });
+        using var http = new HttpClient(handler);
+        await h.Manager.RestoreLoaderAsync(h.Game, "ghfast", null, http);
+        Assert.Equal("https://ghfast.top/" + ModManager.VersionPackageUrl("9.1.0"), handler.Url);
+    }
+
+    [Fact]
+    public async Task RestoreLoaderAsync_WithCustomMirror_AppliesCustomPrefix()
+    {
+        using var h = new Harness(); h.Install();
+        h.Manager.DisableLoader(h.Game);
+        foreach (var file in Directory.GetFiles(h.Files)) File.Delete(file);
+        using var handler = new Handler(_ => new(HttpStatusCode.OK) { Content = new ByteArrayContent(Package("9.1.0")) });
+        using var http = new HttpClient(handler);
+        await h.Manager.RestoreLoaderAsync(h.Game, "custom", "https://mirror.example.com", http);
+        Assert.Equal("https://mirror.example.com/" + ModManager.VersionPackageUrl("9.1.0"), handler.Url);
+    }
+
+    [Fact]
+    public async Task RestoreLoaderAsync_WithDirect_LeavesUrlUnchanged()
+    {
+        using var h = new Harness(); h.Install();
+        h.Manager.DisableLoader(h.Game);
+        foreach (var file in Directory.GetFiles(h.Files)) File.Delete(file);
+        using var handler = new Handler(_ => new(HttpStatusCode.OK) { Content = new ByteArrayContent(Package("9.1.0")) });
+        using var http = new HttpClient(handler);
+        await h.Manager.RestoreLoaderAsync(h.Game, "direct", null, http);
+        Assert.Equal(ModManager.VersionPackageUrl("9.1.0"), handler.Url);
+    }
+
+    [Theory]
+    [InlineData("gh-proxy", null, "https://gh-proxy.com/https://github.com/higashitaniyume/CesiumLoader/releases/latest/download/cesium-loader.zip")]
+    [InlineData("ghfast", null, "https://ghfast.top/https://github.com/higashitaniyume/CesiumLoader/releases/latest/download/cesium-loader.zip")]
+    [InlineData("custom", "https://mirror.example.com", "https://mirror.example.com/https://github.com/higashitaniyume/CesiumLoader/releases/latest/download/cesium-loader.zip")]
+    [InlineData("direct", null, "https://github.com/higashitaniyume/CesiumLoader/releases/latest/download/cesium-loader.zip")]
+    [InlineData(null, null, "https://github.com/higashitaniyume/CesiumLoader/releases/latest/download/cesium-loader.zip")]
+    public async Task DownloadLatestPackageAsync_AppliesMirrorsCorrectly(string? mirrorType, string? customUrl, string expectedUrl)
+    {
+        using var h = new Harness();
+        using var handler = new Handler(_ => new(HttpStatusCode.OK) { Content = new ByteArrayContent(Package("9.2.0")) });
+        using var http = new HttpClient(handler);
+        var bytes = await h.Manager.DownloadLatestPackageAsync(mirrorType, customUrl, http);
+        Assert.Equal(expectedUrl, handler.Url);
+        var manifest = ModManager.ParsePackageManifest(bytes);
+        Assert.Equal("9.2.0", manifest?.Version);
+    }
 }

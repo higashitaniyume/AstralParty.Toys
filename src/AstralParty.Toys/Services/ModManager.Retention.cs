@@ -222,7 +222,20 @@ public sealed partial class ModManager
     }
 
     /// <summary>只恢复对应版本的 DLL；本地无可用文件时下载固定版本发布包。</summary>
-    public async Task<string> RestoreLoaderAsync(string gameDirectory, HttpClient? client = null, CancellationToken cancellationToken = default)
+    public Task<string> RestoreLoaderAsync(string gameDirectory, HttpClient? client, CancellationToken cancellationToken = default)
+        => RestoreLoaderAsync(gameDirectory, mirrorType: null, customMirrorUrl: null, client, cancellationToken);
+
+    /// <summary>只恢复对应版本的 DLL；本地无可用文件时下载固定版本发布包。</summary>
+    public Task<string> RestoreLoaderAsync(string gameDirectory, CancellationToken cancellationToken)
+        => RestoreLoaderAsync(gameDirectory, mirrorType: null, customMirrorUrl: null, client: null, cancellationToken);
+
+    /// <summary>只恢复对应版本的 DLL；本地无可用文件时通过镜像源下载固定版本发布包。</summary>
+    public async Task<string> RestoreLoaderAsync(
+        string gameDirectory,
+        string? mirrorType = null,
+        string? customMirrorUrl = null,
+        HttpClient? client = null,
+        CancellationToken cancellationToken = default)
     {
         RequireLoaderGameDirectory(gameDirectory);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -262,7 +275,10 @@ public sealed partial class ModManager
         }
         if (dll is null)
         {
-            var url = VersionPackageUrl(version);
+            var rawUrl = VersionPackageUrl(version);
+            var url = string.IsNullOrEmpty(mirrorType)
+                ? rawUrl
+                : GitHubMirrorHelper.ApplyMirror(rawUrl, mirrorType, customMirrorUrl);
             using var response = await (client ?? Http).GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
                 throw new HttpRequestException($"无法下载当前版本 {version} 的加载器包：HTTP {(int)response.StatusCode}。可重试或使用更新功能安装新版。");

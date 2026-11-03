@@ -179,7 +179,17 @@ public partial class HybridWindow
         {
             var status = await Task.Run(() => _modManager.GetStatus());
             if (request == _modStatusRequest)
-                Post(new { type = "modStatus", payload = new { status, builtInMods = ModManager.EmbeddedBuiltInModIdList } });
+                Post(new
+                {
+                    type = "modStatus",
+                    payload = new
+                    {
+                        status,
+                        builtInMods = ModManager.EmbeddedBuiltInModIdList,
+                        mirrorType = _libraryService.Settings.GitHubMirrorType,
+                        customMirrorUrl = _libraryService.Settings.CustomGitHubMirrorUrl
+                    }
+                });
         }
         catch (Exception ex)
         {
@@ -562,11 +572,14 @@ public partial class HybridWindow
 
     /// <summary>只把「最新版本号」回推给界面 —— 版本三栏的「GitHub 最新」栏与结论都由前端自己算，
     /// 这里不再拼一句 toast 文案（同一个结论说两遍，用户反而要自己对齐两个说法）。</summary>
-    private async Task HandleModCheckUpdateAsync()
+    private async Task HandleModCheckUpdateAsync(string? mirrorType = null, string? customMirrorUrl = null)
     {
         try
         {
-            var bytes = await _modManager.DownloadLatestPackageAsync().ConfigureAwait(true);
+            var settings = _libraryService.Settings;
+            var mirror = !string.IsNullOrEmpty(mirrorType) ? mirrorType : settings.GitHubMirrorType;
+            var custom = customMirrorUrl ?? settings.CustomGitHubMirrorUrl;
+            var bytes = await _modManager.DownloadLatestPackageAsync(mirror, custom).ConfigureAwait(true);
             var manifest = ModManager.ParsePackageManifest(bytes);
             Post(new { type = "modUpdateCheck", payload = new { latest = manifest?.Version ?? "" } });
             _ = PushModStatusAsync();
@@ -578,7 +591,7 @@ public partial class HybridWindow
     }
 
     private bool _modUpdateRunning;
-    private async Task HandleModDownloadUpdateAsync(bool overwriteDll, bool allowDowngrade)
+    private async Task HandleModDownloadUpdateAsync(bool overwriteDll, bool allowDowngrade, string? mirrorType = null, string? customMirrorUrl = null)
     {
         if (_modUpdateRunning || _loaderRecoveryBusy || _modPackageImportRunning)
             throw new InvalidOperationException("加载器操作正在进行，请稍候。");
@@ -587,7 +600,10 @@ public partial class HybridWindow
         try
         {
             var directory = RequireModGameDirectory();
-            var bytes = await _modManager.DownloadLatestPackageAsync().ConfigureAwait(true);
+            var settings = _libraryService.Settings;
+            var mirror = !string.IsNullOrEmpty(mirrorType) ? mirrorType : settings.GitHubMirrorType;
+            var custom = customMirrorUrl ?? settings.CustomGitHubMirrorUrl;
+            var bytes = await _modManager.DownloadLatestPackageAsync(mirror, custom).ConfigureAwait(true);
             var manifest = ModManager.ParsePackageManifest(bytes);
             _modManager.InstallPackage(directory, bytes, overwriteDll, allowDowngrade);
 

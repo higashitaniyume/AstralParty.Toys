@@ -245,11 +245,25 @@
       $('modOpenLogsBtn')?.addEventListener('click', () => post({ type: 'modOpenLogsFolder' }));
       $('modImportBtn')?.addEventListener('click', () => post({ type: 'modPickImport' }));
       $('modImportTopBtn')?.addEventListener('click', () => post({ type: 'modPickImport' }));
+      // 镜像源切换
+      $('modLoaderMirrorSelect')?.addEventListener('change', e => {
+        const val = e.target.value;
+        $('modLoaderCustomMirrorInput')?.classList.toggle('hidden', val !== 'custom');
+        this.saveMirrorSetting();
+      });
+      $('modLoaderCustomMirrorInput')?.addEventListener('change', () => {
+        this.saveMirrorSetting();
+      });
+
       $('modCheckUpdateBtn')?.addEventListener('click', () => {
         this.updateInfo = { state: 'checking', latest: this.updateInfo.latest, error: '' };
         this.setBusy('modCheckUpdateBtn', '检查中…');
         this.renderUpdateInfo();
-        post({ type: 'modCheckUpdate' });
+        post({
+          type: 'modCheckUpdate',
+          mirrorType: $('modLoaderMirrorSelect')?.value,
+          customMirrorUrl: ($('modLoaderCustomMirrorInput')?.value || '').trim()
+        });
       });
       $('modDownloadUpdateBtn')?.addEventListener('click', () => {
         // 下载 + 安装可能十几秒：按钮上转圈并锁住，避免重复点击（宿主完成/失败时才解除）
@@ -257,7 +271,9 @@
         post({
           type: 'modDownloadUpdate',
           overwriteDll: $('modUpdateOverwriteCheck')?.checked === true,
-          allowDowngrade: $('modUpdateDowngradeCheck')?.checked === true
+          allowDowngrade: $('modUpdateDowngradeCheck')?.checked === true,
+          mirrorType: $('modLoaderMirrorSelect')?.value,
+          customMirrorUrl: ($('modLoaderCustomMirrorInput')?.value || '').trim()
         });
       });
       $('modLoaderSettingsBtn')?.addEventListener('click', () => this.openLoaderSettings());
@@ -323,6 +339,36 @@
       window.addEventListener('appLanguageChanged', () => {
         if (this.modStatus) this.renderFilteredMods();
       });
+      if (AppState.librarySettings) {
+        this.applyLibrarySettings(AppState.librarySettings);
+      }
+    },
+
+    saveMirrorSetting() {
+      const mirrorType = $('modLoaderMirrorSelect')?.value || 'gh-proxy';
+      const customUrl = ($('modLoaderCustomMirrorInput')?.value || '').trim();
+      if (AppState.librarySettings) {
+        AppState.librarySettings.githubMirrorType = mirrorType;
+        AppState.librarySettings.customGitHubMirrorUrl = customUrl;
+      }
+      post({
+        type: 'librarySaveSettings',
+        githubMirrorType: mirrorType,
+        customGitHubMirrorUrl: customUrl
+      });
+    },
+
+    applyLibrarySettings(settings) {
+      if (!settings) return;
+      const select = $('modLoaderMirrorSelect');
+      if (select && settings.githubMirrorType) {
+        select.value = settings.githubMirrorType;
+        $('modLoaderCustomMirrorInput')?.classList.toggle('hidden', select.value !== 'custom');
+      }
+      const custom = $('modLoaderCustomMirrorInput');
+      if (custom && settings.customGitHubMirrorUrl !== undefined) {
+        custom.value = settings.customGitHubMirrorUrl || '';
+      }
     },
 
     // ---------- 状态 ----------
@@ -348,6 +394,12 @@
       // 恢复只由 modRecoveryDone 收尾，切换游戏时的状态消息不能提前解锁。
       if (!this.recoveryBusy) this.clearBusy();
 
+      if (payload.mirrorType) {
+        this.applyLibrarySettings({
+          githubMirrorType: payload.mirrorType,
+          customGitHubMirrorUrl: payload.customMirrorUrl
+        });
+      }
       this.renderStatusHeader(status);
       this.renderUpdateInfo();
       this.renderGameDirectory(status);
@@ -574,7 +626,11 @@
       this.recoveryBusy = true;
       this.setBusy(restore ? 'modRestoreLoaderBtn' : 'modDisableLoaderBtn', restore ? '恢复中…' : '备份并删除中…');
       this.lockRecoveryButtons();
-      post({ type: restore ? 'modRestoreLoader' : 'modDisableLoader' });
+      post({
+        type: restore ? 'modRestoreLoader' : 'modDisableLoader',
+        mirrorType: $('modLoaderMirrorSelect')?.value,
+        customMirrorUrl: ($('modLoaderCustomMirrorInput')?.value || '').trim()
+      });
     },
     lockRecoveryButtons() {
       document.querySelectorAll('#modsView button, #modsView input, #modsView select').forEach(button => {

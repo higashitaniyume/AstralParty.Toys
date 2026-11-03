@@ -320,7 +320,9 @@ public partial class HybridWindow
                     await HandleLoaderRecoveryAsync(false);
                     break;
                 case "modRestoreLoader":
-                    await HandleLoaderRecoveryAsync(true);
+                    var restoreMirrorType = root.TryGetProperty("mirrorType", out var rmt) ? rmt.GetString() : null;
+                    var restoreCustomUrl = root.TryGetProperty("customMirrorUrl", out var rcu) ? rcu.GetString() : null;
+                    await HandleLoaderRecoveryAsync(true, restoreMirrorType, restoreCustomUrl);
                     break;
                 case "modUninstall":
                     var modForce = root.TryGetProperty("force", out var modForceElement) && modForceElement.GetBoolean();
@@ -497,14 +499,18 @@ public partial class HybridWindow
                         root.TryGetProperty("accept", out var workshopAccept) && workshopAccept.GetBoolean());
                     break;
                 case "modCheckUpdate":
-                    _ = HandleModCheckUpdateAsync();
+                    var checkMirrorType = root.TryGetProperty("mirrorType", out var cmt) ? cmt.GetString() : null;
+                    var checkCustomUrl = root.TryGetProperty("customMirrorUrl", out var ccu) ? ccu.GetString() : null;
+                    _ = HandleModCheckUpdateAsync(checkMirrorType, checkCustomUrl);
                     break;
                 case "modDownloadUpdate":
                     var updateOverwrite = root.TryGetProperty("overwriteDll", out var updateOverwriteElement) &&
                                           updateOverwriteElement.GetBoolean();
                     var updateAllowDowngrade = root.TryGetProperty("allowDowngrade", out var updateDowngradeElement) &&
                                                updateDowngradeElement.GetBoolean();
-                    _ = HandleModDownloadUpdateAsync(updateOverwrite, updateAllowDowngrade);
+                    var dlMirrorType = root.TryGetProperty("mirrorType", out var dmt) ? dmt.GetString() : null;
+                    var dlCustomUrl = root.TryGetProperty("customMirrorUrl", out var dcu) ? dcu.GetString() : null;
+                    _ = HandleModDownloadUpdateAsync(updateOverwrite, updateAllowDowngrade, dlMirrorType, dlCustomUrl);
                     break;
                 case "characterSchemesCreate":
                 case "characterSchemesSave":

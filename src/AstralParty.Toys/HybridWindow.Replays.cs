@@ -301,11 +301,15 @@ public partial class HybridWindow
 
     private void HandleLibrarySaveSettings(JsonElement root)
     {
-        var root_ = root.TryGetProperty("libraryRoot", out var rootElement) ? rootElement.GetString() : null;
-        var autoMaintain = root.TryGetProperty("autoMaintain", out var autoElement) && autoElement.GetBoolean();
+        var root_ = root.TryGetProperty("libraryRoot", out var rootElement)
+            ? rootElement.GetString()
+            : _libraryService.Settings.LibraryRoot;
+        var autoMaintain = root.TryGetProperty("autoMaintain", out var autoElement)
+            ? autoElement.GetBoolean()
+            : _libraryService.Settings.AutoMaintain;
         var keepInGame = root.TryGetProperty("keepInGame", out var keepElement) && keepElement.TryGetInt32(out var parsedKeep)
             ? parsedKeep
-            : ReplayLibraryService.GameSlotCapacity;
+            : _libraryService.Settings.KeepInGame;
         var lang = root.TryGetProperty("language", out var langElement)
             ? langElement.GetString()
             : _libraryService.Settings.Language;

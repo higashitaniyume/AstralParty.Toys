@@ -202,6 +202,42 @@ body:not(.reduce-motion) #modsView:not(.page-entering) .mods-advanced {
 .version-verdict.is-warn .verdict-dot { background: #f43f5e; }
 .version-verdict.is-idle .verdict-dot { background: var(--gp-text-muted); }
 
+.loader-mirror-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  font-size: 13px;
+}
+.loader-mirror-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--gp-text-sub);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.loader-mirror-label .mi {
+  font-size: 16px;
+  color: var(--gp-pink);
+}
+.mod-mirror-select {
+  padding: 5px 10px;
+  font-size: 12.5px;
+  min-width: 150px;
+  height: 32px;
+}
+.mod-mirror-custom-input {
+  max-width: 280px;
+  height: 32px;
+  padding: 4px 10px;
+  font-size: 12.5px;
+}
+
 .loader-actions {
   display: flex;
   flex-wrap: wrap;

@@ -1024,6 +1024,26 @@
                 <span id="modVersionVerdictText">正在读取版本信息…</span>
               </div>
 
+              <div class="loader-mirror-bar" id="modLoaderMirrorBar">
+                <span class="loader-mirror-label">
+                  <span class="mi" data-icon="cloud_download"></span>
+                  <span data-i18n="mods.mirror_label">下载加速镜像：</span>
+                </span>
+                <select id="modLoaderMirrorSelect" class="settings-select mod-mirror-select">
+                  <option value="gh-proxy" data-i18n="settings.mirror_ghproxy">GH-Proxy（推荐 - gh-proxy.com）</option>
+                  <option value="ghfast" data-i18n="settings.mirror_ghfast">GHFast 节点（ghfast.top）</option>
+                  <option value="direct" data-i18n="settings.mirror_direct">GitHub 直连（海外/科学上网）</option>
+                  <option value="custom" data-i18n="settings.mirror_custom">自定义加速前缀…</option>
+                </select>
+                <input
+                  type="url"
+                  class="library-input hidden mod-mirror-custom-input"
+                  id="modLoaderCustomMirrorInput"
+                  spellcheck="false"
+                  placeholder="https://gh-proxy.com/"
+                />
+              </div>
+
               <div class="loader-actions">
                 <button class="primary-btn" id="modInstallBtn">
                   <span class="mi" data-icon="download"></span> <span data-i18n="mods.install_btn">安装加载器</span>
