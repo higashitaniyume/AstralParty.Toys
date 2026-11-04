@@ -1174,6 +1174,7 @@ public sealed partial class ModManager
             if (root.TryGetProperty("steamBypassLobbyMethods", out sl) && sl.ValueKind == JsonValueKind.False) defaults.SteamBypassLobbyMethods = false;
             if (root.TryGetProperty("steamBypassTaskCtorMode", out var st) && st.ValueKind == JsonValueKind.String) defaults.SteamBypassTaskCtorMode = st.GetString()!;
             if (root.TryGetProperty("sdkVersion", out var sv) && sv.ValueKind == JsonValueKind.String) defaults.SdkVersion = sv.GetString()!;
+            if (root.TryGetProperty("profile", out var pf) && pf.ValueKind == JsonValueKind.String) defaults.Profile = pf.GetString()!;
         }
         catch
         {
@@ -1217,7 +1218,9 @@ public sealed partial class ModManager
             ["steamBypassLobbyHasValue"] = config.SteamBypassLobbyHasValue,
             ["steamBypassLobbyMethods"] = config.SteamBypassLobbyMethods,
             ["steamBypassTaskCtorMode"] = config.SteamBypassTaskCtorMode,
-            ["sdkVersion"] = config.SdkVersion
+            ["sdkVersion"] = config.SdkVersion,
+            // 多 profile(加载器功能): 同上, 白名单里漏掉就会在保存时把用户选的 profile 静默清空。
+            ["profile"] = config.Profile
         }, new JsonSerializerOptions { WriteIndented = true });
         WriteAllBytesProtected(LoaderConfigPath(gameDirectory), System.Text.Encoding.UTF8.GetBytes(json));
     }
@@ -1308,6 +1311,99 @@ public sealed partial class ModManager
 
         if (presentKeys == 0) return false;
         if (updated == text) return true;   // 本来就全是目标值：无事可做，算成功（前端不该弹"同步失败"）
+
+        var encoded = System.Text.Encoding.UTF8.GetBytes(updated);
+        if (hasBom)
+        {
+            var withBom = new byte[encoded.Length + 3];
+            withBom[0] = 0xEF; withBom[1] = 0xBB; withBom[2] = 0xBF;
+            Array.Copy(encoded, 0, withBom, 3, encoded.Length);
+            encoded = withBom;
+        }
+
+        WriteAllBytesProtected(configPath, encoded);
+        return true;
+    }
+
+    /// <summary>把「多 profile」写进加载器配置（值 = 档案名，空串 = 游戏写自己的目录）。
+    ///
+    /// 就地替换字面量而不是整体重写：<see cref="SaveLoaderConfig"/> 是白名单字典，会把模板里那一大段
+    /// 中文注释全丢掉，切换 profile 不该顺手清掉用户的配置注释。配置里没有该键时（老模板 / 用户手删）
+    /// 插在 <c>sdkVersion</c> 之前（与随包模板顺序一致）；连 sdkVersion 都没有就插在对象末尾。
+    /// 写完自检：必须仍能解析、且读出来的 profile 等于目标值，否则还原原文件并返回 false。
+    ///
+    /// 返回 false = 配置不存在（加载器没装）或写入自检失败，由调用方提示用户。</summary>
+    public bool SetLoaderProfile(string gameDirectory, string? profileName)
+    {
+        if (string.IsNullOrWhiteSpace(gameDirectory)) return false;
+
+        var configPath = LoaderConfigPath(gameDirectory);
+        if (!File.Exists(configPath)) return false;
+
+        var target = (profileName ?? "").Trim();
+        var literal = JsonSerializer.Serialize(target);   // 带引号并正确转义
+
+        var original = File.ReadAllBytes(configPath);
+        var hasBom = original.Length >= 3 && original[0] == 0xEF && original[1] == 0xBB && original[2] == 0xBF;
+        var offset = hasBom ? 3 : 0;
+        var text = System.Text.Encoding.UTF8.GetString(original, offset, original.Length - offset);
+        var newline = text.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
+
+        // 1) 已经存在 profile 键：就地换值（跳过注释里的同名串）
+        var updated = text;
+        var replaced = false;
+        foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(
+                     text, "(\"profile\"\\s*:\\s*)([^,}\\r\\n]*)"))
+        {
+            if (IsInsideLineComment(text, match.Index)) continue;
+            updated = text[..match.Index] + match.Groups[1].Value + literal +
+                      text[(match.Index + match.Length)..];
+            replaced = true;
+            break;
+        }
+
+        // 2) 没有该键：插到 sdkVersion 之前（保持模板的字段顺序与缩进）
+        if (!replaced)
+        {
+            var anchor = -1;
+            foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(text, "\"sdkVersion\""))
+            {
+                if (IsInsideLineComment(text, match.Index)) continue;
+                anchor = match.Index;
+                break;
+            }
+
+            if (anchor >= 0)
+            {
+                var lineStart = text.LastIndexOf('\n', Math.Max(0, anchor - 1)) + 1;
+                var indent = text[lineStart..anchor];
+                if (indent.Trim().Length != 0) indent = "  ";
+                updated = text[..lineStart] + indent + "\"profile\": " + literal + "," + newline + text[lineStart..];
+            }
+            else
+            {
+                var close = text.LastIndexOf('}');
+                if (close < 0) return false;
+                var head = text[..close].TrimEnd();
+                var comma = head.EndsWith(',') || head.EndsWith('{') ? "" : ",";
+                updated = head + comma + newline + "  \"profile\": " + literal + newline + text[close..];
+            }
+        }
+
+        // 3) 自检：能解析、键存在且值等于目标
+        try
+        {
+            using var doc = JsonDocument.Parse(StripJsonComments(updated.TrimStart('\uFEFF')));
+            if (!doc.RootElement.TryGetProperty("profile", out var value) || value.ValueKind != JsonValueKind.String)
+                return false;
+            if (!string.Equals(value.GetString(), target, StringComparison.Ordinal)) return false;
+        }
+        catch
+        {
+            return false;
+        }
+
+        if (updated == text) return true;   // 本来就是目标值
 
         var encoded = System.Text.Encoding.UTF8.GetBytes(updated);
         if (hasBom)

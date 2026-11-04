@@ -85,6 +85,8 @@ function modalFocusables() {
 function runPageHook(pageName) {
   if (pageName === 'home') {
     if (window.HomeModule && AppState.homeData) window.HomeModule.onShowHome();
+  } else if (pageName === 'profiles') {
+    window.AccountProfilesModule?.onShow();
   } else if (pageName === 'tools') {
     window.ReplayModule?.onShowTools();
   } else if (pageName === 'wiki') {
@@ -422,6 +424,11 @@ host?.addEventListener('message', event => {
     case 'gameProfiles':
       AppState.gameProfiles = msg.payload;
       if (window.GameLibModule) window.GameLibModule.renderProfiles(msg.payload);
+      break;
+
+    case 'accountProfiles':
+      AppState.accountProfiles = msg.payload;
+      window.AccountProfilesModule?.render(msg.payload);
       break;
 
     case 'gameScanResult':

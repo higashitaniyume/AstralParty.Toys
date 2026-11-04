@@ -71,10 +71,13 @@ winget upgrade Hiynet.AstralParty.Toys
 | 资源模组 | 导入 RML 格式 ZIP；内置 RML 引擎解析 `.bundle`、`mod.json`、`replace.txt`、图片与 Patch，改写 Addressables catalog；显示进度、文件日志，可暂停/取消并还原；支持启停、删除与还原官方资源 |
 | 市场 | 浏览社区模组目录：搜索、标签筛选、排序与分页；点开模组进入独立详情页，按「详情 / 版本 / README / 许可证」分区查看简介、封面（完整比例展示）、下载地址、许可信息、开源仓库与各版本更新说明（README 与更新说明按 GitHub 风格排版）；下载后校验哈希再安装，更新与降级都有确认，保留配置与停用状态；安装时右下角显示步骤与进度；首次使用需阅读并同意第三方内容说明 |
 | 启动与变速 | 管理多个游戏版本，选择 Steam 或绕过 Steam 启动，设置基础倍率与游戏内变速热键，支持控制台 Debug Shell 开关 |
+| 游戏多开 | 管理多套账号档案（profile）：新建、改名、删除（进回收站）、打开目录，切换后由加载器把账号 / 存档 / 回放目录重定向过去，可直接用选中的档案启动游戏 |
 
 CesiumLoader 随附 21 个内置模组：行为日志、自由相机、变速热键、回合倒计时、战斗胜率助手、卡牌皮肤、角色皮肤、音频替换、自动感谢、岔路标记、回合置前、隐藏 HUD、快捷短语、消息停留、主页底栏、帧率解锁、多语言支持、PVE 波次预告、星币商店一键购买、角色半透明与商店与筹码看板。功能与配置详见 [加载器文档](https://github.com/higashitaniyume/CesiumLoader#内置模组)。模组加载支持启动门机制，就绪后立刻启动；安装与模组配置变更通常需要重启游戏。
 
 变速范围为 **1–100 倍**，建议不超过 3 倍；倍率会影响动画、演出、回合与网络超时。默认 `Delete` 切换正常速度与上次倍率，`Alt` + `=` / `Alt` + `-` 调整倍率。
+
+「游戏多开」按档案管理账号数据：每个档案是一套独立的本地账号缓存、存档与回放，切换后由加载器在游戏进程内重定向目录，游戏文件不复制。档案名只支持英文字母、数字和下划线（最多 32 个字符），输入时会实时提示是否合法或重名；每个档案可以写一条备注（保存在档案目录的 `.profile.json` 里）。启动方式上，**默认档案**可选「从 Steam 启动」或「绕过 Steam 启动」，其它档案固定用**绕过 Steam 启动**（换档案就是换账号，不再让 Steam 决定用哪个会话），启动时会同步加载器的 Steam 绕过开关。切换在下次启动游戏时生效；首次使用某个档案时会自动把下载缓存硬链接过去，不必重新下载。PlayerPrefs（分辨率、自动登录标记）与 `Player.log` 不随档案隔离；同时运行多个实例需要不同的 exe 路径，同一账号不能同时在线。
 
 市场默认连接 `https://forge.hiynet.com`，可在「系统设置 → 市场」换成其它部署地址。首次进入会展示第三方模组说明，同意后才会连接市场服务；关闭说明只对本次生效，下次进入会再次询问。模组包可能由作者托管、也可能由市场直接保存，工具箱只负责下载、校验 SHA-256 并安装；随附的内置模组不能从市场安装或覆盖。
 
@@ -90,6 +93,7 @@ CesiumLoader 随附 21 个内置模组：行为日志、自由相机、变速热
 | --- | --- |
 | 回放库与工具配置 | `%USERPROFILE%\Documents\AstralPartyReplays` |
 | 游戏回放缓存（国服） | `%USERPROFILE%\AppData\LocalLow\feimo\AstralParty_CN\Temp\Replay` |
+| 账号档案（游戏多开） | `%USERPROFILE%\AppData\LocalLow\feimo\AstralParty_CN_profiles\<档案名>` |
 | WebView2 数据 | `%LOCALAPPDATA%\AstralParty.Toys\WebView2` |
 | 市场封面缓存 | `%LOCALAPPDATA%\AstralParty.Toys\workshop-covers` |
 | 加载器、模组与日志 | 游戏目录下的 `version.dll` 与 `AstralParty_ModLoader\` |

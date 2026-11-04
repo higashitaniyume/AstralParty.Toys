@@ -220,6 +220,45 @@ public partial class HybridWindow
                         openIdEl.GetString() is { Length: > 0 } openId)
                         HandleGameProfileOpen(openId);
                     break;
+                // ---- 游戏多开（账号 profile）：目录 + 加载器 profile 字段 ----
+                case "accountProfilesGet":
+                    _ = PushAccountProfilesAsync();
+                    break;
+                case "accountProfileCreate":
+                    HandleAccountProfileCreate(
+                        root.TryGetProperty("name", out var newAccountEl) ? newAccountEl.GetString() ?? "" : "");
+                    break;
+                case "accountProfileRename":
+                    if (root.TryGetProperty("name", out var renameAccountEl) &&
+                        root.TryGetProperty("newName", out var renameAccountNewEl))
+                    {
+                        HandleAccountProfileRename(renameAccountEl.GetString() ?? "",
+                            renameAccountNewEl.GetString() ?? "");
+                    }
+                    break;
+                case "accountProfileDelete":
+                    if (root.TryGetProperty("name", out var deleteAccountEl))
+                        HandleAccountProfileDelete(deleteAccountEl.GetString() ?? "");
+                    break;
+                case "accountProfileActivate":
+                    HandleAccountProfileActivate(
+                        root.TryGetProperty("name", out var activateAccountEl) ? activateAccountEl.GetString() : null);
+                    break;
+                case "accountProfileOpen":
+                    HandleAccountProfileOpen(
+                        root.TryGetProperty("name", out var openAccountEl) ? openAccountEl.GetString() : null);
+                    break;
+                case "accountProfileLaunch":
+                    HandleAccountProfileLaunch(
+                        root.TryGetProperty("name", out var launchAccountEl) ? launchAccountEl.GetString() : null,
+                        root.TryGetProperty("bypassSteam", out var launchAccountBypassEl) &&
+                        launchAccountBypassEl.ValueKind == JsonValueKind.True);
+                    break;
+                case "accountProfileSetNote":
+                    if (root.TryGetProperty("name", out var noteAccountEl))
+                        HandleAccountProfileSetNote(noteAccountEl.GetString() ?? "",
+                            root.TryGetProperty("note", out var noteEl) ? noteEl.GetString() : null);
+                    break;
                 case "gameScanQuick":
                     HandleGameScanQuick();
                     break;

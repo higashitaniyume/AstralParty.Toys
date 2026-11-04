@@ -49,4 +49,10 @@ public sealed class LoaderConfig
     public bool SteamBypassLobbyMethods { get; set; }
 
     public string SdkVersion { get; set; } = "2.0.0";
+
+    /// <summary>多 profile: 把游戏的账号 / 存档 / 回放目录重定向到
+    /// <c>%USERPROFILE%\AppData\LocalLow\&lt;公司&gt;\&lt;产品&gt;_profiles\&lt;名&gt;</c>(加载器原生功能)。
+    /// 空串 = 不重定向(游戏写自己的目录); 绝对路径 = 直接把 profile 放到指定目录。
+    /// 见加载器 <c>docs\多开-profile.md</c>。</summary>
+    public string Profile { get; set; } = "";
 }
