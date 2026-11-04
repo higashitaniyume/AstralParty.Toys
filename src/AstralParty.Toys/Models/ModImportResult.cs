@@ -65,6 +65,8 @@ public sealed class ModPackageInspectionEntry
     public bool Installed { get; set; }
     public string InstalledVersion { get; set; } = "";
     public string PackageVersion { get; set; } = "";
+    /// <summary>包内 sidecar 声明的 SDK 版本；空 = 未声明（加载器不拦）。</summary>
+    public string SdkVersion { get; set; } = "";
     public bool IsDowngrade { get; set; }
     public bool IsUpgrade { get; set; }
 

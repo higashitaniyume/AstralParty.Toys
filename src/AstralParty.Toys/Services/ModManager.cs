@@ -1160,6 +1160,10 @@ public sealed partial class ModManager
             if (root.TryGetProperty("speedhackBaseSpeed", out var sp) && sp.ValueKind == JsonValueKind.Number) defaults.SpeedhackBaseSpeed = sp.GetDouble();
             if (root.TryGetProperty("speedControlEnabled", out var sc) && sc.ValueKind == JsonValueKind.True) defaults.SpeedControlEnabled = true;
             if (root.TryGetProperty("speedControlEnabled", out sc) && sc.ValueKind == JsonValueKind.False) defaults.SpeedControlEnabled = false;
+            if (root.TryGetProperty("windowControlEnabled", out var wc) && wc.ValueKind == JsonValueKind.True) defaults.WindowControlEnabled = true;
+            if (root.TryGetProperty("windowControlEnabled", out wc) && wc.ValueKind == JsonValueKind.False) defaults.WindowControlEnabled = false;
+            if (root.TryGetProperty("audioControlEnabled", out var ac) && ac.ValueKind == JsonValueKind.True) defaults.AudioControlEnabled = true;
+            if (root.TryGetProperty("audioControlEnabled", out ac) && ac.ValueKind == JsonValueKind.False) defaults.AudioControlEnabled = false;
             if (root.TryGetProperty("steamBypassEnabled", out var sb) && sb.ValueKind == JsonValueKind.True) defaults.SteamBypassEnabled = true;
             if (root.TryGetProperty("steamBypassEnabled", out sb) && sb.ValueKind == JsonValueKind.False) defaults.SteamBypassEnabled = false;
             if (root.TryGetProperty("steamBypassRestartCheck", out var sr) && sr.ValueKind == JsonValueKind.True) defaults.SteamBypassRestartCheck = true;
@@ -1209,6 +1213,10 @@ public sealed partial class ModManager
             ["forwardActivityLog"] = config.ForwardActivityLog,
             ["speedhackBaseSpeed"] = config.SpeedhackBaseSpeed,
             ["speedControlEnabled"] = config.SpeedControlEnabled,
+            // 原生窗口置前 / 音频控制通道(加载器功能): 同上, 白名单里漏掉就会在保存时把用户关掉的通道
+            // 静默恢复成默认值(true)。
+            ["windowControlEnabled"] = config.WindowControlEnabled,
+            ["audioControlEnabled"] = config.AudioControlEnabled,
             // Steam 绕过(加载器功能): 必须显式写出 —— 本方法是白名单字典, 漏掉的键会在保存时被删除,
             // 于是用户关掉过的主开关会被静默恢复成默认值(true)。
             ["steamBypassEnabled"] = config.SteamBypassEnabled,
@@ -1483,6 +1491,69 @@ public sealed partial class ModManager
             if (left[i] != right[i]) return left[i] > right[i] ? 1 : -1;
         }
         return 0;
+    }
+
+    /// <summary>读取当前加载器实际用于 mod 版本校验的 SDK 版本。
+    ///
+    /// 优先取 <c>doorstop_config.json</c> 的 <c>sdkVersion</c>（加载器真正读取并用于拒绝 mod 的值）；
+    /// 配置缺失或没有该字段时回退到 <c>sdk/CesiumLoader.SDK.dll</c> 的文件版本。
+    /// 两者都读不到（例如还没安装加载器）返回 false，调用方应跳过检查。</summary>
+    public static bool TryReadInstalledSdkVersion(string gameDirectory, out string version)
+    {
+        version = "";
+        try
+        {
+            if (string.IsNullOrWhiteSpace(gameDirectory)) return false;
+
+            var configPath = Path.Combine(gameDirectory, LoaderFolderName, ConfigFileName);
+            if (File.Exists(configPath))
+            {
+                var fromConfig = ParseSdkVersionFromText(File.ReadAllText(configPath));
+                if (!string.IsNullOrEmpty(fromConfig))
+                {
+                    version = fromConfig;
+                    return true;
+                }
+            }
+
+            var sdkDll = Path.Combine(gameDirectory, LoaderFolderName, SdkFolderName, SdkDllName);
+            if (File.Exists(sdkDll))
+            {
+                var normalized = NormalizeSdkVersion(FileVersionInfo.GetVersionInfo(sdkDll).FileVersion);
+                if (!string.IsNullOrEmpty(normalized))
+                {
+                    version = normalized;
+                    return true;
+                }
+            }
+        }
+        catch
+        {
+            // 读不到就当未知：不能因为配置损坏阻止所有模组安装。
+        }
+        return false;
+    }
+
+    /// <summary>mod 声明的 SDK 版本是否高于当前加载器可提供的版本（空值不拦）。</summary>
+    public static bool IsSdkIncompatible(string? requiredSdk, string? installedSdk)
+        => !string.IsNullOrWhiteSpace(requiredSdk)
+           && !string.IsNullOrWhiteSpace(installedSdk)
+           && CompareSemVer(requiredSdk!, installedSdk!) > 0;
+
+    /// <summary>给安装结果界面用的 SDK 版本不兼容说明。</summary>
+    public static string DescribeSdkMismatch(string modName, string requiredSdk, string installedSdk)
+        => $"{modName} 要求 SDK {requiredSdk}，当前加载器为 {installedSdk}。请先更新加载器，或安装支持当前 SDK 的旧版本。";
+
+    /// <summary>把 <c>3.2.0.0</c> 这类文件版本规范化成三段；无法解析时保留原值。</summary>
+    private static string NormalizeSdkVersion(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return "";
+        var trimmed = value.Trim();
+        var parts = trimmed.Split('.');
+        if (parts.Length < 3) return trimmed;
+        for (var i = 0; i < 3; i++)
+            if (!int.TryParse(parts[i], out _)) return trimmed;
+        return parts[0] + "." + parts[1] + "." + parts[2];
     }
 
     /// <summary>把已有 doorstop_config.json 的 sdkVersion 抬到随包版本（只升不降），其余字段与注释原样保留。

@@ -75,6 +75,7 @@ public sealed partial class ModManager
                 Installed = plan.Installed,
                 InstalledVersion = plan.InstalledVersion,
                 PackageVersion = plan.PackageVersion,
+                SdkVersion = plan.PackageSdkVersion,
                 IsDowngrade = plan.IsDowngrade,
                 IsUpgrade = plan.IsUpgrade,
                 PreservesConfig = plan.ConfigExisted,
@@ -103,6 +104,21 @@ public sealed partial class ModManager
                     string.Join("、", downgrades.Select(plan =>
                         $"{plan.DisplayName} 已装 v{plan.InstalledVersion} → 包内 v{plan.PackageVersion}")) +
                     "。确认要降级后再导入（玩家配置与停用状态仍会保留）。");
+        }
+
+        // SDK 版本检查：加载器会按 doorstop_config.json 的 sdkVersion 拒绝声明更高的 mod，
+        // 在这里提前拦住，避免装完看起来正常、进游戏却被跳过。
+        if (TryReadInstalledSdkVersion(gameDirectory, out var installedSdkVersion))
+        {
+            var sdkBlocked = prepared.Plans
+                .Where(plan => IsSdkIncompatible(plan.PackageSdkVersion, installedSdkVersion))
+                .Select(plan => plan.DisplayName + " 要求 SDK " + plan.PackageSdkVersion)
+                .ToList();
+            if (sdkBlocked.Count > 0)
+                throw new InvalidOperationException(
+                    "当前加载器的 SDK 版本低于模组要求，已停止导入：" +
+                    string.Join("、", sdkBlocked) + "（当前 SDK " + installedSdkVersion + "）。" +
+                    "请先更新加载器，或安装支持当前 SDK 的旧版本。");
         }
 
         // 先把要写的字节全部读出来：包内容有问题时不会留下半个模组。
@@ -243,6 +259,7 @@ public sealed partial class ModManager
             {
                 var json = System.Text.Encoding.UTF8.GetString(ReadEntryBytes(sidecarEntry.Entry));
                 plan.PackageVersion = ReadJsonString(json, "version");
+                plan.PackageSdkVersion = ReadJsonString(json, "sdkVersion");
                 plan.PackageDisplayName = ReadJsonString(json, "name");
             }
             plan.IsDowngrade = plan.InstalledVersion.Length > 0 && plan.PackageVersion.Length > 0
@@ -284,6 +301,7 @@ public sealed partial class ModManager
 
         public string PackageVersion { get; set; } = "";
         public string PackageDisplayName { get; set; } = "";
+        public string PackageSdkVersion { get; set; } = "";
         public string InstalledVersion { get; set; } = "";
         public bool Installed { get; set; }
         public bool IsDowngrade { get; set; }

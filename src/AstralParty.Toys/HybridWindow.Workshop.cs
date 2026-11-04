@@ -317,6 +317,15 @@ public partial class HybridWindow
                 throw new WorkshopException(
                     $"包内版本（v{package.PackageVersion}）与登记的 v{selected.Version} 不一致，已停止安装。");
 
+            // 加载器会按 doorstop_config.json 的 sdkVersion 拒绝要求更高的 mod；
+            // 市场侧提前拦住，避免“装好了但游戏里被跳过”。
+            if (ModManager.TryReadInstalledSdkVersion(gameDirectory, out var installedSdk) &&
+                ModManager.IsSdkIncompatible(package.SdkVersion, installedSdk))
+            {
+                throw new WorkshopException(
+                    ModManager.DescribeSdkMismatch(package.Name, package.SdkVersion, installedSdk));
+            }
+
             if (inspection.HasDowngrade)
             {
                 _pendingWorkshopInstall = new PendingWorkshopInstall(id, selected.Version, temporary, gameDirectory);

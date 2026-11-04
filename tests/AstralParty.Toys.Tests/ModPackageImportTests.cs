@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO.Compression;
 using System.Text.Json;
 using AstralParty.Toys.Services;
@@ -484,6 +485,109 @@ public sealed class ModPackageImportTests
         var scanned = harness.Manager.GetStatus().Mods;
         Assert.Equal(result.Mods.Count, scanned.Count);
         Assert.All(scanned, mod => Assert.True(mod.Enabled));
+    }
+
+    [Fact]
+    public void InspectModPackage_ReportsSdkRequirementFromSidecar()
+    {
+        using var harness = new ImportHarness("ap-pkg-sdk-inspect");
+        var zip = CreatePackage(harness, "NewMod.zip",
+            ("NewMod/NewMod.dll", FakeDll),
+            ("NewMod/NewMod.json", Text("{\"id\":\"NewMod\",\"name\":\"新模组\",\"version\":\"1.0.0\",\"sdkVersion\":\"3.2.0\"}")));
+
+        var inspection = harness.Manager.InspectModPackage(harness.GameDirectory, zip);
+
+        Assert.Equal("3.2.0", Assert.Single(inspection.Mods).SdkVersion);
+    }
+
+    [Fact]
+    public void ImportModPackage_BlocksWhenRequiredSdkIsNewerThanInstalled()
+    {
+        using var harness = new ImportHarness("ap-pkg-sdk-block");
+        WriteInstalledSdkVersion(harness, "3.1.4");
+        var zip = CreatePackage(harness, "NewMod.zip",
+            ("NewMod/NewMod.dll", FakeDll),
+            ("NewMod/NewMod.json", Text("{\"id\":\"NewMod\",\"name\":\"新模组\",\"version\":\"1.0.0\",\"sdkVersion\":\"3.2.0\"}")));
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            harness.Manager.ImportModPackage(harness.GameDirectory, zip));
+
+        Assert.Contains("SDK", ex.Message);
+        Assert.Contains("3.2.0", ex.Message);
+        Assert.Contains("3.1.4", ex.Message);
+        Assert.False(Directory.Exists(Path.Combine(harness.ModsDirectory, "NewMod")));
+    }
+
+    [Fact]
+    public void ImportModPackage_AllowsWhenRequiredSdkMatchesOrIsOlder()
+    {
+        using var harness = new ImportHarness("ap-pkg-sdk-match");
+        WriteInstalledSdkVersion(harness, "3.2.0");
+        var zip = CreatePackage(harness, "NewMod.zip",
+            ("NewMod/NewMod.dll", FakeDll),
+            ("NewMod/NewMod.json", Text("{\"id\":\"NewMod\",\"name\":\"新模组\",\"version\":\"1.0.0\",\"sdkVersion\":\"3.1.4\"}")));
+
+        var result = harness.Manager.ImportModPackage(harness.GameDirectory, zip);
+
+        Assert.Single(result.Mods);
+        Assert.True(Directory.Exists(Path.Combine(harness.ModsDirectory, "NewMod")));
+    }
+
+    [Fact]
+    public void ImportModPackage_SkipsSdkCheckWhenInstalledSdkIsUnknown()
+    {
+        using var harness = new ImportHarness("ap-pkg-sdk-unknown");
+        var zip = CreatePackage(harness, "NewMod.zip",
+            ("NewMod/NewMod.dll", FakeDll),
+            ("NewMod/NewMod.json", Text("{\"id\":\"NewMod\",\"name\":\"新模组\",\"version\":\"1.0.0\",\"sdkVersion\":\"9.9.9\"}")));
+
+        var result = harness.Manager.ImportModPackage(harness.GameDirectory, zip);
+
+        Assert.Single(result.Mods);
+    }
+
+    [Theory]
+    [InlineData("3.2.0", "3.1.4", true)]
+    [InlineData("3.2.0", "3.2.0", false)]
+    [InlineData("3.1.4", "3.2.0", false)]
+    [InlineData("", "3.2.0", false)]
+    [InlineData("3.2.0", "", false)]
+    [InlineData("3.2.0-beta", "3.2.0", false)]
+    public void IsSdkIncompatible_ComparesThreePartVersions(string required, string installed, bool expected)
+    {
+        Assert.Equal(expected, ModManager.IsSdkIncompatible(required, installed));
+    }
+
+    [Fact]
+    public void TryReadInstalledSdkVersion_PrefersDoorstopConfig()
+    {
+        using var harness = new ImportHarness("ap-pkg-sdk-read");
+        WriteInstalledSdkVersion(harness, "3.2.0");
+
+        Assert.True(ModManager.TryReadInstalledSdkVersion(harness.GameDirectory, out var version));
+        Assert.Equal("3.2.0", version);
+    }
+
+    [Fact]
+    public void TryReadInstalledSdkVersion_FallsBackToSdkDllFileVersion()
+    {
+        using var harness = new ImportHarness("ap-pkg-sdk-dll");
+        var sdkDir = Directory.CreateDirectory(Path.Combine(
+            harness.GameDirectory, ModManager.LoaderFolderName, ModManager.SdkFolderName));
+        var source = typeof(ModManager).Assembly.Location;
+        File.Copy(source, Path.Combine(sdkDir.FullName, ModManager.SdkDllName), overwrite: true);
+
+        Assert.True(ModManager.TryReadInstalledSdkVersion(harness.GameDirectory, out var version));
+
+        var fileVersion = FileVersionInfo.GetVersionInfo(source).FileVersion ?? "";
+        Assert.Equal(string.Join(".", fileVersion.Split('.').Take(3)), version);
+    }
+
+    private static void WriteInstalledSdkVersion(ImportHarness harness, string version)
+    {
+        var loader = Directory.CreateDirectory(Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName));
+        File.WriteAllText(Path.Combine(loader.FullName, ModManager.ConfigFileName),
+            "{\"sdkVersion\":\"" + version + "\"}");
     }
 
     private static string CreatePackage(ImportHarness harness, string fileName,
