@@ -640,6 +640,18 @@ html body #skinsView.v2-own { scrollbar-gutter: auto; }
 html body .workshop-page .workshop-readme { background: var(--v2-panel-2-solid); border-color: var(--v2-border); }
 html body.v2-has-bg .workshop-page .workshop-readme { background: rgba(var(--v2-panel-rgb), max(var(--v2-ui), .6)); backdrop-filter: blur(16px); text-shadow: none; }
 
+/* ---------- 窗口四周的拖边：透明，最大化时不需要 ---------- */
+.v2-edges i { position: fixed; z-index: 450; }
+body.v2-maximized .v2-edges { display: none; }
+.v2-edges [data-v2edge="left"] { left: 0; top: 8px; bottom: 8px; width: 4px; cursor: ew-resize; }
+.v2-edges [data-v2edge="right"] { right: 0; top: 8px; bottom: 8px; width: 4px; cursor: ew-resize; }
+.v2-edges [data-v2edge="top"] { top: 0; left: 8px; right: 8px; height: 4px; cursor: ns-resize; }
+.v2-edges [data-v2edge="bottom"] { bottom: 0; left: 8px; right: 8px; height: 4px; cursor: ns-resize; }
+.v2-edges [data-v2edge="topLeft"] { left: 0; top: 0; width: 8px; height: 8px; cursor: nwse-resize; }
+.v2-edges [data-v2edge="topRight"] { right: 0; top: 0; width: 8px; height: 8px; cursor: nesw-resize; }
+.v2-edges [data-v2edge="bottomLeft"] { left: 0; bottom: 0; width: 8px; height: 8px; cursor: nesw-resize; }
+.v2-edges [data-v2edge="bottomRight"] { right: 0; bottom: 0; width: 8px; height: 8px; cursor: nwse-resize; }
+
 /* ---------- 压在背景图上的文字加一层阴影；卡片、按钮、输入框有自己的底色，不需要 ---------- */
 html body.v2-has-bg :is(.v2-page, .profiles-page, .workshop-page) { text-shadow: var(--v2-halo); }
 html body.v2-has-bg :is(.v2-card, .v2-scheme, .v2-tcard, .v2-slot, .v2-seg, .v2-btn, .v2-icon-btn, .v2-replay, .v2-anim-preview, .v2-notice, input, textarea, select, .profiles-card, .profiles-option, .primary-btn, .secondary-btn, .danger-btn, .workshop-card) { text-shadow: none; }

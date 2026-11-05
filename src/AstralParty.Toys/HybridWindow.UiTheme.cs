@@ -17,19 +17,26 @@ public partial class HybridWindow
         catch (UnauthorizedAccessException) { return; }
         if (!light) return;
 
-        var background = new SolidColorBrush(Color.FromRgb(0xF6, 0xF5, 0xF9));
-        Background = background;
-        StartupOverlay.Background = background;
-        WebView.DefaultBackgroundColor = System.Drawing.Color.FromArgb(0xF6, 0xF5, 0xF9);
+        ApplyWindowBackground(light: true);
+        StartupOverlay.Background = Background;
         StartupTitle.Foreground = new SolidColorBrush(Color.FromRgb(0x1F, 0x22, 0x33));
         StartupDetail.Foreground = new SolidColorBrush(Color.FromRgb(0x6B, 0x70, 0x84));
         StartupProgress.Background = new SolidColorBrush(Color.FromRgb(0xE3, 0xE3, 0xEC));
+    }
+
+    // 窗口底色：改大小时网页还没跟上的那一瞬间会露出来，要和当前深浅色一致
+    private void ApplyWindowBackground(bool light)
+    {
+        var (r, g, b) = light ? ((byte)0xF6, (byte)0xF5, (byte)0xF9) : ((byte)0x12, (byte)0x14, (byte)0x20);
+        Background = new SolidColorBrush(Color.FromRgb(r, g, b));
+        WebView.DefaultBackgroundColor = System.Drawing.Color.FromArgb(r, g, b);
     }
 
     private bool HandleUiThemeMessage(string? type, JsonElement root)
     {
         if (type != "uiThemeChanged") return false;
         bool light = root.TryGetProperty("light", out var value) && value.ValueKind == JsonValueKind.True;
+        ApplyWindowBackground(light);
         try
         {
             if (light) File.WriteAllText(UiThemeFile, "light");

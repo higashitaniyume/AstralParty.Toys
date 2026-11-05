@@ -27,6 +27,7 @@
   const TABS = [['cards', '卡牌'], ['audio', '音效'], ['resource', '资源包'], ['background', '背景']];
   function frameHead(action = '') {
     return `<div class="v2-head"><h1>自定义</h1><span class="v2-top-spacer"></span>${action}</div>
+      ${tab() === 'background' ? '' : U().gamePicker('v2sGame', 'data-v2s="manageGames"', rRunning())}
       <div class="v2-toolbar"><div class="v2-seg">${segBtns(tab(), TABS, 'data-v2s-tab')}</div></div>`;
   }
   const crumb = (name, back) => `<div class="v2-crumb"><button data-v2s="${back}">自定义</button>${I().right}<span class="cur">${esc(name)}</span></div>`;
@@ -314,6 +315,7 @@
   const curAudio = () => aProfiles().find(x => x.id === K.audioScheme);
 
   const actions = {
+    manageGames: () => showPage('settings'),
     // 卡牌
     cardAddMenu: el => U().openMenu(el, [
       { label: '新建方案（从内置默认包）…', icon: I().plus, fn: () => metaForm({
@@ -454,6 +456,13 @@
   document.addEventListener('change', ev => {
     const t = ev.target;
     if (!t.closest?.('#v2Skins')) return;
+    if (t.id === 'v2sGame') {
+      if (!t.value) return;
+      post({ type: 'gameProfileSetActive', id: t.value });
+      // 卡牌由 GameLibModule 自动刷新；音效、资源包要重新向宿主要一次新游戏的数据
+      if (tab() === 'audio' || tab() === 'resource') CS()?.switchTab(tab());
+      return;
+    }
     if (t.dataset.v2sAvol) { const i = aItems().find(x => String(x.id) === t.dataset.v2sAvol); if (i) post({ type: 'audioSkinsSetVolume', schemeId: K.audioScheme, configId: i.id, eventName: i.name, volume: Number(t.value) }); return; }
     if (t.id === 'v2sAChar') { K.aChar = t.value; K.aLimit = 200; return render(); }
     if (t.dataset.v2sRtoggle) {
@@ -480,6 +489,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    wrap(window.GameLibModule, ['renderProfiles']);
     wrap(SK(), ['renderProfiles', 'renderCards', 'onCardUpdated', 'legacyImported', 'onAnimationState']);
     wrap(CS(), ['switchTab']);
     wrap(AU(), ['renderProfiles', 'renderItems', 'renderExtractProgress', 'renderExtractDone'], (name, args) => {
