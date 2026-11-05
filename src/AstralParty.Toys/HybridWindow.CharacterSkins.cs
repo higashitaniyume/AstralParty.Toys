@@ -124,20 +124,7 @@ public partial class HybridWindow
             {
                 case "characterSkinsGet": break;
                 case "characterSkinsGif":
-                    string gifAction = root.GetProperty("action").GetString()!;
-                    var gifManifest = _characterSkins.Load(game, id);
-                    if (!gifManifest.Animations.TryGetValue(gifAction, out var gifAnimation) || gifAnimation.Frames.Count == 0) throw new InvalidOperationException("当前动作没有动画帧");
-                    gifAnimation.Fps = root.GetProperty("fps").GetSingle();
-                    gifAnimation.Loop = root.GetProperty("loop").GetBoolean();
-                    var gifDialog = new SaveFileDialog { Title = "导出当前动作为 GIF", Filter = "GIF 动画 (*.gif)|*.gif", FileName = id + "-" + gifAction + ".gif" };
-                    if (gifDialog.ShowDialog(this) != true) return;
-                    EnsureCharacterExports();
-                    string gifPath = gifDialog.FileName;
-                    _characterExports.Enqueue(game, "gif:" + id + ":" + gifAction, gifAction + " · GIF", async (progress, cancellation) =>
-                    {
-                        await CharacterGifExporter.ExportAsync(_characterSkins.Package(game, id), gifAnimation, gifPath, progress, cancellation);
-                        return "GIF 已保存：" + gifPath;
-                    });
+                    Post(new { type = "toast", message = "GIF 导出功能已停用。" });
                     return;
                 case "characterSkinsCreate":
                     var attachment = ReadCharacterAttachment(root, game);

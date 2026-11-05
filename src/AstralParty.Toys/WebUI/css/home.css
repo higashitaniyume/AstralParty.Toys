@@ -366,28 +366,29 @@ body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-game-logo {
   height: 130px;
 }
 
-/* 启动方式（单选框，二选一）：从 Steam 启动（默认）/ 绕过 Steam 启动。
-   「绕过」= 直接启动游戏主程序，并且会同步打开「加载器设置」里的 Steam 绕过开关。 */
+/* 启动方式（单选框）：从 Steam 启动（默认）/ 绕过 Steam 启动 / 从 TapTap 启动 / 绕过 TapTap 启动。
+   「绕过」= 直接启动游戏主程序，并且会同步打开「加载器设置」里对应的绕过开关。 */
 .launch-mode-options {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  display: grid;
+  grid-template-columns: repeat(2, auto);
   gap: 6px;
+  justify-content: end;
 }
 
 .launch-mode-item {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
+  gap: 6px;
+  padding: 5px 10px;
   border: 2px solid rgba(255, 255, 255, 0.16);
   border-radius: 12px;
   background: rgba(10, 14, 23, 0.78);
   color: #cbd5e6;
-  font-size: 15px;
+  font-size: 13.5px;
   line-height: 1;
   cursor: pointer;
   user-select: none;
+  white-space: nowrap;
   transition: border-color 160ms var(--motion-ease), background 160ms var(--motion-ease), color 160ms var(--motion-ease);
 }
 

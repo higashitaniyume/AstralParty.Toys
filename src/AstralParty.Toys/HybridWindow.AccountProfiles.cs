@@ -274,14 +274,17 @@ public partial class HybridWindow
 
     /// <summary>切到指定 profile 并启动游戏。
     ///
-    /// 启动方式：默认档案（空名）用界面上选的方式（从 Steam / 绕过 Steam）；
-    /// **其它档案一律绕过 Steam 直启** —— 换档案就是为了换账号，不能再让 Steam 决定
-    /// 用哪个账号/会话，也避免 Steam 把启动重定向回它自己注册的那份安装。
-    /// 顺带把加载器的 Steam 绕过开关同步成同一种模式（与首页单选框是同一组配置）。</summary>
-    private void HandleAccountProfileLaunch(string? name, bool bypassSteam)
+    /// 启动方式：默认档案（空名）用界面上选的方式（从 Steam / 绕过 Steam / 从 TapTap / 绕过 TapTap）；
+    /// **其它档案绕过 Steam 或 TapTap 直启** —— 换档案就是为了换账号，不能再让平台客户端决定
+    /// 用哪个账号/会话，也避免把启动重定向回它自己注册的那份安装。
+    /// 顺带把加载器的绕过开关同步成对应模式（与首页单选框是同一组配置）。</summary>
+    private void HandleAccountProfileLaunch(string? name, string mode)
     {
         var trimmed = (name ?? "").Trim();
-        if (trimmed.Length > 0) bypassSteam = true;
+        if (trimmed.Length > 0 && mode != "bypassTapTap")
+        {
+            mode = "bypassSteam";
+        }
 
         if (!TryApplyAccountProfile(trimmed, out var error))
         {
@@ -289,15 +292,20 @@ public partial class HybridWindow
             return;
         }
 
-        // 配置同步是尽力而为：同步失败也照常启动（游戏在 Steam 运行时直启一般也能进）。
+        // 配置同步是尽力而为：同步失败也照常启动。
         try
         {
             var gameDirectory = RequireModGameDirectory();
             if (File.Exists(_modManager.LoaderConfigPath(gameDirectory)))
             {
-                _modManager.SetSteamBypassProfile(gameDirectory, bypassSteam);
+                var steamBypass = mode == "bypassSteam";
+                var tapTapBypass = mode == "bypassTapTap";
+                _modManager.SetSteamBypassProfile(gameDirectory, steamBypass);
+                _modManager.SetTapTapBypassProfile(gameDirectory, tapTapBypass);
+
                 // 首页「启动方式」单选框跟着走（同一组配置，避免两处显示不一致）
-                Post(new { type = "steamBypassSync", payload = new { enabled = bypassSteam } });
+                Post(new { type = "steamBypassSync", payload = new { enabled = steamBypass } });
+                Post(new { type = "launchModeSync", payload = new { mode } });
             }
         }
         catch
@@ -310,8 +318,11 @@ public partial class HybridWindow
 
         // 非默认档案始终走独立实例外壳；默认档案只有在已有实例运行时才需要外壳。
         var separateInstance = trimmed.Length > 0 || SpeedhackManager.IsGameRunning();
-        HandleLaunchGame(bypassSteam, trimmed, separateInstance);
+        HandleLaunchGame(mode, trimmed, separateInstance);
     }
+
+    private void HandleAccountProfileLaunch(string? name, bool bypassSteam)
+        => HandleAccountProfileLaunch(name, bypassSteam ? "bypassSteam" : "steam");
 
     /// <summary>「游戏窗口标题后追加 profile 名」开关（写加载器的 profileWindowTitle）。
     /// 默认开；关掉只影响标题显示，不影响目录隔离。</summary>

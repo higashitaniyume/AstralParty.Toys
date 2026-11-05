@@ -95,6 +95,13 @@
   // 独立开关: 与 steamBypassEnabled/steamBypassMatchmaking/steamBypassLobbyHasValue/
   // steamBypassLobbyMethods 互不影响。false = 恢复原版行为(退房/解散/被踢时 await 之后仍被跳过)。
   "steamBypassLobbyQuery": true,
+  // TapTap 版绕过(默认关闭, Dice App「吉星派对」测试版专用): TapTap 自杀门在 AOT 类
+  // TapClientStandalone.IsLaunchedFromTapTapPC, 不是 SteamManager.Awake(), Steam 绕过装了也没用。
+  "tapTapBypassEnabled": false,
+  // TapTap 附加保险: 让 taptap_api.dll 的 TapSDK_RestartAppIfNecessary 恒返回 0。
+  "tapTapBypassRestartCheck": false,
+  // TapTap 登录链 stub: TapSDK_Init / TapUser_AsyncAuthorize / TapSDK_GetClientID / TapUser_GetOpenID。
+  "tapTapBypassLogin": false,
   // 多 profile: 把游戏读写账号/存档/回放的目录重定向到独立目录; 托管的「游戏多开」页写入。
   // 空 = 不重定向, 游戏写自己的 LocalLow\<公司>\<产品>。
   "profile": "",

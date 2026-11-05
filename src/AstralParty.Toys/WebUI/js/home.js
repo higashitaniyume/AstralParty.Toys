@@ -1,6 +1,7 @@
 // home.js - Astral Party lobby & portraits
 (function () {
-  // localStorage 里记「绕过 Steam 启动」的选择（默认 false = 从 Steam 启动）
+  // localStorage 里记「启动方式」的选择（默认 steam）
+  const LAUNCH_MODE_KEY = 'launchMode';
   const LAUNCH_BYPASS_KEY = 'launchBypassSteam';
 
   const HomeModule = {
@@ -42,7 +43,8 @@
     launchGame() {
       const button = $('btnMenuLaunchGame');
       if (button?.dataset.busy === '1') return;
-      post({ type: 'launchGame', bypassSteam: this.isBypassSteam() });
+      const mode = this.getLaunchMode();
+      post({ type: 'launchGame', mode, bypassSteam: mode === 'bypassSteam' });
       // 启动瞬间就把「启动方式」锁一段时间：见 lockLaunchMode 的说明（防止刚起的这局被改写配置串味）。
       this.lockLaunchMode(6000);
       if (!button) return;
@@ -55,25 +57,21 @@
       }, 5000);
     },
 
-    // 启动后给「从 Steam / 绕过 Steam」这组单选框上一小段冷却：
-    // 游戏是在**启动早期**才读加载器的 doorstop 配置（Steam 绕过开关）。若这时用户手快、
-    // 立刻切到另一种方式，切换会触发 setSteamBypass 改写那份配置，导致刚拉起的这一局"串味"
-    // —— 明明从 Steam 启动，却被改成绕过（反之亦然）。冷却期内禁止切换即可干净地避免这个竞态。
+    // 启动后给启动方式单选框上一小段冷却：
+    // 游戏是在**启动早期**才读加载器的 doorstop 配置（绕过开关）。若这时用户手快、
+    // 立刻切到另一种方式，切换会触发 setLaunchMode 改写配置，导致刚拉起的这一局"串味"。
+    // 冷却期内禁止切换即可干净地避免这个竞态。
     lockLaunchMode(ms) {
-      const steamRadio = $('launchViaSteam');
-      const bypassRadio = $('launchBypassSteam');
+      const radios = document.querySelectorAll('input[name="launchMode"]');
       const group = document.querySelector('.launch-mode-options');
-      if (!steamRadio || !bypassRadio) return;
-      steamRadio.disabled = true;
-      bypassRadio.disabled = true;
+      radios.forEach(r => { r.disabled = true; });
       if (group) {
         group.classList.add('is-cooldown');
         group.title = '游戏启动中，稍候即可再切换启动方式';
       }
       clearTimeout(this._launchModeCooldownTimer);
       this._launchModeCooldownTimer = setTimeout(() => {
-        steamRadio.disabled = false;
-        bypassRadio.disabled = false;
+        radios.forEach(r => { r.disabled = false; });
         if (group) {
           group.classList.remove('is-cooldown');
           group.removeAttribute('title');
@@ -81,61 +79,77 @@
       }, ms);
     },
 
-    // ---------- 启动方式：从 Steam 启动 / 绕过 Steam 启动（单选框，二选一） ----------
-    //
-    // 「绕过 Steam 启动」和「模组 → 加载器设置」里的 steamBypassEnabled 是**同一个配置**：
-    //   选它 → 启动游戏时直接拉起游戏主程序（完全不经过 Steam），并把加载器的 Steam 绕过开关写开
-    //          —— 否则游戏本体发现"非 Steam 客户端启动"会在启动早期自己退出；
-    //   选「从 Steam 启动」→ 仍旧交给 Steam 启动，加载器那个开关也一起关掉。
-    // 默认：从 Steam 启动。选择记在 localStorage 里；进界面时宿主要会推一次配置里的当前值
-    // （装了加载器就以 doorstop_config.json 为准，见 applySteamBypassSync），没装加载器则用本地记住的选择。
+    // ---------- 启动方式：从 Steam 启动 / 绕过 Steam / 从 TapTap / 绕过 TapTap ----------
     initLaunchMode() {
-      const steamRadio = $('launchViaSteam');
-      const bypassRadio = $('launchBypassSteam');
-      if (!steamRadio || !bypassRadio) return;
+      const radios = document.querySelectorAll('input[name="launchMode"]');
+      if (!radios.length) return;
 
-      const bypass = window.localStorage.getItem(LAUNCH_BYPASS_KEY) === 'true';
-      steamRadio.checked = !bypass;
-      bypassRadio.checked = bypass;
-      this.refreshLaunchModeUi();
+      let mode = window.localStorage.getItem(LAUNCH_MODE_KEY);
+      if (!mode) {
+        mode = window.localStorage.getItem(LAUNCH_BYPASS_KEY) === 'true' ? 'bypassSteam' : 'steam';
+      }
+      this.setLaunchMode(mode, false);
 
-      // 同一组 name 的单选框天生互斥、也不可能两个都不选，所以直接听 change 就够了
-      [steamRadio, bypassRadio].forEach(radio => radio.addEventListener('change', () => {
+      radios.forEach(radio => radio.addEventListener('change', () => {
         if (!radio.checked) return;
-        window.localStorage.setItem(LAUNCH_BYPASS_KEY, String(bypassRadio.checked));
-        this.refreshLaunchModeUi();
-        // 同步进加载器配置（宿主那边保留注释地只改这一个键）
-        post({ type: 'setSteamBypass', enabled: bypassRadio.checked });
+        this.setLaunchMode(radio.value, true);
       }));
     },
 
-    isBypassSteam() {
-      return !!$('launchBypassSteam')?.checked;
+    getLaunchMode() {
+      const checked = document.querySelector('input[name="launchMode"]:checked');
+      return checked?.value || 'steam';
     },
 
-    refreshLaunchModeUi() {
-      const bypass = this.isBypassSteam();
-      $('launchModeSteam')?.classList.toggle('is-active', !bypass);
-      $('launchModeBypass')?.classList.toggle('is-active', bypass);
-      const button = $('btnMenuLaunchGame');
-      if (button) {
-        button.title = bypass
-          ? '启动 Astral Party（吉星派对）· 绕过 Steam：直接启动游戏主程序'
-          : '启动 Astral Party（吉星派对）· 从 Steam 启动';
+    isBypassSteam() {
+      return this.getLaunchMode() === 'bypassSteam';
+    },
+
+    setLaunchMode(mode, postSync = true) {
+      const validModes = ['steam', 'bypassSteam', 'taptap', 'bypassTapTap'];
+      const targetMode = validModes.includes(mode) ? mode : 'steam';
+      const radio = document.querySelector(`input[name="launchMode"][value="${targetMode}"]`);
+      if (radio) radio.checked = true;
+
+      window.localStorage.setItem(LAUNCH_MODE_KEY, targetMode);
+      window.localStorage.setItem(LAUNCH_BYPASS_KEY, String(targetMode === 'bypassSteam'));
+
+      this.refreshLaunchModeUi();
+
+      if (postSync) {
+        post({ type: 'setLaunchMode', mode: targetMode });
       }
     },
 
-    // 反向同步：在「加载器设置」里改了 Steam 绕过 → 首页单选框跟着走（同一个配置）
+    refreshLaunchModeUi() {
+      const mode = this.getLaunchMode();
+      $('launchModeSteam')?.classList.toggle('is-active', mode === 'steam');
+      $('launchModeBypassSteam')?.classList.toggle('is-active', mode === 'bypassSteam');
+      $('launchModeBypass')?.classList.toggle('is-active', mode === 'bypassSteam');
+      $('launchModeTapTap')?.classList.toggle('is-active', mode === 'taptap');
+      $('launchModeBypassTapTap')?.classList.toggle('is-active', mode === 'bypassTapTap');
+
+      const button = $('btnMenuLaunchGame');
+      if (button) {
+        const titles = {
+          steam: '启动 Astral Party（吉星派对）· 从 Steam 启动',
+          bypassSteam: '启动 Astral Party（吉星派对）· 绕过 Steam：直接启动游戏主程序',
+          taptap: '启动 Astral Party（吉星派对）· 从 TapTap 启动',
+          bypassTapTap: '启动 Astral Party（吉星派对）· 绕过 TapTap：直接启动游戏主程序'
+        };
+        button.title = titles[mode] || titles.steam;
+      }
+    },
+
+    // 反向同步：加载器配置同步到首页单选框
     applySteamBypassSync(payload) {
       if (!payload || typeof payload.enabled !== 'boolean') return;
-      const steamRadio = $('launchViaSteam');
-      const bypassRadio = $('launchBypassSteam');
-      if (!steamRadio || !bypassRadio) return;
+      this.setLaunchMode(payload.enabled ? 'bypassSteam' : 'steam', false);
+    },
 
-      bypassRadio.checked = payload.enabled;
-      steamRadio.checked = !payload.enabled;
-      window.localStorage.setItem(LAUNCH_BYPASS_KEY, String(payload.enabled));
-      this.refreshLaunchModeUi();
+    applyLaunchModeSync(payload) {
+      if (!payload || typeof payload.mode !== 'string') return;
+      this.setLaunchMode(payload.mode, false);
     },
 
     pickInitialPortrait() {

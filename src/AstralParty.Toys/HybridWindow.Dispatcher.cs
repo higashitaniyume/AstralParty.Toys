@@ -249,10 +249,19 @@ public partial class HybridWindow
                         root.TryGetProperty("name", out var openAccountEl) ? openAccountEl.GetString() : null);
                     break;
                 case "accountProfileLaunch":
+                    var profileLaunchMode = "steam";
+                    if (root.TryGetProperty("mode", out var launchModeEl) && launchModeEl.GetString() is { } plm && !string.IsNullOrWhiteSpace(plm))
+                    {
+                        profileLaunchMode = plm;
+                    }
+                    else if (root.TryGetProperty("bypassSteam", out var launchAccountBypassEl) &&
+                             launchAccountBypassEl.ValueKind == JsonValueKind.True)
+                    {
+                        profileLaunchMode = "bypassSteam";
+                    }
                     HandleAccountProfileLaunch(
                         root.TryGetProperty("name", out var launchAccountEl) ? launchAccountEl.GetString() : null,
-                        root.TryGetProperty("bypassSteam", out var launchAccountBypassEl) &&
-                        launchAccountBypassEl.ValueKind == JsonValueKind.True);
+                        profileLaunchMode);
                     break;
                 case "accountProfileSetNote":
                     if (root.TryGetProperty("name", out var noteAccountEl))
@@ -297,9 +306,23 @@ public partial class HybridWindow
                     }
                     break;
                 case "launchGame":
-                    // 首页「启动游戏」下面那两个单选框决定走哪条路（默认：从 Steam 启动）
-                    HandleLaunchGame(root.TryGetProperty("bypassSteam", out var bypassSteamElement) &&
-                                     bypassSteamElement.GetBoolean());
+                    // 首页「启动游戏」下面那组单选框决定走哪条路（默认：从 Steam 启动）
+                    var launchMode = "steam";
+                    if (root.TryGetProperty("mode", out var modeElement) && modeElement.GetString() is { } m && !string.IsNullOrWhiteSpace(m))
+                    {
+                        launchMode = m;
+                    }
+                    else if (root.TryGetProperty("bypassSteam", out var bypassSteamElement) && bypassSteamElement.GetBoolean())
+                    {
+                        launchMode = "bypassSteam";
+                    }
+                    HandleLaunchGame(launchMode);
+                    break;
+                case "setLaunchMode":
+                    if (root.TryGetProperty("mode", out var setModeElement) && setModeElement.GetString() is { } setMode)
+                    {
+                        HandleSetLaunchMode(setMode);
+                    }
                     break;
                 case "setSteamBypass":
                     // 首页「绕过 Steam 启动」单选框 —— 与「加载器设置」里的同名开关是同一个配置

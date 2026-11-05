@@ -183,7 +183,13 @@
       const isDefault = !!p.isDefault;
       const label = isDefault ? t('profile.default_name') : p.name;
       const loaderReady = !!this.data.loaderInstalled;
-      const bypass = window.localStorage.getItem(LAUNCH_BYPASS_KEY) === 'true';
+      let mode = 'steam';
+      if (isDefault) {
+        mode = window.localStorage.getItem('launchMode') ||
+               (window.localStorage.getItem(LAUNCH_BYPASS_KEY) === 'true' ? 'bypassSteam' : 'steam');
+      } else {
+        mode = window.localStorage.getItem('launchMode_' + p.name) || 'bypassSteam';
+      }
 
       const tags = [];
       if (p.active) tags.push(`<span class="profiles-tag active">${esc(t('profile.active_tag'))}</span>`);
@@ -214,18 +220,31 @@
         actions.push(`<button class="secondary-btn profiles-btn" data-role="activate">${esc(t('profile.set_active'))}</button>`);
       }
       if (loaderReady) {
-        // 默认档案可以选启动方式；其它档案固定绕过 Steam（宿主侧也会强制）
+        // 默认档案提供 4 种方案；其它档案提供绕过 Steam 或绕过 TapTap
         if (isDefault) {
           actions.push(`
             <select class="profiles-mode-select" data-role="launch-mode"
                     title="${esc(t('profile.launch_mode'))}" aria-label="${esc(t('profile.launch_mode'))}">
-              <option value="steam"${bypass ? '' : ' selected'}>${esc(t('home.launch_steam'))}</option>
-              <option value="bypass"${bypass ? ' selected' : ''}>${esc(t('home.launch_bypass'))}</option>
+              <option value="steam"${mode === 'steam' ? ' selected' : ''}>${esc(t('home.launch_steam'))}</option>
+              <option value="bypassSteam"${mode === 'bypassSteam' ? ' selected' : ''}>${esc(t('home.launch_bypass'))}</option>
+              <option value="taptap"${mode === 'taptap' ? ' selected' : ''}>${esc(t('home.launch_taptap'))}</option>
+              <option value="bypassTapTap"${mode === 'bypassTapTap' ? ' selected' : ''}>${esc(t('home.launch_bypass_taptap'))}</option>
+            </select>`);
+        } else {
+          actions.push(`
+            <select class="profiles-mode-select" data-role="launch-mode"
+                    title="${esc(t('profile.launch_mode'))}" aria-label="${esc(t('profile.launch_mode'))}">
+              <option value="bypassSteam"${mode === 'bypassTapTap' ? '' : ' selected'}>${esc(t('home.launch_bypass'))}</option>
+              <option value="bypassTapTap"${mode === 'bypassTapTap' ? ' selected' : ''}>${esc(t('home.launch_bypass_taptap'))}</option>
             </select>`);
         }
-        const launchTitle = isDefault
-          ? (bypass ? t('home.launch_bypass') : t('home.launch_steam'))
-          : t('home.launch_bypass');
+        const titles = {
+          steam: t('home.launch_steam'),
+          bypassSteam: t('home.launch_bypass'),
+          taptap: t('home.launch_taptap'),
+          bypassTapTap: t('home.launch_bypass_taptap')
+        };
+        const launchTitle = titles[mode] || t('home.launch_bypass');
         actions.push(`<button class="primary-btn profiles-btn" data-role="launch" title="${esc(launchTitle)}">${Icons.svg('play_arrow')} ${esc(t('profile.launch'))}</button>`);
       }
       actions.push(`<button class="secondary-btn profiles-btn" data-role="open" title="${esc(p.directory)}">${Icons.svg('folder_open')} ${esc(t('profile.open'))}</button>`);
@@ -253,11 +272,21 @@
     onListChange(event) {
       const select = event.target.closest('select[data-role="launch-mode"]');
       if (!select) return;
-      const bypass = select.value === 'bypass';
-      window.localStorage.setItem(LAUNCH_BYPASS_KEY, String(bypass));
-      // 与首页「启动方式」单选框是同一个偏好/同一组加载器配置，保持两边一致
-      window.HomeModule?.applySteamBypassSync?.({ enabled: bypass });
-      post({ type: 'setSteamBypass', enabled: bypass });
+      const card = select.closest('.profiles-card');
+      const name = card?.dataset.name || '';
+      const profile = (this.data.profiles || []).find(p => (p.name || '') === name);
+      const isDefault = !profile || !!profile.isDefault;
+      const val = select.value;
+
+      if (isDefault) {
+        window.localStorage.setItem('launchMode', val);
+        window.localStorage.setItem(LAUNCH_BYPASS_KEY, String(val === 'bypassSteam'));
+        // 与首页「启动方式」单选框是同一个偏好/同一组加载器配置，保持两边一致
+        window.HomeModule?.setLaunchMode?.(val, true);
+        post({ type: 'setLaunchMode', mode: val });
+      } else {
+        window.localStorage.setItem('launchMode_' + name, val);
+      }
       this.renderList();
     },
 
@@ -274,13 +303,22 @@
         case 'activate':
           post({ type: 'accountProfileActivate', name });
           break;
-        case 'launch':
+        case 'launch': {
+          let launchMode = 'steam';
+          if (profile.isDefault) {
+            launchMode = window.localStorage.getItem('launchMode') ||
+                         (window.localStorage.getItem(LAUNCH_BYPASS_KEY) === 'true' ? 'bypassSteam' : 'steam');
+          } else {
+            launchMode = window.localStorage.getItem('launchMode_' + name) || 'bypassSteam';
+          }
           post({
             type: 'accountProfileLaunch',
             name,
-            bypassSteam: window.localStorage.getItem(LAUNCH_BYPASS_KEY) === 'true'
+            mode: launchMode,
+            bypassSteam: launchMode === 'bypassSteam'
           });
           break;
+        }
         case 'open':
           post({ type: 'accountProfileOpen', name });
           break;

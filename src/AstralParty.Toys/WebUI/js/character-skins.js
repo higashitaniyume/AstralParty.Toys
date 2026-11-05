@@ -15,7 +15,7 @@
       $('characterSkinTab').onclick=()=>this.switchTab('characters');
       if ($('audioSkinTab')) $('audioSkinTab').onclick=()=>this.switchTab('audio');
       $('resourceModTab').onclick=()=>this.switchTab('resource');
-      for(const [id,other] of [['cardSkinTab','characterSkinTab'],['characterSkinTab','resourceModTab'],['resourceModTab','cardSkinTab']]) $(id).addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();$(other).click();$(other).focus();}});
+      for(const [id,other] of [['cardSkinTab','audioSkinTab'],['audioSkinTab','resourceModTab'],['resourceModTab','cardSkinTab']]) if($(id)) $(id).addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();if($(other)){$(other).click();$(other).focus();}}});
       $('characterImport').onclick=()=>this.send('characterSkinsImport');
       $('characterLegacyImport').onclick=()=>this.send('characterSkinsImportLegacy');
       $('characterFolder').onclick=()=>this.send('characterSkinsOpen',{id:''});

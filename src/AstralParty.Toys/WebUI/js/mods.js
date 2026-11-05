@@ -919,7 +919,8 @@
         ['consoleTopmost', '控制台窗口置顶', 'bool', config.consoleTopmost],
         ['debugShell', '控制台命令输入（CesiumLoader Debug Shell，输入 help 查看命令）', 'bool', config.debugShell],
         ['forwardActivityLog', '把模组日志转发到控制台', 'bool', config.forwardActivityLog],
-        ['steamBypassEnabled', '不装 Steam 也能启动游戏（首页「启动方式」把这一套三个开关一起开 / 关）', 'bool', config.steamBypassEnabled]
+        ['steamBypassEnabled', '不装 Steam 也能启动游戏（首页「启动方式」把这一套三个开关一起开 / 关）', 'bool', config.steamBypassEnabled],
+        ['tapTapBypassEnabled', 'TapTap 自杀门绕过（首页「启动方式」绕过 TapTap 启动，TapTap 版专用）', 'bool', config.tapTapBypassEnabled]
       ];
       const advancedRows = [
         ['__steam', 'Steam 绕过细节 —— 要从 Steam 启动并使用真大厅，这三个开关必须全部关闭', 'header', ''],
@@ -929,6 +930,9 @@
         ['steamBypassLobbyHasValue', '阶段3 兜底（实测已作废、hook 从未命中；保持开启即可）', 'bool', config.steamBypassLobbyHasValue],
         ['steamBypassTaskCtorMode', 'Task 构造方式（auto / direct / invoke，一般保持 auto）', 'text', config.steamBypassTaskCtorMode],
         ['steamBypassLobbyMethods', '⚠ 方案B 备用安全网 —— 实测开启会导致游戏启动崩溃（0xC0000005），请保持关闭', 'bool', config.steamBypassLobbyMethods],
+        ['__taptap', 'TapTap 绕过细节', 'header', ''],
+        ['tapTapBypassRestartCheck', '附加保险：忽略 TapTap 重启请求（TapSDK_RestartAppIfNecessary 恒返回 0）', 'bool', config.tapTapBypassRestartCheck],
+        ['tapTapBypassLogin', 'TapTap 登录 stub（预留开关）', 'bool', config.tapTapBypassLogin],
         ['__boot', '引导与超时（一般不用改）', 'header', ''],
         ['useManagedBootstrap', '使用托管引导（实验性，一般保持关闭）', 'bool', config.useManagedBootstrap],
         ['gameAssemblyTimeoutSec', '等待 GameAssembly.dll 秒数', 'number', config.gameAssemblyTimeoutSec, { min: 1, max: 600 }],
@@ -1022,6 +1026,9 @@
         steamBypassLobbyHasValue: bool('steamBypassLobbyHasValue'),
         steamBypassLobbyMethods: bool('steamBypassLobbyMethods'),
         steamBypassTaskCtorMode: text('steamBypassTaskCtorMode'),
+        tapTapBypassEnabled: bool('tapTapBypassEnabled'),
+        tapTapBypassRestartCheck: bool('tapTapBypassRestartCheck'),
+        tapTapBypassLogin: bool('tapTapBypassLogin'),
         sdkVersion: text('sdkVersion')
       };
     },

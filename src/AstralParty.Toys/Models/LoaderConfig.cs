@@ -52,6 +52,16 @@ public sealed class LoaderConfig
     /// 主解法(方案C)已把 Task 结果构造成真正的空 Nullable, 这块代码根本不会被调用, 所以**不需要**它。</para></summary>
     public bool SteamBypassLobbyMethods { get; set; }
 
+    // ---- TapTap 绕过(加载器原生功能, 见加载器 taptaphack.h) ----
+    /// <summary>TapTap 绕过主开关: IsLaunchedFromTapTapPC 恒返回 true。</summary>
+    public bool TapTapBypassEnabled { get; set; }
+
+    /// <summary>TapTap 附加保险: 让 taptap_api.dll 的 TapSDK_RestartAppIfNecessary 恒返回 0。</summary>
+    public bool TapTapBypassRestartCheck { get; set; }
+
+    /// <summary>TapTap 登录 stub: 预留开关。</summary>
+    public bool TapTapBypassLogin { get; set; }
+
     /// <summary>加载器自身版本(SemVer)。与发布 tag (modloader-&lt;版本&gt;) 对应, 启动横幅会打印。</summary>
     public string SdkVersion { get; set; } = "2.0.0";
 

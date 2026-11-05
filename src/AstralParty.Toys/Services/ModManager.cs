@@ -1181,6 +1181,12 @@ public sealed partial class ModManager
             if (root.TryGetProperty("steamBypassLobbyMethods", out var sl) && sl.ValueKind == JsonValueKind.True) defaults.SteamBypassLobbyMethods = true;
             if (root.TryGetProperty("steamBypassLobbyMethods", out sl) && sl.ValueKind == JsonValueKind.False) defaults.SteamBypassLobbyMethods = false;
             if (root.TryGetProperty("steamBypassTaskCtorMode", out var st) && st.ValueKind == JsonValueKind.String) defaults.SteamBypassTaskCtorMode = st.GetString()!;
+            if (root.TryGetProperty("tapTapBypassEnabled", out var tbe) && tbe.ValueKind == JsonValueKind.True) defaults.TapTapBypassEnabled = true;
+            if (root.TryGetProperty("tapTapBypassEnabled", out tbe) && tbe.ValueKind == JsonValueKind.False) defaults.TapTapBypassEnabled = false;
+            if (root.TryGetProperty("tapTapBypassRestartCheck", out var tbr) && tbr.ValueKind == JsonValueKind.True) defaults.TapTapBypassRestartCheck = true;
+            if (root.TryGetProperty("tapTapBypassRestartCheck", out tbr) && tbr.ValueKind == JsonValueKind.False) defaults.TapTapBypassRestartCheck = false;
+            if (root.TryGetProperty("tapTapBypassLogin", out var tbl) && tbl.ValueKind == JsonValueKind.True) defaults.TapTapBypassLogin = true;
+            if (root.TryGetProperty("tapTapBypassLogin", out tbl) && tbl.ValueKind == JsonValueKind.False) defaults.TapTapBypassLogin = false;
             if (root.TryGetProperty("sdkVersion", out var sv) && sv.ValueKind == JsonValueKind.String) defaults.SdkVersion = sv.GetString()!;
             if (root.TryGetProperty("profile", out var pf) && pf.ValueKind == JsonValueKind.String) defaults.Profile = pf.GetString()!;
             if (root.TryGetProperty("profileWindowTitle", out var pwt) && pwt.ValueKind == JsonValueKind.True) defaults.ProfileWindowTitle = true;
@@ -1232,6 +1238,9 @@ public sealed partial class ModManager
             ["steamBypassLobbyHasValue"] = config.SteamBypassLobbyHasValue,
             ["steamBypassLobbyMethods"] = config.SteamBypassLobbyMethods,
             ["steamBypassTaskCtorMode"] = config.SteamBypassTaskCtorMode,
+            ["tapTapBypassEnabled"] = config.TapTapBypassEnabled,
+            ["tapTapBypassRestartCheck"] = config.TapTapBypassRestartCheck,
+            ["tapTapBypassLogin"] = config.TapTapBypassLogin,
             ["sdkVersion"] = config.SdkVersion,
             // 多 profile(加载器功能): 同上, 白名单里漏掉就会在保存时把用户选的 profile 静默清空。
             ["profile"] = config.Profile,
@@ -1327,6 +1336,76 @@ public sealed partial class ModManager
 
         if (presentKeys == 0) return false;
         if (updated == text) return true;   // 本来就全是目标值：无事可做，算成功（前端不该弹"同步失败"）
+
+        var encoded = System.Text.Encoding.UTF8.GetBytes(updated);
+        if (hasBom)
+        {
+            var withBom = new byte[encoded.Length + 3];
+            withBom[0] = 0xEF; withBom[1] = 0xBB; withBom[2] = 0xBF;
+            Array.Copy(encoded, 0, withBom, 3, encoded.Length);
+            encoded = withBom;
+        }
+
+        WriteAllBytesProtected(configPath, encoded);
+        return true;
+    }
+
+    /// <summary>TapTap 绕过开关集合。</summary>
+    public static readonly string[] TapTapBypassProfileKeys =
+    [
+        "tapTapBypassEnabled",
+        "tapTapBypassRestartCheck"
+    ];
+
+    /// <summary>这套 TapTap 绕过当前是否有任何一个是开着的。</summary>
+    public static bool IsTapTapBypassActive(LoaderConfig config)
+        => config.TapTapBypassEnabled || config.TapTapBypassRestartCheck;
+
+    /// <summary>把「TapTap 绕过」这一套开关写成同一个值：开 = 绕过模式，关 = 完全原版行为。
+    /// 保留注释、其它键与缩进（就地替换字面量，不整体重写）。</summary>
+    public bool SetTapTapBypassProfile(string gameDirectory, bool enabled)
+    {
+        if (string.IsNullOrWhiteSpace(gameDirectory)) return false;
+
+        var configPath = LoaderConfigPath(gameDirectory);
+        if (!File.Exists(configPath)) return false;
+
+        var bytes = File.ReadAllBytes(configPath);
+        var hasBom = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
+        var offset = hasBom ? 3 : 0;
+        var text = System.Text.Encoding.UTF8.GetString(bytes, offset, bytes.Length - offset);
+
+        var literal = enabled ? "true" : "false";
+        var updated = text;
+        foreach (var key in TapTapBypassProfileKeys)
+        {
+            updated = System.Text.RegularExpressions.Regex.Replace(
+                updated,
+                "(\"" + key + "\"\\s*:\\s*)(true|false)",
+                match => IsInsideLineComment(updated, match.Index)
+                    ? match.Value
+                    : match.Groups[1].Value + literal);
+        }
+
+        var presentKeys = 0;
+        try
+        {
+            using var doc = JsonDocument.Parse(StripJsonComments(updated.TrimStart('\uFEFF')));
+            foreach (var key in TapTapBypassProfileKeys)
+            {
+                if (!doc.RootElement.TryGetProperty(key, out var value)) continue;
+                if (value.ValueKind is not (JsonValueKind.True or JsonValueKind.False)) return false;
+                if ((value.ValueKind == JsonValueKind.True) != enabled) return false;
+                presentKeys++;
+            }
+        }
+        catch
+        {
+            return false;
+        }
+
+        if (presentKeys == 0) return false;
+        if (updated == text) return true;
 
         var encoded = System.Text.Encoding.UTF8.GetBytes(updated);
         if (hasBom)

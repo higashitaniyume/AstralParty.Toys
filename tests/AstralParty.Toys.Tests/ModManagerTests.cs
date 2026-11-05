@@ -912,6 +912,41 @@ public sealed class ModManagerTests
     }
 
     [Fact]
+    public void SetTapTapBypassProfile_FlipsTheSet_AndKeepsComments()
+    {
+        using var harness = new ModHarness("ap-mod-set-taptap-bypass");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
+
+        Assert.True(harness.Manager.SetTapTapBypassProfile(harness.GameDirectory, true));
+        var before = File.ReadAllText(path);
+        Assert.Contains("\"tapTapBypassEnabled\": true", before);
+        Assert.Contains("\"tapTapBypassRestartCheck\": true", before);
+        var beforeConfig = harness.Manager.ReadLoaderConfig(harness.GameDirectory);
+        Assert.True(ModManager.IsTapTapBypassActive(beforeConfig));
+
+        Assert.True(harness.Manager.SetTapTapBypassProfile(harness.GameDirectory, false));
+        var text = File.ReadAllText(path);
+        Assert.Contains("\"tapTapBypassEnabled\": false", text);
+        Assert.Contains("\"tapTapBypassRestartCheck\": false", text);
+        Assert.Contains("TapTap 自杀门在 AOT 类", text);
+
+        var afterConfig = harness.Manager.ReadLoaderConfig(harness.GameDirectory);
+        Assert.False(ModManager.IsTapTapBypassActive(afterConfig));
+    }
+
+    [Fact]
+    public void IsTapTapBypassActive_IsTrue_WhenAnyKeyIsOn()
+    {
+        Assert.True(ModManager.IsTapTapBypassActive(
+            new LoaderConfig { TapTapBypassEnabled = true, TapTapBypassRestartCheck = false }));
+        Assert.True(ModManager.IsTapTapBypassActive(
+            new LoaderConfig { TapTapBypassEnabled = false, TapTapBypassRestartCheck = true }));
+        Assert.False(ModManager.IsTapTapBypassActive(
+            new LoaderConfig { TapTapBypassEnabled = false, TapTapBypassRestartCheck = false }));
+    }
+
+    [Fact]
     public void IsSteamBypassActive_IsTrue_WhenAnySingleKeyIsStillOn()
     {
         // 只关主开关、匹配绕过还开着 → 加载器照样不建真大厅，这种情况首页绝不能显示成「从 Steam 启动」
@@ -1187,12 +1222,13 @@ public sealed class ModManagerTests
         using var harness = new ModHarness("ap-mod-cfg-save");
         harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
 
-        var config = new LoaderConfig { SpeedhackBaseSpeed = 3.0, ConsoleTopmost = false, SpeedControlEnabled = false, DebugShell = false };
+        var config = new LoaderConfig { SpeedhackBaseSpeed = 3.0, ConsoleTopmost = false, SpeedControlEnabled = false, DebugShell = false, TapTapBypassEnabled = true };
         harness.Manager.SaveLoaderConfig(harness.GameDirectory, config);
 
         var read = harness.Manager.ReadLoaderConfig(harness.GameDirectory);
         Assert.Equal(3.0, read.SpeedhackBaseSpeed);
         Assert.False(read.ConsoleTopmost);
+        Assert.True(read.TapTapBypassEnabled);
         // Debug Shell 开关必须能往返(老配置没有该键时默认开)
         Assert.False(read.DebugShell);
         // 变速控制文件通道开关必须能往返(老配置没有该键时默认开)

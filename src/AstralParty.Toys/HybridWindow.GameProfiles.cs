@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -170,6 +170,9 @@ public partial class HybridWindow
     /// <summary>Steam AppID 2622000（Astral Party / 吉星派对）。</summary>
     private const string SteamLaunchUrl = "steam://rungameid/2622000";
 
+    /// <summary>TapTap 启动协议（Astral Party / 吉星派对，AppID 524022）。</summary>
+    private const string TapTapLaunchUrl = "taptap://taptap.com/app?app_id=524022&auto_launch=true&ch_src=desktop---&game_type=pc&platform=pc";
+
     /// <summary>
     /// 启动游戏。首页「启动游戏」下面那两个单选框（二选一）决定走哪条路：
     ///   · 从 Steam 启动（默认）—— 交给 steam:// 协议，能带上 Steam 的 DRM / 云存档 / 更新检查。
@@ -178,14 +181,38 @@ public partial class HybridWindow
     ///     启动早期自己退出（[SteamManager] 非Steam客户端启动），所以这条路依赖加载器的 Steam 绕过；
     ///     那个开关与首页这个单选框是同一个配置，勾选时就已经写进 doorstop_config.json 了。
     /// </summary>
-    private void HandleLaunchGame(bool bypassSteam, string? accountProfile = null, bool separateInstance = false)
+    private void HandleLaunchGame(string mode, string? accountProfile = null, bool separateInstance = false)
     {
-        // 不再因为"游戏已经在运行"就拦截再次启动 —— 保存了多个游戏位置时，
-        // 用户可能想在已开一个的情况下再启动另一个（例如国服 + 国际服），或第一次没起来想重试。
-        // 也不再按区服猜"这个版本在不在 Steam 上"：用户在下拉栏选了哪个版本、又选了哪种启动方式就照做，
-        // 不警告、不识别，后果自负（当前"通过 Steam 启动"只有固定 appid 这一条路；"绕过 Steam" = 直启选中的版本）。
-        //
-        // 多开实例不能走 Steam：Steam 会复用/激活已有进程，也无法给子进程单独设置 CESIUM_PROFILE。
+        if (mode == "taptap")
+        {
+            if (!separateInstance)
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo(TapTapLaunchUrl) { UseShellExecute = true });
+                    Post(new { type = "toast", message = "已交给 TapTap 启动 Astral Party，稍等一下。" });
+                    return;
+                }
+                catch (Exception tapTapError)
+                {
+                    LaunchGameDirectly($"TapTap 不可用（{tapTapError.Message}），已直接启动游戏主程序。",
+                        accountProfile, separateInstance);
+                    return;
+                }
+            }
+
+            Post(new { type = "toast", message = "同一安装多开无法通过 TapTap 客户端启动，已改为直接启动。" });
+            LaunchGameDirectly("已直接启动游戏主程序。", accountProfile, separateInstance);
+            return;
+        }
+
+        if (mode == "bypassTapTap")
+        {
+            LaunchGameDirectly("已绕过 TapTap，直接启动游戏主程序。", accountProfile, separateInstance);
+            return;
+        }
+
+        var bypassSteam = mode == "bypassSteam";
         if (!bypassSteam && !separateInstance)
         {
             try
@@ -208,32 +235,32 @@ public partial class HybridWindow
         LaunchGameDirectly("已绕过 Steam，直接启动游戏主程序。", accountProfile, separateInstance);
     }
 
+    private void HandleLaunchGame(bool bypassSteam, string? accountProfile = null, bool separateInstance = false)
+        => HandleLaunchGame(bypassSteam ? "bypassSteam" : "steam", accountProfile, separateInstance);
+
     /// <summary>首页「启动方式」单选框：把选择同步进加载器配置（保留注释）。
-    /// 「绕过 Steam 启动」= 整套绕过打开；「从 Steam 启动」= 整套关掉（完全回到原版行为，Steam 真大厅可用）。
-    /// 失败只提示、不改单选框状态 —— 单选框本身是前端偏好，配置同步是尽力而为。</summary>
-    private void HandleSetSteamBypass(bool bypass)
+    /// steam: 绕过全关；bypassSteam: 开 Steam 绕过、关 TapTap 绕过；
+    /// taptap: 绕过全关；bypassTapTap: 关 Steam 绕过、开 TapTap 绕过。</summary>
+    private void HandleSetLaunchMode(string mode)
     {
         try
         {
             var directory = RequireModGameDirectory();
-            if (_modManager.SetSteamBypassProfile(directory, bypass))
+            var steamBypass = mode == "bypassSteam";
+            var tapTapBypass = mode == "bypassTapTap";
+
+            _modManager.SetSteamBypassProfile(directory, steamBypass);
+            _modManager.SetTapTapBypassProfile(directory, tapTapBypass);
+
+            var message = mode switch
             {
-                Post(new
-                {
-                    type = "toast",
-                    message = bypass
-                        ? "已切换到绕过 Steam：加载器的 Steam 绕过已打开（重启游戏生效）"
-                        : "已切换到从 Steam 启动：加载器的 Steam 绕过已整套关闭，Steam 大厅联机恢复正常（重启游戏生效）"
-                });
-            }
-            else
-            {
-                Post(new
-                {
-                    type = "toast",
-                    message = "已记住这个选择，但没能同步到加载器配置（还没装加载器？在「模组」页安装一次就会同步）。"
-                });
-            }
+                "bypassSteam" => "已切换到绕过 Steam：加载器的 Steam 绕过已打开（重启游戏生效）",
+                "bypassTapTap" => "已切换到绕过 TapTap：加载器的 TapTap 绕过已打开（重启游戏生效）",
+                "taptap" => "已切换到从 TapTap 启动：加载器的绕过已整套关闭（重启游戏生效）",
+                _ => "已切换到从 Steam 启动：加载器的绕过已整套关闭，Steam 大厅联机恢复正常（重启游戏生效）"
+            };
+
+            Post(new { type = "toast", message });
         }
         catch (Exception ex)
         {
@@ -241,12 +268,16 @@ public partial class HybridWindow
         }
     }
 
-    /// <summary>把加载器配置里当前的 Steam 绕过状态推给首页，让「启动方式」单选框一进界面就跟配置一致。
+    /// <summary>首页「启动方式」单选框：把选择同步进加载器配置（保留注释）。
+    /// 「绕过 Steam 启动」= 整套绕过打开；「从 Steam 启动」= 整套关掉（完全回到原版行为，Steam 真大厅可用）。
+    /// 失败只提示、不改单选框状态 —— 单选框本身是前端偏好，配置同步是尽力而为。</summary>
+    private void HandleSetSteamBypass(bool bypass)
+        => HandleSetLaunchMode(bypass ? "bypassSteam" : "steam");
+
+    /// <summary>把加载器配置里当前的 Steam / TapTap 绕过状态推给首页，让「启动方式」单选框一进界面就跟配置一致。
     ///
-    /// 判定用 <see cref="ModManager.IsSteamBypassActive"/>（三个键任一为真即算绕过）：
-    /// 只要还有 hook 会生效，Steam 那边的行为就不是原版，首页就不能显示成「从 Steam 启动」。
-    ///
-    /// 没装加载器（没有 doorstop_config.json）时不推：那时没有"配置"可跟随，首页保留自己的默认 ——「从 Steam 启动」。
+    /// 判定用 <see cref="ModManager.IsSteamBypassActive"/> 与 <see cref="ModManager.IsTapTapBypassActive"/>。
+    /// 没装加载器（没有 doorstop_config.json）时不推：那时没有"配置"可跟随，首页保留自己的默认。
     /// 推送失败也不影响任何功能，首页会退回它自己记住的选择。</summary>
     private int _steamBypassSyncRequest;
 
@@ -255,15 +286,24 @@ public partial class HybridWindow
         var request = ++_steamBypassSyncRequest;
         try
         {
-            var enabled = await Task.Run<bool?>(() =>
+            var (mode, steamBypass) = await Task.Run<(string?, bool?)>(() =>
             {
                 var gameDirectory = _modManager.GetStoredGameDirectory();
-                if (string.IsNullOrEmpty(gameDirectory)) return null;
-                if (!File.Exists(_modManager.LoaderConfigPath(gameDirectory))) return null;
-                return ModManager.IsSteamBypassActive(_modManager.ReadLoaderConfig(gameDirectory));
+                if (string.IsNullOrEmpty(gameDirectory)) return (null, null);
+                if (!File.Exists(_modManager.LoaderConfigPath(gameDirectory))) return (null, null);
+                var cfg = _modManager.ReadLoaderConfig(gameDirectory);
+                var isTapActive = ModManager.IsTapTapBypassActive(cfg);
+                var isSteamActive = ModManager.IsSteamBypassActive(cfg);
+                string? detectedMode = isTapActive ? "bypassTapTap" : (isSteamActive ? "bypassSteam" : null);
+                return (detectedMode, isSteamActive);
             });
-            if (request == _steamBypassSyncRequest && enabled.HasValue)
-                Post(new { type = "steamBypassSync", payload = new { enabled = enabled.Value } });
+            if (request == _steamBypassSyncRequest)
+            {
+                if (steamBypass.HasValue)
+                    Post(new { type = "steamBypassSync", payload = new { enabled = steamBypass.Value } });
+                if (mode != null)
+                    Post(new { type = "launchModeSync", payload = new { mode } });
+            }
         }
         catch
         {
