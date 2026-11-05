@@ -246,6 +246,9 @@ details.v2-card[open] > summary svg { transform: rotate(180deg); }
 .v2-replay { display: flex; align-items: center; gap: 14px; padding: 14px 16px; cursor: pointer; margin: 0; }
 .v2-replay:hover { border-color: var(--v2-border-strong); background: var(--v2-row-hover); }
 .v2-replay .body { flex: 1; min-width: 0; }
+.v2-replay-acts { display: flex; align-items: center; gap: 6px; flex: none; }
+.v2-replay-acts .v2-btn { height: 30px; padding: 0 10px; font-size: 13px; }
+.v2-replay-acts .v2-btn svg { width: 14px; height: 14px; }
 .v2-replay .title { display: flex; align-items: center; gap: 8px; font-weight: 600; flex-wrap: wrap; }
 .v2-replay .meta { color: var(--gp-text-muted); font-size: 12px; display: flex; gap: 10px; margin-top: 2px; flex-wrap: wrap; }
 .v2-replay .players { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
@@ -547,7 +550,7 @@ html body .workshop-page :is(.workshop-download-link, .workshop-sha) { overflow-
 html body .workshop-page .workshop-detail-cover { border: 1px solid var(--v2-border); border-radius: 10px; box-shadow: none; }
 
 /* ---------- 提示（原版是胶囊形 + 金色粗边，文字一长就撑出圆角） ---------- */
-html body .toast-container { width: max-content; max-width: min(480px, calc(100vw - 48px)); padding: 10px 14px; border: 1px solid var(--v2-border-strong); border-radius: 10px; background: var(--v2-panel); box-shadow: 0 8px 24px rgba(0, 0, 0, .45); font-size: 13px; font-weight: 500; line-height: 1.6; word-break: normal; overflow-wrap: anywhere; }
+html body .toast-container { width: max-content; max-width: min(480px, calc(100vw - 48px)); padding: 10px 14px; border: 1px solid var(--v2-border-strong); border-radius: 10px; background: var(--v2-float); color: var(--v2-text); box-shadow: 0 8px 24px rgba(0, 0, 0, .45); font-size: 13px; font-weight: 500; line-height: 1.6; word-break: normal; overflow-wrap: anywhere; }
 
 /* ---------- 游戏多开（1.4.0）：内容和逻辑是原版 profiles.js 画的，这里只统一外观 ----------
    粉色只留给「当前」那一张卡的启动按钮；每张卡的按钮放到信息下面，880 宽放不下左右排。 */
@@ -633,6 +636,10 @@ html body .workshop-page :is(.utilities-header, .workshop-toolbar) { padding-rig
 /* 原版 skins.css 在外层也留了滚动条位置，这里滚动的是 #v2Skins，不能留两次 */
 html body #skinsView.v2-own { scrollbar-gutter: auto; }
 
+/* ---------- 市场 README：平时是不透明的底；有自定义背景时把背景图模糊掉，文字才读得清 ---------- */
+html body .workshop-page .workshop-readme { background: var(--v2-panel-2-solid); border-color: var(--v2-border); }
+html body.v2-has-bg .workshop-page .workshop-readme { background: rgba(var(--v2-panel-rgb), max(var(--v2-ui), .6)); backdrop-filter: blur(16px); text-shadow: none; }
+
 /* ---------- 压在背景图上的文字加一层阴影；卡片、按钮、输入框有自己的底色，不需要 ---------- */
 html body.v2-has-bg :is(.v2-page, .profiles-page, .workshop-page) { text-shadow: var(--v2-halo); }
 html body.v2-has-bg :is(.v2-card, .v2-scheme, .v2-tcard, .v2-slot, .v2-seg, .v2-btn, .v2-icon-btn, .v2-replay, .v2-anim-preview, .v2-notice, input, textarea, select, .profiles-card, .profiles-option, .primary-btn, .secondary-btn, .danger-btn, .workshop-card) { text-shadow: none; }
@@ -653,6 +660,7 @@ html body.v2-has-bg :is(.v2-card, .v2-scheme, .v2-tcard, .v2-slot, .v2-seg, .v2-
   --v2-halo: 0 0 4px rgba(255, 255, 255, .95), 0 0 2px rgba(255, 255, 255, .95);
 }
 :root[data-theme="light"] :is(html, body) { background: var(--gp-bg); color: var(--gp-text-main); }
+:root[data-theme="light"] body .toast-container { box-shadow: var(--gp-shadow-lg); }
 :root[data-theme="light"] select option, :root[data-theme="light"] select optgroup { background-color: #fff; color: #1F2233; }
 :root[data-theme="light"] .brand-text h1 { color: var(--v2-text); }
 :root[data-theme="light"] ::-webkit-scrollbar-track { background: transparent; }

@@ -6,6 +6,7 @@
   const U = () => window.V2UI;
   const I = () => window.V2UI.ICON;
   const MM = () => window.ModsModule;
+  const GL = () => window.GameLibModule;
 
   const status = () => MM()?.modStatus || null;
   const mods = () => status()?.mods || [];
@@ -45,6 +46,18 @@
     return { badge: '已安装', cls: '', text: `v${s.installedVersion || '?'}${note ? ' · ' + note : ''}`, act: 'check' };
   }
 
+  // 当前游戏：和原版模组页的下拉相同，选中后宿主会推新的 gameProfiles 和这个目录的加载器状态
+  function gamePicker(busyNow) {
+    const list = GL()?.data?.profiles || [], cur = list.find(p => p.active);
+    const opts = list.map(p => `<option value="${esc(p.id)}" ${p.active ? 'selected' : ''}>[${esc(p.editionLabel)}] ${esc(p.label)}${p.directoryExists === false ? '（目录不存在）' : ''}</option>`).join('');
+    return `<div class="v2-card v2-game-picker"><div class="v2-row"><span class="k">当前游戏</span>
+      <select id="v2mGame" class="v2-select" aria-label="选择当前正在操作的游戏" ${!list.length || busyNow ? 'disabled' : ''}>
+        ${list.length ? (cur ? '' : '<option value="" selected disabled>请选择</option>') + opts : '<option value="">未添加游戏</option>'}
+      </select>
+      <span class="v mono v2-muted" title="${esc(cur?.directory || '')}">${esc(cur?.directory || '')}</span>
+      <button class="v2-btn ghost" data-v2m="manageGames">管理游戏目录…</button></div></div>`;
+  }
+
   function html() {
     const s = status();
     const head = (primary) => `<div class="v2-head"><h1>模组</h1><span class="v2-top-spacer"></span>
@@ -69,6 +82,7 @@
       .sort((a, b) => isBuiltIn(a) - isBuiltIn(b));   // 自己装的排前面：内置有 21 个，从市场新装的混在中间很难找
 
     return `<div class="v2-page">${head(!loaderIsPrimary)}
+      ${gamePicker(b)}
       ${s.gameRunning ? `<div class="v2-notice">${I().info}<span>游戏正在运行：改动会保存，重启游戏后生效</span></div>` : ''}
 
       <div class="v2-card">
@@ -181,6 +195,7 @@
       post({ type: 'modCheckUpdate' });
       render();
     },
+    manageGames: () => showPage('settings'),
     adv: () => { const d = $('v2ModsAdv'); if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth' }); } },
     loaderSettings: () => MM()?.openLoaderSettings(),
     changelog: () => window.VersionModule?.requestChangelog('loader'),
@@ -256,6 +271,7 @@
   document.addEventListener('change', ev => {
     const t = ev.target;
     if (!t.closest?.('#modsView')) return;
+    if (t.id === 'v2mGame') { if (t.value) post({ type: 'gameProfileSetActive', id: t.value }); return; }
     if (t.dataset.v2mToggle) { const m = findMod(t.dataset.v2mToggle); if (m) toggleMod(m, t.checked); return; }
     if (t.dataset.v2mSpeed !== undefined) { saveSpeed(t.checked ? 2.0 : 1.0); return; }
     if (t.id === 'v2mSpeed') {
@@ -287,6 +303,11 @@
 
   // 原版这些方法跑完后重画（数据仍由原版保存：modStatus / builtInMods / updateInfo / 变速配置）
   document.addEventListener('DOMContentLoaded', () => {
+    const gl = GL();
+    if (typeof gl?.renderProfiles === 'function') {
+      const orig = gl.renderProfiles;
+      gl.renderProfiles = function (...args) { const r = orig.apply(this, args); render(); return r; };
+    }
     const mm = MM(); if (!mm) return;
     ['renderModStatus', 'renderUpdateCheck', 'clearBusy', 'setBusy', 'renderPackageImportResult', 'syncSpeedhackBar', 'clearRecoveryBusy'].forEach(name => {
       const orig = mm[name]; if (typeof orig !== 'function') return;
