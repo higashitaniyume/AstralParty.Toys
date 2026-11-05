@@ -10,7 +10,7 @@
   const profiles = () => AppState.gameProfiles?.profiles || GL()?.data?.profiles || [];
   const drives = () => GL()?.data?.drives || AppState.gameProfiles?.drives || [];
   const EDITIONS = [['cn', '国服'], ['global', '国际服'], ['taptap', 'TapTap'], ['custom', '自定义']];
-  // 新界面的文字目前只写了简体中文，语言固定成简体中文（设置页里的下拉框是灰的）
+  // 本项目只保留简体中文：启动时固定语言，设置页不提供切换
   const DEFAULT_LANG = 'zh-Hans';
   function enforceLanguage() {
     if ((window.i18n?.lang || DEFAULT_LANG) === DEFAULT_LANG) return;
@@ -87,8 +87,6 @@
       <div class="v2-head"><h1>设置</h1></div>
 
       <div class="v2-card"><div class="v2-card-title"><span>界面</span></div>
-        <div class="v2-row"><span class="k">语言</span><span class="v v2-muted">新界面目前只有简体中文，暂时不能切换</span>
-          <select id="v2gLang" class="v2-select" disabled title="新界面目前只有简体中文"><option value="${DEFAULT_LANG}" selected>简体中文</option></select></div>
         <div class="v2-row"><span class="k">界面动画</span><span class="v v2-muted">关掉后切页、弹窗都没有过渡动画</span>
           <label class="v2-switch"><input type="checkbox" id="v2gMotion" ${motionOn() ? 'checked' : ''}><span></span></label></div>
       </div>

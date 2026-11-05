@@ -1,4 +1,4 @@
-// v2-skins.js — 新界面：自定义页（卡牌 / 角色 / 音效 / 资源包）
+// v2-skins.js — 新界面：自定义页（卡牌 / 音效 / 资源包 / 背景）
 // 外框、卡牌、音效、资源包在这里；角色分区在 v2-characters.js（通过 window.V2Chars 接进来）。
 // 数据仍由原版模块保存（SkinsModule / AudioSkinsModule / ResourceModsModule），这里包一层方法、跑完后重画。
 // 裁切窗口、按编号导入动态卡面、动态卡面转换进度沿用原版。
@@ -23,7 +23,8 @@
   const segBtns = (cur, list, attr) => list.map(([k, l]) => `<button class="${cur === k ? 'on' : ''}" ${attr}="${k}">${l}</button>`).join('');
 
   /* ---------- 外框 ---------- */
-  const TABS = [['cards', '卡牌'], ['characters', '角色'], ['audio', '音效'], ['resource', '资源包'], ['background', '背景']];
+  // 角色皮肤功能目前不稳定，入口暂时隐藏；恢复时把 ['characters', '角色'] 加回来即可，v2-characters.js 还在
+  const TABS = [['cards', '卡牌'], ['audio', '音效'], ['resource', '资源包'], ['background', '背景']];
   function frameHead(action = '') {
     return `<div class="v2-head"><h1>自定义</h1><span class="v2-top-spacer"></span>${action}</div>
       <div class="v2-toolbar"><div class="v2-seg">${segBtns(tab(), TABS, 'data-v2s-tab')}</div></div>`;

@@ -430,12 +430,10 @@
     const busy = launchBusy(), locked = modeLocked();
     const last = latestReplay();
     const cardSkin = V2.skins && (V2.skins.profiles || []).find(p => p.name?.toLowerCase() === (V2.skins.activeSkin || '').toLowerCase());
-    const charScheme = V2.chars && (V2.chars.schemeProfiles || []).find(p => p.id === V2.chars.activeSchemeId);
     const activeSkin = V2.skins?.activeSkin || '';
     const cardName = cardSkin ? (cardSkin.displayName || cardSkin.name)
       : activeSkin === '__game_default__' ? '游戏默认' : activeSkin;
-    const skinText = [V2.skins && cardName && `卡牌「${cardName}」`, V2.chars && `角色「${charScheme?.scheme?.name || '未启用'}」`]
-      .filter(Boolean).join(' · ') || '卡牌、角色、音效、资源包';
+    const skinText = V2.skins && cardName ? `卡牌「${cardName}」` : '卡牌、音效、资源包';
 
     root.innerHTML = `<div class="v2-page">
       <div class="v2-head"><h1>概览</h1></div>
@@ -643,7 +641,6 @@
         Guide.scan = { mode: msg.payload?.mode, running: false, candidates: msg.payload?.candidates || [] };
         break;
       case 'skinsProfiles': V2.skins = msg.payload; break;
-      case 'characterSkins': V2.chars = msg.payload; break;
       case 'gameProfiles':
         // 程序启动时，概览可能赶在自动添加游戏之前要过状态，那份没有游戏目录，这里补要一次
         if ((msg.payload?.profiles || []).some(p => p.active) && !V2.modStatus?.gameDirectory) {
