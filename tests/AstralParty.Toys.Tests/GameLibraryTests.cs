@@ -234,6 +234,20 @@ public sealed class GameLibraryTests
     }
 
     [Fact]
+    public void HasKnownGameExe_OnlyAcceptsAstralPartyExe()
+    {
+        using var sandbox = new TestSandbox("ap-gamelib-known-exe");
+        var astral = sandbox.EnsureDirectory("Astral");
+        File.WriteAllText(Path.Combine(astral, "AstralParty_CN.exe"), "MZ");
+        var otherUnity = MakeFakeGame(sandbox, "OtherUnityGame", "Malody.exe");
+
+        Assert.True(SpeedhackManager.HasKnownGameExe(astral));
+        // 自动查找不能把别的 Unity 游戏当成吉星派对，手动选目录仍然走 Unity 兜底
+        Assert.False(SpeedhackManager.HasKnownGameExe(otherUnity));
+        Assert.NotNull(GameLibraryService.DetectExe(otherUnity));
+    }
+
+    [Fact]
     public void DetectExe_RejectsUnrelatedExe()
     {
         using var sandbox = new TestSandbox("ap-gamelib-exe-unrelated");

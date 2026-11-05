@@ -165,6 +165,18 @@ public sealed partial class ModManager
         AtomicWrite(path, System.Text.Encoding.UTF8.GetBytes(manifest.ToJsonString(HistoryJson)));
     }
 
+    /// <summary>
+    /// 不切换当前游戏，查某个目录里的加载器（卸载弹窗要列出所有目录）。
+    /// 只有加载器文件夹、没有 dll（停用 / 缺失）时也算本工具的，和 Uninstall 的判断一致。
+    /// </summary>
+    public (bool HasFiles, bool Managed, string Version) InspectLoader(string gameDirectory)
+    {
+        var dll = Path.Combine(gameDirectory, LoaderDllName);
+        var dllExists = File.Exists(dll);
+        if (!dllExists && !Directory.Exists(Path.Combine(gameDirectory, LoaderFolderName))) return (false, false, "");
+        return (true, !dllExists || ClassifyLoaderOrigin(gameDirectory, dll).Length > 0, ReadCurrentInstallationVersion(gameDirectory));
+    }
+
     private string ReadCurrentInstallationVersion(string directory)
     {
         var version = ReadInstalledVersion(directory);

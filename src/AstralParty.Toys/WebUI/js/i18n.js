@@ -13,10 +13,10 @@
     'zh-Hans': {
       // Nav
       'nav.brand_sub': 'REPLAY & COMPANION TOOLBOX',
-      'nav.home': '游戏大厅',
+      'nav.home': '概览',
       'nav.replays': '回放',
       'nav.mods': '模组',
-      'nav.skins': '皮肤',
+      'nav.skins': '自定义',
       'nav.wiki': '维基攻略',
       'nav.workshop': '市场',
       'nav.settings': '系统设置',
@@ -469,10 +469,10 @@
     'en': {
       // Nav
       'nav.brand_sub': 'REPLAY & COMPANION TOOLBOX',
-      'nav.home': 'Lobby',
+      'nav.home': 'Overview',
       'nav.replays': 'Replays',
       'nav.mods': 'Mods',
-      'nav.skins': 'Skins',
+      'nav.skins': 'Customize',
       'nav.wiki': 'Wiki',
       'nav.workshop': 'Market',
       'nav.settings': 'Settings',
@@ -924,10 +924,10 @@
     'ja': {
       // Nav
       'nav.brand_sub': 'REPLAY & COMPANION TOOLBOX',
-      'nav.home': 'ロビー',
+      'nav.home': '概要',
       'nav.replays': 'リプレイ',
       'nav.mods': 'Mod管理',
-      'nav.skins': 'スキン',
+      'nav.skins': 'カスタム',
       'nav.wiki': '攻略Wiki',
       'nav.workshop': 'マーケット',
       'nav.settings': '設定',
@@ -1379,10 +1379,10 @@
     'zh-Hant': {
       // Nav
       'nav.brand_sub': 'REPLAY & COMPANION TOOLBOX',
-      'nav.home': '遊戲大廳',
+      'nav.home': '概覽',
       'nav.replays': '回放',
       'nav.mods': '模組',
-      'nav.skins': '皮膚',
+      'nav.skins': '自訂',
       'nav.wiki': '維基攻略',
       'nav.workshop': '市場',
       'nav.settings': '系統設定',

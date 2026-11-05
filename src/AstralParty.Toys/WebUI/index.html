@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>AstralParty.Toys · 吉星派对工具箱</title>
+    <script>try { if (localStorage.getItem('v2Theme') === 'light') document.documentElement.dataset.theme = 'light'; } catch {}</script>
     <link rel="stylesheet" href="css/base.css" />
     <link rel="stylesheet" href="css/home.css" />
     <link rel="stylesheet" href="css/tools.css" />
@@ -18,6 +19,10 @@
     <link rel="stylesheet" href="css/skins.css" />
     <link rel="stylesheet" href="css/resource-mods.css" />
     <link rel="stylesheet" href="css/profiles.css" />
+    <!-- 浅色模式：由 tools/gen-light-css.js 从原版样式生成，必须在原版之后、v2.css 之前 -->
+    <link rel="stylesheet" href="css/v2-light.css" />
+    <!-- 新界面（重做）：放最后，覆盖外壳布局 -->
+    <link rel="stylesheet" href="css/v2.css" />
   </head>
   <body>
     <div class="app-shell">
@@ -46,7 +51,7 @@
               <path
                 d="M240-200h120v-240h240v240h120v-360L480-740 240-560v360Zm-80 80v-480l320-240 320 240v480H520v-240h-80v240H160Zm320-350Z"
               /></svg
-            ><span data-i18n="nav.home">游戏大厅</span>
+            ><span data-i18n="nav.home">概览</span>
           </button>
           <button class="nav-crumb-btn" data-page="profiles">
             <svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true">
@@ -78,10 +83,8 @@
           </button>
           <button class="nav-crumb-btn" data-page="skins">
             <svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true">
-              <path
-                d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Z"
-              /></svg
-            ><span data-i18n="nav.skins">皮肤</span>
+              <path fill="none" stroke="currentColor" stroke-width="72" stroke-linejoin="round" d="M340-840 80-700l80 180 100-50v450h440v-450l100 50 80-180-260-140q-20 90-140 90t-140-90Z" /></svg
+            ><span data-i18n="nav.skins">自定义</span>
           </button>
           <button class="nav-crumb-btn" data-page="wiki">
             <svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true">
@@ -141,6 +144,9 @@
       <main class="page-container">
         <!-- 1. HOME VIEW (In-Game Aesthetic Main Lobby) -->
         <section id="homeView" class="page-view home-page in-game-lobby">
+          <!-- 新界面：概览由 js/v2-shell.js 渲染。原版大厅保留并隐藏，启动等逻辑仍由 home.js 驱动 -->
+          <div id="v2Home"></div>
+          <div class="v2-legacy" hidden>
           <img
             class="lobby-game-logo"
             src="images/astral-party-logo.png"
@@ -363,10 +369,13 @@
               </button>
             </nav>
           </footer>
+          </div><!-- /.v2-legacy -->
         </section>
 
         <!-- 2. TOOLS VIEW (Replay Tool Integrated) -->
         <section id="toolsView" class="page-view tools-page hidden">
+          <!-- 新界面：回放页的列表 / 详情外框由 js/v2-replays.js 渲染 -->
+          <div id="v2Replays"></div>
           <div class="tools-header">
             <div class="tools-title-group">
               <button class="back-btn" id="toolsBackHomeBtn" data-i18n="replay.back_to_lobby">‹ 返回大厅</button>
@@ -973,6 +982,8 @@
            信息层级：① 加载器状态与版本（本页最敏感的信息）→ ② 已安装的模组（主体）
            → ③ 游戏变速 → ④ 高级 / 诊断（默认折叠）。 -->
         <section id="modsView" class="page-view mods-page hidden">
+          <!-- 新界面：模组页由 js/v2-mods.js 渲染（原版内容保留并隐藏） -->
+          <div id="v2Mods"></div>
           <div class="utilities-header mods-header">
             <div class="utilities-title-group">
               <button class="back-btn" id="modsBackHomeBtn" data-i18n="replay.back_to_lobby">‹ 返回大厅</button>
@@ -1472,6 +1483,8 @@
 
         <!-- 4.5. SKINS VIEW (Card Skin Profiles & Management) -->
         <section id="skinsView" class="page-view skins-page hidden">
+          <!-- 新界面：自定义页外框与卡牌 / 音效 / 资源包由 js/v2-skins.js 渲染（原版面板保留） -->
+          <div id="v2Skins"></div>
           <div class="utilities-header skins-header">
             <div class="utilities-title-group">
               <button class="back-btn" id="skinsBackHomeBtn" data-i18n="replay.back_to_lobby">‹ 返回大厅</button>
@@ -2156,6 +2169,8 @@
         </section>
 
         <section id="settingsView" class="page-view settings-page hidden">
+          <!-- 新界面：设置页由 js/v2-settings.js 渲染（原版内容保留并隐藏） -->
+          <div id="v2Settings"></div>
           <div class="settings-header">
             <h2 data-i18n="settings.title">系统设置</h2>
             <p>调整界面偏好并查看应用信息</p>
@@ -2650,5 +2665,12 @@
     <script src="js/resource-mods.js"></script>
     <script src="js/skin-crop.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/v2-shell.js"></script>
+    <script src="js/v2-replays.js"></script>
+    <script src="js/v2-mods.js"></script>
+    <script src="js/v2-skins.js"></script>
+    <script src="js/v2-characters.js"></script>
+    <script src="js/v2-settings.js"></script>
+    <script src="js/v2-background.js"></script>
   </body>
 </html>
