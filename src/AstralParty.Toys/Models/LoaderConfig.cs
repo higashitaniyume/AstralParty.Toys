@@ -60,4 +60,9 @@ public sealed class LoaderConfig
     /// 空串 = 不重定向(游戏写自己的目录); 绝对路径 = 直接把 profile 放到指定目录。
     /// 见加载器 <c>docs\多开-profile.md</c>。</summary>
     public string Profile { get; set; } = "";
+
+    /// <summary>多 profile: 在游戏窗口标题后追加 profile 名(如 "吉星派对 · P2"),
+    /// 方便同时开多个实例时从任务栏 / Alt+Tab 分辨。默认 true; 只在配置了 profile 时生效,
+    /// 关掉只影响标题显示, 目录隔离照常。见加载器 <c>docs\多开-profile.md</c>。</summary>
+    public bool ProfileWindowTitle { get; set; } = true;
 }

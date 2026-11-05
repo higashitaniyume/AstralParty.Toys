@@ -1,7 +1,7 @@
 ; 兜底值只用于手动编译：CI 由 Build-Installer.ps1 从 csproj 的 <Version> 传 -DProductVersion，
 ; 所以正式安装器始终跟程序版本一致。手动编译前请先同步这里。
 #ifndef ProductVersion
-  #define ProductVersion "1.3.4"
+  #define ProductVersion "1.4.0"
 #endif
 
 [Setup]

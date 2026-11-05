@@ -2,6 +2,14 @@
 
 本文件按版本记录 `AstralParty.Toys` 的功能变更。版本号与 GitHub 发布 tag 一一对应（如 `v0.2.0`），发布产物由 [release.yml](.github/workflows/release.yml) 在打 tag 时自动构建。
 
+## [v1.4.0] - 2026-11-05
+
+### 游戏多开
+
+- 「游戏多开」页新增「游戏窗口标题带上 profile 名」开关，默认开启。开启后游戏窗口标题显示为「原标题 · profile 名」（如 `吉星派对 · P2`），方便在任务栏和 Alt+Tab 里区分同时运行的多个实例；关闭后标题保持原样，目录隔离不受影响。
+- 该开关只在使用 profile 时生效，绝对路径形式的 profile 只显示目录名；修改后下次启动游戏生效。
+- 安装或更新加载器时，会把缺失的 `profileWindowTitle` 补进已有的 `doorstop_config.json`，保留注释与用户已有配置。
+
 ## [v1.3.4] - 2026-11-03
 
 ### 模组与加载器

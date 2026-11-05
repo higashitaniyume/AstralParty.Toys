@@ -19,7 +19,7 @@
   }
 
   const AccountProfilesModule = {
-    data: { profiles: [], activeName: '', canManage: false, error: null, loaderInstalled: false },
+    data: { profiles: [], activeName: '', canManage: false, error: null, loaderInstalled: false, windowTitleEnabled: true },
     bound: false,
 
     onShow() {
@@ -42,6 +42,7 @@
       });
       $('accountProfilesList')?.addEventListener('click', event => this.onListClick(event));
       $('accountProfilesList')?.addEventListener('change', event => this.onListChange(event));
+      $('accountProfileWindowTitleToggle')?.addEventListener('change', event => this.onWindowTitleChange(event));
     },
 
     // ---------- 名称规则（宿主下发，页面实时校验；不要在这里另写一套） ----------
@@ -119,11 +120,29 @@
     },
 
     render(payload) {
-      this.data = payload || { profiles: [], activeName: '', canManage: false, error: null, loaderInstalled: false };
+      this.data = payload || { profiles: [], activeName: '', canManage: false, error: null, loaderInstalled: false, windowTitleEnabled: true };
       this.applyNameRule();
       this.renderStatus();
+      this.renderWindowTitle();
       this.renderList();
       this.refreshNameValidation();
+    },
+
+    // ---------- 窗口标题开关（写加载器的 profileWindowTitle；默认开） ----------
+    renderWindowTitle() {
+      const toggle = $('accountProfileWindowTitleToggle');
+      if (!toggle) return;
+      const ready = !!this.data.loaderInstalled;
+      toggle.checked = !ready || this.data.windowTitleEnabled !== false;
+      toggle.disabled = !ready;
+      $('accountProfileWindowTitleOption')?.classList.toggle('is-disabled', !ready);
+    },
+
+    onWindowTitleChange(event) {
+      const enabled = !!event.target.checked;
+      if (!this.data.loaderInstalled) return;
+      this.data.windowTitleEnabled = enabled;
+      post({ type: 'accountProfileSetWindowTitle', enabled });
     },
 
     renderStatus() {

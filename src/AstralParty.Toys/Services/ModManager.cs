@@ -440,6 +440,8 @@ public sealed partial class ModManager
             SyncLoaderConfigSdkVersion(configPath, EmbeddedSdkVersion);
             // 老配置里没有 Steam 绕过开关：补齐（只追加缺失的键，不动用户已有值与注释）
             SyncLoaderConfigSteamKeys(configPath);
+            // 老配置里没有 profileWindowTitle：一并补齐，让配置自文档化、也防止旧版 Toys 保存时删掉它
+            SyncLoaderConfigProfileWindowTitle(configPath);
             // 首次安装默认从 Steam 启动；升级/重装保留已有启动方式。
             // 模板可能默认开启绕过，须同时关闭主开关、匹配和房间列表查询。
             if (isNewConfig && !SetSteamBypassProfile(gameDirectory, enabled: false))
@@ -901,6 +903,8 @@ public sealed partial class ModManager
                 packageConfigEntry is null ? "" : ReadSdkVersionFromConfigBytes(ReadEntryBytes(packageConfigEntry)));
             // 老配置里没有 Steam 绕过开关：补齐（只追加缺失的键，不动用户已有值与注释）
             SyncLoaderConfigSteamKeys(configPath);
+            // 老配置里没有 profileWindowTitle：一并补齐，让配置自文档化、也防止旧版 Toys 保存时删掉它
+            SyncLoaderConfigProfileWindowTitle(configPath);
             // 首次安装默认从 Steam 启动；升级/重装保留已有启动方式。
             // 模板可能默认开启绕过，须同时关闭主开关、匹配和房间列表查询。
             if (isNewConfig && !SetSteamBypassProfile(gameDirectory, enabled: false))
@@ -1179,6 +1183,8 @@ public sealed partial class ModManager
             if (root.TryGetProperty("steamBypassTaskCtorMode", out var st) && st.ValueKind == JsonValueKind.String) defaults.SteamBypassTaskCtorMode = st.GetString()!;
             if (root.TryGetProperty("sdkVersion", out var sv) && sv.ValueKind == JsonValueKind.String) defaults.SdkVersion = sv.GetString()!;
             if (root.TryGetProperty("profile", out var pf) && pf.ValueKind == JsonValueKind.String) defaults.Profile = pf.GetString()!;
+            if (root.TryGetProperty("profileWindowTitle", out var pwt) && pwt.ValueKind == JsonValueKind.True) defaults.ProfileWindowTitle = true;
+            if (root.TryGetProperty("profileWindowTitle", out pwt) && pwt.ValueKind == JsonValueKind.False) defaults.ProfileWindowTitle = false;
         }
         catch
         {
@@ -1228,7 +1234,9 @@ public sealed partial class ModManager
             ["steamBypassTaskCtorMode"] = config.SteamBypassTaskCtorMode,
             ["sdkVersion"] = config.SdkVersion,
             // 多 profile(加载器功能): 同上, 白名单里漏掉就会在保存时把用户选的 profile 静默清空。
-            ["profile"] = config.Profile
+            ["profile"] = config.Profile,
+            // 多 profile 窗口标题开关: 同上, 漏掉会在保存时把用户关掉的开关静默恢复成 true。
+            ["profileWindowTitle"] = config.ProfileWindowTitle
         }, new JsonSerializerOptions { WriteIndented = true });
         WriteAllBytesProtected(LoaderConfigPath(gameDirectory), System.Text.Encoding.UTF8.GetBytes(json));
     }
@@ -1405,6 +1413,99 @@ public sealed partial class ModManager
             if (!doc.RootElement.TryGetProperty("profile", out var value) || value.ValueKind != JsonValueKind.String)
                 return false;
             if (!string.Equals(value.GetString(), target, StringComparison.Ordinal)) return false;
+        }
+        catch
+        {
+            return false;
+        }
+
+        if (updated == text) return true;   // 本来就是目标值
+
+        var encoded = System.Text.Encoding.UTF8.GetBytes(updated);
+        if (hasBom)
+        {
+            var withBom = new byte[encoded.Length + 3];
+            withBom[0] = 0xEF; withBom[1] = 0xBB; withBom[2] = 0xBF;
+            Array.Copy(encoded, 0, withBom, 3, encoded.Length);
+            encoded = withBom;
+        }
+
+        WriteAllBytesProtected(configPath, encoded);
+        return true;
+    }
+
+    /// <summary>多 profile: 设置「游戏窗口标题后追加 profile 名」开关（doorstop_config.json 的
+    /// <c>profileWindowTitle</c>）。
+    ///
+    /// 与 <see cref="SetLoaderProfile"/> 同一套做法：就地替换字面量，注释原样保留；键不存在时插在
+    /// <c>sdkVersion</c> 之前（连它也没有就插在对象末尾）。写完自检 —— 必须仍能解析、且读出来的值
+    /// 等于目标值，否则不写盘。
+    ///
+    /// 返回 false = 配置不存在（加载器没装）或写入自检失败，由调用方提示用户。</summary>
+    public bool SetProfileWindowTitle(string gameDirectory, bool enabled)
+    {
+        if (string.IsNullOrWhiteSpace(gameDirectory)) return false;
+
+        var configPath = LoaderConfigPath(gameDirectory);
+        if (!File.Exists(configPath)) return false;
+
+        var original = File.ReadAllBytes(configPath);
+        var hasBom = original.Length >= 3 && original[0] == 0xEF && original[1] == 0xBB && original[2] == 0xBF;
+        var offset = hasBom ? 3 : 0;
+        var text = System.Text.Encoding.UTF8.GetString(original, offset, original.Length - offset);
+        var newline = text.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
+
+        var literal = enabled ? "true" : "false";
+
+        // 1) 已经存在该键：就地换值（跳过注释里的同名串）
+        var updated = text;
+        var replaced = false;
+        foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(
+                     text, "(\"profileWindowTitle\"\\s*:\\s*)(true|false)"))
+        {
+            if (IsInsideLineComment(text, match.Index)) continue;
+            updated = text[..match.Index] + match.Groups[1].Value + literal +
+                      text[(match.Index + match.Length)..];
+            replaced = true;
+            break;
+        }
+
+        // 2) 没有该键：插到 sdkVersion 之前（保持模板的字段顺序与缩进）
+        if (!replaced)
+        {
+            var anchor = -1;
+            foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(text, "\"sdkVersion\""))
+            {
+                if (IsInsideLineComment(text, match.Index)) continue;
+                anchor = match.Index;
+                break;
+            }
+
+            if (anchor >= 0)
+            {
+                var lineStart = text.LastIndexOf('\n', Math.Max(0, anchor - 1)) + 1;
+                var indent = text[lineStart..anchor];
+                if (indent.Trim().Length != 0) indent = "  ";
+                updated = text[..lineStart] + indent + "\"profileWindowTitle\": " + literal + "," + newline + text[lineStart..];
+            }
+            else
+            {
+                var close = text.LastIndexOf('}');
+                if (close < 0) return false;
+                var head = text[..close].TrimEnd();
+                var comma = head.EndsWith(',') || head.EndsWith('{') ? "" : ",";
+                updated = head + comma + newline + "  \"profileWindowTitle\": " + literal + newline + text[close..];
+            }
+        }
+
+        // 3) 自检：能解析、键存在且值等于目标
+        try
+        {
+            using var doc = JsonDocument.Parse(StripJsonComments(updated.TrimStart('\uFEFF')));
+            if (!doc.RootElement.TryGetProperty("profileWindowTitle", out var value) ||
+                value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                return false;
+            if ((value.ValueKind == JsonValueKind.True) != enabled) return false;
         }
         catch
         {
@@ -1711,6 +1812,90 @@ public sealed partial class ModManager
         catch
         {
             // 尽力而为：少补几个键不影响任何功能（加载器有默认值）
+        }
+    }
+
+    /// <summary>把缺失的 <c>profileWindowTitle</c> 补进已有的 doorstop_config.json（保留注释与用户已有值）。
+    ///
+    /// 与 <see cref="SyncLoaderConfigSteamKeys"/> 同样的理由：加载器读不到该键时用编译进去的默认值（开启），
+    /// 所以老配置照样工作；补齐是为了让配置自文档化，并防止旧版 Toys 的白名单保存把它删掉
+    /// （用户特意关掉的开关不会在旧版里静默恢复成开）。只追加缺失的键，改完自检，任何一步失败都不写盘。</summary>
+    private static void SyncLoaderConfigProfileWindowTitle(string configPath)
+    {
+        try
+        {
+            if (!File.Exists(configPath)) return;
+
+            var bytes = File.ReadAllBytes(configPath);
+            var hasBom = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
+            var offset = hasBom ? 3 : 0;
+            var text = System.Text.Encoding.UTF8.GetString(bytes, offset, bytes.Length - offset);
+
+            Func<string, JsonDocument?> tryParse = value =>
+            {
+                try { return JsonDocument.Parse(StripJsonComments(value.TrimStart('\uFEFF'))); }
+                catch { return null; }
+            };
+
+            using var before = tryParse(text);
+            if (before is null || before.RootElement.ValueKind != JsonValueKind.Object) return;
+            if (before.RootElement.TryGetProperty("profileWindowTitle", out _)) return;
+
+            // 插到 sdkVersion 之前（与随包模板顺序一致）；连 sdkVersion 都没有就插在对象末尾。
+            var eol = text.Contains("\r\n") ? "\r\n" : "\n";
+            var comment = "  // 多 profile: 在游戏窗口标题后追加 profile 名, 方便区分多开实例(默认开, 只影响标题显示)";
+            var member = "  \"profileWindowTitle\": true";
+
+            var updated = text;
+            var anchor = -1;
+            foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(text, "\"sdkVersion\""))
+            {
+                if (IsInsideLineComment(text, match.Index)) continue;
+                anchor = match.Index;
+                break;
+            }
+
+            if (anchor >= 0)
+            {
+                var lineStart = text.LastIndexOf('\n', Math.Max(0, anchor - 1)) + 1;
+                var indent = text[lineStart..anchor];
+                if (indent.Trim().Length != 0) indent = "  ";
+                updated = text[..lineStart] + comment + eol + indent + "\"profileWindowTitle\": true," + eol
+                          + text[lineStart..];
+            }
+            else
+            {
+                var close = text.LastIndexOf('}');
+                if (close < 0) return;
+                var head = text[..close].TrimEnd();
+                var comma = head.EndsWith(',') || head.EndsWith('{') ? "" : ",";
+                updated = head + comma + eol + eol + comment + eol + member + eol + text[close..];
+            }
+
+            // 自检: 改完必须仍能解析、原有键值一字未改、新键存在；否则宁可不动。
+            using var after = tryParse(updated);
+            if (after is null || after.RootElement.ValueKind != JsonValueKind.Object) return;
+            var afterValues = after.RootElement.EnumerateObject()
+                .ToDictionary(property => property.Name, property => property.Value.GetRawText(), StringComparer.Ordinal);
+            foreach (var property in before.RootElement.EnumerateObject())
+            {
+                if (!afterValues.TryGetValue(property.Name, out var raw) || raw != property.Value.GetRawText()) return;
+            }
+            if (!afterValues.ContainsKey("profileWindowTitle")) return;
+
+            var encoded = System.Text.Encoding.UTF8.GetBytes(updated);
+            if (hasBom)
+            {
+                var withBom = new byte[encoded.Length + 3];
+                withBom[0] = 0xEF; withBom[1] = 0xBB; withBom[2] = 0xBF;
+                Array.Copy(encoded, 0, withBom, 3, encoded.Length);
+                encoded = withBom;
+            }
+            WriteAllBytesProtected(configPath, encoded);
+        }
+        catch
+        {
+            // 尽力而为：少补一个键不影响功能（加载器有默认值）
         }
     }
 

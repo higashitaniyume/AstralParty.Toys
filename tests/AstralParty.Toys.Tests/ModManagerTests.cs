@@ -791,6 +791,65 @@ public sealed class ModManagerTests
         Assert.Contains("\"steamBypassLobbyMethods\": false", text);
     }
 
+    // ============================== 老配置补齐 profileWindowTitle ==============================
+
+    [Fact]
+    public void Install_AddsMissingProfileWindowTitle_ButKeepsUserValuesAndComments()
+    {
+        using var harness = new ModHarness("ap-mod-window-title-add");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
+
+        // 模拟旧版模板装出来的配置：没有 profileWindowTitle；用户还写了自己的注释和其它设置
+        File.WriteAllText(path,
+            "{\n  // 这是我自己写的注释\n  \"enabled\": true,\n  \"speedhackBaseSpeed\": 2.0,\n"
+            + "  \"profile\": \"P2\",\n  \"sdkVersion\": \"2.1.7\"\n}");
+
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: false);
+
+        var config = harness.Manager.ReadLoaderConfig(harness.GameDirectory);
+        Assert.True(config.ProfileWindowTitle);               // 缺失 → 补成默认（开）
+        Assert.Equal("P2", config.Profile);                   // 其它设置照旧
+        Assert.Equal(2.0, config.SpeedhackBaseSpeed);
+
+        var text = File.ReadAllText(path);
+        Assert.Contains("这是我自己写的注释", text);           // 注释保留（文本插入而不是重写）
+        // ★ 断言文件文本：ReadLoaderConfig 对缺失键返回的默认值恰好也是 true，
+        //   只看解析结果区分不了"补上了"和"根本不存在"。
+        Assert.Contains("\"profileWindowTitle\": true", text);
+    }
+
+    [Fact]
+    public void Install_KeepsProfileWindowTitleTurnedOff()
+    {
+        using var harness = new ModHarness("ap-mod-window-title-keep");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
+
+        Assert.True(harness.Manager.SetProfileWindowTitle(harness.GameDirectory, false));
+
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: false);
+
+        Assert.False(harness.Manager.ReadLoaderConfig(harness.GameDirectory).ProfileWindowTitle);
+        Assert.Contains("\"profileWindowTitle\": false", File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void InstallPackage_AddsMissingProfileWindowTitle()
+    {
+        using var harness = new ModHarness("ap-mod-pkg-window-title");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
+        File.WriteAllText(path, "{\n  \"enabled\": true,\n  \"sdkVersion\": \"2.1.7\"\n}");
+
+        // 走发布包这条路也要补齐
+        harness.Manager.InstallPackage(harness.GameDirectory,
+            BuildFakePackage("5.0.0", configSdkVersion: "9.9.9"), overwriteDll: true);
+
+        Assert.True(harness.Manager.ReadLoaderConfig(harness.GameDirectory).ProfileWindowTitle);
+        Assert.Contains("\"profileWindowTitle\": true", File.ReadAllText(path));
+    }
+
     // ============================== 首页「启动方式」单选框 → 加载器配置 ==============================
     //
     // 首页单选框写的是**一整套** Steam 绕过开关（主开关 + 匹配 + 房间列表查询），因为这个加载器的 hook 是

@@ -6,13 +6,15 @@ namespace AstralParty.Toys;
 
 public partial class HybridWindow
 {
-    // ============================== 游戏多开（账号 profile） ==============================
+    // ============================== 游戏多开（账号 profile + 实例外壳） ==============================
     //
-    // 「多开」在这里不是指同时开两个进程：UnityPlayer 的单实例互斥与 exe 路径绑定，同一份
-    // 安装目录本来只能开一个实例。这里管的是**账号档案**：每个 profile 是一套独立的
-    // LocalLow 目录（账号令牌 / SaveFile.es3 / 回放 / 下载缓存），由加载器(version.dll)在
-    // 游戏进程内做目录重定向。切换 profile 只改 doorstop_config.json 里的 profile 字段，
-    // 下次启动游戏才生效（配置只在进程启动时读一次）。
+    // 每个 profile 是一套独立的 LocalLow 目录（账号令牌 / SaveFile.es3 / 回放 / 下载缓存），
+    // 由加载器(version.dll)在游戏进程内做目录重定向。
+    //
+    // UnityPlayer 的单实例互斥与 exe 路径绑定：同一 exe 路径只能开一个实例。需要同时多开时，
+    // Toys 会用 GameInstanceService 在 LocalAppData 下建一个实例外壳（exe/DLL 硬链接、
+    // 数据目录 junction），并从外壳 exe 启动；账号目录通过子进程的 CESIUM_PROFILE 环境变量
+    // 指定（优先级高于 doorstop_config.json 的 profile 字段）。
     //
     // 目录布局（与加载器一致）：
     //   %USERPROFILE%\AppData\LocalLow\<公司>\<产品>\              默认档案（游戏自己的目录）
@@ -39,7 +41,10 @@ public partial class HybridWindow
                 var gameDirectory = service.GameDirectory;
                 var loaderInstalled = gameDirectory is not null &&
                                       File.Exists(_modManager.LoaderConfigPath(gameDirectory));
-                var activeName = loaderInstalled ? _modManager.ReadLoaderConfig(gameDirectory!).Profile ?? "" : "";
+                var config = gameDirectory is not null && loaderInstalled
+                    ? _modManager.ReadLoaderConfig(gameDirectory)
+                    : null;
+                var activeName = config?.Profile ?? "";
 
                 return new
                 {
@@ -48,6 +53,8 @@ public partial class HybridWindow
                     profilesRoot = service.ProfilesRoot,
                     activeName,
                     loaderInstalled,
+                    // 窗口标题开关：配置里没有该键时加载器按默认（开）处理，界面显示也跟随这个默认。
+                    windowTitleEnabled = config?.ProfileWindowTitle ?? true,
                     canManage = service.Error is null,
                     error = service.Error,
                     // 名字规则由宿主下发，页面用它做实时校验（两边不各写一份）
@@ -300,7 +307,46 @@ public partial class HybridWindow
 
         // 先把“当前档案”推回界面，再拉游戏：启动后这几秒界面还能看到切换结果。
         _ = PushAccountProfilesAsync();
-        HandleLaunchGame(bypassSteam);
+
+        // 非默认档案始终走独立实例外壳；默认档案只有在已有实例运行时才需要外壳。
+        var separateInstance = trimmed.Length > 0 || SpeedhackManager.IsGameRunning();
+        HandleLaunchGame(bypassSteam, trimmed, separateInstance);
+    }
+
+    /// <summary>「游戏窗口标题后追加 profile 名」开关（写加载器的 profileWindowTitle）。
+    /// 默认开；关掉只影响标题显示，不影响目录隔离。</summary>
+    private void HandleAccountProfileSetWindowTitle(bool enabled)
+    {
+        string gameDirectory;
+        try { gameDirectory = RequireModGameDirectory(); }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = ex.Message });
+            return;
+        }
+
+        if (!File.Exists(_modManager.LoaderConfigPath(gameDirectory)))
+        {
+            Post(new { type = "toast", message = "还没安装加载器：这个开关需要加载器（在「模组」页安装一次）。" });
+            _ = PushAccountProfilesAsync();
+            return;
+        }
+
+        if (!_modManager.SetProfileWindowTitle(gameDirectory, enabled))
+        {
+            Post(new { type = "toast", message = "没能写入加载器配置（doorstop_config.json），请检查文件是否只读。" });
+            _ = PushAccountProfilesAsync();
+            return;
+        }
+
+        Post(new
+        {
+            type = "toast",
+            message = enabled
+                ? "已开启：下次启动游戏后，窗口标题会带上 profile 名。"
+                : "已关闭：游戏窗口标题保持原样（下次启动生效）。"
+        });
+        _ = PushAccountProfilesAsync();
     }
 
     /// <summary>保存档案备注（空串 = 清除）。备注写在档案目录的 .profile.json 里。</summary>

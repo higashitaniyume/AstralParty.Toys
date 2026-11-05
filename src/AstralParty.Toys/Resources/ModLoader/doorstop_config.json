@@ -95,6 +95,12 @@
   // 独立开关: 与 steamBypassEnabled/steamBypassMatchmaking/steamBypassLobbyHasValue/
   // steamBypassLobbyMethods 互不影响。false = 恢复原版行为(退房/解散/被踢时 await 之后仍被跳过)。
   "steamBypassLobbyQuery": true,
+  // 多 profile: 把游戏读写账号/存档/回放的目录重定向到独立目录; 托管的「游戏多开」页写入。
+  // 空 = 不重定向, 游戏写自己的 LocalLow\<公司>\<产品>。
+  "profile": "",
+  // 多 profile 窗口标题: 在游戏窗口标题后追加 " · <profile 名>", 方便区分多开实例。
+  // 默认开; 只在选了 profile 时生效, 关掉只影响标题显示。
+  "profileWindowTitle": true,
   // 当前分发的 SDK 版本(SemVer): 加载器用它校验 mod 声明的 SdkVersion,
   // 不兼容时拒绝加载该 mod。升级 SDK 时同步更新此字段。
   "sdkVersion": "2.8.1"

@@ -95,6 +95,8 @@
       'profile.rename_title': '重命名 profile',
       'profile.rename_hint': '只改目录名，账号内容不变。',
       'profile.confirm_delete': '删除后这个 profile 的账号缓存、存档与回放会进回收站（默认目录不受影响）。确定删除「{name}」？',
+      'profile.window_title': '游戏窗口标题带上 profile 名',
+      'profile.window_title_hint': '默认开启。选中 profile 后，窗口标题显示为「原标题 · profile 名」，方便在任务栏和 Alt+Tab 里区分多个实例；下次启动游戏生效。',
 
       // Replay
       'replay.title': '对局回放与复盘',
@@ -547,6 +549,8 @@
       'profile.rename_title': 'Rename profile',
       'profile.rename_hint': 'Only the folder name changes; the account data stays the same.',
       'profile.confirm_delete': 'Deleting moves the account cache, saves and replays of this profile to the Recycle Bin (the default folder is untouched). Delete "{name}"?',
+      'profile.window_title': 'Append the profile name to the game window title',
+      'profile.window_title_hint': 'On by default. When a profile is in use, the title becomes "original title · profile name", so multiple instances are easy to tell apart in the taskbar and Alt+Tab. Applies on the next game launch.',
 
       // Replay
       'replay.title': 'Replay Analysis & Review',
@@ -998,6 +1002,8 @@
       'profile.rename_title': 'プロファイル名の変更',
       'profile.rename_hint': 'フォルダー名だけを変更します。アカウントの中身は変わりません。',
       'profile.confirm_delete': '削除するとこのプロファイルのアカウントキャッシュ・セーブ・リプレイはごみ箱に入ります（既定フォルダーは影響を受けません）。「{name}」を削除しますか？',
+      'profile.window_title': 'ゲームウィンドウのタイトルにプロファイル名を追加',
+      'profile.window_title_hint': '既定でオン。プロファイル使用時、タイトルは「元のタイトル · プロファイル名」になり、タスクバーや Alt+Tab で複数インスタンスを見分けやすくなります。次回のゲーム起動から有効です。',
 
       // Replay
       'replay.title': '対局リプレイ＆復盤分析',
@@ -1449,6 +1455,8 @@
       'profile.rename_title': '重新命名 profile',
       'profile.rename_hint': '只改目錄名稱，帳號內容不變。',
       'profile.confirm_delete': '刪除後這個 profile 的帳號快取、存檔與重播會進資源回收筒（預設目錄不受影響）。確定刪除「{name}」？',
+      'profile.window_title': '遊戲視窗標題帶上 profile 名稱',
+      'profile.window_title_hint': '預設開啟。選中 profile 後，視窗標題顯示為「原標題 · profile 名稱」，方便在工作列與 Alt+Tab 裡區分多個實例；下次啟動遊戲才生效。',
 
       // Replay
       'replay.title': '對局重播與複盤',

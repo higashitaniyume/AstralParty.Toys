@@ -333,4 +333,94 @@ public sealed class AccountProfileTests
         Assert.True(harness.Manager.SetLoaderProfile(harness.GameDirectory, "a\"b"));
         Assert.Equal("a\"b", harness.Manager.ReadLoaderConfig(harness.GameDirectory).Profile);
     }
+
+    // ============================== 加载器配置里的 profileWindowTitle ==============================
+
+    private const string ConfigWithWindowTitle = """
+        {
+          // 注释里出现 "profileWindowTitle": false 不能算数
+          "enabled": true,
+          // 多 profile 窗口标题
+          "profileWindowTitle": true,
+          "sdkVersion": "3.1.4"
+        }
+        """;
+
+    [Fact]
+    public void ReadLoaderConfig_ReadsProfileWindowTitle()
+    {
+        using var harness = new Harness("ap-window-title-read");
+        var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, ConfigWithWindowTitle.Replace("\"profileWindowTitle\": true", "\"profileWindowTitle\": false"));
+
+        Assert.False(harness.Manager.ReadLoaderConfig(harness.GameDirectory).ProfileWindowTitle);
+    }
+
+    [Fact]
+    public void ReadLoaderConfig_DefaultsProfileWindowTitleToOn()
+    {
+        using var harness = new Harness("ap-window-title-default");
+        var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, ConfigWithProfile);
+
+        // 老配置没有这个键：加载器按默认（开）处理，界面显示也跟随。
+        Assert.True(harness.Manager.ReadLoaderConfig(harness.GameDirectory).ProfileWindowTitle);
+    }
+
+    [Fact]
+    public void SaveLoaderConfig_KeepsProfileWindowTitle()
+    {
+        using var harness = new Harness("ap-window-title-save");
+        Directory.CreateDirectory(Path.GetDirectoryName(harness.Manager.LoaderConfigPath(harness.GameDirectory))!);
+        var config = harness.Manager.ReadLoaderConfig(harness.GameDirectory);
+        config.ProfileWindowTitle = false;
+        harness.Manager.SaveLoaderConfig(harness.GameDirectory, config);
+
+        Assert.False(harness.Manager.ReadLoaderConfig(harness.GameDirectory).ProfileWindowTitle);
+    }
+
+    [Fact]
+    public void SetProfileWindowTitle_ReplacesValue_AndKeepsComments()
+    {
+        using var harness = new Harness("ap-window-title-set");
+        var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, ConfigWithWindowTitle);
+
+        Assert.True(harness.Manager.SetProfileWindowTitle(harness.GameDirectory, false));
+        var text = File.ReadAllText(path);
+        Assert.Contains("\"profileWindowTitle\": false", text);
+        Assert.Contains("// 注释里出现 \"profileWindowTitle\": false 不能算数", text);
+        Assert.Contains("// 多 profile 窗口标题", text);
+        Assert.Contains("\"sdkVersion\": \"3.1.4\"", text);
+        Assert.False(harness.Manager.ReadLoaderConfig(harness.GameDirectory).ProfileWindowTitle);
+
+        Assert.True(harness.Manager.SetProfileWindowTitle(harness.GameDirectory, true));
+        Assert.Contains("\"profileWindowTitle\": true", File.ReadAllText(path));
+        Assert.True(harness.Manager.ReadLoaderConfig(harness.GameDirectory).ProfileWindowTitle);
+    }
+
+    [Fact]
+    public void SetProfileWindowTitle_InsertsKeyWhenMissing()
+    {
+        using var harness = new Harness("ap-window-title-insert");
+        var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, ConfigWithoutProfile);
+
+        Assert.True(harness.Manager.SetProfileWindowTitle(harness.GameDirectory, false));
+        var text = File.ReadAllText(path);
+        Assert.Contains("\"profileWindowTitle\": false", text);
+        Assert.Contains("// 保持注释", text);
+        Assert.False(harness.Manager.ReadLoaderConfig(harness.GameDirectory).ProfileWindowTitle);
+    }
+
+    [Fact]
+    public void SetProfileWindowTitle_ReturnsFalseWhenConfigMissing()
+    {
+        using var harness = new Harness("ap-window-title-absent");
+        Assert.False(harness.Manager.SetProfileWindowTitle(harness.GameDirectory, false));
+    }
 }

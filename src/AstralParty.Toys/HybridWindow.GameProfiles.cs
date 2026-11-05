@@ -178,13 +178,15 @@ public partial class HybridWindow
     ///     启动早期自己退出（[SteamManager] 非Steam客户端启动），所以这条路依赖加载器的 Steam 绕过；
     ///     那个开关与首页这个单选框是同一个配置，勾选时就已经写进 doorstop_config.json 了。
     /// </summary>
-    private void HandleLaunchGame(bool bypassSteam)
+    private void HandleLaunchGame(bool bypassSteam, string? accountProfile = null, bool separateInstance = false)
     {
         // 不再因为"游戏已经在运行"就拦截再次启动 —— 保存了多个游戏位置时，
         // 用户可能想在已开一个的情况下再启动另一个（例如国服 + 国际服），或第一次没起来想重试。
         // 也不再按区服猜"这个版本在不在 Steam 上"：用户在下拉栏选了哪个版本、又选了哪种启动方式就照做，
         // 不警告、不识别，后果自负（当前"通过 Steam 启动"只有固定 appid 这一条路；"绕过 Steam" = 直启选中的版本）。
-        if (!bypassSteam)
+        //
+        // 多开实例不能走 Steam：Steam 会复用/激活已有进程，也无法给子进程单独设置 CESIUM_PROFILE。
+        if (!bypassSteam && !separateInstance)
         {
             try
             {
@@ -194,12 +196,16 @@ public partial class HybridWindow
             }
             catch (Exception steamError)
             {
-                LaunchGameDirectly($"Steam 不可用（{steamError.Message}），已直接启动游戏主程序。");
+                LaunchGameDirectly($"Steam 不可用（{steamError.Message}），已直接启动游戏主程序。",
+                    accountProfile, separateInstance);
                 return;
             }
         }
 
-        LaunchGameDirectly("已绕过 Steam，直接启动游戏主程序。");
+        if (separateInstance && !bypassSteam)
+            Post(new { type = "toast", message = "同一安装多开需要绕过 Steam，已改为直接启动。" });
+
+        LaunchGameDirectly("已绕过 Steam，直接启动游戏主程序。", accountProfile, separateInstance);
     }
 
     /// <summary>首页「启动方式」单选框：把选择同步进加载器配置（保留注释）。
@@ -268,7 +274,7 @@ public partial class HybridWindow
     /// <summary>把本程序的版本信息推给界面（顶部栏版本胶囊 / 底部状态栏 / 版本详情弹窗都用它）。
 
     /// <summary>直接拉起游戏主程序（不经过 Steam），成功后把 successMessage（必要时再加一句提醒）发给前端。</summary>
-    private void LaunchGameDirectly(string successMessage)
+    private void LaunchGameDirectly(string successMessage, string? accountProfile = null, bool separateInstance = false)
     {
         var gameDirectory = _speedhackManager.ResolveGameDirectory();
         var gameExe = string.IsNullOrEmpty(gameDirectory) ? null : SpeedhackManager.ContainsGameExe(gameDirectory);
@@ -282,14 +288,54 @@ public partial class HybridWindow
             return;
         }
 
+        var launchExe = gameExe;
+        var workingDirectory = gameDirectory!;
+        var shellReady = false;
+
+        if (separateInstance)
+        {
+            try
+            {
+                var shellExe = GameInstanceService.EnsureInstance(gameDirectory!, accountProfile);
+                launchExe = shellExe;
+                workingDirectory = Path.GetDirectoryName(shellExe)!;
+                shellReady = true;
+            }
+            catch (Exception ex)
+            {
+                Post(new { type = "toast", message = "创建多开实例失败，已改为普通启动：" + ex.Message });
+            }
+        }
+
         try
         {
-            Process.Start(new ProcessStartInfo(gameExe)
+            var startInfo = new ProcessStartInfo(launchExe)
             {
-                UseShellExecute = true,
-                WorkingDirectory = gameDirectory!
+                WorkingDirectory = workingDirectory
+            };
+
+            // 只有外壳 + 指定 profile 时才用环境变量：UseShellExecute=false 才能传子进程环境。
+            // 默认档案的外壳不需要环境变量，保持原有 ShellExecute 行为。
+            if (shellReady && !string.IsNullOrWhiteSpace(accountProfile))
+            {
+                startInfo.UseShellExecute = false;
+                startInfo.Environment["CESIUM_PROFILE"] = accountProfile!;
+            }
+            else
+            {
+                startInfo.UseShellExecute = true;
+            }
+
+            Process.Start(startInfo);
+            Post(new
+            {
+                type = "toast",
+                message = successMessage +
+                          (shellReady && !string.IsNullOrWhiteSpace(accountProfile)
+                              ? $"（已启动实例：{accountProfile}）"
+                              : "") +
+                          SteamBypassCaveat(gameDirectory!)
             });
-            Post(new { type = "toast", message = successMessage + SteamBypassCaveat(gameDirectory!) });
         }
         catch (Exception ex)
         {

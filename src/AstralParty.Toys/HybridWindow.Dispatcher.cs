@@ -259,6 +259,11 @@ public partial class HybridWindow
                         HandleAccountProfileSetNote(noteAccountEl.GetString() ?? "",
                             root.TryGetProperty("note", out var noteEl) ? noteEl.GetString() : null);
                     break;
+                case "accountProfileSetWindowTitle":
+                    HandleAccountProfileSetWindowTitle(
+                        root.TryGetProperty("enabled", out var windowTitleEl) &&
+                        windowTitleEl.ValueKind == JsonValueKind.True);
+                    break;
                 case "gameScanQuick":
                     HandleGameScanQuick();
                     break;

@@ -58,6 +58,57 @@
   fill: currentColor;
 }
 
+/* ---------- 窗口标题开关 ---------- */
+.profiles-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-md);
+  background: var(--gp-bg-panel);
+  cursor: pointer;
+  transition: border-color var(--motion-fast) ease;
+}
+
+.profiles-option:hover {
+  border-color: var(--gp-border-highlight);
+}
+
+.profiles-option.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.profiles-option input[type='checkbox'] {
+  flex: 0 0 auto;
+  margin: 2px 0 0;
+  width: 15px;
+  height: 15px;
+  accent-color: var(--gp-gold);
+  cursor: inherit;
+}
+
+.profiles-option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.profiles-option-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gp-text-main);
+}
+
+.profiles-option-hint {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--gp-text-muted);
+}
+
 /* ---------- 新建 ---------- */
 .profiles-create {
   display: flex;
