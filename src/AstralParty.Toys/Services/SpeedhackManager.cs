@@ -542,12 +542,12 @@ public sealed class SpeedhackManager
             if (!Directory.Exists(common)) continue;
             foreach (var appDir in SafeEnumerateDirectories(common))
             {
-                // 自动查找只认 AstralParty*.exe：ContainsGameExe 的 Unity 兜底是给手动选目录用的，
-                // 用在这里会把 Steam 库里别的 Unity 游戏也当成吉星派对（首次启动还可能设成当前游戏）。
-                if (HasKnownGameExe(appDir)) found.Add(appDir);
+                var exe = ContainsGameExe(appDir);
+                if (exe is not null) found.Add(Path.GetDirectoryName(exe)!);
                 foreach (var sub in SafeEnumerateDirectories(appDir))
                 {
-                    if (HasKnownGameExe(sub)) found.Add(sub);
+                    exe = ContainsGameExe(sub);
+                    if (exe is not null) found.Add(Path.GetDirectoryName(exe)!);
                 }
             }
         }
@@ -611,13 +611,6 @@ public sealed class SpeedhackManager
         {
             return [];
         }
-    }
-
-    /// <summary>目录里有名字以 AstralParty 开头的 exe（不含手动选目录时的 Unity 兜底）。</summary>
-    public static bool HasKnownGameExe(string directory)
-    {
-        try { return Directory.EnumerateFiles(directory, GameExeSearchPattern).Any(); }
-        catch { return false; }
     }
 
     /// <summary>返回已识别游戏主程序的完整路径，包含 Unity 结构内的非标准渠道 exe 名。</summary>

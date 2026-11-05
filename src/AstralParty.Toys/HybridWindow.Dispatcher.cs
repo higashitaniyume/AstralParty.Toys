@@ -19,13 +19,10 @@ public partial class HybridWindow
             using var document = JsonDocument.Parse(e.WebMessageAsJson);
             var root = document.RootElement;
             var type = root.TryGetProperty("type", out var typeElement) ? typeElement.GetString() : null;
-            if (HandleUiThemeMessage(type, root)) return;   // 新界面：深浅色
-            if (HandleBackgroundMessage(type, root)) return;   // 新界面：自定义 → 背景
-            if (HandleWindowChromeMessage(type)) return;   // 新界面自绘标题栏：拖动 / 最小化 / 最大化 / 关闭
             if ((_loaderRecoveryBusy || _modPackageImportRunning || _modUpdateRunning || _modImportRunning || _workshopBusy)
                 && type is "modInstall" or "modUninstall" or "modDisableLoader" or "modRestoreLoader"
                     or "modDownloadUpdate" or "modImportPackage" or "modImport" or "modPickImport" or "modDelete" or "modToggle"
-                    or "speedhackInstall" or "speedhackUninstall" or "workshopInstall" or "appUninstall")
+                    or "speedhackInstall" or "speedhackUninstall" or "workshopInstall")
             {
                 if (type is "modDisableLoader" or "modRestoreLoader") Post(new { type = "modRecoveryDone" });
                 throw new InvalidOperationException("游戏文件操作正在进行（安装 / 更新 / 导入），请等待完成后再修改。");
@@ -803,12 +800,6 @@ public partial class HybridWindow
                     break;
                 case "closeWindow":
                     Close();
-                    break;
-                case "appUninstallInfo":
-                    HandleAppUninstallInfo();
-                    break;
-                case "appUninstall":
-                    await HandleAppUninstallAsync(root.Clone());
                     break;
             }
         }

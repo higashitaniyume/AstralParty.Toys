@@ -3,25 +3,18 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         Title="AstralParty.Toys · 吉星派对工具箱"
-        Width="1120" Height="700" MinWidth="900" MinHeight="580"
+        Width="1480" Height="920" MinWidth="1120" MinHeight="700"
         WindowStartupLocation="CenterScreen"
-        Background="#121420"
+        Background="#F3F6FB"
         Loaded="Window_Loaded">
-    <!-- 新界面：隐藏系统标题栏，由网页顶栏自绘（拖动 / 最小化 / 最大化 / 关闭见 HybridWindow.WindowChrome.cs）。
-         保留可拖边缩放；底边 1px 的玻璃框让系统继续画窗口阴影。 -->
-    <WindowChrome.WindowChrome>
-        <WindowChrome CaptionHeight="0" ResizeBorderThickness="5" GlassFrameThickness="0,0,0,1"
-                      CornerRadius="0" UseAeroCaptionButtons="False" />
-    </WindowChrome.WindowChrome>
-    <!-- WebView2 是子窗口，会挡住边缘的缩放判定，所以四周留 4px 给拖边用；最大化时改成收进屏幕内的边距 -->
-    <Grid x:Name="RootGrid" Margin="4">
-        <wv2:WebView2 x:Name="WebView" DefaultBackgroundColor="#121420" />
-        <Border x:Name="StartupOverlay" Background="#121420">
+    <Grid>
+        <wv2:WebView2 x:Name="WebView" DefaultBackgroundColor="#F3F6FB" />
+        <Border x:Name="StartupOverlay" Background="#F3F6FB">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                <TextBlock Text="✦" Foreground="#FF1776" FontSize="54" HorizontalAlignment="Center" />
-                <TextBlock x:Name="StartupTitle" Text="加载中..." HorizontalAlignment="Center" Foreground="#F3F5FA" FontSize="18" Margin="0,18,0,0" />
-                <TextBlock x:Name="StartupDetail" Text="AstralParty Toys" HorizontalAlignment="Center" Foreground="#94A3B8" Margin="0,8,0,0" />
-                <ProgressBar x:Name="StartupProgress" IsIndeterminate="True" Width="280" Height="4" Margin="0,24,0,0" Foreground="#FF1776" Background="#20243A" BorderThickness="0" />
+                <TextBlock Text="✦" Foreground="#7766D7" FontSize="54" HorizontalAlignment="Center" />
+                <TextBlock Text="加载中..." HorizontalAlignment="Center" Foreground="#263248" FontSize="18" Margin="0,18,0,0" />
+                <TextBlock x:Name="StartupDetail" Text="AstralParty Toys" HorizontalAlignment="Center" Foreground="#75839A" Margin="0,8,0,0" />
+                <ProgressBar IsIndeterminate="True" Width="280" Height="4" Margin="0,24,0,0" Foreground="#7766D7" />
                 <Button x:Name="ClassicButton" Content="使用备用界面" Visibility="Collapsed" Margin="0,24,0,0"
                         Padding="18,9" Click="ClassicButton_Click" />
             </StackPanel>
