@@ -301,6 +301,7 @@
                 : ''
             }
           </div>
+          ${window.StickerModule?.placeholder ? window.StickerModule.placeholder(item.id) : ''}
         </div>
         <div class="workshop-row-actions">
           <div class="workshop-row-progress" hidden><span></span></div>
@@ -365,6 +366,7 @@
                 : ''
             }
           </div>
+          ${window.StickerModule?.placeholder ? window.StickerModule.placeholder(item.id) : ''}
           <div class="workshop-card-foot">
             <span class="workshop-chip-row">${chipFor(item)}</span>
             <button class="secondary-btn workshop-install-btn" data-role="action" type="button"></button>
@@ -446,6 +448,7 @@
       : filtered.map(cardMarkup).join('');
     syncCards();
     window.Icons?.hydrate(grid);
+    window.StickerModule?.syncAfterRender();
   }
 
   // 按当前安装状态刷新所有卡片的按钮/进度条（不重建节点）。
@@ -854,6 +857,7 @@
             })}
             <span id="workshopDetailAction">${detailActionMarkup(mod)}</span>
           </div>
+          ${window.StickerModule?.placeholder ? window.StickerModule.placeholder(mod.id) : ''}
           <div class="workshop-progress hidden" id="workshopDetailProgress">
             <div class="workshop-progress-bar"><span id="workshopDetailProgressBar"></span></div>
             <span class="workshop-progress-text" id="workshopDetailProgressText"></span>
@@ -898,6 +902,8 @@
 
     host.innerHTML = `${detailHeroMarkup(state.detail)}${detailTabsMarkup(state.detail)}`;
     window.Icons?.hydrate(host);
+    window.StickerModule?.syncAfterRender();
+    window.StickerModule?.requestCounts([state.detail.id]);
 
     const title = $('workshopDetailTitle');
     if (title) title.textContent = state.detail.name || t('workshop.detail_title');
@@ -1136,6 +1142,8 @@
       $('workshopInstallCancel')?.addEventListener('click', () => cancel());
 
       $('workshopGrid')?.addEventListener('click', event => {
+        if (window.StickerModule?.handleClick(event)) return;
+
         const consentOpen = event.target.closest('[data-consent-open]');
         if (consentOpen) {
           openConsentModal();
@@ -1167,6 +1175,8 @@
       const detailHost = $('workshopDetailContent');
 
       detailHost?.addEventListener('click', event => {
+        if (window.StickerModule?.handleClick(event)) return;
+
         const retry = event.target.closest('[data-detail-retry]');
         if (retry) {
           if (state.detailId) requestDetail(state.detailId);
@@ -1350,6 +1360,7 @@
       syncTagOptions();
       renderGrid();
       renderPager();
+      window.StickerModule?.requestCounts(state.items.map(item => item.id));
 
       if (state.items.length) {
         notice(t('workshop.total', { total: fmt(state.total) }), 'muted');
@@ -1384,6 +1395,14 @@
       state.mdCache.delete(`${mod.id}:readme`);
 
       renderDetailPage();
+    },
+
+    renderStickers(payload) {
+      window.StickerModule?.applyBulk(payload);
+    },
+
+    renderStickerToggle(payload) {
+      window.StickerModule?.applyToggle(payload);
     },
 
     renderProgress(payload) {

@@ -81,6 +81,30 @@ public sealed class WorkshopDependency
     public string MinVersion { get; set; } = "";
 }
 
+/// <summary>市场贴纸回应：一个模组上某张贴纸的计数与「我是否回应过」。</summary>
+public sealed class StickerCount
+{
+    public string StickerId { get; set; } = "";
+    public string ImageUrl { get; set; } = "";
+    public long Count { get; set; }
+    public bool ReactedByMe { get; set; }
+}
+
+/// <summary>单个模组的贴纸回应状态（批量查询与点选切换都返回这个形状）。</summary>
+public sealed class ModStickerState
+{
+    public string ModId { get; set; } = "";
+    public List<StickerCount> Stickers { get; set; } = new();
+    public long ReactionTotal { get; set; }
+}
+
+/// <summary>批量贴纸回应接口的返回（与 Forge 的 <c>/api/mod-stickers</c> 对应）。</summary>
+public sealed class ModStickersPayload
+{
+    public string GeneratedAt { get; set; } = "";
+    public List<ModStickerState> Items { get; set; } = new();
+}
+
 /// <summary>下载进度（总量未知时 Percent 为 null）。</summary>
 public sealed class WorkshopDownloadProgress
 {

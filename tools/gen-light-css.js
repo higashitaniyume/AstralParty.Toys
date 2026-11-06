@@ -9,7 +9,7 @@ const path = require('path');
 
 const WEB = path.join(__dirname, '..', 'src', 'AstralParty.Toys', 'WebUI');
 const SOURCES = ['css/base.css', 'css/home.css', 'css/tools.css', 'css/wiki.css', 'css/settings.css', 'css/utilities.css', 'css/mods.css',
-  'vendor/github-markdown-dark.css', 'vendor/highlight-github-dark.min.css', 'css/markdown.css', 'css/workshop.css', 'css/skins.css',
+  'vendor/github-markdown-dark.css', 'vendor/highlight-github-dark.min.css', 'css/markdown.css', 'css/workshop.css', 'css/stickers.css', 'css/skins.css',
   'css/resource-mods.css', 'css/profiles.css'];
 const OUTPUT = 'css/v2-light.css';
 const THEME = ':where(:root[data-theme="light"])';

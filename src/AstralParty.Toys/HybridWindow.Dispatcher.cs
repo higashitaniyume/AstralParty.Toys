@@ -583,6 +583,12 @@ public partial class HybridWindow
                 case "workshopCancelDownload":
                     CancelWorkshopDownload();
                     break;
+                case "workshopStickers":
+                    await HandleWorkshopStickersAsync(root);
+                    break;
+                case "workshopStickerToggle":
+                    await HandleWorkshopStickerToggleAsync(root);
+                    break;
                 case "workshopInstallConfirmAnswer":
                     HandleWorkshopInstallConfirmAnswer(
                         root.TryGetProperty("accept", out var workshopAccept) && workshopAccept.GetBoolean());

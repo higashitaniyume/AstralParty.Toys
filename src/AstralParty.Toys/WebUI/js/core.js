@@ -408,6 +408,14 @@ host?.addEventListener('message', event => {
       window.WorkshopModule?.openInstallConfirm(msg.payload);
       break;
 
+    case 'workshopStickers':
+      window.WorkshopModule?.renderStickers(msg.payload);
+      break;
+
+    case 'workshopStickerToggle':
+      window.WorkshopModule?.renderStickerToggle(msg.payload);
+      break;
+
     case 'modLoaderConfig':
       if (window.ModsModule) window.ModsModule.renderLoaderSettings(msg.payload?.config);
       break;

@@ -2,6 +2,7 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 
 namespace AstralParty.Toys.Services;
@@ -129,6 +130,82 @@ public sealed class WorkshopService
             await using var stream = await response.Content.ReadAsStreamAsync(timeout.Token);
             return await JsonSerializer.DeserializeAsync<WorkshopModDetail>(stream, Json, timeout.Token)
                    ?? throw new WorkshopException("模组详情返回了空数据。");
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new WorkshopException("连接市场超时，请检查市场地址或网络。");
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new WorkshopException($"无法连接市场：{ex.Message}");
+        }
+    }
+
+    // ============================== 贴纸回应 ==============================
+
+    /// <summary>匿名身份请求头，与网页版一致：同一 voter id 在两边各自独立（本地 localStorage / 浏览器 localStorage）。</summary>
+    public const string VoterHeader = "x-forge-voter";
+
+    /// <summary>批量读取模组上的贴纸回应计数；<paramref name="voterId"/> 用于标记「我是否回应过」。</summary>
+    public async Task<ModStickersPayload> GetModStickersAsync(
+        string baseUrl,
+        IReadOnlyList<string> modIds,
+        string voterId,
+        CancellationToken cancellationToken = default)
+    {
+        var ids = (modIds ?? []).Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).Take(100).ToList();
+        if (ids.Count == 0)
+            return new ModStickersPayload { Items = [] };
+
+        var url = $"{NormalizeBaseUrl(baseUrl)}/api/mod-stickers?modIds={Uri.EscapeDataString(string.Join(",", ids))}";
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(20));
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            if (!string.IsNullOrWhiteSpace(voterId)) request.Headers.TryAddWithoutValidation(VoterHeader, voterId.Trim());
+            using var response = await ApiHttp.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
+            EnsureSuccess(response, "读取贴纸回应");
+            await using var stream = await response.Content.ReadAsStreamAsync(timeout.Token);
+            return await JsonSerializer.DeserializeAsync<ModStickersPayload>(stream, Json, timeout.Token)
+                   ?? throw new WorkshopException("贴纸回应返回了空数据。");
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new WorkshopException("连接市场超时，请检查市场地址或网络。");
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new WorkshopException($"无法连接市场：{ex.Message}");
+        }
+    }
+
+    /// <summary>切换一张贴纸的回应（点选 = 加，点已选的 = 取消），返回该模组的最新计数。</summary>
+    public async Task<ModStickerState> ToggleModStickerAsync(
+        string baseUrl,
+        string modId,
+        string stickerId,
+        string voterId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(modId)) throw new WorkshopException("请选择一个模组。");
+        if (string.IsNullOrWhiteSpace(stickerId)) throw new WorkshopException("请选择一张贴纸。");
+
+        var url = $"{NormalizeBaseUrl(baseUrl)}/api/mod-stickers/{Uri.EscapeDataString(modId.Trim())}/reactions";
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(20));
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, url);
+            if (!string.IsNullOrWhiteSpace(voterId)) request.Headers.TryAddWithoutValidation(VoterHeader, voterId.Trim());
+            request.Content = new StringContent(
+                JsonSerializer.Serialize(new { stickerId }), Encoding.UTF8, "application/json");
+            using var response = await ApiHttp.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
+            EnsureSuccess(response, "贴纸回应");
+            await using var stream = await response.Content.ReadAsStreamAsync(timeout.Token);
+            return await JsonSerializer.DeserializeAsync<ModStickerState>(stream, Json, timeout.Token)
+                   ?? throw new WorkshopException("贴纸回应返回了空数据。");
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {

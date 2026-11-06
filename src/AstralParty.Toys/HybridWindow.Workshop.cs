@@ -462,6 +462,104 @@ public partial class HybridWindow
         }
     }
 
+    // ============================== 贴纸回应 ==============================
+
+    private async Task HandleWorkshopStickersAsync(JsonElement root)
+    {
+        if (!RequireWorkshopConsent()) return;
+
+        var modIds = new List<string>();
+        if (root.TryGetProperty("modIds", out var idsElement) && idsElement.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in idsElement.EnumerateArray())
+            {
+                var id = item.GetString()?.Trim();
+                if (!string.IsNullOrEmpty(id)) modIds.Add(id!);
+            }
+        }
+        else if (root.TryGetProperty("modId", out var singleElement) && singleElement.GetString() is { Length: > 0 } single)
+        {
+            modIds.Add(single);
+        }
+
+        var voterId = root.TryGetProperty("voterId", out var voterElement) ? voterElement.GetString() ?? "" : "";
+        var baseUrl = WorkshopBaseUrl;
+
+        try
+        {
+            var payload = await _workshopService.GetModStickersAsync(baseUrl, modIds, voterId);
+            Post(new
+            {
+                type = "workshopStickers",
+                payload = new
+                {
+                    baseUrl,
+                    generatedAt = payload.GeneratedAt,
+                    items = payload.Items.Select(item => new
+                    {
+                        modId = item.ModId,
+                        reactionTotal = item.ReactionTotal,
+                        stickers = item.Stickers.Select(sticker => new
+                        {
+                            stickerId = sticker.StickerId,
+                            imageUrl = sticker.ImageUrl,
+                            count = sticker.Count,
+                            reactedByMe = sticker.ReactedByMe
+                        }).ToList()
+                    }).ToList()
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Post(new
+            {
+                type = "workshopStickers",
+                payload = new { baseUrl, error = DescribeWorkshopError(ex), items = Array.Empty<object>() }
+            });
+        }
+    }
+
+    private async Task HandleWorkshopStickerToggleAsync(JsonElement root)
+    {
+        if (!RequireWorkshopConsent()) return;
+
+        var modId = root.TryGetProperty("modId", out var modElement) ? modElement.GetString() ?? "" : "";
+        var stickerId = root.TryGetProperty("stickerId", out var stickerElement) ? stickerElement.GetString() ?? "" : "";
+        var voterId = root.TryGetProperty("voterId", out var voterElement) ? voterElement.GetString() ?? "" : "";
+        var baseUrl = WorkshopBaseUrl;
+
+        try
+        {
+            var state = await _workshopService.ToggleModStickerAsync(baseUrl, modId, stickerId, voterId);
+            Post(new
+            {
+                type = "workshopStickerToggle",
+                payload = new
+                {
+                    baseUrl,
+                    modId = state.ModId,
+                    reactionTotal = state.ReactionTotal,
+                    stickers = state.Stickers.Select(sticker => new
+                    {
+                        stickerId = sticker.StickerId,
+                        imageUrl = sticker.ImageUrl,
+                        count = sticker.Count,
+                        reactedByMe = sticker.ReactedByMe
+                    }).ToList()
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Post(new
+            {
+                type = "workshopStickerToggle",
+                payload = new { baseUrl, modId, error = DescribeWorkshopError(ex) }
+            });
+        }
+    }
+
     private static string DescribeWorkshopError(Exception ex)
         => ex is WorkshopException or InvalidOperationException or IOException
             ? ex.Message

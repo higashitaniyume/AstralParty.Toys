@@ -11,6 +11,7 @@
 :where(:root[data-theme="light"]) .app-version-chip { background: rgba(31, 34, 51, 0.07); border: 1.5px solid rgba(31, 34, 51, 0.16); }
 :where(:root[data-theme="light"]) .app-version-chip:hover { color: var(--gp-text-main); }
 :where(:root[data-theme="light"]) .app-version-chip-value { color: var(--gp-text-main); }
+:where(:root[data-theme="light"]) .v2-global-game { background: rgba(31, 34, 51, 0.07); border: 1.5px solid rgba(31, 34, 51, 0.16); color: var(--gp-text-main); }
 :where(:root[data-theme="light"]) .primary-btn { text-shadow: none; }
 :where(:root[data-theme="light"]) .btn-spinner { border: 2px solid rgba(31, 34, 51, 0.35); }
 :where(:root[data-theme="light"]) .secondary-btn { background: rgba(31, 34, 51, 0.1); color: var(--gp-text-main); border: 1.5px solid rgba(31, 34, 51, 0.25); }
@@ -392,7 +393,6 @@
 :where(:root[data-theme="light"]) .wit-dot { background: rgba(31, 34, 51, 0.18); }
 :where(:root[data-theme="light"]) .wit-bar { background: rgba(31, 34, 51, 0.09); }
 :where(:root[data-theme="light"]) .wit.is-error .wit-text { color: var(--gp-text-sub); }
-:where(:root[data-theme="light"]) .workshop-consent-points { background: rgba(31, 34, 51, 0.03); }
 :where(:root[data-theme="light"]) .workshop-recent-downloads { color: rgba(86, 122, 29, 0.85); }
 :where(:root[data-theme="light"]) .workshop-confirm-list li { background: rgba(31, 34, 51, 0.03); }
 :where(:root[data-theme="light"]) .workshop-detail-page .workshop-detail-hero { background: rgba(31, 34, 51, 0.02); }
@@ -410,6 +410,17 @@
 :where(:root[data-theme="light"]) .workshop-row-thumb .workshop-cover-fallback { color: rgba(31, 34, 51, 0.4); }
 :where(:root[data-theme="light"]) .workshop-row-tags span { background: rgba(31, 34, 51, 0.06); }
 :where(:root[data-theme="light"]) .workshop-row-progress { background: rgba(31, 34, 51, 0.08); }
+
+/* ---------- css/stickers.css ---------- */
+:where(:root[data-theme="light"]) .forge-sticker-pill-fallback { background: rgba(31, 34, 51, 0.08); }
+:where(:root[data-theme="light"]) .forge-sticker-search { background: rgba(255, 255, 255, 0.65); }
+:where(:root[data-theme="light"]) .forge-sticker-x:hover { background: rgba(31, 34, 51, 0.08); }
+:where(:root[data-theme="light"]) .forge-sticker-divider { background: rgba(31, 34, 51, 0.08); }
+:where(:root[data-theme="light"]) .forge-sticker-cell-btn:hover,
+:where(:root[data-theme="light"]) .forge-sticker-cell-btn.is-hover { background: rgba(31, 34, 51, 0.07); }
+:where(:root[data-theme="light"]) .forge-sticker-empty-ico { background: rgba(31, 34, 51, 0.07); }
+:where(:root[data-theme="light"]) .forge-sticker-preview-fav:hover { background: rgba(31, 34, 51, 0.08); }
+:where(:root[data-theme="light"]) .forge-sticker-error { color: rgb(135, 87, 94); }
 
 /* ---------- css/skins.css ---------- */
 :where(:root[data-theme="light"]) .skin-active-panel { background: var(--gp-bg-card, rgba(255, 255, 255, 0.85)); border: 1px solid var(--gp-border, rgba(31, 34, 51, 0.15)); }

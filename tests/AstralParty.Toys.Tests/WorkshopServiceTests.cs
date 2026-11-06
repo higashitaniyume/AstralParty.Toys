@@ -447,6 +447,99 @@ public sealed class WorkshopServiceTests
         Assert.False(File.Exists(target));
     }
 
+    // ============================== 贴纸回应 ==============================
+
+    [Fact]
+    public async Task GetModStickersAsync_SendsModIdsAndVoterAndParsesCounts()
+    {
+        using var harness = new Harness();
+        harness.Handler.Payload = Encoding.UTF8.GetBytes("""
+        {
+          "generatedAt": "2026-11-06T00:00:00Z",
+          "items": [
+            {
+              "modId": "HandViewerMod",
+              "reactionTotal": 3,
+              "stickers": [
+                { "stickerId": "UT_Item_Emoji_101_01", "imageUrl": "/stickers/101/UT_Item_Emoji_101_01.webp", "count": 2, "reactedByMe": true },
+                { "stickerId": "VEmoji_102_01", "imageUrl": "/stickers/102/VEmoji_102_01.webp", "count": 1, "reactedByMe": false }
+              ]
+            }
+          ]
+        }
+        """);
+
+        var payload = await harness.Service.GetModStickersAsync(
+            Forge + "/", ["HandViewerMod", "OtherMod"], "voter-123");
+
+        var uri = Assert.Single(harness.Handler.Requests);
+        Assert.StartsWith(Forge + "/api/mod-stickers?modIds=", uri);
+        Assert.Contains("modIds=" + Uri.EscapeDataString("HandViewerMod,OtherMod"), uri);
+        Assert.Equal(["voter-123"], harness.Handler.Voters);
+
+        var item = Assert.Single(payload.Items);
+        Assert.Equal("HandViewerMod", item.ModId);
+        Assert.Equal(3, item.ReactionTotal);
+        Assert.Equal(2, item.Stickers.Count);
+        Assert.True(item.Stickers[0].ReactedByMe);
+        Assert.Equal(2, item.Stickers[0].Count);
+        Assert.Equal("/stickers/101/UT_Item_Emoji_101_01.webp", item.Stickers[0].ImageUrl);
+    }
+
+    [Fact]
+    public async Task GetModStickersAsync_EmptyIdsSkipsRequest()
+    {
+        using var harness = new Harness();
+
+        var payload = await harness.Service.GetModStickersAsync(Forge, [], "voter-123");
+        var payload2 = await harness.Service.GetModStickersAsync(Forge, ["", "  "], "");
+
+        Assert.Empty(payload.Items);
+        Assert.Empty(payload2.Items);
+        Assert.Empty(harness.Handler.Requests);
+    }
+
+    [Fact]
+    public async Task ToggleModStickerAsync_PostsStickerIdAndParsesState()
+    {
+        using var harness = new Harness();
+        harness.Handler.Payload = Encoding.UTF8.GetBytes("""
+        {
+          "modId": "HandViewerMod",
+          "reactionTotal": 4,
+          "stickers": [
+            { "stickerId": "UT_Item_Emoji_101_01", "imageUrl": "/stickers/101/UT_Item_Emoji_101_01.webp", "count": 3, "reactedByMe": true }
+          ]
+        }
+        """);
+
+        var state = await harness.Service.ToggleModStickerAsync(
+            Forge, "HandViewerMod", "UT_Item_Emoji_101_01", "voter-123");
+
+        Assert.Equal(Forge + "/api/mod-stickers/HandViewerMod/reactions", Assert.Single(harness.Handler.Requests));
+        Assert.Equal(["POST"], harness.Handler.Methods);
+        Assert.Equal(["voter-123"], harness.Handler.Voters);
+        Assert.NotEmpty(harness.Handler.Bodies);
+        Assert.Contains("UT_Item_Emoji_101_01", harness.Handler.Bodies[0]);
+
+        Assert.Equal("HandViewerMod", state.ModId);
+        Assert.Equal(4, state.ReactionTotal);
+        Assert.True(Assert.Single(state.Stickers).ReactedByMe);
+    }
+
+    [Fact]
+    public async Task ToggleModStickerAsync_RejectsEmptyInputWithoutRequest()
+    {
+        using var harness = new Harness();
+
+        await Assert.ThrowsAsync<WorkshopException>(() =>
+            harness.Service.ToggleModStickerAsync(Forge, "", "UT_Item_Emoji_101_01", "voter-123"));
+        await Assert.ThrowsAsync<WorkshopException>(() =>
+            harness.Service.ToggleModStickerAsync(Forge, "HandViewerMod", "", "voter-123"));
+
+        Assert.Empty(harness.Handler.Requests);
+    }
+
     // ============================== 夹具 ==============================
 
     /// <summary>沙箱化的市场客户端：假 HTTP 管道 + 独立封面目录。</summary>
@@ -480,17 +573,25 @@ public sealed class WorkshopServiceTests
     {
         public List<string> Requests { get; } = [];
         public List<string> UserAgents { get; } = [];
+        public List<string> Voters { get; } = [];
+        public List<string> Methods { get; } = [];
+        public List<string> Bodies { get; } = [];
         public byte[] Payload { get; set; } = [];
         public HttpStatusCode Status { get; set; } = HttpStatusCode.OK;
         public long? ContentLength { get; set; }
 
-        protected override Task<HttpResponseMessage> SendAsync(
+        protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Requests.Add(request.RequestUri!.AbsoluteUri);
+            Methods.Add(request.Method.Method);
             UserAgents.Add(request.Headers.TryGetValues("User-Agent", out var agents)
                 ? string.Join(" ", agents)
                 : "");
+            Voters.Add(request.Headers.TryGetValues("x-forge-voter", out var voters)
+                ? string.Join(" ", voters)
+                : "");
+            Bodies.Add(request.Content is null ? "" : await request.Content.ReadAsStringAsync(cancellationToken));
             cancellationToken.ThrowIfCancellationRequested();
 
             var response = new HttpResponseMessage(Status);
@@ -500,7 +601,7 @@ public sealed class WorkshopServiceTests
                 if (ContentLength is { } length) response.Content.Headers.ContentLength = length;
             }
 
-            return Task.FromResult(response);
+            return response;
         }
     }
 

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using AstralParty.Toys.Services;
 using AstralParty.Toys.Tests.Support;
@@ -152,6 +153,88 @@ public sealed class WorkshopWebUiTests
         Assert.Contains("window.Markdown?.render", js);
         Assert.Contains("state.detailTab", js);
         Assert.Contains("workshopDetailContent", js);
+    }
+
+    [Fact]
+    public void StickerPicker_IsWiredLikeTheWebPicker()
+    {
+        var html = Read("index.html");
+        Assert.Contains("css/stickers.css", html);
+        Assert.Contains("js/stickers.js", html);
+
+        var core = Read("js/core.js");
+        Assert.Contains("case 'workshopStickers':", core);
+        Assert.Contains("case 'workshopStickerToggle':", core);
+
+        var dispatcher = File.ReadAllText(Path.Combine(TestPaths.AppSourceDirectory, "HybridWindow.Dispatcher.cs"));
+        Assert.Contains("case \"workshopStickers\":", dispatcher);
+        Assert.Contains("case \"workshopStickerToggle\":", dispatcher);
+
+        var js = Read("js/stickers.js");
+        Assert.Contains("forge.sticker.recent.v1", js);
+        Assert.Contains("forge.sticker.favorites.v1", js);
+        Assert.Contains("forge.voter", js);
+        Assert.Contains("type: 'workshopStickers'", js);
+        Assert.Contains("type: 'workshopStickerToggle'", js);
+        Assert.Contains("window.StickerModule", js);
+
+        var workshop = Read("js/workshop.js");
+        Assert.Contains("window.StickerModule", workshop);
+        Assert.Contains("renderStickers", workshop);
+        Assert.Contains("renderStickerToggle", workshop);
+        Assert.Contains("handleClick", workshop);
+
+        Assert.Contains("js/stickers.js", EmbeddedWebStore.Paths);
+        Assert.Contains("css/stickers.css", EmbeddedWebStore.Paths);
+        // 498 张贴纸与目录都内嵌在程序集里（和网页版同一批 64×64 资源）。
+        Assert.Contains("stickers/sticker-catalog.json", EmbeddedWebStore.Paths);
+        Assert.Contains("stickers/101/UT_Item_Emoji_101_01.webp", EmbeddedWebStore.Paths);
+    }
+
+    [Fact]
+    public void StickerCatalog_IsCompleteAndMatchesEmbeddedFiles()
+    {
+        using var stream = EmbeddedWebStore.Open("stickers/sticker-catalog.json");
+        Assert.NotNull(stream);
+        using var reader = new StreamReader(stream!);
+        using var doc = JsonDocument.Parse(reader.ReadToEnd());
+        var items = doc.RootElement.GetProperty("items");
+        var groups = doc.RootElement.GetProperty("groups");
+        Assert.Equal(498, items.GetArrayLength());
+        Assert.Equal(35, groups.GetArrayLength());
+        var first = items[0].GetProperty("stickerId").GetString();
+        Assert.False(string.IsNullOrEmpty(first));
+
+        // 目录里每张贴纸的图都真的内嵌了；目录少一张、图多一张都算接线断。
+        foreach (var item in items.EnumerateArray())
+        {
+            var file = item.GetProperty("file").GetString();
+            Assert.False(string.IsNullOrEmpty(file));
+            using var image = EmbeddedWebStore.Open("stickers/" + file);
+            Assert.NotNull(image);
+            Assert.True(image!.Length > 0, $"内嵌图片是空的：{file}");
+        }
+    }
+
+    [Fact]
+    public void EveryStickerTranslationKey_ExistsInAllFourLanguages()
+    {
+        var stickerKey = new Regex(
+            """['"](workshop\.sticker_[A-Za-z0-9_]+)['"]""", RegexOptions.Compiled);
+        var keys = new SortedSet<string>(StringComparer.Ordinal);
+        foreach (var match in stickerKey.Matches(Read("js/stickers.js")).Cast<Match>())
+            keys.Add(match.Groups[1].Value);
+        Assert.NotEmpty(keys);
+        Assert.Contains("workshop.sticker_add", keys);
+        Assert.Contains("workshop.sticker_picker_label", keys);
+        Assert.Contains("workshop.sticker_recent", keys);
+
+        var translations = Read("js/i18n.js");
+        foreach (var key in keys)
+        {
+            var occurrences = Regex.Matches(translations, Regex.Escape($"'{key}'")).Count;
+            Assert.True(occurrences >= 4, $"翻译键 {key} 只在 {occurrences} 种语言里出现（需要 4 种）");
+        }
     }
 
     private static string Read(string relativePath)
