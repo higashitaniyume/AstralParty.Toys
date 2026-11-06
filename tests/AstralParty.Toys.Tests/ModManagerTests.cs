@@ -384,6 +384,41 @@ public sealed class ModManagerTests
     }
 
     [Fact]
+    public void ToggleMods_BatchContinuesAfterFailure()
+    {
+        using var harness = new ModHarness("ap-mod-toggle-batch");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
+        harness.Sandbox.WriteFile(Path.Combine(modsDir, "A.dll"), new byte[] { 0x4D, 0x5A });
+        harness.Sandbox.WriteFile(Path.Combine(modsDir, "B.dll"), new byte[] { 0x4D, 0x5A });
+
+        var (ok, failed) = harness.Manager.ToggleMods(
+            harness.GameDirectory, new[] { "A.dll", "Missing.dll", "B.dll", "A.dll", " " }, enabled: false);
+
+        Assert.Equal(2, ok);
+        Assert.Equal(new[] { "Missing.dll" }, failed);
+        var status = harness.Manager.GetStatus();
+        Assert.All(status.Mods, m => Assert.False(m.Enabled));
+    }
+
+    [Fact]
+    public void DeleteMods_BatchContinuesAfterFailure()
+    {
+        using var harness = new ModHarness("ap-mod-delete-batch");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
+        harness.Sandbox.WriteFile(Path.Combine(modsDir, "A.dll"), new byte[] { 0x4D, 0x5A });
+        harness.Sandbox.WriteFile(Path.Combine(modsDir, "B.dll"), new byte[] { 0x4D, 0x5A });
+
+        var (ok, failed) = harness.Manager.DeleteMods(
+            harness.GameDirectory, new[] { "A.dll", "Missing.dll", "B.dll", "B.dll" });
+
+        Assert.Equal(2, ok);
+        Assert.Equal(new[] { "Missing.dll" }, failed);
+        Assert.Empty(harness.Manager.GetStatus().Mods);
+    }
+
+    [Fact]
     public void ModConfig_OpenCreatesFileAndReturnsPath()
     {
         using var harness = new ModHarness("ap-mod-config");

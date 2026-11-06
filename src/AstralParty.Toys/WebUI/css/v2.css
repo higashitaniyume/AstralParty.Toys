@@ -281,6 +281,17 @@ details.v2-card[open] > summary svg { transform: rotate(180deg); }
 .v2-mod .name { display: flex; gap: 8px; align-items: center; font-weight: 500; flex-wrap: wrap; }
 .v2-mod .desc { color: var(--gp-text-muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .v2-mod.off .name { color: var(--gp-text-muted); }
+.v2-mod.sel { background: rgba(255, 23, 118, .06); }
+.v2-mod-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 18px 10px; border-top: 1px solid var(--v2-border); }
+.v2-mod-tools .v2-btn { height: 30px; padding: 0 10px; font-size: 13px; }
+.v2-check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; user-select: none; flex: none; }
+.v2-check input { width: 16px; height: 16px; accent-color: var(--gp-pink); cursor: pointer; margin: 0; }
+.v2-check input:disabled { cursor: default; opacity: .6; }
+.v2-page.v2-has-float { padding-bottom: 104px; }
+.v2-floatbar { position: fixed; left: 50%; transform: translateX(-50%); bottom: 18px; z-index: 250; display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--v2-float); border: 1px solid var(--v2-border-strong); border-radius: 12px; box-shadow: 0 12px 32px rgba(0, 0, 0, .35); max-width: calc(100vw - 32px); }
+.v2-floatbar-count { font-weight: 600; font-size: 13px; white-space: nowrap; padding: 0 2px; }
+.v2-floatbar .v2-btn { height: 30px; padding: 0 10px; font-size: 13px; }
+.v2-floatbar .v2-btn.ghost { padding: 0 8px; }
 .v2-switch { position: relative; width: 36px; height: 20px; flex: none; }
 .v2-switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
 .v2-switch input:disabled { cursor: default; }
@@ -292,6 +303,29 @@ details.v2-card[open] > summary svg { transform: rotate(180deg); }
 .v2-num { width: 72px; height: 28px; padding: 0 8px; border-radius: 6px; background: var(--gp-bg); border: 1px solid var(--v2-border-strong); color: var(--v2-text); outline: 0; font-size: 14px; }
 .v2-num:focus { border-color: var(--gp-pink); }
 .v2-hero-art svg { width: 20px; height: 20px; }
+
+/* ---------- 设置页侧栏 Tab ---------- */
+.v2-settings-layout { display: flex; gap: 18px; align-items: flex-start; }
+.v2-settings-side { width: 150px; flex: none; position: sticky; top: 0; display: flex; flex-direction: column; gap: 4px; padding: 6px; background: var(--v2-panel); border: 1px solid var(--v2-border); border-radius: 10px; }
+.v2-side-tab { position: relative; display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; border-radius: 8px; color: var(--gp-text-muted); font-size: 14px; text-align: left; }
+.v2-side-tab:hover { background: var(--v2-hover); color: var(--v2-text); }
+.v2-side-tab.on { background: var(--v2-pink-soft); color: var(--gp-pink); font-weight: 600; }
+.v2-side-tab.danger { color: #f43f5e; margin-top: 6px; border-top: 1px solid var(--v2-border); border-radius: 0 0 8px 8px; }
+.v2-side-tab.danger.on { background: rgba(244, 63, 94, .12); }
+.v2-tab-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gp-pink); flex: none; margin-left: auto; }
+.v2-settings-main { flex: 1; min-width: 0; }
+.v2-settings-main .v2-card { margin-bottom: 0; }
+
+/* ---------- 骨架屏（异步加载占位，纯 CSS 动画不阻塞） ---------- */
+.v2-skel { background: linear-gradient(90deg, rgba(255,255,255,.06) 25%, rgba(255,255,255,.12) 50%, rgba(255,255,255,.06) 75%); background-size: 200% 100%; border-radius: 8px; animation: v2-shimmer 1.4s infinite linear; }
+@keyframes v2-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+body.reduce-motion .v2-skel { animation: none; }
+.v2-skel-row { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--v2-border); }
+.v2-skel-block { min-height: 14px; }
+.v2-skel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+.v2-skel-card { border: 1px solid var(--v2-border); border-radius: 10px; overflow: hidden; background: var(--v2-panel); }
+.v2-skel-thumb { min-height: 110px; border-radius: 0; }
+.v2-skel-body { padding: 10px 12px; display: grid; gap: 6px; }
 
 /* ---------- 自定义页 ---------- */
 /* 原版的标题栏、游戏选择条、页签由新界面替代；卡牌 / 音效 / 资源包面板由新界面重画，角色面板暂用原版 */

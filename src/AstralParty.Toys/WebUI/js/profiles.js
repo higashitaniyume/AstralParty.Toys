@@ -21,9 +21,12 @@
   const AccountProfilesModule = {
     data: { profiles: [], activeName: '', canManage: false, error: null, loaderInstalled: false, windowTitleEnabled: true },
     bound: false,
+    loading: true,
 
     onShow() {
       this.bindOnce();
+      this.loading = true;
+      try { if (!$('accountProfilesList')?.innerHTML) this.renderList(); } catch { /* 首次渲染兜底 */ }
       post({ type: 'accountProfilesGet' });
     },
 
@@ -31,7 +34,7 @@
       if (this.bound) return;
       this.bound = true;
 
-      $('accountProfilesRefreshBtn')?.addEventListener('click', () => post({ type: 'accountProfilesGet' }));
+      $('accountProfilesRefreshBtn')?.addEventListener('click', () => { this.loading = true; this.renderList(); post({ type: 'accountProfilesGet' }); });
       $('accountProfileCreateBtn')?.addEventListener('click', () => this.create());
       $('accountProfileNameInput')?.addEventListener('input', () => this.refreshNameValidation());
       $('accountProfileNameInput')?.addEventListener('keydown', event => {
@@ -120,6 +123,7 @@
     },
 
     render(payload) {
+      this.loading = false;
       this.data = payload || { profiles: [], activeName: '', canManage: false, error: null, loaderInstalled: false, windowTitleEnabled: true };
       this.applyNameRule();
       this.renderStatus();
@@ -171,6 +175,10 @@
     renderList() {
       const container = $('accountProfilesList');
       if (!container) return;
+      if (this.loading) {
+        container.innerHTML = `<div aria-hidden="true" style="display:grid;gap:10px">${Array.from({ length: 3 }, () => `<div class="profiles-card" style="display:grid;gap:8px"><div style="display:flex;gap:10px;align-items:center"><div class="v2-skel" style="width:28px;height:28px;border-radius:8px"></div><div style="flex:1;display:grid;gap:6px"><div class="v2-skel v2-skel-block" style="width:30%"></div><div class="v2-skel v2-skel-block" style="width:65%"></div></div><div class="v2-skel" style="width:88px;height:34px;border-radius:8px"></div></div></div>`).join('')}</div>`;
+        return;
+      }
       const profiles = this.data.profiles || [];
       if (!profiles.length) {
         container.innerHTML = `<div class="profiles-empty">${esc(this.data.error || t('profile.empty'))}</div>`;

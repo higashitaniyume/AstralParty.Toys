@@ -542,6 +542,49 @@ public partial class HybridWindow
         _ = PushModStatusAsync();
     }
 
+    private void HandleModToggleBatch(IReadOnlyList<string> fileNames, bool enabled)
+    {
+        if (fileNames is null || fileNames.Count == 0)
+        {
+            Post(new { type = "toast", message = "没有选择模组" });
+            return;
+        }
+        try
+        {
+            var (ok, failed) = _modManager.ToggleMods(RequireModGameDirectory(), fileNames, enabled);
+            var verb = enabled ? "启用" : "禁用";
+            Post(new { type = "toast", message = failed.Length == 0
+                ? $"已{verb} {ok} 个模组（重启游戏后生效）"
+                : $"已{verb} {ok} 个模组，{failed.Length} 个失败：{string.Join("、", failed)}" });
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = $"批量切换 mod 状态失败：{ex.Message}" });
+        }
+        _ = PushModStatusAsync();
+    }
+
+    private void HandleModDeleteBatch(IReadOnlyList<string> fileNames)
+    {
+        if (fileNames is null || fileNames.Count == 0)
+        {
+            Post(new { type = "toast", message = "没有选择模组" });
+            return;
+        }
+        try
+        {
+            var (ok, failed) = _modManager.DeleteMods(RequireModGameDirectory(), fileNames);
+            Post(new { type = "toast", message = failed.Length == 0
+                ? $"已删除 {ok} 个模组"
+                : $"已删除 {ok} 个模组，{failed.Length} 个失败：{string.Join("、", failed)}" });
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = $"批量删除 mod 失败：{ex.Message}" });
+        }
+        _ = PushModStatusAsync();
+    }
+
     private void HandleModOpenConfig(string fileName)
     {
         try

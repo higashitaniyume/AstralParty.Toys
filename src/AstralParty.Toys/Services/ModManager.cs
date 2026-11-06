@@ -2176,6 +2176,23 @@ public sealed partial class ModManager
         return enabled;
     }
 
+    /// <summary>批量切换 mod 启用/禁用：逐个调用 <see cref="ToggleMod"/>，单项失败不中断其余项。</summary>
+    /// <returns>成功数与失败的文件名（空/空白会被忽略）。</returns>
+    public (int Succeeded, string[] Failed) ToggleMods(string gameDirectory, IEnumerable<string> fileNames, bool enabled)
+    {
+        if (string.IsNullOrWhiteSpace(gameDirectory)) throw new ArgumentException("游戏目录无效。");
+        var names = (fileNames ?? Enumerable.Empty<string>())
+            .Where(f => !string.IsNullOrWhiteSpace(f)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var failed = new List<string>();
+        int ok = 0;
+        foreach (var fileName in names)
+        {
+            try { ToggleMod(gameDirectory, fileName, enabled); ok++; }
+            catch (Exception) { failed.Add(fileName); }
+        }
+        return (ok, failed.ToArray());
+    }
+
     /// <summary>按文件名在 mods 目录定位 mod(DLL 路径 + 文件夹名)。
     /// 新布局: mods\{FolderName}\{FolderName}.dll; 旧布局: mods\{FileName}.dll。</summary>
     private static (string? Dll, string? DirectoryName) ResolveModPath(string modsDir, string fileName)
@@ -2371,6 +2388,27 @@ public sealed partial class ModManager
         {
             throw new IOException($"删除 {fileName} 失败：{ex.Message}（游戏运行时 DLL 可能被占用）。", ex);
         }
+    }
+
+    /// <summary>批量删除 mod：逐个调用 <see cref="DeleteMod"/>，单项失败不中断其余项。</summary>
+    /// <returns>成功数与失败的文件名（空/空白会被忽略，未找到也算失败）。</returns>
+    public (int Succeeded, string[] Failed) DeleteMods(string gameDirectory, IEnumerable<string> fileNames)
+    {
+        if (string.IsNullOrWhiteSpace(gameDirectory)) throw new ArgumentException("游戏目录无效。");
+        var names = (fileNames ?? Enumerable.Empty<string>())
+            .Where(f => !string.IsNullOrWhiteSpace(f)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var failed = new List<string>();
+        int ok = 0;
+        foreach (var fileName in names)
+        {
+            try
+            {
+                if (DeleteMod(gameDirectory, fileName) is not null) ok++;
+                else failed.Add(fileName);
+            }
+            catch (Exception) { failed.Add(fileName); }
+        }
+        return (ok, failed.ToArray());
     }
 
     // ============================== 游戏目录 ==============================

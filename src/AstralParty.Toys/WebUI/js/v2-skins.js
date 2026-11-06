@@ -21,6 +21,8 @@
   const hue = s => [...String(s)].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
   const thumbBg = s => `linear-gradient(135deg, hsl(${hue(s)},60%,45%), hsl(${(hue(s) + 50) % 360},55%,25%))`;
   const segBtns = (cur, list, attr) => list.map(([k, l]) => `<button class="${cur === k ? 'on' : ''}" ${attr}="${k}">${l}</button>`).join('');
+  const skelSchemes = () => `<div class="v2-skel-grid" aria-hidden="true">${Array.from({ length: 6 }, () => `<div class="v2-skel-card"><div class="v2-skel v2-skel-thumb"></div><div class="v2-skel-body"><div class="v2-skel v2-skel-block" style="width:60%"></div><div class="v2-skel v2-skel-block" style="width:85%"></div></div></div>`).join('')}</div>`;
+  const skelCards = () => `<div class="v2-cards" aria-hidden="true">${Array.from({ length: 12 }, () => `<div class="v2-skel-card"><div class="v2-skel" style="aspect-ratio:404/400;border-radius:0"></div><div class="v2-skel-body"><div class="v2-skel v2-skel-block" style="width:75%"></div></div></div>`).join('')}</div>`;
 
   /* ---------- 外框 ---------- */
   // 角色皮肤功能目前不稳定，入口暂时隐藏；恢复时把 ['characters', '角色'] 加回来即可，v2-characters.js 还在
@@ -41,15 +43,17 @@
 
   function cardsList() {
     const action = `<button class="v2-btn primary" data-v2s="cardAddMenu" data-v2menu>${I().plus}新建方案${I().down}</button>`;
-    if (!SK()) return frameHead();
-    return frameHead(action) + `<div class="v2-grid">${profiles().map(p => {
+    if (!SK()) return frameHead(action) + skelSchemes();
+    const ps = profiles();
+    const inner = ps.length ? `<div class="v2-grid">${ps.map(p => {
       const on = p.name.toLowerCase() === activeSkin();
       const sub = p.name === '__game_default__' ? '使用游戏内置卡面' : `${p.cardCount || 0} 张卡面${p.author ? ' · ' + esc(p.author) : ''}`;
       return `<button class="v2-scheme ${on ? 'active' : ''}" data-v2s-card="${esc(p.name)}">
         <div class="thumb" style="background:${p.name === '__game_default__' ? 'linear-gradient(135deg,#2d3558,#1f2438)' : thumbBg(p.name)}">${esc(pName(p).slice(0, 1))}${on ? '<span class="v2-badge pink">使用中</span>' : ''}</div>
         <div class="info"><b title="${esc(pName(p))}">${esc(pName(p))}</b><small>${sub}</small></div></button>`;
-    }).join('') || '<div class="v2-empty">还没有卡牌方案</div>'}</div>
-    <details class="v2-card" style="margin-top:14px"><summary><div class="t"><b>更多</b><small>皮肤目录</small></div>${I().down}</summary>
+    }).join('')}</div>` : skelSchemes();
+    return frameHead(action) + inner
+    + `<details class="v2-card" style="margin-top:14px"><summary><div class="t"><b>更多</b><small>皮肤目录</small></div>${I().down}</summary>
       <div class="v2-adv"><div class="v2-row"><span class="n">打开皮肤目录</span><span class="d">所有卡牌方案存放的位置</span><button class="v2-btn line" data-v2s="cardFolder">打开</button></div></div></details>`;
   }
 
@@ -69,7 +73,7 @@
         ${on ? '<span class="v2-badge pink">当前方案 · 重启游戏生效</span>' : `<button class="v2-btn primary" data-v2s="cardApply">${I().check}设为当前皮肤</button>`}
         <button class="v2-icon-btn" data-v2s="cardSchemeMenu" data-v2menu title="更多">${I().more}</button></div>
       ${meta ? `<p class="v2-muted" style="margin:-10px 0 14px">${meta}</p>` : ''}
-      ${p.name === '__game_default__' ? '<div class="v2-card v2-empty">游戏默认方案只使用游戏内部卡面，不需要外部图片。</div>' : !loaded ? '<div class="v2-card v2-empty">正在读取卡面…</div>' : `
+      ${p.name === '__game_default__' ? '<div class="v2-card v2-empty">游戏默认方案只使用游戏内部卡面，不需要外部图片。</div>' : !loaded ? skelCards() : `
       <div class="v2-toolbar"><div class="v2-seg">${cat('all', '全部')}${CATS.map(c => cat(c, c)).join('')}</div>
         <label class="v2-search">${I().search}<input id="v2sCardQ" placeholder="卡名 / #编号" value="${esc(K.cardQ)}"></label></div>
       <p class="v2-muted" style="margin:0 0 10px"><span class="v2-dot"></span>已自定义 ${custom} 张　点卡牌可以更换或恢复</p>
@@ -152,12 +156,14 @@
 
   function audioList() {
     const action = `<button class="v2-btn primary" data-v2s="audioAddMenu" data-v2menu>${I().plus}新建方案${I().down}</button>`;
-    return frameHead(action) + prepBanner() + `<div class="v2-grid">${aProfiles().map(p => {
+    const ap = aProfiles();
+    const inner = ap.length ? `<div class="v2-grid">${ap.map(p => {
       const on = p.id === aActive();
       return `<button class="v2-scheme ${on ? 'active' : ''}" data-v2s-audio="${esc(p.id)}">
         <div class="thumb" style="background:${p.id === 'default' ? 'linear-gradient(135deg,#2d3558,#1f2438)' : thumbBg(p.id)}">${I().sliders}${on ? '<span class="v2-badge pink">使用中</span>' : ''}</div>
         <div class="info"><b title="${esc(p.name || p.id)}">${esc(p.name || p.id)}</b><small>${p.id === 'default' ? '官方原版，只能试听' : `${p.ruleCount || 0} 项替换 / 静音${p.author ? ' · ' + esc(p.author) : ''}`}</small></div></button>`;
-    }).join('') || '<div class="v2-empty">正在读取音效方案…</div>'}</div>
+    }).join('')}</div>` : skelSchemes();
+    return frameHead(action) + prepBanner() + inner + `
     <details class="v2-card" style="margin-top:14px"><summary><div class="t"><b>更多</b><small>原版音频包、方案目录</small></div>${I().down}</summary>
       <div class="v2-adv">
         <div class="v2-row"><span class="n">导出原版音频包</span><span class="d">把整理好的原版音频打成 ZIP，换电脑时直接导入</span><button class="v2-btn line" data-v2s="audioExportOriginal" ${extracted() ? '' : 'disabled'}>导出</button></div>
@@ -191,7 +197,7 @@
       ${isDefault ? `<div class="v2-notice">${I().info}<span style="flex:1">这是官方原版，只能试听。想替换或静音，先复制一份再改</span>
         <button class="v2-btn line" data-v2s="audioDuplicate">复制为新方案</button></div>` : ''}
       ${prepBanner()}
-      ${!loaded ? '<div class="v2-card v2-empty">正在读取音效条目…</div>' : `
+      ${!loaded ? `<div aria-hidden="true" style="display:grid;gap:8px">${Array.from({ length: 6 }, () => `<div class="v2-skel-row" style="border:1px solid var(--v2-border);border-radius:10px"><div class="v2-skel" style="width:28px;height:28px;border-radius:50%"></div><div style="flex:1;display:grid;gap:6px"><div class="v2-skel v2-skel-block" style="width:40%"></div><div class="v2-skel v2-skel-block" style="width:65%"></div></div></div>`).join('')}</div>` : `
       <div class="v2-toolbar"><div class="v2-seg">${cat('all', '全部')}${ACATS.map(([k, l]) => cat(k, l)).join('')}</div></div>
       <div class="v2-toolbar">
         ${isDefault ? '' : `<div class="v2-seg">${segBtns(K.aStatus, [['all', '全部'], ['changed', '已改动'], ['mute', '已静音']], 'data-v2s-astatus')}</div>`}

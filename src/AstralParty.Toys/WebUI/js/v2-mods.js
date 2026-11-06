@@ -2,7 +2,7 @@
 // 页面整体重做；模组配置表单、加载器设置、导入发布包这三个弹窗暂时沿用原版 ModsModule（按键捕获等逻辑较多）。
 // 字段与消息见 astralparty-redesign/模组与皮肤接口.md。
 (function () {
-  const M = { q: '', speedCfg: null };
+  const M = { q: '', speedCfg: null, sel: new Set(), pendingBatch: null };
   const U = () => window.V2UI;
   const I = () => window.V2UI.ICON;
   const MM = () => window.ModsModule;
@@ -50,7 +50,13 @@
     const s = status();
     const head = (primary) => `<div class="v2-head"><h1>模组</h1><span class="v2-top-spacer"></span>
       <button class="v2-btn ${primary ? 'primary' : 'line'}" data-v2m="import" ${s && (s.installed || s.loaderRootExists) ? '' : 'disabled'}>${I().upload}导入模组</button></div>`;
-    if (!s) return `<div class="v2-page">${head(true)}<div class="v2-card v2-empty">正在读取加载器状态…</div></div>`;
+    if (!s) {
+      const skelRows = Array.from({ length: 6 }, () => `<div class="v2-skel-row" aria-hidden="true"><div class="v2-skel" style="width:36px;height:36px;border-radius:8px;flex:none"></div><div style="flex:1;display:grid;gap:6px"><div class="v2-skel v2-skel-block" style="width:38%"></div><div class="v2-skel v2-skel-block" style="width:72%"></div></div><div class="v2-skel" style="width:36px;height:20px;border-radius:999px"></div></div>`).join('');
+      return `<div class="v2-page">${head(true)}
+        <div class="v2-card" aria-hidden="true"><div class="v2-skel-row" style="border-top:0"><div class="v2-skel" style="width:40px;height:40px;border-radius:10px;flex:none"></div><div style="flex:1;display:grid;gap:6px"><div class="v2-skel v2-skel-block" style="width:30%"></div><div class="v2-skel v2-skel-block" style="width:55%"></div></div><div class="v2-skel" style="width:110px;height:34px;border-radius:8px"></div></div></div>
+        <div class="v2-card"><div class="v2-card-title"><span>已安装</span></div>${skelRows}</div>
+      </div>`;
+    }
 
     const lv = loaderView(s), b = busy();
     const usable = s.installed || s.loaderRootExists;
@@ -71,8 +77,20 @@
     const q = M.q.trim().toLowerCase();
     const list = mods().filter(m => !q || [m.displayName, m.name, m.fileName, m.description, m.author].some(v => String(v ?? '').toLowerCase().includes(q)))
       .sort((a, b) => isBuiltIn(a) - isBuiltIn(b));   // 自己装的排前面：内置有 21 个，从市场新装的混在中间很难找
+    // 清理已不存在的勾选（解密后列表已删 / 换游戏目录）
+    if (M.sel.size) {
+      const valid = new Set(mods().map(m => m.fileName));
+      for (const f of [...M.sel]) if (!valid.has(f)) M.sel.delete(f);
+    }
+    const selCount = M.sel.size;
+    const inList = list.filter(m => M.sel.has(m.fileName)).length;
+    const allSelected = list.length > 0 && inList === list.length;
+    const someSelected = !allSelected && inList > 0;
+    const needEnable = list.filter(m => m.enabled === false).length;   // 一键启用要打开的
+    const needDisable = list.filter(m => m.enabled !== false).length;  // 一键禁用要关闭的
+    const scopeText = q ? `当前筛选 ${list.length} 个` : `全部 ${list.length} 个`;
 
-    return `<div class="v2-page">${head(!loaderIsPrimary)}
+    return `<div class="v2-page${selCount ? ' v2-has-float' : ''}">${head(!loaderIsPrimary)}
       ${U().gamePicker('v2mGame', 'data-v2m="manageGames"', b)}
       ${s.gameRunning ? `<div class="v2-notice">${I().info}<span>游戏正在运行：改动会保存，重启游戏后生效</span></div>` : ''}
 
@@ -103,11 +121,20 @@
       </div>
 
       <div class="v2-card">
-        <div class="v2-card-title"><span>已安装 <span class="v2-muted" style="font-weight:400">${enabled} / ${mods().length} 已启用</span></span>
+        <div class="v2-card-title"><span>已安装 <span class="v2-muted" style="font-weight:400">${enabled} / ${mods().length} 已启用</span>${selCount ? ` · <span class="v2-muted" style="font-weight:400">已选 ${selCount}</span>` : ''}</span>
           ${mods().length > 6 ? `<label class="v2-search" style="max-width:240px;height:30px">${I().search}<input id="v2mq" placeholder="搜索模组" value="${esc(M.q)}"></label>` : ''}</div>
+        ${list.length ? `<div class="v2-mod-tools">
+          <label class="v2-check" title="勾选当前筛选列表（${list.length} 个）"><input type="checkbox" data-v2m-select-all ${allSelected ? 'checked' : ''} ${someSelected ? 'data-indeterminate="1"' : ''} ${b ? 'disabled' : ''}><span></span>全选</label>
+          <span class="v2-muted" style="font-size:12px">${esc(scopeText)}</span>
+          <span class="v2-top-spacer"></span>
+          <button class="v2-btn line" data-v2m="enableAll" ${b || !needEnable ? 'disabled' : ''} title="启用当前筛选列表里已禁用的模组（${needEnable} 个）">一键启用</button>
+          <button class="v2-btn line" data-v2m="disableAll" ${b || !needDisable ? 'disabled' : ''} title="禁用当前筛选列表里已启用的模组（${needDisable} 个）">一键禁用</button>
+        </div>` : ''}
         ${list.map(m => {
           const deps = (m.dependencies || []).map(d => `${d.id}${d.minVersion ? ' ≥ ' + d.minVersion : ''}`).join('、');
-          return `<div class="v2-mod ${m.enabled === false ? 'off' : ''}">
+          const checked = M.sel.has(m.fileName) ? 'checked' : '';
+          return `<div class="v2-mod ${m.enabled === false ? 'off' : ''} ${M.sel.has(m.fileName) ? 'sel' : ''}">
+            <label class="v2-check" title="选中此模组"><input type="checkbox" data-v2m-sel="${esc(m.fileName)}" ${checked} ${b ? 'disabled' : ''}><span></span></label>
             <div class="body">
               <div class="name">${esc(m.displayName || m.name || m.fileName)}${m.version ? `<span class="v2-tag">v${esc(m.version)}</span>` : ''}
                 ${isBuiltIn(m) ? '<span class="v2-tag" title="随加载器一起安装的内置模组">内置</span>' : '<span class="v2-tag" title="不是随加载器内置的：来自市场或手动导入">第三方</span>'}
@@ -120,6 +147,14 @@
           </div>`;
         }).join('') || `<div class="v2-empty">${mods().length ? '没有匹配的模组' : '还没有模组。点「导入模组」添加 DLL 或 ZIP，或者安装加载器时一起装上内置模组。'}</div>`}
       </div>
+
+      ${selCount ? `<div class="v2-floatbar" role="toolbar" aria-label="已选模组操作">
+        <span class="v2-floatbar-count">已选 ${selCount}</span>
+        <button class="v2-btn line" data-v2m="enableSel" ${b ? 'disabled' : ''}>启用已选</button>
+        <button class="v2-btn line" data-v2m="disableSel" ${b ? 'disabled' : ''}>禁用已选</button>
+        <button class="v2-btn danger" data-v2m="deleteSel" ${b ? 'disabled' : ''}>删除已选</button>
+        <button class="v2-btn ghost" data-v2m="clearSel" title="清空勾选"><span aria-hidden="true">✕</span></button>
+      </div>` : ''}
 
       <details class="v2-card" id="v2ModsAdv" ${M.advOpen ? 'open' : ''}>
         <summary><div class="t"><b>高级操作</b><small>版本、目录、发布包、停用与卸载</small></div>${I().down}</summary>
@@ -152,6 +187,8 @@
     U().bindSearch('v2mq', v => { M.q = v; render(); });
     const box = $('v2mq');
     if (box && focusSearch) { box.focus(); box.setSelectionRange(box.value.length, box.value.length); }
+    const all = root.querySelector('[data-v2m-select-all]');
+    if (all && all.dataset.indeterminate) all.indeterminate = true;
   }
 
   /* ---------- 操作 ---------- */
@@ -179,6 +216,81 @@
     render();   // 开关先弹回「开」
   }
 
+  /* ---------- 批量操作（一键 / 多选） ---------- */
+  const filteredList = () => {
+    const q = M.q.trim().toLowerCase();
+    return mods().filter(m => !q || [m.displayName, m.name, m.fileName, m.description, m.author].some(v => String(v ?? '').toLowerCase().includes(q)))
+      .sort((a, b) => isBuiltIn(a) - isBuiltIn(b));
+  };
+  const selectedTargets = () => mods().filter(m => M.sel.has(m.fileName)).map(m => m.fileName);
+  const needsSpeedGuard = fileNames => {
+    const sm = speedMod();
+    return !!sm && baseSpeed() > 1.0001 && fileNames.includes(sm.fileName);
+  };
+  function doBatchToggle(fileNames, enabled) {
+    if (!fileNames.length) { toast('没有可操作的模组'); return; }
+    post({ type: 'modToggleBatch', fileNames, enabled });
+    M.sel.clear();
+    render();
+  }
+  function doBatchDelete(fileNames) {
+    if (!fileNames.length) { toast('没有可操作的模组'); return; }
+    post({ type: 'modDeleteBatch', fileNames });
+    M.sel.clear();
+    render();
+  }
+  function speedBatchDialog(fileNames, enabled, mode) {
+    const sm = speedMod(), x = baseSpeed();
+    const names = fileNames.map(f => esc(findMod(f)?.displayName || findMod(f)?.name || f));
+    M.pendingBatch = { fileNames, enabled, mode };
+    U().modalActions.v2mBatchSkip = () => {
+      U().closeModal();
+      const rest = fileNames.filter(f => f !== sm.fileName);
+      if (!rest.length) { toast('已跳过「变速」模组，其余没有可操作的模组'); render(); return; }
+      if (mode === 'delete') doBatchDelete(rest); else doBatchToggle(rest, enabled);
+    };
+    U().modalActions.v2mBatchBoth = () => {
+      U().closeModal();
+      post({ type: 'modSaveSpeedhack', speedhackBaseSpeed: 1.0 });
+      if (mode === 'delete') doBatchDelete(fileNames); else doBatchToggle(fileNames, enabled);
+    };
+    const verb = mode === 'delete' ? '删除' : '禁用';
+    const listHtml = names.slice(0, 8).join('、') + (names.length > 8 ? ` 等 ${names.length} 个` : '');
+    U().openModal(`
+      <div class="v2-confirm"><div class="v2-confirm-icon" style="background:rgba(250,204,21,.12);color:var(--gp-gold)">${I().info}</div>
+        <div><b class="v2-confirm-title">${mode === 'delete' ? '删除' : '禁用'} ${fileNames.length} 个模组？</b>
+          <ul class="v2-confirm-lines">
+            <li>${listHtml}</li>
+            <li>现在的启动倍速是 <b>${x}x</b>，${esc(sm.displayName || sm.name)} 是切回 1.0x 的热键，${verb === '删除' ? '删掉后' : '关掉后'}<b>游戏会一直以 ${x}x 运行，没法切回 1.0x</b></li>
+          </ul></div></div>
+      <div class="v2-modal-foot"><button class="v2-btn ghost" data-v2modal="close">取消</button><span class="v2-top-spacer"></span>
+        <button class="v2-btn line" data-v2modal="v2mBatchSkip">跳过变速模组，其他照常</button>
+        <button class="v2-btn primary" data-v2modal="v2mBatchBoth">同时把倍速改回 1.0x 并全部${verb}</button></div>`, 'narrow');
+    render();
+  }
+  function batchToggle(fileNames, enabled) {
+    fileNames = [...new Set(fileNames.filter(Boolean))];
+    if (!fileNames.length) { toast('没有可操作的模组'); return; }
+    if (!enabled && needsSpeedGuard(fileNames)) return speedBatchDialog(fileNames, enabled, 'toggle');
+    doBatchToggle(fileNames, enabled);
+  }
+  function batchDelete(fileNames) {
+    fileNames = [...new Set(fileNames.filter(Boolean))];
+    if (!fileNames.length) { toast('没有可操作的模组'); return; }
+    if (needsSpeedGuard(fileNames)) return speedBatchDialog(fileNames, false, 'delete');
+    const names = fileNames.map(f => findMod(f));
+    const shown = names.slice(0, 10).map(m => esc(m?.displayName || m?.name || m?.fileName || '')).join('、');
+    const suffix = names.length > 10 ? ` 等 ${names.length} 个` : '';
+    const hasBuiltIn = names.some(m => m && isBuiltIn(m));
+    confirm({
+      title: `删除 ${fileNames.length} 个模组？`,
+      lines: [`将从游戏目录删除这些模组：<b>${shown}${suffix}</b>`,
+        hasBuiltIn ? '其中包含内置模组，以后重新安装加载器时可以装回来' : '只想暂时不用的话，关掉开关就行，不必删除',
+        status()?.gameRunning && '游戏正在运行，重启游戏后生效'],
+      onOk: () => doBatchDelete(fileNames),
+    });
+  }
+
   const actions = {
     import: () => post({ type: 'modPickImport' }),
     install: () => post({ type: 'modInstall', overwriteDll: false, allowDowngrade: false, includeSample: true }),
@@ -194,6 +306,12 @@
     adv: () => { const d = $('v2ModsAdv'); if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth' }); } },
     loaderSettings: () => MM()?.openLoaderSettings(),
     changelog: () => window.VersionModule?.requestChangelog('loader'),
+    enableAll: () => batchToggle(filteredList().filter(m => m.enabled === false).map(m => m.fileName), true),
+    disableAll: () => batchToggle(filteredList().filter(m => m.enabled !== false).map(m => m.fileName), false),
+    enableSel: () => batchToggle(selectedTargets(), true),
+    disableSel: () => batchToggle(selectedTargets(), false),
+    deleteSel: () => batchDelete(selectedTargets()),
+    clearSel: () => { M.sel.clear(); render(); },
     speedModOn: () => { const m = speedMod(); if (m) post({ type: 'modToggle', fileName: m.fileName, enabled: true }); },
     importPkg: () => MM()?.openPackageImport(),
     dirMenu: el => U().openMenu(el, [
@@ -268,6 +386,18 @@
     if (!t.closest?.('#modsView')) return;
     if (t.id === 'v2mGame') { if (t.value) post({ type: 'gameProfileSetActive', id: t.value }); return; }
     if (t.dataset.v2mToggle) { const m = findMod(t.dataset.v2mToggle); if (m) toggleMod(m, t.checked); return; }
+    if (t.dataset.v2mSel) {
+      if (t.checked) M.sel.add(t.dataset.v2mSel); else M.sel.delete(t.dataset.v2mSel);
+      render();
+      return;
+    }
+    if (t.dataset.v2mSelectAll !== undefined) {
+      const list = filteredList();
+      if (t.checked) list.forEach(m => M.sel.add(m.fileName));
+      else list.forEach(m => M.sel.delete(m.fileName));
+      render();
+      return;
+    }
     if (t.dataset.v2mSpeed !== undefined) { saveSpeed(t.checked ? 2.0 : 1.0); return; }
     if (t.id === 'v2mSpeed') {
       const v = Number(t.value);

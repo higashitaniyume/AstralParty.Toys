@@ -25,6 +25,7 @@ public partial class HybridWindow
             if ((_loaderRecoveryBusy || _modPackageImportRunning || _modUpdateRunning || _modImportRunning || _workshopBusy)
                 && type is "modInstall" or "modUninstall" or "modDisableLoader" or "modRestoreLoader"
                     or "modDownloadUpdate" or "modImportPackage" or "modImport" or "modPickImport" or "modDelete" or "modToggle"
+                    or "modToggleBatch" or "modDeleteBatch"
                     or "speedhackInstall" or "speedhackUninstall" or "workshopInstall" or "appUninstall")
             {
                 if (type is "modDisableLoader" or "modRestoreLoader") Post(new { type = "modRecoveryDone" });
@@ -451,6 +452,24 @@ public partial class HybridWindow
                         root.TryGetProperty("enabled", out var modToggleEnabled))
                     {
                         HandleModToggle(modToggleName, modToggleEnabled.GetBoolean());
+                    }
+                    break;
+                case "modToggleBatch":
+                    if (root.TryGetProperty("fileNames", out var modToggleBatchElement) &&
+                        modToggleBatchElement.ValueKind == JsonValueKind.Array &&
+                        root.TryGetProperty("enabled", out var modToggleBatchEnabled))
+                    {
+                        HandleModToggleBatch(
+                            modToggleBatchElement.Deserialize<List<string>>(WebReadOptions) ?? new List<string>(),
+                            modToggleBatchEnabled.GetBoolean());
+                    }
+                    break;
+                case "modDeleteBatch":
+                    if (root.TryGetProperty("fileNames", out var modDeleteBatchElement) &&
+                        modDeleteBatchElement.ValueKind == JsonValueKind.Array)
+                    {
+                        HandleModDeleteBatch(
+                            modDeleteBatchElement.Deserialize<List<string>>(WebReadOptions) ?? new List<string>());
                     }
                     break;
                 case "modOpenConfig":

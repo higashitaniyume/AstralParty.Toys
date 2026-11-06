@@ -2,7 +2,7 @@
 // 数据仍由原版保存：语言 / 动画（i18n、localStorage）、游戏目录（GameLibModule）、回放库设置（AppState.librarySettings）、版本（VersionModule）。
 // 版本详情、更新日志两个弹窗沿用原版。
 (function () {
-  const G = { scan: null };   // 扫描状态：{ mode, running, message, current, candidates }
+  const G = { scan: null, tab: 'ui' };   // 扫描状态：{ mode, running, message, current, candidates }
   const U = () => window.V2UI;
   const I = () => window.V2UI.ICON;
   const GL = () => window.GameLibModule;
@@ -23,25 +23,19 @@
   // 软件更新：状态和消息都是原版的（AppState.appUpdateState、SettingsModule.renderUpdateState）
   const updateState = () => window.AppState?.appUpdateState || {};
   const updateStatus = () => String(updateState().status || 'idle').toLowerCase();
-  function updateText() {
-    const u = updateState(), v = esc(u.latestVersion || '');
-    switch (updateStatus()) {
-      case 'checking': return '正在检查…';
-      case 'uptodate': return '已经是最新版本';
-      case 'updateavailable': return `有新版本 <b>v${v}</b>`;
-      case 'downloading': return `正在下载 v${v}… ${u.percent ?? 0}%`;
-      case 'readytoinstall': return `新版本 <b>v${v}</b> 已下载好`;
-      case 'installing': return '正在安装…';
-      case 'error': return `更新出错：${esc(u.error || '网络连接失败')}`;
-      default: return '还没有检查过';
-    }
-  }
-  function updateButtons() {
-    const st = updateStatus(), busy = st === 'checking' || st === 'downloading' || st === 'installing';
-    const extra = st === 'updateavailable' ? '<button class="v2-btn line" data-v2g="updateDownload">下载</button>'
-      : st === 'downloading' ? '<button class="v2-btn ghost" data-v2g="updateCancel">取消</button>'
-      : st === 'readytoinstall' ? '<button class="v2-btn line" data-v2g="updateApply">立即安装</button>' : '';
-    return `${extra}<button class="v2-btn ghost" data-v2g="checkUpdate" ${busy ? 'disabled' : ''}>检查更新</button>`;
+  function updateSteps() {
+    const st = updateStatus(), u = updateState(), v = esc(u.latestVersion || '');
+    const checking = st === 'checking', downloading = st === 'downloading', installing = st === 'installing';
+    const busy = checking || downloading || installing;
+    const avail = st === 'updateavailable', ready = st === 'readytoinstall';
+    const checkState = checking ? '正在查询 GitHub 最新发布…' : avail ? `发现可更新到 v${v}，点「下载更新」手动下载` : ready ? `v${v} 已下载，点「安装更新」手动安装` : st === 'uptodate' ? '已是最新，无需下载或安装' : st === 'error' ? `出错：${esc(u.error || '网络连接失败')}` : '点「检查更新」手动查询一次';
+    return `
+      <div class="v2-row"><span class="k">1 · 检查</span><span class="v v2-muted" style="white-space:normal">${checkState}</span>
+        <button class="v2-btn line" data-v2g="checkUpdate" ${busy ? 'disabled' : ''}>${checking ? '检查中…' : '检查更新'}</button></div>
+      <div class="v2-row"><span class="k">2 · 下载</span><span class="v v2-muted" style="white-space:normal">${downloading ? `正在下载 v${v}… ${u.percent ?? 0}%` : ready ? `v${v} 已下载就绪` : avail ? `可下载 v${v}` : '检查到新版本后手动选择下载'}</span>
+        ${downloading ? `<button class="v2-btn ghost" data-v2g="updateCancel">取消</button>` : `<button class="v2-btn line" data-v2g="updateDownload" ${avail ? '' : 'disabled'}>下载更新</button>`}</div>
+      <div class="v2-row"><span class="k">3 · 安装</span><span class="v v2-muted" style="white-space:normal">${installing ? '正在启动安装器…' : ready ? `点「安装更新」手动安装 v${v}` : '下载完成后手动选择安装'}</span>
+        <button class="v2-btn line" data-v2g="updateApply" ${ready ? '' : 'disabled'}>${installing ? '安装中…' : '安装更新'}</button></div>`;
   }
   const MIRRORS = [['direct', '直连 GitHub'], ['gh-proxy', 'GH-Proxy 镜像'], ['ghfast', 'GHFast 镜像'], ['custom', '自定义镜像']];
 
@@ -79,18 +73,36 @@
         <button class="v2-btn line" data-v2g="scanDeep" ${drives().length ? '' : 'disabled'}>深度扫描</button></div>`;
   }
 
+  const TABS = [
+    ['ui', '界面'],
+    ['game', '游戏目录'],
+    ['lib', '回放库'],
+    ['net', '网络'],
+    ['update', '软件更新'],
+    ['about', '关于'],
+    ['uninstall', '卸载'],
+  ];
+  const QQ_JOIN_URL = 'https://qm.qq.com/cgi-bin/qm/qr?k=tYrqev4U2Xr2PPAA4EkILA0NKmP3zgeU&jump_from=webapi&authKey=jHiIqsg0jEV53dBtQ9V3qXohKKHwLDGmfWprcrg7gueM9pU9iz+ST/QHR6d1j3wa';
+  const DISCORD_URL = 'https://discord.gg/SZaYSwGX94';
+
   function html() {
     const cap = LS().capacity || 10, keep = LS().keepInGame || cap;
     const info = window.VersionModule?.info;
     const mirror = LS().githubMirrorType || 'gh-proxy';
-    return `<div class="v2-page">
-      <div class="v2-head"><h1>设置</h1></div>
-
+    const tab = TABS.some(([k]) => k === G.tab) ? G.tab : 'ui';
+    const side = TABS.map(([k, label]) => {
+      const on = k === tab ? ' on' : '';
+      const danger = k === 'uninstall' ? ' danger' : '';
+      const dot = k === 'update' && (updateStatus() === 'updateavailable' || updateStatus() === 'readytoinstall') ? '<span class="v2-tab-dot"></span>' : '';
+      return `<button class="v2-side-tab${on}${danger}" data-v2g-tab="${k}" role="tab" aria-selected="${k === tab}">${esc(label)}${dot}</button>`;
+    }).join('');
+    let main = '';
+    if (tab === 'ui') main = `
       <div class="v2-card"><div class="v2-card-title"><span>界面</span></div>
         <div class="v2-row"><span class="k">界面动画</span><span class="v v2-muted">关掉后切页、弹窗都没有过渡动画</span>
           <label class="v2-switch"><input type="checkbox" id="v2gMotion" ${motionOn() ? 'checked' : ''}><span></span></label></div>
-      </div>
-
+      </div>`;
+    else if (tab === 'game') main = `
       <div class="v2-card"><div class="v2-card-title"><span>游戏目录 <span class="v2-muted" style="font-weight:400">${profiles().length} 个</span></span>
           <span><button class="v2-btn ghost" data-v2g="scanQuick" ${G.scan?.running ? 'disabled' : ''}>${I().search}扫描</button>
           <button class="v2-btn ghost" data-v2g="browse">${I().plus}添加</button></span></div>
@@ -102,8 +114,8 @@
           <button class="v2-icon-btn" data-v2g-menu="${esc(g.id)}" data-v2menu title="更多">${I().more}</button></div>`).join('')
           || '<div class="v2-empty">还没有添加游戏目录。用「扫描」自动找，或者「添加」手动选。</div>'}
         ${scanHtml()}
-      </div>
-
+      </div>`;
+    else if (tab === 'lib') main = `
       <div class="v2-card"><div class="v2-card-title"><span>回放库</span></div>
         <div class="v2-row"><span class="k">存放位置</span>
           <span class="v" style="font-family:var(--v2-mono);font-size:13px" title="${esc(LS().libraryRoot || LS().defaultLibraryRoot || '')}">${esc(LS().libraryRoot || LS().defaultLibraryRoot || '默认：文档\\AstralPartyReplays')}</span>
@@ -115,15 +127,29 @@
           <input id="v2gKeep" class="v2-num" type="number" min="1" max="${cap}" value="${keep}"></div>
         <div class="v2-row"><span class="k">立即整理</span><span class="v v2-muted">现在就按上面的保留局数归档一次</span>
           <button class="v2-btn line" data-v2g="maintainNow">整理</button></div>
-      </div>
-
+      </div>`;
+    else if (tab === 'net') main = `
       <div class="v2-card"><div class="v2-card-title"><span>网络</span></div>
         <div class="v2-row"><span class="k">下载镜像</span><span class="v v2-muted" style="white-space:normal">从 GitHub 下载加载器时走哪条线路。镜像是第三方服务器，能直连 GitHub 就选直连</span>
           <select id="v2gMirror" class="v2-select">${MIRRORS.map(([k, l]) => `<option value="${k}" ${mirror === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
         ${mirror === 'custom' ? `<div class="v2-row"><span class="k">镜像地址</span><span class="v v2-muted">留空就是直连</span>
           <input id="v2gMirrorUrl" class="v2-select" style="min-width:260px" placeholder="https://example.com/" value="${esc(LS().customGitHubMirrorUrl || '')}"></div>` : ''}
-      </div>
-
+        <div class="v2-row"><span class="k">市场地址</span><span class="v v2-muted" style="white-space:normal">模组市场（Forge）的 API 根地址。留空或格式不正确会回退到默认值</span>
+          <input id="v2gWorkshopUrl" class="v2-select" style="min-width:260px" placeholder="${esc(LS().defaultWorkshopUrl || 'https://forge.hiynet.com')}" value="${esc(LS().workshopUrl || '')}"></div>
+      </div>`;
+    else if (tab === 'update') main = `
+      <div class="v2-card"><div class="v2-card-title"><span>软件更新</span></div>
+        ${updateSteps()}
+        <div class="v2-row"><span class="k">自动检查更新</span><span class="v v2-muted">每次打开时在后台检查</span>
+          <label class="v2-switch"><input type="checkbox" id="v2gAutoCheck" ${LS().autoCheckUpdates !== false ? 'checked' : ''}><span></span></label></div>
+        <div class="v2-row"><span class="k">自动下载更新</span><span class="v v2-muted">发现新版本时在后台下载</span>
+          <label class="v2-switch"><input type="checkbox" id="v2gAutoDownload" ${LS().autoDownloadUpdates ? 'checked' : ''}><span></span></label></div>
+        <div class="v2-row"><span class="k">自动安装更新</span><span class="v v2-muted">下载完成后自动安装</span>
+          <label class="v2-switch"><input type="checkbox" id="v2gAutoInstall" ${LS().autoInstallUpdates ? 'checked' : ''}><span></span></label></div>
+        <div class="v2-row"><span class="k">更新日志</span><span class="v v2-muted">查看每个版本的新增与修复</span>
+          <button class="v2-btn ghost" data-v2g="changelog">更新日志</button></div>
+      </div>`;
+    else if (tab === 'about') main = `
       <div class="v2-card"><div class="v2-card-title"><span>关于</span></div>
         <div class="v2-row"><span class="k">版本</span>
           <span class="v">${info?.version ? `v${esc(info.version)}${info.isLocalBuild ? ' <span class="v2-tag">本地构建</span>' : ''}` : '<span class="v2-muted">读取中…</span>'}
@@ -132,20 +158,25 @@
           <button class="v2-btn ghost" data-v2g="changelog">更新日志</button></div>
         <div class="v2-row"><span class="k">运行环境</span><span class="v v2-muted">${esc([info?.runtime, info?.architecture].filter(Boolean).join(' · ') || '—')}</span></div>
         <div class="v2-row"><span class="k">内置加载器</span><span class="v v2-muted">${esc(info?.embeddedLoaderVersion ? 'CesiumLoader v' + String(info.embeddedLoaderVersion).replace(/^v/i, '') : '没有内嵌发布包')}</span></div>
-        <div class="v2-row"><span class="k">软件更新</span><span class="v" style="white-space:normal">${updateText()}</span>${updateButtons()}</div>
-        <div class="v2-row"><span class="k">自动检查更新</span><span class="v v2-muted">每次打开时在后台检查</span>
-          <label class="v2-switch"><input type="checkbox" id="v2gAutoCheck" ${LS().autoCheckUpdates !== false ? 'checked' : ''}><span></span></label></div>
-        <div class="v2-row"><span class="k">自动下载更新</span><span class="v v2-muted">发现新版本时在后台下载</span>
-          <label class="v2-switch"><input type="checkbox" id="v2gAutoDownload" ${LS().autoDownloadUpdates ? 'checked' : ''}><span></span></label></div>
-        <div class="v2-row"><span class="k">自动安装更新</span><span class="v v2-muted">下载完成后自动安装</span>
-          <label class="v2-switch"><input type="checkbox" id="v2gAutoInstall" ${LS().autoInstallUpdates ? 'checked' : ''}><span></span></label></div>
         <div class="v2-row"><span class="k">项目主页</span><span class="v" style="white-space:normal;font-family:var(--v2-mono);font-size:13px">${esc(REPO_URL)}</span>
           <button class="v2-btn ghost" data-v2g="copyUrl" data-url="${esc(REPO_URL)}">${I().copy}复制</button></div>
       </div>
-
+      <div class="v2-card" style="margin-top:14px"><div class="v2-card-title"><span>反馈</span></div>
+        <div class="v2-row"><span class="k">QQ 群</span><span class="v" style="white-space:normal"><a target="_blank" href="${QQ_JOIN_URL}"><img border="0" src="//pub.idqqimg.com/wpa/images/group.png" alt="Astral Party Toys" title="Astral Party Toys"></a></span>
+          <a class="v2-btn line" target="_blank" href="${QQ_JOIN_URL}">加入 QQ 群</a></div>
+        <div class="v2-row"><span class="k">Discord</span><span class="v" style="white-space:normal;font-family:var(--v2-mono);font-size:13px">${DISCORD_URL}</span>
+          <a class="v2-btn line" target="_blank" href="${DISCORD_URL}">打开 Discord</a></div>
+      </div>`;
+    else main = `
       <div class="v2-card"><div class="v2-card-title"><span>卸载</span></div>
         <div class="v2-row"><span class="k">卸载本程序</span><span class="v v2-muted" style="white-space:normal">删除这个程序。游戏里的加载器和模组、设置要不要一起删，下一步再选</span>
           <button class="v2-btn danger" data-v2g="uninstall">${I().trash}卸载…</button></div>
+      </div>`;
+    return `<div class="v2-page">
+      <div class="v2-head"><h1>设置</h1></div>
+      <div class="v2-settings-layout">
+        <nav class="v2-settings-side" role="tablist" aria-orientation="vertical">${side}</nav>
+        <div class="v2-settings-main" role="tabpanel">${main}</div>
       </div>
     </div>`;
   }
@@ -257,6 +288,7 @@
     const t = ev.target;
     if (!t.closest?.('#v2Settings')) return;
     let el;
+    if ((el = t.closest('[data-v2g-tab]'))) { G.tab = el.dataset.v2gTab; render(); return; }
     if ((el = t.closest('[data-v2g]'))) { if (!el.disabled) actions[el.dataset.v2g]?.(el); return; }
     if ((el = t.closest('[data-v2g-active]'))) return post({ type: 'gameProfileSetActive', id: el.dataset.v2gActive });
     if ((el = t.closest('[data-v2g-add]'))) {
@@ -293,6 +325,7 @@
     if (t.id === 'v2gAutoInstall') return saveLibrary({ autoInstallUpdates: t.checked });
     if (t.id === 'v2gMirror') return saveLibrary({ githubMirrorType: t.value });
     if (t.id === 'v2gMirrorUrl') return saveLibrary({ customGitHubMirrorUrl: t.value.trim() });
+    if (t.id === 'v2gWorkshopUrl') return saveLibrary({ workshopUrl: t.value.trim() || null });
   });
 
   // 原版这些数据回来时重画

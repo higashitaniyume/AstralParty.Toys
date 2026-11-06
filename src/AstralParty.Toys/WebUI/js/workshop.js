@@ -426,11 +426,15 @@
     const filtered = filterItems(state.items);
 
     if (!filtered.length) {
-      grid.innerHTML = state.loading
-        ? `<div class="workshop-empty"><span class="mi" data-icon="hourglass_empty"></span><p>${esc(
-            t('workshop.loading')
-          )}</p></div>`
-        : `<div class="workshop-empty"><span class="mi" data-icon="extension"></span><p>${esc(
+      if (state.loading) {
+        // 骨架占位：不等数据回来就先画骨架，UI 线程只做一次轻量 DOM 写入
+        const skel = isList
+          ? Array.from({ length: 6 }, () => `<div class="workshop-row" aria-hidden="true"><div class="v2-skel" style="width:56px;height:56px;border-radius:8px;flex:none"></div><div style="flex:1;display:grid;gap:6px"><div class="v2-skel v2-skel-block" style="width:40%"></div><div class="v2-skel v2-skel-block" style="width:70%"></div></div><div class="v2-skel" style="width:84px;height:30px;border-radius:8px"></div></div>`).join('')
+          : Array.from({ length: 6 }, () => `<div class="v2-skel-card" aria-hidden="true"><div class="v2-skel v2-skel-thumb"></div><div class="v2-skel-body"><div class="v2-skel v2-skel-block" style="width:65%"></div><div class="v2-skel v2-skel-block" style="width:90%"></div></div></div>`).join('');
+        grid.innerHTML = skel;
+        return;
+      }
+      grid.innerHTML = `<div class="workshop-empty"><span class="mi" data-icon="extension"></span><p>${esc(
             t('workshop.empty')
           )}</p><button class="secondary-btn" data-retry="1">${esc(t('workshop.retry'))}</button></div>`;
       window.Icons?.hydrate(grid);
@@ -888,10 +892,7 @@
     }
 
     if (!state.detail) {
-      host.innerHTML = `<div class="workshop-empty"><span class="mi" data-icon="hourglass_empty"></span><p>${esc(
-        t('workshop.loading')
-      )}</p></div>`;
-      window.Icons?.hydrate(host);
+      host.innerHTML = `<div aria-hidden="true" style="display:grid;gap:12px"><div class="v2-skel" style="height:96px;border-radius:10px"></div><div class="v2-skel v2-skel-block" style="width:45%"></div><div class="v2-skel v2-skel-block" style="width:85%"></div><div class="v2-skel v2-skel-block" style="width:70%"></div></div>`;
       return;
     }
 
@@ -1056,13 +1057,7 @@
       $('workshopBackHomeBtn')?.addEventListener('click', () => showPage('home'));
       $('workshopRefreshBtn')?.addEventListener('click', () => {
         state.items = [];
-        const grid = $('workshopGrid');
-        if (grid) {
-          grid.innerHTML = `<div class="workshop-empty"><span class="mi" data-icon="hourglass_empty"></span><p>${esc(
-            t('workshop.loading')
-          )}</p></div>`;
-          window.Icons?.hydrate(grid);
-        }
+        state.loading = false;
         const pager = $('workshopPager');
         if (pager) pager.innerHTML = '';
         load(1);
@@ -1269,13 +1264,7 @@
       const statusSelect = $('workshopStatusSelect');
       if (statusSelect) statusSelect.value = 'all';
 
-      const grid = $('workshopGrid');
-      if (grid) {
-        grid.innerHTML = `<div class="workshop-empty"><span class="mi" data-icon="hourglass_empty"></span><p>${esc(
-          t('workshop.loading')
-        )}</p></div>`;
-        window.Icons?.hydrate(grid);
-      }
+      state.loading = false;
       const pager = $('workshopPager');
       if (pager) pager.innerHTML = '';
 
