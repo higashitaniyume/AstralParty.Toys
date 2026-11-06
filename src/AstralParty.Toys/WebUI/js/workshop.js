@@ -14,7 +14,7 @@
     tags: [],
     query: '',
     tag: '',
-    sort: 'updated',
+    sort: 'downloads',
     viewMode: localStorage.getItem('workshop_view_mode') || 'list',
     statusFilter: 'all',
     detail: null,
@@ -1084,7 +1084,7 @@
       });
 
       $('workshopSortSelect')?.addEventListener('change', event => {
-        state.sort = event.target.value || 'updated';
+        state.sort = event.target.value || 'downloads';
         load(1);
       });
 
@@ -1252,6 +1252,7 @@
       state.page = 1;
       state.query = '';
       state.tag = '';
+      state.sort = 'downloads';
       state.statusFilter = 'all';
       state.loaded = false;
       state.details.clear();
@@ -1261,6 +1262,8 @@
       if (searchInput) searchInput.value = '';
       const tagSelect = $('workshopTagSelect');
       if (tagSelect) tagSelect.value = '';
+      const sortSelect = $('workshopSortSelect');
+      if (sortSelect) sortSelect.value = 'downloads';
       const statusSelect = $('workshopStatusSelect');
       if (statusSelect) statusSelect.value = 'all';
 

@@ -83,7 +83,7 @@ public partial class HybridWindow
                 _libraryService.Settings.Language,
                 query,
                 tag,
-                string.IsNullOrWhiteSpace(sort) ? "updated" : sort!,
+                string.IsNullOrWhiteSpace(sort) ? "downloads" : sort!,
                 page,
                 24);
 
