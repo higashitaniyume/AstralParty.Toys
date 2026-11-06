@@ -31,6 +31,7 @@ public sealed class ModManagerTests
         Assert.Contains("StarCoinShopMod", ModManager.EmbeddedBuiltInModIdList);
         Assert.Contains("CharacterTransparencyMod", ModManager.EmbeddedBuiltInModIdList);
         Assert.Contains("ShopRelicPeekMod", ModManager.EmbeddedBuiltInModIdList);
+        Assert.Contains("OverlayFeedMod", ModManager.EmbeddedBuiltInModIdList);
         // 清单与安装用的那份必须是同一个来源(扫描内嵌资源), 不能各自维护
         Assert.Equal(ModManager.BuiltInModIds, ModManager.EmbeddedBuiltInModIdList);
     }

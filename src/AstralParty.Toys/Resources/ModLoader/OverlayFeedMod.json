@@ -1,0 +1,8 @@
+{
+  "id": "OverlayFeedMod",
+  "name": "覆盖层数据馈送",
+  "version": "1.0.0",
+  "description": "把商店与筹码历史推给 WPF 覆盖层进程的通讯 Mod。",
+  "enabled": true,
+  "sdkVersion": "3.3.2"
+}

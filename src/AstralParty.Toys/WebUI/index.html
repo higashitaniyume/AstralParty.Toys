@@ -74,6 +74,11 @@
               /></svg
             ><span data-i18n="nav.mods">模组</span>
           </button>
+          <button class="nav-crumb-btn" data-page="overlay" title="覆盖层显示">
+            <svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true">
+              <path d="M40-120h880v-520H40v520Zm-80 80q-33 0-56.5-23.5T-120-120v-520q0-33 23.5-56.5T-40-720h880q33 0 56.5 23.5T920-640v520q0 33-23.5 56.5T840-40H-40Zm400-80q-33 0-56.5-23.5T320-200v-80q0-33 23.5-56.5T400-360h80q33 0 56.5 23.5T560-280v80q0 33-23.5 56.5T480-120Zm0-520v-40q0-33 23.5-56.5T560-760h80q33 0 56.5 23.5T720-680v40q0 33-23.5 56.5T640-560h-80q-33 0-56.5-23.5T480-640Zm240 0v-40q0-33 23.5-56.5T800-760h80q33 0 56.5 23.5T960-680v40q0 33-23.5 56.5T880-560h-80q-33 0-56.5-23.5T760-640Z"/>
+            </svg><span>覆盖层</span>
+          </button>
           <button class="nav-crumb-btn" data-page="workshop">
             <svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true">
               <path
@@ -1360,6 +1365,11 @@
               </div>
             </details>
           </div>
+        </section>
+
+        <!-- 覆盖层显示 (WPF Overlay 配置 + 对应 Mod) -->
+        <section id="overlayView" class="page-view overlay-page hidden">
+          <div id="v2Overlay"></div>
         </section>
 
         <!-- 4.4. WORKSHOP VIEW (Community mod catalog) -->
@@ -2672,5 +2682,6 @@
     <script src="js/v2-characters.js"></script>
     <script src="js/v2-settings.js"></script>
     <script src="js/v2-background.js"></script>
+    <script src="js/v2-overlay.js"></script>
   </body>
 </html>

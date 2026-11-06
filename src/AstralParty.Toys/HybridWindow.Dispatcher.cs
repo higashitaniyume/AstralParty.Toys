@@ -378,6 +378,15 @@ public partial class HybridWindow
                 case "modStatus":
                     _ = PushModStatusAsync();
                     break;
+                case "overlayStatus":
+                    PushOverlayStatus();
+                    break;
+                case "overlaySave":
+                    if (root.TryGetProperty("config", out var overlayCfgEl))
+                    {
+                        HandleOverlaySave(overlayCfgEl.GetRawText());
+                    }
+                    break;
                 case "modInstall":
                     var modOverwrite = root.TryGetProperty("overwriteDll", out var modOverwriteElement) &&
                                        modOverwriteElement.GetBoolean();
