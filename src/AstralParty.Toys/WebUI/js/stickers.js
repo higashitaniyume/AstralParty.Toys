@@ -216,7 +216,7 @@
     return sorted.filter(s => s.groupId === effectiveId);
   }
 
-  function pickerHtml() {
+  function pickerParts() {
     const packs = packsFromCatalog();
     const effectiveId = effectiveActiveId(packs);
     const isSearching = pickerState.query.trim().length > 0;
@@ -269,6 +269,15 @@
         + `<button type="button" class="forge-sticker-preview-fav${favoriteSet.has(hovered.stickerId) ? ' is-fav' : ''}" data-sticker-preview-fav="${esc(hovered.stickerId)}" aria-label="${esc(favoriteSet.has(hovered.stickerId) ? t('workshop.sticker_fav_cancel') : t('workshop.sticker_fav_add'))}" aria-pressed="${favoriteSet.has(hovered.stickerId) ? 'true' : 'false'}"><span aria-hidden="true" class="forge-sticker-preview-star">${favoriteSet.has(hovered.stickerId) ? '★' : '☆'}</span></button>`
       : `<p class="forge-sticker-hint">${esc(t('workshop.sticker_preview_hint'))} <span class="forge-sticker-hint-dim">· ${esc(t('workshop.sticker_kbd_hint'))}</span></p>`;
 
+    const sectionHtml = `<span>${esc(sectionTitle)}</span>`
+      + (isSearching ? `<button type="button" class="forge-sticker-clearlink" data-sticker-clear>${esc(t('workshop.sticker_clear_search'))}</button>` : '');
+    const gridHtml = emptyHtml || `<div class="forge-sticker-grid-inner" role="listbox" aria-label="${esc(sectionTitle)}">${cells}</div>`;
+
+    return { tabs, sectionTitle, sectionHtml, gridHtml, preview };
+  }
+
+  function pickerHtml() {
+    const { tabs, sectionHtml, gridHtml, preview } = pickerParts();
     return `<div class="forge-sticker-picker" role="dialog" aria-label="${esc(t('workshop.sticker_picker_label'))}" aria-modal="false">`
       + `<div class="forge-sticker-searchrow">`
       + `<span class="forge-sticker-search-ico" aria-hidden="true"><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="9" r="6"/><path d="m13.5 13.5 4 4"/></svg></span>`
@@ -277,10 +286,8 @@
       + `<button type="button" class="forge-sticker-x" data-sticker-close aria-label="${esc(t('workshop.sticker_close'))}"><span aria-hidden="true">✕</span></button>`
       + `</div>`
       + `<div class="forge-sticker-nav" role="tablist" aria-label="${esc(t('workshop.sticker_categories'))}">${tabs}</div>`
-      + `<div class="forge-sticker-section"><span>${esc(sectionTitle)}</span>`
-      + (isSearching ? `<button type="button" class="forge-sticker-clearlink" data-sticker-clear>${esc(t('workshop.sticker_clear_search'))}</button>` : '')
-      + `</div>`
-      + `<div class="forge-sticker-grid" data-sticker-grid>${emptyHtml || `<div class="forge-sticker-grid-inner" role="listbox" aria-label="${esc(sectionTitle)}">${cells}</div>`}</div>`
+      + `<div class="forge-sticker-section">${sectionHtml}</div>`
+      + `<div class="forge-sticker-grid" data-sticker-grid>${gridHtml}</div>`
       + `<div class="forge-sticker-preview">${preview}</div>`
       + (pickerState.error ? `<p class="forge-sticker-error" role="alert">${esc(pickerState.error)}</p>` : '')
       + `</div>`;
@@ -337,24 +344,55 @@
 
   function renderPicker() {
     if (!pickerEl) return;
-    // 保留选择器内非受控状态（搜索框焦点/选区、滚动位置）：整块重画会丢焦点。
-    const grid = pickerEl.querySelector('[data-sticker-grid]');
-    const gridScroll = grid ? grid.scrollTop : 0;
-    const active = document.activeElement;
-    const focusIsSearch = !!(pickerEl.contains(active) && active?.hasAttribute?.('data-sticker-search'));
-    const searchStart = focusIsSearch ? active.selectionStart : null;
-    const searchEnd = focusIsSearch ? active.selectionEnd : null;
-
-    pickerEl.innerHTML = pickerHtml();
-    positionPicker();
-    const newGrid = pickerEl.querySelector('[data-sticker-grid]');
-    if (newGrid) newGrid.scrollTop = gridScroll;
-    if (focusIsSearch) {
-      const input = pickerEl.querySelector('[data-sticker-search]');
-      input?.focus({ preventScroll: true });
-      if (searchStart !== null) {
-        try { input?.setSelectionRange(searchStart, searchEnd); } catch { /* ignore */ }
+    const panel = pickerPanel();
+    const { tabs, sectionHtml, gridHtml, preview } = pickerParts();
+    if (!panel) {
+      pickerEl.innerHTML = pickerHtml();
+      positionPicker();
+      syncPickerHover();
+      return;
+    }
+    // 增量更新：绝不重建搜索框与面板本体。整块 innerHTML 会丢焦点/选区，
+    // 使每刻一键光标跳动且面板入场动画重放，就是之前打字跳的原因。
+    const nav = panel.querySelector('.forge-sticker-nav');
+    if (nav) nav.innerHTML = tabs;
+    const section = panel.querySelector('.forge-sticker-section');
+    if (section) section.innerHTML = sectionHtml;
+    const grid = panel.querySelector('[data-sticker-grid]');
+    if (grid) {
+      grid.innerHTML = gridHtml;
+      grid.scrollTop = 0;
+    }
+    const previewEl = panel.querySelector('.forge-sticker-preview');
+    if (previewEl) previewEl.innerHTML = preview;
+    // 清除按钮随查询有无增减，不碰搜索框本体。
+    const input = panel.querySelector('[data-sticker-search]');
+    let clearBtn = panel.querySelector('.forge-sticker-searchrow [data-sticker-clear]');
+    if (pickerState.query) {
+      if (!clearBtn) {
+        clearBtn = document.createElement('button');
+        clearBtn.type = 'button';
+        clearBtn.className = 'forge-sticker-x';
+        clearBtn.setAttribute('data-sticker-clear', '');
+        clearBtn.setAttribute('aria-label', t('workshop.sticker_clear_search'));
+        clearBtn.innerHTML = '<span aria-hidden="true">✕</span>';
+        input?.after(clearBtn);
       }
+    } else {
+      clearBtn?.remove();
+    }
+    // 错误条增减。
+    let errorEl = panel.querySelector('.forge-sticker-error');
+    if (pickerState.error) {
+      if (!errorEl) {
+        errorEl = document.createElement('p');
+        errorEl.className = 'forge-sticker-error';
+        errorEl.setAttribute('role', 'alert');
+        panel.appendChild(errorEl);
+      }
+      errorEl.textContent = pickerState.error;
+    } else {
+      errorEl?.remove();
     }
     syncPickerHover();
   }
@@ -481,16 +519,7 @@
       }
     });
 
-    // 悬停 / 聚焦预览（与网页版一致）。
-    on(pickerEl, 'mouseover', e => {
-      const cell = e.target.closest?.('[data-sticker-cell]');
-      const id = cell?.getAttribute('data-sticker-cell') || null;
-      if (id !== pickerState.hoveredId) {
-        pickerState.hoveredId = id;
-        syncPickerHover();
-        renderPreviewOnly();
-      }
-    });
+    // 聚焦预览（键盘导航时的大预览）。鼠标悬停唤起大预览已按用户要求关掉。
     on(pickerEl, 'focusin', e => {
       const cell = e.target.closest?.('[data-sticker-cell]');
       const id = cell?.getAttribute('data-sticker-cell') || null;

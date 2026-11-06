@@ -55,10 +55,13 @@
     const s = status();
     const head = (primary) => {
       const open = s?.gameDirectory;
+      const bNow = busy();
       return `<div class="v2-head"><h1>模组</h1><span class="v2-top-spacer"></span>
       <button class="v2-btn line" data-v2m="openMods" ${open ? '' : 'disabled'}>${I().folder}打开 Mod 文件夹</button>
       <button class="v2-btn line" data-v2m="openLogs" ${open ? '' : 'disabled'}>${I().folder}打开日志文件夹</button>
       <button class="v2-btn line" data-v2m="openGame" ${open ? '' : 'disabled'}>${I().folder}打开游戏文件夹</button>
+      <button class="v2-btn line" data-v2m="importPkg" ${open && !bNow ? '' : 'disabled'} title="导入本地 cesium-loader 发布 ZIP，安装加载器、SDK 与包内模组">${I().upload}导入发布包</button>
+      <button class="v2-btn line" data-v2m="update" ${open && !bNow ? '' : 'disabled'} title="直接从 GitHub 下载最新 CesiumLoader 并安装（与下面卡片的「更新」同流程）">${I().download}从 GitHub 更新</button>
       <button class="v2-btn ${primary ? 'primary' : 'line'}" data-v2m="import" ${s && (s.installed || s.loaderRootExists) ? '' : 'disabled'}>${I().upload}导入模组</button></div>`;
     };
     if (!s) {
