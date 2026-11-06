@@ -36,6 +36,12 @@ public sealed class ModStatus
     /// <summary>已安装的加载器版本 —— 只来自安装清单，读不到就是空串（界面显示「版本未知」）。</summary>
     public string InstalledVersion { get; set; } = "";
 
+    /// <summary>当前游戏目录 doorstop_config.json / SDK DLL 标注的 SDK 版本；读不到就是空串。</summary>
+    public string InstalledSdkVersion { get; set; } = "";
+
+    /// <summary>随 Toys 内置的 SDK/doorstop_config sdkVersion；空 = 本地开发构建没内嵌发布包。</summary>
+    public string EmbeddedSdkVersion { get; set; } = "";
+
     public string Message { get; set; } = "";
     public List<ModEntryInfo> Mods { get; set; } = new();
     public List<ModEntryInfo> Sdk { get; set; } = new();

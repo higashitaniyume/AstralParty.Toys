@@ -54,6 +54,9 @@
 
     const lv = loaderView(s), b = busy();
     const usable = s.installed || s.loaderRootExists;
+    const loaderVersionText = s.installedVersion || '版本未知';
+    const sdkVersionText = s.installedSdkVersion || (s.sdk || []).find(x => x.version)?.version || '版本未知';
+    const embeddedSdkText = s.embeddedSdkVersion ? ` · 内置 v${s.embeddedSdkVersion}` : '';
     const btn = {
       install: `<button class="v2-btn primary" data-v2m="install" ${b ? 'disabled' : ''}>${I().download}安装加载器</button>`,
       restore: `<button class="v2-btn primary" data-v2m="restore" ${b || !s.canRestoreLoader ? 'disabled' : ''}>恢复加载器</button>`,
@@ -79,6 +82,10 @@
           <div class="v2-hero-text">
             <div class="v2-hero-title" style="font-size:15px">CesiumLoader <span class="v2-badge ${lv.cls}">${lv.badge}</span>${b ? ' <span class="v2-muted" style="font-size:12px;font-weight:400">处理中…</span>' : ''}</div>
             <div class="v2-hero-sub">${esc(lv.text)}</div>
+            <div class="v2-version-pills" aria-label="当前安装的加载器与 SDK 版本">
+              <span class="v2-version-pill" title="当前游戏目录安装的 CesiumLoader 版本"><span class="k">加载器</span><b>v${esc(loaderVersionText)}</b></span>
+              <span class="v2-version-pill" title="加载器随包 SDK / doorstop_config 中的 sdkVersion"><span class="k">SDK</span><b>v${esc(sdkVersionText)}</b>${embeddedSdkText ? `<span class="v2-muted">${esc(embeddedSdkText)}</span>` : ''}</span>
+            </div>
           </div>
           ${btn}
           <button class="v2-icon-btn" data-v2m="loaderSettings" title="加载器设置" ${usable ? '' : 'disabled'}>${I().sliders}</button>

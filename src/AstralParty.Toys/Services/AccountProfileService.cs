@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.IO;
 
 namespace AstralParty.Toys.Services;
@@ -215,15 +216,16 @@ public sealed class AccountProfileService
         if (SourceDirectory is null || ProfilesRoot is null) return result;
 
         var active = (activeName ?? "").Trim();
+        var defaultStats = GetCachedStats(SourceDirectory);
         result.Add(new AccountProfileInfo(
             "",
             SourceDirectory,
             IsDefault: true,
             Active: active.Length == 0,
             Exists: Directory.Exists(SourceDirectory),
-            Bytes: MeasureBytes(SourceDirectory),
-            ReplayCount: CountReplays(SourceDirectory),
-            LastWriteUtc: LastPlayed(SourceDirectory),
+            Bytes: defaultStats.Bytes,
+            ReplayCount: defaultStats.ReplayCount,
+            LastWriteUtc: defaultStats.LastWriteUtc,
             CacheSeeded: true,
             Note: ""));
 
@@ -240,15 +242,16 @@ public sealed class AccountProfileService
                 if (name.Length == 0) continue;
                 var isActive = string.Equals(name, active, StringComparison.OrdinalIgnoreCase);
                 if (isActive) found = true;
+                var stats = GetCachedStats(directory);
                 result.Add(new AccountProfileInfo(
                     name,
                     directory,
                     IsDefault: false,
                     Active: isActive,
                     Exists: true,
-                    Bytes: MeasureBytes(directory),
-                    ReplayCount: CountReplays(directory),
-                    LastWriteUtc: LastPlayed(directory),
+                    Bytes: stats.Bytes,
+                    ReplayCount: stats.ReplayCount,
+                    LastWriteUtc: stats.LastWriteUtc,
                     CacheSeeded: File.Exists(Path.Combine(directory, SeedMarkerName)),
                     Note: ReadNote(directory)));
             }
@@ -294,6 +297,7 @@ public sealed class AccountProfileService
         if (Directory.Exists(directory)) throw new InvalidOperationException($"已经有一个叫「{name.Trim()}」的 profile 了。");
 
         Directory.CreateDirectory(directory);
+        InvalidateStatsCache(directory);
         return directory;
     }
 
@@ -309,6 +313,8 @@ public sealed class AccountProfileService
         if (Directory.Exists(target)) throw new InvalidOperationException($"已经有一个叫「{newName.Trim()}」的 profile 了。");
 
         Directory.Move(source, target);
+        InvalidateStatsCache(source);
+        InvalidateStatsCache(target);
         return target;
     }
 
@@ -380,10 +386,48 @@ public sealed class AccountProfileService
             error = "这个 profile 目录已经不存在了。";
             return DeleteOutcome.Failed;
         }
-        return RecycleBinHelper.Delete(directory, out error);
+        var deleted = RecycleBinHelper.Delete(directory, out error);
+        if (deleted != DeleteOutcome.Failed) InvalidateStatsCache(directory);
+        return deleted;
     }
 
     // ============================== 统计 ==============================
+
+    private static readonly TimeSpan StatsCacheLifetime = TimeSpan.FromSeconds(45);
+
+    private static readonly ConcurrentDictionary<string, ProfileStatsCacheEntry> s_statsCache =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    private readonly record struct ProfileStatsCacheEntry(long Bytes, int ReplayCount, DateTime LastWriteUtc, DateTime CachedAtUtc);
+
+    private static ProfileStatsCacheEntry GetCachedStats(string directory)
+    {
+        var key = Path.GetFullPath(directory);
+        var now = DateTime.UtcNow;
+        if (s_statsCache.TryGetValue(key, out var cached) &&
+            now - cached.CachedAtUtc < StatsCacheLifetime)
+        {
+            return cached;
+        }
+
+        var entry = new ProfileStatsCacheEntry(
+            MeasureBytes(directory),
+            CountReplays(directory),
+            LastPlayed(directory),
+            now);
+        s_statsCache[key] = entry;
+        return entry;
+    }
+
+    /// <summary>新建/改名/删除后手动失效对应目录的统计缓存，避免 45 秒内旧条目误报。</summary>
+    internal static void InvalidateStatsCache(string directory)
+    {
+        try { s_statsCache.TryRemove(Path.GetFullPath(directory), out _); }
+        catch { }
+    }
+
+    /// <summary>清掉全部统计缓存（Init / 游戏进程退出后可调用）。</summary>
+    internal static void ClearStatsCache() => s_statsCache.Clear();
 
     /// <summary>目录占用（**不含** com.unity.addressables：那是与其它 profile 共享的硬链接缓存）。</summary>
     private static long MeasureBytes(string directory)
