@@ -487,6 +487,7 @@
       'workshop.sticker_empty_fav_hint': '悬停贴纸时点击 ☆，或在底部预览栏点击收藏。',
       'workshop.sticker_empty_pack': '这个分类还没有贴纸',
       'workshop.sticker_error': '点选失败，请稍后再试。',
+      'workshop.sticker_downloading': '正在缓存贴纸 {downloaded}/{total}（{percent}%）',
 
       // Workshop settings
       'settings.workshop': '市场',
@@ -971,6 +972,7 @@
       'workshop.sticker_empty_fav_hint': 'Hover a sticker and click ☆, or use the favorite button in the preview bar.',
       'workshop.sticker_empty_pack': 'No stickers in this category yet',
       'workshop.sticker_error': 'Could not save your reaction. Please try again later.',
+      'workshop.sticker_downloading': 'Caching stickers {downloaded}/{total} ({percent}%)',
 
       // Workshop settings
       'settings.workshop': 'Market',
@@ -1455,6 +1457,7 @@
       'workshop.sticker_empty_fav_hint': 'ステッカーにホバーして ☆ をクリックするか、プレビューバーのボタンで追加してください。',
       'workshop.sticker_empty_pack': 'この分類にステッカーはありません',
       'workshop.sticker_error': '反応の保存に失敗しました。もう一度お試しください。',
+      'workshop.sticker_downloading': 'ステッカーをキャッシュ中 {downloaded}/{total}（{percent}%）',
 
       // Workshop settings
       'settings.workshop': 'マーケット',
@@ -1939,6 +1942,7 @@
       'workshop.sticker_empty_fav_hint': '懸停貼紙時點擊 ☆，或在底部預覽欄點擊收藏。',
       'workshop.sticker_empty_pack': '這個分類還沒有貼紙',
       'workshop.sticker_error': '點選失敗，請稍後再試。',
+      'workshop.sticker_downloading': '正在快取貼紙 {downloaded}/{total}（{percent}%）',
 
       // Workshop settings
       'settings.workshop': '市場',

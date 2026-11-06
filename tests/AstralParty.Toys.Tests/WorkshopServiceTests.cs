@@ -652,6 +652,42 @@ public sealed class WorkshopServiceTests
     }
 
     [Fact]
+    public async Task GetStickerCatalogAsync_ReportsDownloadProgress()
+    {
+        using var harness = new Harness();
+        harness.Handler.Payload = Encoding.UTF8.GetBytes("""
+        {
+          "generatedAt": "2026-11-06T00:00:00Z",
+          "groups": [
+            { "groupId": "101", "groupName": "帕露南", "count": 2 }
+          ],
+          "items": [
+            { "stickerId": "UT_Item_Emoji_101_01", "imageUrl": "/stickers/101/UT_Item_Emoji_101_01.webp", "groupId": "101", "groupName": "帕露南", "kind": "static", "sortIndex": 0 },
+            { "stickerId": "UT_Item_Emoji_101_02", "imageUrl": "/stickers/101/UT_Item_Emoji_101_02.webp", "groupId": "101", "groupName": "帕露南", "kind": "static", "sortIndex": 1 }
+          ],
+          "total": 2
+        }
+        """);
+        harness.Handler.ImagePayload = Harness.WebpBytes;
+
+        var reports = new List<WorkshopStickerDownloadProgress>();
+        var progress = new InlineProgress<WorkshopStickerDownloadProgress>(reports.Add);
+        await harness.Service.GetStickerCatalogAsync(Forge, progress);
+
+        // 从 0/2 到 2/2 单调递增，终点为 100%。
+        Assert.NotEmpty(reports);
+        Assert.Equal(0, reports[0].Downloaded);
+        Assert.Equal(2, reports[0].Total);
+        Assert.Equal(0, reports[0].Percent);
+        var last = reports[^1];
+        Assert.Equal(2, last.Downloaded);
+        Assert.Equal(2, last.Total);
+        Assert.Equal(100, last.Percent);
+        for (var i = 1; i < reports.Count; i++)
+            Assert.True(reports[i].Downloaded >= reports[i - 1].Downloaded);
+    }
+
+    [Fact]
     public async Task CacheStickerImageAsync_RejectsNonWebpAndUnsafePaths()
     {
         using var harness = new Harness();

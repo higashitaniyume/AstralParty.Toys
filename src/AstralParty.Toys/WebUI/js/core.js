@@ -416,6 +416,10 @@ host?.addEventListener('message', event => {
       window.WorkshopModule?.renderStickerCatalog(msg.payload);
       break;
 
+    case 'workshopStickerCatalogProgress':
+      window.WorkshopModule?.renderStickerCatalogProgress(msg.payload);
+      break;
+
     case 'workshopStickerToggle':
       window.WorkshopModule?.renderStickerToggle(msg.payload);
       break;

@@ -469,9 +469,26 @@ public partial class HybridWindow
         if (!RequireWorkshopConsent()) return;
 
         var baseUrl = WorkshopBaseUrl;
+        var lastPercent = -1;
+        var progress = new InlineProgress<WorkshopStickerDownloadProgress>(value =>
+        {
+            // 498 张逐张回推会太吵：百分比没变就不打扰页面。
+            if (value.Total > 0 && value.Percent == lastPercent) return;
+            lastPercent = value.Percent;
+            Post(new
+            {
+                type = "workshopStickerCatalogProgress",
+                payload = new
+                {
+                    downloaded = value.Downloaded,
+                    total = value.Total,
+                    percent = value.Percent
+                }
+            });
+        });
         try
         {
-            var catalog = await _workshopService.GetStickerCatalogAsync(baseUrl);
+            var catalog = await _workshopService.GetStickerCatalogAsync(baseUrl, progress);
             Post(new
             {
                 type = "workshopStickerCatalog",

@@ -235,6 +235,7 @@ public sealed class WorkshopService
     /// </summary>
     public async Task<StickerCatalogResponse> GetStickerCatalogAsync(
         string baseUrl,
+        IProgress<WorkshopStickerDownloadProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
         var url = $"{NormalizeBaseUrl(baseUrl)}/api/stickers";
@@ -258,7 +259,8 @@ public sealed class WorkshopService
                 // 目录缓存只是离线兜底，写失败不影响本次返回。
             }
 
-            await CacheStickerCatalogImagesAsync(baseUrl, catalog, timeout.Token);
+            progress?.Report(new WorkshopStickerDownloadProgress(0, catalog.Items.Count));
+            await CacheStickerCatalogImagesAsync(baseUrl, catalog, progress, timeout.Token);
             return catalog;
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
@@ -284,6 +286,7 @@ public sealed class WorkshopService
     private async Task CacheStickerCatalogImagesAsync(
         string baseUrl,
         StickerCatalogResponse catalog,
+        IProgress<WorkshopStickerDownloadProgress>? progress,
         CancellationToken cancellationToken)
     {
         // 去重后按地址缓存，避免同一张图并发下载。
@@ -294,6 +297,8 @@ public sealed class WorkshopService
             .ToList();
         if (distinctUrls.Count == 0) return;
 
+        var total = distinctUrls.Count;
+        var completed = 0;
         using var gate = new SemaphoreSlim(8, 8);
         var cached = new Dictionary<string, string?>(StringComparer.Ordinal);
         var tasks = distinctUrls.Select(async url =>
@@ -303,6 +308,8 @@ public sealed class WorkshopService
             {
                 var local = await CacheStickerImageAsync(baseUrl, url, cancellationToken);
                 lock (cached) cached[url] = local;
+                var done = Interlocked.Increment(ref completed);
+                progress?.Report(new WorkshopStickerDownloadProgress(done, total));
             }
             finally
             {
@@ -405,7 +412,7 @@ public sealed class WorkshopService
             var catalog = JsonSerializer.Deserialize<StickerCatalogResponse>(text, Json);
             if (catalog is null) return null;
             // 图片已在上次成功时落盘，改写只命中缓存，不联网。
-            await CacheStickerCatalogImagesAsync(baseUrl, catalog, cancellationToken).ConfigureAwait(false);
+            await CacheStickerCatalogImagesAsync(baseUrl, catalog, null, cancellationToken).ConfigureAwait(false);
             return catalog;
         }
         catch (Exception)

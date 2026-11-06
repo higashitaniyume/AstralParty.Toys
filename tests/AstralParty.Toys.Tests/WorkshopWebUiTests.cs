@@ -165,6 +165,7 @@ public sealed class WorkshopWebUiTests
         var core = Read("js/core.js");
         Assert.Contains("case 'workshopStickers':", core);
         Assert.Contains("case 'workshopStickerCatalog':", core);
+        Assert.Contains("case 'workshopStickerCatalogProgress':", core);
         Assert.Contains("case 'workshopStickerToggle':", core);
 
         var dispatcher = File.ReadAllText(Path.Combine(TestPaths.AppSourceDirectory, "HybridWindow.Dispatcher.cs"));
@@ -181,6 +182,9 @@ public sealed class WorkshopWebUiTests
         Assert.Contains("type: 'workshopStickerToggle'", js);
         Assert.Contains("window.StickerModule", js);
         Assert.Contains("applyCatalog", js);
+        Assert.Contains("applyCatalogProgress", js);
+        Assert.Contains("data-sticker-progress", js);
+        Assert.Contains("workshop.sticker_downloading", js);
         // 贴纸不再内嵌：页面不直接 fetch 程序集里的目录/图片。
         Assert.DoesNotContain("sticker-catalog.json", js);
         Assert.DoesNotContain("fetch('stickers/", js);
@@ -190,6 +194,7 @@ public sealed class WorkshopWebUiTests
         Assert.Contains("window.StickerModule", workshop);
         Assert.Contains("renderStickers", workshop);
         Assert.Contains("renderStickerCatalog", workshop);
+        Assert.Contains("renderStickerCatalogProgress", workshop);
         Assert.Contains("renderStickerToggle", workshop);
         Assert.Contains("handleClick", workshop);
 
@@ -211,11 +216,13 @@ public sealed class WorkshopWebUiTests
         Assert.Contains("GetStickerCatalogAsync", service);
         Assert.Contains("CacheStickerImageAsync", service);
         Assert.Contains("RewriteStickerCountsAsync", service);
+        Assert.Contains("WorkshopStickerDownloadProgress", service);
         Assert.Contains("/api/stickers", service);
 
         var handler = File.ReadAllText(Path.Combine(
             TestPaths.AppSourceDirectory, "HybridWindow.Workshop.cs"));
         Assert.Contains("HandleWorkshopStickerCatalogAsync", handler);
+        Assert.Contains("workshopStickerCatalogProgress", handler);
         Assert.Contains("RewriteStickerCountsAsync", handler);
     }
 

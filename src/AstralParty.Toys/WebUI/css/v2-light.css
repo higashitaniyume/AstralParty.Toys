@@ -421,6 +421,7 @@
 :where(:root[data-theme="light"]) .forge-sticker-empty-ico { background: rgba(31, 34, 51, 0.07); }
 :where(:root[data-theme="light"]) .forge-sticker-preview-fav:hover { background: rgba(31, 34, 51, 0.08); }
 :where(:root[data-theme="light"]) .forge-sticker-error { color: rgb(135, 87, 94); }
+:where(:root[data-theme="light"]) .forge-sticker-progress-bar { background: rgba(31, 34, 51, 0.08); }
 
 /* ---------- css/skins.css ---------- */
 :where(:root[data-theme="light"]) .skin-active-panel { background: var(--gp-bg-card, rgba(255, 255, 255, 0.85)); border: 1px solid var(--gp-border, rgba(31, 34, 51, 0.15)); }

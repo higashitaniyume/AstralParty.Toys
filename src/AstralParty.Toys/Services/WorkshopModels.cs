@@ -151,5 +151,22 @@ public sealed class WorkshopDownloadProgress
         : null;
 }
 
+/// <summary>贴纸图片缓存进度（目录拉取完成后按张计数，已缓存的也计入完成）。</summary>
+public sealed class WorkshopStickerDownloadProgress
+{
+    public WorkshopStickerDownloadProgress(int downloaded, int total)
+    {
+        Downloaded = downloaded;
+        Total = total;
+    }
+
+    public int Downloaded { get; }
+    public int Total { get; }
+
+    public int Percent => Total > 0
+        ? (int)Math.Clamp(Downloaded * 100.0 / Total, 0, 100)
+        : 0;
+}
+
 /// <summary>市场请求失败时抛出的用户可读错误。</summary>
 public sealed class WorkshopException(string message) : Exception(message);

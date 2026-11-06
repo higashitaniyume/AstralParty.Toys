@@ -1405,6 +1405,10 @@
       window.StickerModule?.applyCatalog(payload);
     },
 
+    renderStickerCatalogProgress(payload) {
+      window.StickerModule?.applyCatalogProgress(payload);
+    },
+
     renderStickerToggle(payload) {
       window.StickerModule?.applyToggle(payload);
     },

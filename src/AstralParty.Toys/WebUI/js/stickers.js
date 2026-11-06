@@ -23,6 +23,27 @@
   let catalogItems = [];
   let catalogGroups = [];
   let catalogById = new Map();
+  // 贴纸图片缓存进度（首次从市场下载时可视化，避免长时间黑盒等待）。
+  let catalogProgress = { active: false, downloaded: 0, total: 0, percent: 0 };
+
+  function isCatalogLoading() {
+    return !catalogReady && catalogPromise !== null;
+  }
+
+  function catalogProgressText() {
+    if (catalogProgress.total > 0) {
+      return t('workshop.sticker_downloading', {
+        downloaded: fmt(catalogProgress.downloaded),
+        total: fmt(catalogProgress.total),
+        percent: fmt(catalogProgress.percent),
+      });
+    }
+    return t('workshop.sticker_downloading', {
+      downloaded: fmt(catalogProgress.downloaded),
+      total: fmt(catalogProgress.total),
+      percent: fmt(catalogProgress.percent),
+    });
+  }
 
   function stickerFileSrc(sticker) {
     return String(sticker?.imageUrl || '');
@@ -52,6 +73,7 @@
   function loadCatalog() {
     if (catalogReady) return Promise.resolve({ items: catalogItems, groups: catalogGroups });
     if (catalogPromise) return catalogPromise;
+    catalogProgress = { active: true, downloaded: 0, total: 0, percent: 0 };
     catalogPromise = new Promise(resolve => {
       catalogResolvers.push(resolve);
       post({ type: 'workshopStickerCatalog' });
@@ -263,19 +285,28 @@
 
     const sectionHtml = `<span>${esc(sectionTitle)}</span>`
       + (isSearching ? `<button type="button" class="forge-sticker-clearlink" data-sticker-clear>${esc(t('workshop.sticker_clear_search'))}</button>` : '');
-    const gridHtml = emptyHtml || `<div class="forge-sticker-grid-inner" role="listbox" aria-label="${esc(sectionTitle)}">${cells}</div>`;
+    let gridHtml = emptyHtml || `<div class="forge-sticker-grid-inner" role="listbox" aria-label="${esc(sectionTitle)}">${cells}</div>`;
+    if (isCatalogLoading()) {
+      gridHtml = `<div class="forge-sticker-loading" role="status"><span>${esc(catalogProgressText())}</span></div>`;
+    }
 
     return { tabs, sectionTitle, sectionHtml, gridHtml, preview };
   }
 
   function pickerHtml() {
     const { tabs, sectionHtml, gridHtml, preview } = pickerParts();
+    const loading = isCatalogLoading();
+    const indeterminate = loading && catalogProgress.total === 0;
     return `<div class="forge-sticker-picker" role="dialog" aria-label="${esc(t('workshop.sticker_picker_label'))}" aria-modal="false">`
       + `<div class="forge-sticker-searchrow">`
       + `<span class="forge-sticker-search-ico" aria-hidden="true"><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="9" r="6"/><path d="m13.5 13.5 4 4"/></svg></span>`
       + `<input type="search" class="forge-sticker-search" data-sticker-search placeholder="${esc(t('workshop.sticker_search_placeholder'))}" aria-label="${esc(t('workshop.sticker_search_label'))}" value="${esc(pickerState.query)}" autocomplete="off" spellcheck="false">`
       + (pickerState.query ? `<button type="button" class="forge-sticker-x" data-sticker-clear aria-label="${esc(t('workshop.sticker_clear_search'))}"><span aria-hidden="true">✕</span></button>` : '')
       + `<button type="button" class="forge-sticker-x" data-sticker-close aria-label="${esc(t('workshop.sticker_close'))}"><span aria-hidden="true">✕</span></button>`
+      + `</div>`
+      + `<div class="forge-sticker-progress" data-sticker-progress${loading ? '' : ' hidden'}>`
+      + `<div class="forge-sticker-progress-text" data-sticker-progress-text>${esc(loading ? catalogProgressText() : '')}</div>`
+      + `<div class="forge-sticker-progress-bar${indeterminate ? ' is-indeterminate' : ''}" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${esc(String(catalogProgress.percent))}"><span class="forge-sticker-progress-fill" data-sticker-progress-fill style="width:${indeterminate ? '40' : clamp(catalogProgress.percent, 0, 100)}%"></span></div>`
       + `</div>`
       + `<div class="forge-sticker-nav" role="tablist" aria-label="${esc(t('workshop.sticker_categories'))}">${tabs}</div>`
       + `<div class="forge-sticker-section">${sectionHtml}</div>`
@@ -334,6 +365,31 @@
     syncPickerTriggerExpanded();
   }
 
+  function syncCatalogProgressUi() {
+    if (!pickerEl) return;
+    const panel = pickerPanel();
+    if (!panel) return;
+    const progress = panel.querySelector('[data-sticker-progress]');
+    if (!progress) return;
+    const loading = isCatalogLoading();
+    progress.hidden = !loading;
+    if (!loading) return;
+    const text = progress.querySelector('[data-sticker-progress-text]');
+    if (text) text.textContent = catalogProgressText();
+    const bar = progress.querySelector('.forge-sticker-progress-bar');
+    const fill = progress.querySelector('[data-sticker-progress-fill]');
+    if (bar) {
+      bar.classList.toggle('is-indeterminate', catalogProgress.total === 0);
+      bar.setAttribute('aria-valuenow', String(catalogProgress.percent));
+    }
+    if (fill) fill.style.width = (catalogProgress.total === 0 ? 40 : clamp(catalogProgress.percent, 0, 100)) + '%';
+    const grid = panel.querySelector('[data-sticker-grid]');
+    if (grid) {
+      const loadingNode = grid.querySelector('.forge-sticker-loading');
+      if (loadingNode) loadingNode.querySelector('span')?.replaceChildren(document.createTextNode(catalogProgressText()));
+    }
+  }
+
   function renderPicker() {
     if (!pickerEl) return;
     const panel = pickerPanel();
@@ -342,6 +398,7 @@
       pickerEl.innerHTML = pickerHtml();
       positionPicker();
       syncPickerHover();
+      syncCatalogProgressUi();
       return;
     }
     // 增量更新：绝不重建搜索框与面板本体。整块 innerHTML 会丢焦点/选区，
@@ -357,6 +414,7 @@
     }
     const previewEl = panel.querySelector('.forge-sticker-preview');
     if (previewEl) previewEl.innerHTML = preview;
+    // 进度条不走整块重画：这里只同步显隐与数字，避免每张图都抖动网格。
     // 清除按钮随查询有无增减，不碰搜索框本体。
     const input = panel.querySelector('[data-sticker-search]');
     let clearBtn = panel.querySelector('.forge-sticker-searchrow [data-sticker-clear]');
@@ -386,6 +444,7 @@
     } else {
       errorEl?.remove();
     }
+    syncCatalogProgressUi();
     syncPickerHover();
   }
 
@@ -662,6 +721,7 @@
     // 宿主回推的贴纸目录：写入本地缓存并唤醒等待打开选择器的调用。
     applyCatalog(payload) {
       if (!payload) return;
+      catalogProgress = { active: false, downloaded: 0, total: 0, percent: 0 };
       if (payload.error) {
         catalogItems = [];
         catalogGroups = [];
@@ -680,6 +740,17 @@
       resolveCatalogWaiters();
       renderAllStrips();
       if (pickerEl) renderPicker();
+    },
+    // 宿主逐张回推的缓存进度：只刷新进度条与数字，不重画整个选择器。
+    applyCatalogProgress(payload) {
+      if (!payload) return;
+      catalogProgress = {
+        active: true,
+        downloaded: Math.max(0, Number(payload.downloaded) || 0),
+        total: Math.max(0, Number(payload.total) || 0),
+        percent: Math.min(100, Math.max(0, Number(payload.percent) || 0)),
+      };
+      syncCatalogProgressUi();
     },
     applyBulk(payload) {
       if (!payload) return;
@@ -746,11 +817,10 @@
         if (pickerEl && pickerState.modId === modId) {
           closePicker();
         } else {
-          // 目录已就绪才打开；没就绪先拉，回来再开（与网页版 SSR 失败补拉一致）。
-          loadCatalog().then(() => {
-            const fresh = document.querySelector(`[data-sticker-trigger][data-mod-id="${CSS.escape(modId)}"]`);
-            openPicker(modId, fresh || trigger);
-          });
+          // 先拉再开：让首次渲染就拿到 loading 状态，进度条与加载文案一次到位；
+          // 下载在后台继续，目录回来时 applyCatalog 会自动补齐分类与网格。
+          if (!catalogReady) void loadCatalog();
+          openPicker(modId, trigger);
         }
         return true;
       }
