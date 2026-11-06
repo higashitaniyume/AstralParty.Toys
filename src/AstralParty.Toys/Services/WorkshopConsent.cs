@@ -7,7 +7,7 @@ namespace AstralParty.Toys.Services;
 public static class WorkshopConsent
 {
     /// <summary>当前免责说明的版本。</summary>
-    public const int CurrentVersion = 1;
+    public const int CurrentVersion = 2;
 
     public static bool IsGranted(ReplayLibrarySettings settings)
         => settings.WorkshopConsentVersion >= CurrentVersion;

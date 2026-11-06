@@ -75,6 +75,13 @@
   opacity: 0.62;
 }
 
+.resource-mod-card.is-disabled .resource-mod-title strong {
+  color: var(--accent-red);
+  text-decoration: line-through;
+  text-decoration-color: var(--accent-red);
+  text-decoration-thickness: 2px;
+}
+
 .resource-mod-head {
   display: flex;
   align-items: flex-start;

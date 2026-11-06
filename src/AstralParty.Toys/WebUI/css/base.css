@@ -180,6 +180,21 @@ body.page-home-active .page-container {
   box-shadow: var(--gp-shadow-pink);
 }
 
+/* 顶栏左上角用 App 本体图标（与 exe 图标一致），图标铺满 40×40 */
+.brand-logo.brand-logo-img {
+  background: none;
+  border: 0;
+  overflow: hidden;
+  padding: 0;
+  box-shadow: var(--gp-shadow-sm);
+}
+.brand-logo.brand-logo-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .brand-text h1 {
   margin: 0;
   font-size: 17px;
@@ -291,6 +306,41 @@ body.page-home-active .page-container {
   font-variant-numeric: tabular-nums;
 }
 .app-version-chip-commit:empty { display: none; }
+
+/* 标题栏全局游戏版本按钮：标题左边，显示 [区服] 游戏名称，路径走 title 提示 */
+.v2-global-game {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: var(--gp-radius-full);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1.5px solid rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  flex: none;
+  max-width: 280px;
+  cursor: pointer;
+  font: inherit;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.v2-global-game:hover {
+  background: rgba(56, 189, 248, 0.16);
+  border-color: rgba(56, 189, 248, 0.55);
+}
+.v2-global-game svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  opacity: 0.85;
+}
+.v2-global-game-text {
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 /* 窄窗口（窗口最小 1120px）先舍掉提交号，版本号本身必须在 */
 @media (max-width: 1300px) {

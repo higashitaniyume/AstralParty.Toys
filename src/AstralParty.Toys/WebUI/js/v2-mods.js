@@ -106,6 +106,7 @@
             </div>
           </div>
           ${btn}
+          ${s.installed && s.loaderManaged ? `<button class="v2-btn line" data-v2m="disable" ${b ? 'disabled' : ''} title="备份后只删除 version.dll，保留所有模组与配置，之后能恢复">停用加载器</button>` : ''}
           <button class="v2-icon-btn" data-v2m="loaderSettings" title="加载器设置" ${usable ? '' : 'disabled'}>${I().sliders}</button>
         </div>
         <div class="v2-row"><span class="k">游戏变速</span>
@@ -170,8 +171,6 @@
             <span class="d">装回程序附带的 v${esc(s.embeddedVersion || '?')}${s.installedVersion && s.embeddedVersion && cmpVer(s.installedVersion, s.embeddedVersion) > 0 ? '，<span style="color:var(--gp-gold)">比你现在的旧，属于降级</span>' : ''}</span>
             <button class="v2-btn line" data-v2m="reinstall" ${b ? 'disabled' : ''}>安装…</button></div>
           <div class="v2-row"><span class="n">导入发布包</span><span class="d">用本地的加载器发布 ZIP 安装或降级</span><button class="v2-btn line" data-v2m="importPkg" ${b ? 'disabled' : ''}>导入…</button></div>
-          ${s.installed && s.loaderManaged ? `<div class="v2-row"><span class="n">停用加载器</span><span class="d">只备份并删除 version.dll，模组和配置都保留，之后能恢复</span>
-            <button class="v2-btn line" data-v2m="disable" ${b ? 'disabled' : ''}>停用…</button></div>` : ''}
           <div class="v2-row"><span class="n">${s.installed && !s.loaderManaged ? '强制卸载' : '完整卸载'}</span><span class="d">删除加载器和整个 AstralParty_ModLoader 文件夹，<b style="color:#f43f5e">模组、配置、日志都会删掉</b></span>
             <button class="v2-btn danger" data-v2m="uninstall" ${b || !(s.installed || s.loaderRootExists) ? 'disabled' : ''}>卸载…</button></div>
         </div>

@@ -25,44 +25,54 @@ public partial class HybridWindow
         }
     }
 
-    /// <summary>把内嵌的 CHANGELOG.md（Markdown 文本）推给界面，在「关于 → 更新日志」弹窗里渲染。</summary>
-    private void PostChangelog()
+    /// <summary>内嵌的工具箱 CHANGELOG.md（离线兜底；随程序集编译进来的版本）。</summary>
+    private static string BundledAppChangelog()
     {
-        string markdown;
         try
         {
             var asm = typeof(HybridWindow).Assembly;
             using var stream = asm.GetManifestResourceStream("AstralParty.Toys.CHANGELOG.md");
-            if (stream is null)
-            {
-                Post(new { type = "changelog", payload = new { markdown = "" } });
-                return;
-            }
+            if (stream is null) return "";
             using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
-            markdown = reader.ReadToEnd();
+            return reader.ReadToEnd();
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"PostChangelog failed: {ex.Message}");
-            markdown = "";
+            Debug.WriteLine($"BundledAppChangelog failed: {ex.Message}");
+            return "";
+        }
+    }
+
+    /// <summary>把工具箱更新日志推给界面。策略：先经设置里的 GitHub 镜像去本仓库根拉
+    /// CHANGELOG.md，拉不到退回内嵌版本。</summary>
+    private async Task PostChangelogAsync()
+    {
+        string markdown;
+        try
+        {
+            var settings = _libraryService.Settings;
+            markdown = await ModManager.DownloadRepoChangelogAsync(
+                ModManager.AppRepo, settings.GitHubMirrorType, settings.CustomGitHubMirrorUrl).ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"PostChangelog remote failed, fallback to bundled: {ex.Message}");
+            markdown = BundledAppChangelog();
         }
         Post(new { type = "changelog", payload = new { markdown } });
     }
 
-    /// <summary>把加载器（CesiumLoader）的更新日志推给界面。策略：CI 内嵌优先（离线即时），
-    /// 内嵌为占位/空、或前端要求 fresh 时，去 GitHub 拉最新 Release 发布说明兜底。</summary>
+    /// <summary>把加载器（CesiumLoader）的更新日志推给界面。策略：先经设置里的 GitHub 镜像去
+    /// CesiumLoader 仓库根拉 CHANGELOG.md，拉不到退回内嵌的打包版本。</summary>
     private async Task PostLoaderChangelogAsync(bool fresh)
     {
         var embedded = ModManager.BundledLoaderChangelog;
-        if (!fresh && !string.IsNullOrWhiteSpace(embedded))
-        {
-            Post(new { type = "loaderChangelog", payload = new { markdown = embedded, source = "bundled" } });
-            return;
-        }
         try
         {
-            var notes = await ModManager.DownloadLatestReleaseNotesAsync().ConfigureAwait(true);
-            Post(new { type = "loaderChangelog", payload = new { markdown = notes, source = "github" } });
+            var settings = _libraryService.Settings;
+            var text = await ModManager.DownloadRepoChangelogAsync(
+                ModManager.LoaderRepo, settings.GitHubMirrorType, settings.CustomGitHubMirrorUrl).ConfigureAwait(true);
+            Post(new { type = "loaderChangelog", payload = new { markdown = text, source = "github" } });
         }
         catch (Exception ex)
         {

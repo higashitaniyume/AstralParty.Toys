@@ -126,7 +126,7 @@
     },
 
     // ============================ 更新日志（弹窗 · 双 Tab） ============================
-    // 工具箱（本程序内嵌 CHANGELOG.md）/ 加载器（CesiumLoader Release 说明：CI 内嵌 + 运行时兜底）。
+    // 工具箱（本仓库根 CHANGELOG.md，经设置里的 GitHub 镜像拉取，内嵌作兜底）/ 加载器（CesiumLoader 仓库根 CHANGELOG.md，同上）。
     changelogMarkdown: null,       // 工具箱日志（宿主 changelog 消息）
     loaderChangelogMarkdown: null, // 加载器日志（宿主 loaderChangelog 消息）
     loaderSource: '',
@@ -178,8 +178,8 @@
     loaderChangelogHtml() {
       const md = this.loaderChangelogMarkdown || '';
       const sourceNote = this.loaderSource === 'github'
-        ? '来源：GitHub 最新 Release'
-        : (this.loaderSource === 'bundled' ? '来源：随本程序内置（打包时的版本）' : '');
+        ? '来源：CesiumLoader 仓库根 CHANGELOG.md（经 GitHub 镜像）'
+        : (this.loaderSource === 'bundled' ? '来源：随本程序内置（打包时的版本，离线兜底）' : '');
       const foot = `<div class="changelog-foot">
           <span class="changelog-source">${md.trim() ? esc(sourceNote) : ''}</span>
           <button class="secondary-btn changelog-refresh" id="loaderChangelogRefresh" type="button">${Icons.svg('refresh')} 拉取最新</button>

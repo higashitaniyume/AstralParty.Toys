@@ -932,10 +932,21 @@ body:not(.reduce-motion) #workshopView:not(.page-entering) .workshop-scroll {
   gap: 16px;
 }
 
+.workshop-consent-warn {
+  margin: 0;
+  text-align: center;
+  color: var(--gp-gold);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
 .workshop-consent-lead {
   margin: 0;
-  color: var(--gp-text-main);
+  text-align: center;
+  color: var(--gp-gold);
   font-size: 14px;
+  font-weight: 700;
   line-height: 1.65;
 }
 
@@ -947,14 +958,35 @@ body:not(.reduce-motion) #workshopView:not(.page-entering) .workshop-scroll {
   gap: 10px;
   border: 1px solid var(--gp-border);
   border-radius: var(--gp-radius-md);
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--gp-text-sub);
+  background: rgba(250, 204, 21, 0.06);
+  color: var(--gp-gold);
   font-size: 13px;
   line-height: 1.65;
+  text-align: center;
+  list-style-position: inside;
 }
 
 .workshop-consent-points li::marker {
   color: var(--gp-gold);
+}
+
+.workshop-consent-url {
+  margin: 0;
+  text-align: center;
+  color: var(--gp-gold);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+.workshop-consent-url-note {
+  margin: 0;
+  text-align: center;
+  color: var(--gp-gold);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.6;
 }
 
 .workshop-consent-actions {

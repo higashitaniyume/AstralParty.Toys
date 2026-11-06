@@ -387,7 +387,8 @@ body:not(.reduce-motion) #modsView:not(.page-entering) .mods-advanced {
   border-color: var(--gp-border-highlight);
 }
 .mod-card.mod-disabled { opacity: 0.62; }
-.mod-card.mod-disabled .mod-card-name { text-decoration: line-through; }
+.mod-card.mod-disabled .mod-card-name { text-decoration: line-through; text-decoration-color: var(--accent-red); text-decoration-thickness: 2px; color: var(--accent-red); }
+.mod-card.mod-disabled .mod-card-desc { color: var(--accent-red); }
 
 .mod-card-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 

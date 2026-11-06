@@ -939,14 +939,18 @@
   // ============================== 使用同意 ==============================
 
   function consentBody() {
+    const base = state.baseUrl || AppState.librarySettings?.workshopUrl || 'https://forge.hiynet.com';
     return `
       <div class="workshop-consent">
+        <p class="workshop-consent-warn">${esc(t('workshop.consent_warn'))}</p>
         <p class="workshop-consent-lead">${esc(t('workshop.consent_lead'))}</p>
         <ul class="workshop-consent-points">
           <li>${esc(t('workshop.consent_point_third_party'))}</li>
           <li>${esc(t('workshop.consent_point_risk'))}</li>
           <li>${esc(t('workshop.consent_point_network'))}</li>
         </ul>
+        <p class="workshop-consent-url">${esc(t('workshop.consent_current_url', { url: base }))}</p>
+        <p class="workshop-consent-url-note">${esc(t('workshop.consent_default_url_note'))}</p>
         <div class="workshop-consent-actions">
           <button class="secondary-btn" id="workshopConsentSkip">${esc(t('workshop.consent_skip'))}</button>
           <button class="primary-btn" id="workshopConsentAgree">${esc(t('workshop.consent_agree'))}</button>

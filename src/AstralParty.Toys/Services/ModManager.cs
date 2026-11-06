@@ -640,11 +640,14 @@ public sealed partial class ModManager
     public const string LatestPackageUrl =
         "https://github.com/higashitaniyume/CesiumLoader/releases/latest/download/cesium-loader.zip";
 
-    /// <summary>CesiumLoader 仓库（取 Release 发布说明当作加载器更新日志）。</summary>
+    /// <summary>Toys 仓库（取仓库根 CHANGELOG.md 当作工具箱更新日志）。</summary>
+    public const string AppRepo = "higashitaniyume/AstralParty.Toys";
+
+    /// <summary>CesiumLoader 仓库（取仓库根 CHANGELOG.md 当作加载器更新日志）。</summary>
     public const string LoaderRepo = "higashitaniyume/CesiumLoader";
 
-    /// <summary>内嵌的加载器更新日志（<c>Resources\ModLoader\loader-changelog.md</c>）：CI 打包时写入该版本的
-    /// Release 说明。本地开发构建里是占位内容 → 返回空串，交给运行时去 GitHub 拉（见 <see cref="DownloadLatestReleaseNotesAsync"/>）。</summary>
+    /// <summary>内嵌的加载器更新日志（<c>Resources\ModLoader\loader-changelog.md</c>）：CI 打包时写入
+    /// CesiumLoader 仓库根 CHANGELOG.md 的内容。本地开发构建里是占位内容 → 返回空串，只作离线兜底。</summary>
     public static string BundledLoaderChangelog => ReadBundledLoaderChangelog();
 
     private static string ReadBundledLoaderChangelog()
@@ -665,25 +668,19 @@ public sealed partial class ModManager
         }
     }
 
-    /// <summary>去 GitHub 取最新 Release 的发布说明（body）当作加载器更新日志（Markdown）。失败抛异常，由调用方兜底。</summary>
-    public static async Task<string> DownloadLatestReleaseNotesAsync()
+    /// <summary>去 GitHub 取指定仓库根目录 CHANGELOG.md（raw），并应用设置中选择的 GitHub 镜像。
+    /// 失败抛异常，由调用方兜底内嵌。</summary>
+    public static async Task<string> DownloadRepoChangelogAsync(string repo, string? mirrorType, string? customUrl)
     {
-        using var req = new HttpRequestMessage(HttpMethod.Get, $"https://api.github.com/repos/{LoaderRepo}/releases/latest");
-        req.Headers.Accept.ParseAdd("application/vnd.github+json");
+        var rawUrl = $"https://raw.githubusercontent.com/{repo}/master/CHANGELOG.md";
+        var url = GitHubMirrorHelper.ApplyMirror(rawUrl, mirrorType, customUrl);
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        req.Headers.Accept.ParseAdd("text/markdown,text/plain;q=0.9,*/*;q=0.8");
         using var resp = await Http.SendAsync(req).ConfigureAwait(false);
         resp.EnsureSuccessStatusCode();
-        var json = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
-        using var doc = JsonDocument.Parse(json);
-        var root = doc.RootElement;
-        var tag = root.TryGetProperty("tag_name", out var t) ? t.GetString() : null;
-        var name = root.TryGetProperty("name", out var n) ? n.GetString() : null;
-        var body = root.TryGetProperty("body", out var b) ? b.GetString() : null;
-
-        var header = string.IsNullOrWhiteSpace(name) ? (tag ?? "") : name;
-        var sb = new System.Text.StringBuilder();
-        if (!string.IsNullOrWhiteSpace(header)) sb.AppendLine("## " + header.Trim()).AppendLine();
-        sb.Append(string.IsNullOrWhiteSpace(body) ? "（这个版本没有填写发布说明。）" : body.Trim());
-        return sb.ToString();
+        var text = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(text)) throw new InvalidOperationException("仓库根 CHANGELOG.md 为空。");
+        return text.Trim();
     }
 
     public const string InstalledManifestFileName = "cesium-loader.json";

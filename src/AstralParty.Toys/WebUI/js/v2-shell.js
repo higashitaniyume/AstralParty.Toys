@@ -215,6 +215,44 @@
     syncHostTheme();
   }
 
+  // 标题栏全局游戏版本按钮：任何页面都能切换全局游戏目录，与模组页/自定义页的下拉保持同步
+  function openGlobalGameMenu(el) {
+    const list = AppState.gameProfiles?.profiles || [];
+    if (!list.length) {
+      openMenu(el, [
+        { label: '添加游戏目录…', icon: ICON.plus, fn: () => post({ type: 'gameProfileBrowse' }) },
+        { label: '管理游戏目录…', icon: ICON.sliders, fn: () => showPage('settings') },
+      ]);
+      return;
+    }
+    openMenu(el, [
+      ...list.map(p => ({
+        label: `[${p.editionLabel}] ${p.label}${p.directoryExists === false ? '（目录不存在）' : ''}`,
+        icon: p.active ? ICON.check : ICON.dot,
+        fn: () => { if (!p.active) post({ type: 'gameProfileSetActive', id: p.id }); },
+      })),
+      '-',
+      { label: '添加游戏目录…', icon: ICON.plus, fn: () => post({ type: 'gameProfileBrowse' }) },
+      { label: '管理游戏目录…', icon: ICON.sliders, fn: () => showPage('settings') },
+    ]);
+  }
+  function renderGlobalGame() {
+    const btn = $('v2GlobalGameBtn');
+    if (!btn) return;
+    const list = AppState.gameProfiles?.profiles || [];
+    const cur = list.find(p => p.active);
+    if (!list.length) {
+      btn.innerHTML = `${ICON.plus}<span class="v2-global-game-text">添加游戏目录…</span>${ICON.down}`;
+      btn.title = '还没有添加游戏目录，点击添加';
+    } else if (!cur) {
+      btn.innerHTML = `${ICON.folder}<span class="v2-global-game-text">请选择游戏…</span>${ICON.down}`;
+      btn.title = '点击选择当前游戏目录';
+    } else {
+      btn.innerHTML = `${ICON.folder}<span class="v2-global-game-text">[${esc(cur.editionLabel || '')}] ${esc(cur.label || '')}</span>${ICON.down}`;
+      btn.title = cur.directory || '';
+    }
+  }
+
   function mountTopbar() {
     const header = document.querySelector('.global-header');
     const chip = $('appVersionChip');
@@ -229,6 +267,19 @@
     // 布局（仿 BazaarPlusPlus）：图标 名称 版本 …… WIKI GitHub │ 最小化 最大化 关闭
     const brand = header.querySelector('.brand-section');
     if (brand && chip) brand.after(chip);
+    // 全局游戏版本按钮：标题左边（品牌+版本胶囊之后、导航之前），任何页面都能切换
+    const gameBtn = document.createElement('button');
+    gameBtn.id = 'v2GlobalGameBtn';
+    gameBtn.className = 'v2-global-game';
+    gameBtn.type = 'button';
+    gameBtn.setAttribute('data-v2menu', '');
+    gameBtn.setAttribute('aria-label', '切换当前游戏目录（全局）');
+    gameBtn.addEventListener('click', () => openGlobalGameMenu(gameBtn));
+    if (chip) chip.after(gameBtn);
+    else if (brand) brand.after(gameBtn);
+    else header.prepend(gameBtn);
+    renderGlobalGame();
+    if (!AppState.gameProfiles?.profiles?.length) post({ type: 'gameProfilesGet' });
     const spacer = document.createElement('div'); spacer.className = 'v2-top-spacer';
     const win = document.createElement('div');
     win.className = 'v2-winbtns';
@@ -678,6 +729,7 @@
         if ((msg.payload?.profiles || []).some(p => p.active) && !V2.modStatus?.gameDirectory) {
           V2.lastModStatusAsk = Date.now(); post({ type: 'modStatus' });
         }
+        renderGlobalGame();
         break;
       case 'replayLibrary': case 'homeData': case 'steamBypassSync': case 'launchModeSync': break;
       default: return;

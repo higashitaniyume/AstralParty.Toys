@@ -75,7 +75,7 @@ public partial class HybridWindow
                     CopyVersionInfo();
                     break;
                 case "changelogGet":
-                    PostChangelog();
+                    _ = PostChangelogAsync();
                     break;
                 case "loaderChangelogGet":
                     _ = PostLoaderChangelogAsync(root.TryGetProperty("fresh", out var freshEl) && freshEl.ValueKind == JsonValueKind.True);

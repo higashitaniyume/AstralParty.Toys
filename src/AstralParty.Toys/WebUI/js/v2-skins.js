@@ -6,7 +6,7 @@
   const K = {
     cardScheme: null, cardCat: 'all', cardQ: '',
     audioScheme: null, aCat: 'all', aStatus: 'all', aChar: 'all', aQ: '', aLimit: 200, extract: null,
-    resP: null,
+    resP: null, resOp: null, resLog: [],
   };
   const U = () => window.V2UI;
   const I = () => window.V2UI.ICON;
@@ -27,10 +27,21 @@
   /* ---------- 外框 ---------- */
   // 角色皮肤功能目前不稳定，入口暂时隐藏；恢复时把 ['characters', '角色'] 加回来即可，v2-characters.js 还在
   const TABS = [['cards', '卡牌'], ['audio', '音效'], ['resource', '资源包'], ['background', '背景']];
+  // 自定义分成两组：改游戏文件的放「游戏自定义」，只改 Toys 自身外观的放「Toys 自定义」
+  function sideNav() {
+    const cur = tab();
+    const gameTabs = [['cards', '卡牌'], ['audio', '音效'], ['resource', '资源包']];
+    if (window.V2Chars) gameTabs.push(['characters', '角色']);
+    const toysTabs = [['background', '背景']];
+    const btn = ([k, l]) => `<button class="v2-side-tab${cur === k ? ' on' : ''}" data-v2s-tab="${k}" role="tab" aria-selected="${cur === k}">${l}</button>`;
+    return `<nav class="v2-settings-side" role="tablist" aria-orientation="vertical" aria-label="自定义分类">
+      <div class="v2-side-label">游戏自定义</div>${gameTabs.map(btn).join('')}
+      <div class="v2-side-label">Toys 自定义</div>${toysTabs.map(btn).join('')}
+    </nav>`;
+  }
   function frameHead(action = '') {
     return `<div class="v2-head"><h1>自定义</h1><span class="v2-top-spacer"></span>${action}</div>
-      ${tab() === 'background' ? '' : U().gamePicker('v2sGame', 'data-v2s="manageGames"', rRunning())}
-      <div class="v2-toolbar"><div class="v2-seg">${segBtns(tab(), TABS, 'data-v2s-tab')}</div></div>`;
+      ${tab() === 'background' ? '' : U().gamePicker('v2sGame', 'data-v2s="manageGames"', rRunning())}`;
   }
   const crumb = (name, back) => `<div class="v2-crumb"><button data-v2s="${back}">自定义</button>${I().right}<span class="cur">${esc(name)}</span></div>`;
 
@@ -254,15 +265,22 @@
 
   function resourceView() {
     const s = rStatus() || {}, mods = s.mods || [], P = K.resP, running = rRunning();
-    const canApply = s.catalogAvailable && !s.gameRunning && mods.some(m => m.enabled && m.matchedBundles > 0) && !running;
-    const canRestore = !!s.appliedVersion && !s.gameRunning && !running;
-    const action = `<button class="v2-btn ${s.needsApply ? 'line' : 'primary'}" data-v2s="resImport" ${running ? 'disabled' : ''}>${I().upload}导入资源包</button>`;
-    const phase = P ? ({ import: '正在导入', apply: '正在应用', done: '完成', cancelled: '已取消并还原' }[P.phase] || '处理中') : '';
+    const op = K.resOp;
+    const opRunning = !!(op && op.active && !running);
+    const busy = running || opRunning;
+    const canApply = s.catalogAvailable && !s.gameRunning && mods.some(m => m.enabled && m.matchedBundles > 0) && !busy;
+    const canRestore = !!s.appliedVersion && !s.gameRunning && !busy;
+    const action = `<button class="v2-btn ${s.needsApply ? 'line' : 'primary'}" data-v2s="resImport" ${busy ? 'disabled' : ''}>${I().upload}导入资源包</button>`;
+    const phase = P ? ({ import: '正在导入', apply: '正在应用', done: '完成', cancelled: '已取消并还原' }[P.phase] || '处理中') : (opRunning ? (op.title || '处理中') : '');
+    const finished = P && !running;
+    const logText = K.resLog.join('\n');
+    const hasLog = K.resLog.length > 0;
+    const logValue = hasLog ? logText : (P?.task || P?.detail || op?.title || '等待日志…');
     const msgs = s.appliedMessages || [];
     return frameHead(action) + `
       ${s.catalogError ? `<div class="v2-notice">${I().info}<span>${esc(s.catalogError)}</span></div>` : ''}
       ${s.gameRunning ? `<div class="v2-notice">${I().info}<span>游戏正在运行：要先关掉游戏，才能应用或还原资源包</span></div>` : ''}
-      ${s.needsApply && !running ? `<div class="v2-notice">${I().info}<span style="flex:1">有未应用的更改，点「应用」后才会写入游戏</span>
+      ${s.needsApply && !busy ? `<div class="v2-notice">${I().info}<span style="flex:1">有未应用的更改，点「应用」后才会写入游戏</span>
         <button class="v2-btn primary" data-v2s="resApply" ${canApply ? '' : 'disabled'}>应用</button></div>` : ''}
       ${P && running ? `<div class="v2-card" style="padding:14px 18px">
         <div style="display:flex;align-items:center;gap:10px"><div style="flex:1"><b style="font-weight:500">${phase}</b>
@@ -270,6 +288,10 @@
           ${P.canPause !== false ? `<button class="v2-btn ghost" data-v2s="resPause">${P.paused || RS()?.progressPaused ? '继续' : '暂停'}</button>` : ''}
           ${P.canCancel !== false ? '<button class="v2-btn ghost" data-v2s="resCancel">取消并还原</button>' : ''}</div>
         <div class="v2-bar" style="max-width:none;margin-top:8px"><div style="width:${P.percent || 0}%"></div></div></div>` : ''}
+      ${opRunning ? `<div class="v2-card" style="padding:14px 18px">
+        <div style="display:flex;align-items:center;gap:10px"><div style="flex:1"><b style="font-weight:500">${esc(op.title || '处理中')}</b>
+          <br><span class="v2-muted">${esc(op.detail || '')}</span></div>
+          ${op.canCancel ? '<button class="v2-btn ghost" data-v2s="resCancel">取消并还原</button>' : ''}</div></div>` : ''}
       <div class="v2-card">
         <div class="v2-row"><span class="k">状态</span><span class="v">${s.catalogError ? '<span class="v2-muted">资源目录读取失败</span>'
           : `资源目录 ${esc(s.catalogVersion || '—')} · ${s.appliedVersion ? `已应用 ${s.appliedRedirects ?? 0} 条` : '尚未应用'}`}
@@ -280,9 +302,16 @@
             ${m.hasMojibakeNames ? '<span class="v2-badge warn" title="压缩包里的文件名有乱码">文件名乱码</span>' : ''}</div>
             <div class="desc">${m.matchedBundles || 0} / ${m.bundleCount || 0} 个资源匹配当前游戏</div></div>
           <button class="v2-icon-btn" data-v2s-rmenu="${esc(m.id)}" data-v2menu title="更多">${I().more}</button>
-          <label class="v2-switch"><input type="checkbox" data-v2s-rtoggle="${esc(m.id)}" ${m.enabled ? 'checked' : ''} ${running ? 'disabled' : ''}><span></span></label>
+          <label class="v2-switch"><input type="checkbox" data-v2s-rtoggle="${esc(m.id)}" ${m.enabled ? 'checked' : ''} ${busy ? 'disabled' : ''}><span></span></label>
         </div>`).join('') || '<div class="v2-empty">还没有资源包。点「导入资源包」添加 RML 格式的 ZIP。</div>'}
       </div>
+      ${busy || hasLog ? `<div class="v2-card" style="padding:14px 18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <div style="min-width:0"><b style="font-weight:600">操作日志</b><span class="v2-muted" style="margin-left:8px">${busy ? esc(phase || '') : (finished ? esc(phase) : '最近一次操作')} · ${K.resLog.length} 条</span></div>
+          ${!busy ? '<button class="v2-btn ghost" data-v2s="resDismissLog">关闭日志</button>' : ''}
+        </div>
+        <textarea id="v2ResLog" class="v2-log-input" readonly rows="8" aria-label="资源模组操作日志" spellcheck="false">${esc(logValue)}</textarea>
+      </div>` : ''}
       ${msgs.length ? `<details class="v2-card"><summary><div class="t"><b>应用结果</b><small>${s.appliedErrors || 0} 条未生效 / ${s.appliedWarnings || 0} 条警告</small></div>${I().down}</summary>
         <pre class="v2-log">${esc(msgs.join('\n'))}</pre></details>` : ''}
       <details class="v2-card"><summary><div class="t"><b>更多</b><small>应用、还原官方资源、打开目录</small></div>${I().down}</summary>
@@ -300,16 +329,19 @@
     if (!root || !view || U().isComposing()) return;
     view.classList.toggle('v2-own', ownTab());
     const t = tab();
-    root.innerHTML = `<div class="v2-page ${t === 'characters' && !window.V2Chars ? 'v2-frame-only' : ''}">${
-      t === 'cards' ? (K.cardScheme ? cardScheme() : cardsList())
+    const inner = t === 'cards' ? (K.cardScheme ? cardScheme() : cardsList())
       : t === 'audio' ? (K.audioScheme ? audioScheme() : audioList())
       : t === 'resource' ? resourceView()
       : t === 'background' && window.V2Bg ? window.V2Bg.html()
       : window.V2Chars ? window.V2Chars.html()
-      : frameHead()}</div>`;
+      : frameHead();
+    root.innerHTML = `<div class="v2-page ${t === 'characters' && !window.V2Chars ? 'v2-frame-only' : ''}"><div class="v2-settings-layout">${sideNav()}<div class="v2-settings-main">${inner}</div></div></div>`;
     // 搜索框：重画后把焦点和光标放回去
     U().bindSearch('v2sCardQ', v => { K.cardQ = v; render(); });
     U().bindSearch('v2sAQ', v => { K.aQ = v; K.aLimit = 200; render(); });
+    // 资源包日志每次重画后贴到底部，方便看最新进度（和原版 rmpLog 行为一致）
+    const logEl = $('v2ResLog');
+    if (logEl) logEl.scrollTop = logEl.scrollHeight;
   }
 
   // 给 v2-characters.js 用
@@ -414,6 +446,7 @@
     resPause: () => post({ type: 'resourceModsPause', paused: !RS()?.progressPaused }),
     resCancel: () => confirm({ title: '取消并还原？', ok: '取消并还原',
       lines: ['停止当前操作，并把游戏资源恢复到操作前的状态', '已经解压的临时文件会被删除'], onOk: () => post({ type: 'resourceModsCancel' }) }),
+    resDismissLog: () => { K.resLog = []; K.resP = null; K.resOp = null; render(); },
   };
 
   function audioItemMenu(anchor, i) {
@@ -504,7 +537,35 @@
       // 提取完重新拿到条目后：一个原版都没有，就说明是「0 个」那种情况
       if (name === 'renderItems' && K.extractChecking) { K.extractChecking = false; K.extractEmpty = !(args[0]?.items || []).some(i => i.hasOriginal); }
     });
-    wrap(RS(), ['render', 'renderProgress', 'renderPaused', 'setBusy'], (name, args) => { if (name === 'renderProgress') K.resP = args[0]; });
+    wrap(RS(), ['render', 'renderProgress', 'renderPaused', 'setBusy'], (name, args) => {
+      if (name === 'renderProgress') {
+        const p = args[0];
+        K.resP = p || null;
+        if (p && p.detail) { K.resLog.push(String(p.detail)); if (K.resLog.length > 200) K.resLog.shift(); }
+      }
+    });
+    // 操作消息只在开始/结束时重画，逐行进度期间不重复重画（Progress 已会重画，避免双倍开销）
+    const rs = RS();
+    if (rs && typeof rs.renderOperation === 'function') {
+      const origOp = rs.renderOperation.bind(rs);
+      rs.renderOperation = (p) => {
+        const wasOpRunning = !!(K.resOp && K.resOp.active && !rRunning());
+        K.resOp = p || null;
+        // 新操作开始时清零日志，并留第一行说明这次是什么操作（还原等无逐行进度也有用）
+        if (p && p.active && p.percent == null) {
+          K.resLog = [];
+          const line = `${p.title || ''}${p.detail ? '：' + p.detail : ''}`.trim();
+          if (line) K.resLog.push(line);
+          origOp(p);
+          render();
+        } else if (p && !p.active && wasOpRunning) {
+          origOp(p);
+          render();
+        } else {
+          origOp(p);
+        }
+      };
+    }
     render();
   });
 })();

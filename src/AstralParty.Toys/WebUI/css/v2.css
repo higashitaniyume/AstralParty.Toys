@@ -127,6 +127,8 @@ body.v2-maximized .v2-win .restore { display: block; }
 
 /* 顶栏右侧：外部跳转 */
 .v2-top-spacer { flex: 1; }
+.v2-global-game { background: transparent; border-color: var(--v2-border); color: var(--v2-text-soft); }
+.v2-global-game:hover { background: var(--v2-hover); color: var(--v2-text); border-color: var(--v2-border-strong); }
 .v2-tb-btn { display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; border-radius: 6px; color: var(--gp-text-sub); font-size: 13px; }
 .v2-tb-btn:hover { background: var(--v2-hover); color: var(--v2-text); }
 .v2-tb-btn svg { width: 16px; height: 16px; }
@@ -280,7 +282,9 @@ details.v2-card[open] > summary svg { transform: rotate(180deg); }
 .v2-mod .body { flex: 1; min-width: 0; }
 .v2-mod .name { display: flex; gap: 8px; align-items: center; font-weight: 500; flex-wrap: wrap; }
 .v2-mod .desc { color: var(--gp-text-muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.v2-mod.off .name { color: var(--gp-text-muted); }
+.v2-mod.off .name { color: var(--accent-red); text-decoration: line-through; text-decoration-color: var(--accent-red); text-decoration-thickness: 2px; }
+.v2-mod.off .name .v2-tag, .v2-mod.off .name .v2-badge { text-decoration: none; }
+.v2-mod.off .desc { color: var(--accent-red); }
 .v2-mod.sel { background: rgba(255, 23, 118, .06); }
 .v2-mod-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 18px 10px; border-top: 1px solid var(--v2-border); }
 .v2-mod-tools .v2-btn { height: 30px; padding: 0 10px; font-size: 13px; }
@@ -315,6 +319,10 @@ details.v2-card[open] > summary svg { transform: rotate(180deg); }
 .v2-tab-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gp-pink); flex: none; margin-left: auto; }
 .v2-settings-main { flex: 1; min-width: 0; }
 .v2-settings-main .v2-card { margin-bottom: 0; }
+/* 自定义页侧栏分组标题（游戏自定义 / Toys 自定义） */
+.v2-side-label { padding: 10px 12px 4px; color: var(--gp-text-muted); font-size: 11px; letter-spacing: .04em; font-weight: 600; }
+.v2-side-label:first-child { padding-top: 4px; }
+.v2-settings-side .v2-side-label + .v2-side-label { margin-top: 6px; border-top: 1px solid var(--v2-border); padding-top: 12px; }
 
 /* ---------- 骨架屏（异步加载占位，纯 CSS 动画不阻塞） ---------- */
 .v2-skel { background: linear-gradient(90deg, rgba(255,255,255,.06) 25%, rgba(255,255,255,.12) 50%, rgba(255,255,255,.06) 75%); background-size: 200% 100%; border-radius: 8px; animation: v2-shimmer 1.4s infinite linear; }
@@ -376,7 +384,9 @@ html body .v2-select:disabled { opacity: .45; cursor: not-allowed; color: var(--
 .v2-audio .vol { display: flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 12px; }
 .v2-audio .vol input { width: 80px; accent-color: var(--gp-pink); }
 .v2-audio .vol span { width: 36px; }
-.v2-log { margin: 0 18px 16px; padding: 10px; max-height: 240px; overflow: auto; background: var(--v2-well); border-radius: 8px; font-size: 12px; color: var(--gp-text-sub); white-space: pre-wrap; }
+.v2-log { margin: 0 18px 16px; padding: 10px; max-height: 240px; overflow: auto; background: var(--v2-well); border-radius: 8px; font-size: 12px; color: var(--gp-text-sub); white-space: pre-wrap; word-break: break-all; user-select: text; -webkit-user-select: text; cursor: text; }
+.v2-log-input { display: block; width: 100%; min-height: 120px; max-height: 240px; margin-top: 12px; padding: 10px; resize: vertical; overflow: auto; background: var(--v2-well); border: 1px solid var(--v2-border); border-radius: 8px; font-size: 12px; line-height: 1.55; color: var(--gp-text-sub); white-space: pre-wrap; word-break: break-all; user-select: text; -webkit-user-select: text; cursor: text; outline: none; }
+.v2-log-input:focus { border-color: var(--v2-border-strong); }
 
 /* ---------- 角色：向导 ---------- */
 .v2-modal-box.wide { width: 600px; }
