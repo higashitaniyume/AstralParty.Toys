@@ -25,6 +25,153 @@ public static class GameInstanceService
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "AstralParty.Toys", "instances");
 
+    /// <summary>指定默认档案在实例外壳里的子目录名（仅为定位已存在的旧默认外壳进程，
+    /// 默认档本身从此不再由 Toys 创建新外壳）。</summary>
+    private static string DefaultShellKey => "default";
+
+    /// <summary>给定游戏目录与 profile，返回“这个档位对应的可启动 exe 路径”：
+    /// 非默认档返回外壳内 exe（尚未 EnsureInstance 时路径亦可推导，仅用于查进程）；
+    /// 默认档返回游戏目录内的原版 exe（默认档不再开外壳，见 HybridWindow.AccountProfiles）。
+    /// 找不到游戏 exe 时返回 null。</summary>
+    public static string? GetExpectedExePath(string gameDirectory, string? profileName)
+    {
+        if (string.IsNullOrWhiteSpace(gameDirectory)) return null;
+        var fullGame = Path.GetFullPath(gameDirectory);
+        var gameExe = SpeedhackManager.ContainsGameExe(fullGame);
+        if (gameExe is null) return null;
+        var exeName = Path.GetFileName(gameExe);
+        var trimmed = (profileName ?? "").Trim();
+        if (trimmed.Length == 0) return gameExe;
+        return Path.Combine(Root, ShortHash(fullGame), SanitizeProfileKey(trimmed), exeName);
+    }
+
+    /// <summary>按“档位对应的 exe 路径”找一个已在运行的游戏进程。按 MainModule 路径精确匹配，
+    /// 拿不到模块路径时退回窗口标题后缀兜底（加载器给窗口加了 “ · &lt;profile&gt;” 后缀）；
+    /// 未找到返回 null。进程已退出或枚举失败均视为未运行。</summary>
+    public static Process? FindRunningInstance(string gameDirectory, string? profileName)
+    {
+        try
+        {
+            var expected = GetExpectedExePath(gameDirectory, profileName);
+            if (expected is null) return null;
+            var processName = Path.GetFileNameWithoutExtension(expected);
+            if (string.IsNullOrEmpty(processName)) return null;
+            Process[] candidates;
+            try { candidates = Process.GetProcessesByName(processName); }
+            catch { return null; }
+            foreach (var p in candidates)
+            {
+                try
+                {
+                    if (p.HasExited) continue;
+                    string? modulePath = null;
+                    try { modulePath = p.MainModule?.FileName; } catch { }
+                    if (!string.IsNullOrEmpty(modulePath) &&
+                        string.Equals(Path.GetFullPath(modulePath), Path.GetFullPath(expected),
+                            StringComparison.OrdinalIgnoreCase))
+                        return p;
+                }
+                catch { }
+            }
+            // 兜底：按窗口标题后缀（profileWindowTitle 打开时）匹配。
+            var profile = (profileName ?? "").Trim();
+            foreach (var p in candidates)
+            {
+                try
+                {
+                    if (p.HasExited) continue;
+                    string title;
+                    try { title = p.MainWindowTitle ?? ""; } catch { continue; }
+                    if (string.IsNullOrEmpty(title)) continue;
+                    if (profile.Length == 0)
+                    {
+                        // 默认档：没有 “ · ” 后缀即视为默认窗口。
+                        if (!title.Contains(" · ")) return p;
+                    }
+                    else if (title.EndsWith(" · " + profile, StringComparison.Ordinal))
+                    {
+                        return p;
+                    }
+                }
+                catch { }
+            }
+        }
+        catch { }
+        return null;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool BringWindowToTop(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsIconic(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
+    /// <summary>把已找到的游戏进程窗口置于最前（最小化时先恢复；必要时借 AttachThreadInput
+    /// 绕过 Windows 的前台锁定）。调用失败返回 false，不抛异常。</summary>
+    public static bool TryFocusProcess(Process? process)
+    {
+        if (process is null) return false;
+        try
+        {
+            if (process.HasExited) return false;
+            var hwnd = process.MainWindowHandle;
+            if (hwnd == IntPtr.Zero) return false;
+            ShowWindow(hwnd, IsIconic(hwnd) ? 9 /*SW_RESTORE*/ : 5 /*SW_SHOW*/);
+            uint fgProcessId = 0;
+            var fg = GetForegroundWindow();
+            uint fgThread = fg != IntPtr.Zero ? GetWindowThreadProcessId(fg, out fgProcessId) : 0;
+            uint selfThread = NativeCurrentThreadId();
+            if (fgThread != 0 && fgThread != selfThread)
+            {
+                AttachThreadInput(fgThread, selfThread, true);
+                try
+                {
+                    SetForegroundWindow(hwnd);
+                    BringWindowToTop(hwnd);
+                }
+                finally { AttachThreadInput(fgThread, selfThread, false); }
+            }
+            else
+            {
+                SetForegroundWindow(hwnd);
+                BringWindowToTop(hwnd);
+            }
+            return true;
+        }
+        catch { return false; }
+    }
+
+    [DllImport("kernel32.dll")]
+    private static extern uint GetCurrentThreadId();
+
+    private static uint NativeCurrentThreadId()
+    {
+        try { return GetCurrentThreadId(); } catch { return 0; }
+    }
+
+    /// <summary>给定档位若已有运行进程则置前并返回 true（调用方应直接返回、不再新起进程）。</summary>
+    public static bool TryFocusRunningInstance(string gameDirectory, string? profileName)
+    {
+        var existing = FindRunningInstance(gameDirectory, profileName);
+        if (existing is null) return false;
+        return TryFocusProcess(existing);
+    }
+
     /// <summary>确保实例外壳存在并返回可启动的 exe 路径。</summary>
     public static string EnsureInstance(string gameDirectory, string? profileName)
     {

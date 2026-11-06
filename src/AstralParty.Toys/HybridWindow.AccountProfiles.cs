@@ -272,12 +272,36 @@ public partial class HybridWindow
         catch (Exception ex) { Post(new { type = "toast", message = $"打不开目录：{ex.Message}" }); }
     }
 
+    /// <summary>某个档位对应的进程已经在跑时，把它置前并返回 true（调用方直接返回，不再新开进程）。
+    /// 默认档看原 exe 路径，其它档看外壳路径（instances\&lt;hash&gt;\&lt;profile&gt;\AstralParty_*.exe）。</summary>
+    private bool TryFocusProfileInstance(string gameDirectory, string? profileName, string? displayName)
+    {
+        var profile = (profileName ?? "").Trim();
+        try
+        {
+            var running = GameInstanceService.FindRunningInstance(gameDirectory, profile);
+            if (running is null) return false;
+            bool focused = GameInstanceService.TryFocusProcess(running);
+            string label = string.IsNullOrEmpty(profile) ? "默认档案" : $"profile「{profile}」";
+            Post(new { type = "toast", message = focused ? $"{label}已在运行，已把窗口切到前台。" : $"{label}已在运行，但系统未允许置前（前台可能是全屏/提权窗口），请从任务栏切换。" });
+            return true;
+        }
+        catch (Exception ex)
+        {
+            // 置前失败不应阻断启动流程 —— 调用方可以选择只拦不抢。
+            System.Diagnostics.Debug.WriteLine("focus profile failed: " + ex.Message);
+            return false;
+        }
+    }
+
     /// <summary>切到指定 profile 并启动游戏。
     ///
     /// 启动方式：默认档案（空名）用界面上选的方式（从 Steam / 绕过 Steam / 从 TapTap / 绕过 TapTap）；
     /// **其它档案绕过 Steam 或 TapTap 直启** —— 换档案就是为了换账号，不能再让平台客户端决定
     /// 用哪个账号/会话，也避免把启动重定向回它自己注册的那份安装。
-    /// 顺带把加载器的绕过开关同步成对应模式（与首页单选框是同一组配置）。</summary>
+    /// 顺带把加载器的绕过开关同步成对应模式（与首页单选框是同一组配置）。
+    ///
+    /// 同一档位已有进程在运行时，直接置前已有窗口，不再新开进程——不会产生两个相同 profile 的游戏实例。</summary>
     private void HandleAccountProfileLaunch(string? name, string mode)
     {
         var trimmed = (name ?? "").Trim();
@@ -286,22 +310,51 @@ public partial class HybridWindow
             mode = "bypassSteam";
         }
 
-        if (!TryApplyAccountProfile(trimmed, out var error))
+        string gameDirectoryOpt;
+        try { gameDirectoryOpt = RequireModGameDirectory(); }
+        catch (Exception ex)
         {
-            Post(new { type = "toast", message = error });
+            Post(new { type = "toast", message = ex.Message });
             return;
+        }
+
+        // 同档位已有进程在运行：直接置前，不再新开进程（避免同 profile 双写存档目录/账号令牌）。
+        if (TryFocusProfileInstance(gameDirectoryOpt, trimmed, null))
+        {
+            return;
+        }
+
+        // 非默认档通过 CESIUM_PROFILE 环境变量传档位（加载器优先级高于 doorstop 的 profile），不靠共享配置传值。
+        // 默认档本身就没有 profile 参数，配置 profile 由"切换档案"按钮写入，语义是"下次启动用哪个档案"。
+        // 只有把"切换档案"的语义映射到这里会导致：启动后立即丢配置、旧实例仍存活；而且外壳启动与共享配置写入
+        // 时序交错会让不走环境变量的启动路径读到错误档案（如 instances\default 读配置中的 p3）。
+        if (trimmed.Length > 0)
+        {
+            // 外壳路径 + 环境变量：不需要写共享配置。只校验加载器存在即可。
+            if (!File.Exists(_modManager.LoaderConfigPath(gameDirectoryOpt)))
+            {
+                Post(new { type = "toast", message = "还没安装加载器：多 profile 启动需要加载器（在「模组」页安装一次）。" });
+                return;
+            }
+        }
+        else
+        {
+            if (!TryApplyAccountProfile(trimmed, out var error))
+            {
+                Post(new { type = "toast", message = error });
+                return;
+            }
         }
 
         // 配置同步是尽力而为：同步失败也照常启动。
         try
         {
-            var gameDirectory = RequireModGameDirectory();
-            if (File.Exists(_modManager.LoaderConfigPath(gameDirectory)))
+            if (File.Exists(_modManager.LoaderConfigPath(gameDirectoryOpt)))
             {
                 var steamBypass = mode == "bypassSteam";
                 var tapTapBypass = mode == "bypassTapTap";
-                _modManager.SetSteamBypassProfile(gameDirectory, steamBypass);
-                _modManager.SetTapTapBypassProfile(gameDirectory, tapTapBypass);
+                _modManager.SetSteamBypassProfile(gameDirectoryOpt, steamBypass);
+                _modManager.SetTapTapBypassProfile(gameDirectoryOpt, tapTapBypass);
 
                 // 首页「启动方式」单选框跟着走（同一组配置，避免两处显示不一致）
                 Post(new { type = "steamBypassSync", payload = new { enabled = steamBypass } });
@@ -316,8 +369,11 @@ public partial class HybridWindow
         // 先把“当前档案”推回界面，再拉游戏：启动后这几秒界面还能看到切换结果。
         _ = PushAccountProfilesAsync();
 
-        // 非默认档案始终走独立实例外壳；默认档案只有在已有实例运行时才需要外壳。
-        var separateInstance = trimmed.Length > 0 || SpeedhackManager.IsGameRunning();
+        // 非默认档案始终走独立实例外壳；默认档案不再由 Toys 开外壳——
+        // 默认档 ≠ 需要孤立冲突的档位，开外壳反而会把一个不带 profile 环境变量的
+        // 额外进程从同一份全局存档写出去（日志 44184/41656/42332 的 none selected）。
+        // 如果默认档已有进程在跑，上面的 TryFocusProfileInstance 已把窗口置前并返回。
+        var separateInstance = trimmed.Length > 0;
         HandleLaunchGame(mode, trimmed, separateInstance);
     }
 

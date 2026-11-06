@@ -332,8 +332,15 @@ public partial class HybridWindow
         var workingDirectory = gameDirectory!;
         var shellReady = false;
 
-        if (separateInstance)
+        if (separateInstance && !string.IsNullOrWhiteSpace(accountProfile))
         {
+            // 同档位已有进程在跑：置前并直接返回，不新开进程（且不清洗 shell 的写入路径）。
+            if (GameInstanceService.TryFocusRunningInstance(gameDirectory!, accountProfile))
+            {
+                Post(new { type = "toast", message = $"profile「{accountProfile}」已在运行，已把窗口切到前台。" });
+                return;
+            }
+
             try
             {
                 var shellExe = GameInstanceService.EnsureInstance(gameDirectory!, accountProfile);
@@ -346,6 +353,7 @@ public partial class HybridWindow
                 Post(new { type = "toast", message = "创建多开实例失败，已改为普通启动：" + ex.Message });
             }
         }
+        // 默认档不再走外壳分支。若有人从代码里强行传 separateInstance+空 profile，不新建外壳，避免造出裸写全局目录的 default 实例。
 
         try
         {
