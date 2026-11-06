@@ -13,8 +13,8 @@
         <WindowChrome CaptionHeight="0" ResizeBorderThickness="5" GlassFrameThickness="0,0,0,1"
                       CornerRadius="0" UseAeroCaptionButtons="False" />
     </WindowChrome.WindowChrome>
-    <!-- WebView2 是子窗口，会挡住边缘的缩放判定，所以四周留 4px 给拖边用；最大化时改成收进屏幕内的边距 -->
-    <Grid x:Name="RootGrid" Margin="4">
+    <!-- 网页铺满窗口，拖边改大小由网页四周的透明条发 windowResize 实现；最大化时收进屏幕内的边距 -->
+    <Grid x:Name="RootGrid">
         <wv2:WebView2 x:Name="WebView" DefaultBackgroundColor="#121420" />
         <Border x:Name="StartupOverlay" Background="#121420">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">

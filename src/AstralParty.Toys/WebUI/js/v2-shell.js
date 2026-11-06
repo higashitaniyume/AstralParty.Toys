@@ -254,6 +254,18 @@
       post({ type: dbl ? 'windowToggleMaximize' : 'windowDrag' });
     });
     post({ type: 'windowStateGet' });
+
+    // 拖边改大小：网页铺满窗口后，系统收不到边缘的鼠标，所以在四周放透明的条，按下时让宿主开始改大小
+    const edges = document.createElement('div');
+    edges.className = 'v2-edges';
+    edges.innerHTML = ['left', 'right', 'top', 'bottom', 'topLeft', 'topRight', 'bottomLeft', 'bottomRight'].map(k => `<i data-v2edge="${k}"></i>`).join('');
+    edges.addEventListener('pointerdown', e => {
+      const edge = e.target.dataset?.v2edge;
+      if (e.button !== 0 || !edge) return;
+      e.preventDefault();
+      post({ type: 'windowResize', edge });
+    });
+    document.body.appendChild(edges);
   }
 
   /* ---------- 概览 ---------- */
@@ -572,7 +584,19 @@
     box.oncompositionend = () => { composingBox = null; run(); };
   }
 
-  window.V2UI = { ICON, openMenu, closeMenu, openModal, closeModal, modalActions, armDanger, confirmDelete, bindSearch, isComposing,
+  // 「当前游戏」下拉：选中后由各页发 gameProfileSetActive。manageAttr 是调用方自己的 data 属性（如 data-v2m="manageGames"）
+  function gamePicker(selectId, manageAttr, disabled) {
+    const list = window.GameLibModule?.data?.profiles || [], cur = list.find(p => p.active);
+    const opts = list.map(p => `<option value="${esc(p.id)}" ${p.active ? 'selected' : ''}>[${esc(p.editionLabel)}] ${esc(p.label)}${p.directoryExists === false ? '（目录不存在）' : ''}</option>`).join('');
+    return `<div class="v2-card v2-game-picker"><div class="v2-row"><span class="k">当前游戏</span>
+      <select id="${selectId}" class="v2-select" aria-label="选择当前正在操作的游戏" ${!list.length || disabled ? 'disabled' : ''}>
+        ${list.length ? (cur ? '' : '<option value="" selected disabled>请选择</option>') + opts : '<option value="">未添加游戏</option>'}
+      </select>
+      <span class="v mono v2-muted" title="${esc(cur?.directory || '')}">${esc(cur?.directory || '')}</span>
+      <button class="v2-btn ghost" ${manageAttr}>管理游戏目录…</button></div></div>`;
+  }
+
+  window.V2UI = { ICON, gamePicker, openMenu, closeMenu, openModal, closeModal, modalActions, armDanger, confirmDelete, bindSearch, isComposing,
     setModalCancel: fn => { modalCancel = fn; } };
 
   /* ---------- 接线 ---------- */

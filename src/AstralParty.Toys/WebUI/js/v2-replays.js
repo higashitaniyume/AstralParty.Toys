@@ -23,6 +23,31 @@
     return b.join('');
   }
 
+  // 不能升级时的原因，文字和原版 libraryRow 一致
+  function upgradeHint(e) {
+    const target = lib()?.upgradeTargetVersion || '';
+    if (!e.healthy) return e.error || '无法解析，不能升级';
+    if (!target) return '本工具没有可用的版本配置';
+    if (e.isCurrentVersion) return '已是当前支持版本';
+    if (e.isNewerVersion) return `版本高于本工具支持的 ${target}`;
+    if (!shown(e.gameVersion)) return '文件里没有版本标记';
+    return `升级到本工具支持的 ${target}`;
+  }
+
+  // 显示条件和原版一样：在游戏里的能归档（库里已有同一份时，归档就是腾出席位），在库里的能放回。
+  // 已经在游戏里的回放，宿主只会回「已经有这一局了」，所以放回按钮直接灰掉并说明。
+  function rowActions(e) {
+    const L = lib(), off = busy() || L?.sameFolder;
+    const sameHint = L?.sameFolder ? '回放库和游戏回放目录是同一个文件夹，请先在设置里换一个回放库位置' : '';
+    const btn = (type, icon, label, disabled, title) =>
+      `<button class="v2-btn line" data-v2r-act="${type}" data-id="${esc(e.replayId)}" ${disabled ? 'disabled' : ''} title="${esc(title)}">${icon}${label}</button>`;
+    return `<div class="v2-replay-acts">
+      ${btn('libraryUpgrade', I().refresh, '升级', !e.canUpgrade || busy(), upgradeHint(e))}
+      ${e.inGame ? btn('libraryArchive', I().archive, '归档', off, sameHint || (e.inLibrary ? '库里已有这一局：归档后腾出一个游戏内席位' : '移进回放库，腾出一个游戏内席位')) : ''}
+      ${e.inLibrary ? btn('libraryRestore', I().play, '放回游戏', off || e.inGame, sameHint || (e.inGame ? '这局已经在游戏里了' : '复制回游戏，可在游戏内「本地回放」观看；库里仍保留一份')) : ''}
+    </div>`;
+  }
+
   function listHtml() {
     const L = lib();
     const head = `<div class="v2-head"><h1>回放</h1><span class="v2-top-spacer"></span>
@@ -75,6 +100,7 @@
           ${players.length ? `<div class="players">${players.map((p, i) =>
             `<span class="v2-player ${p === e.winnerText ? 'winner' : ''}" title="${p === e.winnerText ? '获胜方' : ''}">${esc(p)}<small>${esc(heroes[i] || '')}</small></span>`).join('')}</div>` : ''}
         </div>
+        ${rowActions(e)}
         <button class="v2-icon-btn" data-v2r-menu="${esc(e.replayId)}" data-v2menu title="更多">${I().more}</button>
       </div>`;
     }).join('');
@@ -96,9 +122,6 @@
   function entryMenu(anchor, e, inDetail) {
     const items = [];
     if (!inDetail) items.push({ label: e.healthy ? '查看分析' : '无法解析', icon: I().search, disabled: !e.healthy, fn: () => openEntry(e) });
-    if (e.inGame && !e.inLibrary) items.push({ label: '归档到回放库', icon: I().archive, fn: () => act('libraryArchive', e) });
-    if (e.inLibrary && !e.inGame) items.push({ label: '放回游戏', icon: I().play, fn: () => act('libraryRestore', e) });
-    if (e.canUpgrade) items.push({ label: `升级到 ${lib()?.upgradeTargetVersion || '当前版本'}`, icon: I().refresh, fn: () => act('libraryUpgrade', e) });
     items.push('-', { label: '删除…', icon: I().trash, fn: () => deleteDialog(e) });
     U().openMenu(anchor, items);
   }
@@ -221,8 +244,8 @@
         { label: '专业信息（协议帧、统计）', icon: I().info, fn: () => RM()?.switchReplayTab('technical') },
         { label: '打开其他回放文件…', icon: I().search, fn: () => post({ type: 'openReplay' }) },
         ...(e ? ['-',
-          ...(e.inGame && !e.inLibrary ? [{ label: '归档到回放库', icon: I().archive, fn: () => act('libraryArchive', e) }] : []),
-          ...(e.canUpgrade ? [{ label: `升级到 ${lib()?.upgradeTargetVersion || '当前版本'}`, icon: I().refresh, fn: () => act('libraryUpgrade', e) }] : []),
+          ...(e.inGame ? [{ label: '归档到回放库', icon: I().archive, disabled: lib()?.sameFolder, fn: () => act('libraryArchive', e) }] : []),
+          { label: e.canUpgrade ? upgradeHint(e) : `不能升级：${upgradeHint(e)}`, icon: I().refresh, disabled: !e.canUpgrade, fn: () => act('libraryUpgrade', e) },
           { label: '删除…', icon: I().trash, fn: () => deleteDialog(e) }] : []),
       ]);
     },
@@ -232,8 +255,13 @@
     const t = ev.target;
     if (!t.closest?.('#toolsView')) return;
     const a = t.closest('[data-v2r]'), f = t.closest('[data-v2r-filter]'), tab = t.closest('[data-v2r-tab]');
-    const menu = t.closest('[data-v2r-menu]'), card = t.closest('[data-v2r-open]');
+    const menu = t.closest('[data-v2r-menu]'), card = t.closest('[data-v2r-open]'), rowAct = t.closest('[data-v2r-act]');
     if (a) { if (!a.disabled) actions[a.dataset.v2r]?.(a); return; }
+    if (rowAct) {
+      const e = entries().find(x => String(x.replayId) === rowAct.dataset.id);
+      if (e && !rowAct.disabled) act(rowAct.dataset.v2rAct, e);
+      return;
+    }
     if (f) { R.filter = f.dataset.v2rFilter; return render(); }
     if (tab) { RM()?.switchReplayTab(tab.dataset.v2rTab); return; }
     if (menu) { const e = entries().find(x => String(x.replayId) === menu.dataset.v2rMenu); if (e) entryMenu(menu, e, false); return; }

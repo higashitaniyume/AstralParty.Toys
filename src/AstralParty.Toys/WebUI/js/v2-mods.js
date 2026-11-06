@@ -6,6 +6,7 @@
   const U = () => window.V2UI;
   const I = () => window.V2UI.ICON;
   const MM = () => window.ModsModule;
+  const GL = () => window.GameLibModule;
 
   const status = () => MM()?.modStatus || null;
   const mods = () => status()?.mods || [];
@@ -69,6 +70,7 @@
       .sort((a, b) => isBuiltIn(a) - isBuiltIn(b));   // 自己装的排前面：内置有 21 个，从市场新装的混在中间很难找
 
     return `<div class="v2-page">${head(!loaderIsPrimary)}
+      ${U().gamePicker('v2mGame', 'data-v2m="manageGames"', b)}
       ${s.gameRunning ? `<div class="v2-notice">${I().info}<span>游戏正在运行：改动会保存，重启游戏后生效</span></div>` : ''}
 
       <div class="v2-card">
@@ -181,6 +183,7 @@
       post({ type: 'modCheckUpdate' });
       render();
     },
+    manageGames: () => showPage('settings'),
     adv: () => { const d = $('v2ModsAdv'); if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth' }); } },
     loaderSettings: () => MM()?.openLoaderSettings(),
     changelog: () => window.VersionModule?.requestChangelog('loader'),
@@ -256,6 +259,7 @@
   document.addEventListener('change', ev => {
     const t = ev.target;
     if (!t.closest?.('#modsView')) return;
+    if (t.id === 'v2mGame') { if (t.value) post({ type: 'gameProfileSetActive', id: t.value }); return; }
     if (t.dataset.v2mToggle) { const m = findMod(t.dataset.v2mToggle); if (m) toggleMod(m, t.checked); return; }
     if (t.dataset.v2mSpeed !== undefined) { saveSpeed(t.checked ? 2.0 : 1.0); return; }
     if (t.id === 'v2mSpeed') {
@@ -287,6 +291,11 @@
 
   // 原版这些方法跑完后重画（数据仍由原版保存：modStatus / builtInMods / updateInfo / 变速配置）
   document.addEventListener('DOMContentLoaded', () => {
+    const gl = GL();
+    if (typeof gl?.renderProfiles === 'function') {
+      const orig = gl.renderProfiles;
+      gl.renderProfiles = function (...args) { const r = orig.apply(this, args); render(); return r; };
+    }
     const mm = MM(); if (!mm) return;
     ['renderModStatus', 'renderUpdateCheck', 'clearBusy', 'setBusy', 'renderPackageImportResult', 'syncSpeedhackBar', 'clearRecoveryBusy'].forEach(name => {
       const orig = mm[name]; if (typeof orig !== 'function') return;
