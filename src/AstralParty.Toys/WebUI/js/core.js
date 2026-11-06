@@ -412,6 +412,10 @@ host?.addEventListener('message', event => {
       window.WorkshopModule?.renderStickers(msg.payload);
       break;
 
+    case 'workshopStickerCatalog':
+      window.WorkshopModule?.renderStickerCatalog(msg.payload);
+      break;
+
     case 'workshopStickerToggle':
       window.WorkshopModule?.renderStickerToggle(msg.payload);
       break;

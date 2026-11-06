@@ -540,6 +540,131 @@ public sealed class WorkshopServiceTests
         Assert.Empty(harness.Handler.Requests);
     }
 
+    [Fact]
+    public async Task GetStickerCatalogAsync_DownloadsImagesAndRewritesToLocalCache()
+    {
+        using var harness = new Harness();
+        harness.Handler.Payload = Encoding.UTF8.GetBytes("""
+        {
+          "generatedAt": "2026-11-06T00:00:00Z",
+          "groups": [
+            { "groupId": "101", "groupName": "帕露南", "count": 2 }
+          ],
+          "items": [
+            { "stickerId": "UT_Item_Emoji_101_01", "imageUrl": "/stickers/101/UT_Item_Emoji_101_01.webp", "groupId": "101", "groupName": "帕露南", "kind": "static", "sortIndex": 0 },
+            { "stickerId": "UT_Item_Emoji_101_02", "imageUrl": "/stickers/101/UT_Item_Emoji_101_02.webp", "groupId": "101", "groupName": "帕露南", "kind": "static", "sortIndex": 1 }
+          ],
+          "total": 2
+        }
+        """);
+        harness.Handler.ImagePayload = Harness.WebpBytes;
+
+        var catalog = await harness.Service.GetStickerCatalogAsync(Forge);
+
+        Assert.Equal(2, catalog.Total);
+        Assert.Single(catalog.Groups);
+        Assert.Equal(2, catalog.Items.Count);
+        // 图片地址已改写为本地虚拟域名，文件落在 covers/stickers/ 下。
+        Assert.Equal(
+            WorkshopService.CoverOrigin + "stickers/101/UT_Item_Emoji_101_01.webp",
+            catalog.Items[0].ImageUrl);
+        Assert.Equal(
+            WorkshopService.CoverOrigin + "stickers/101/UT_Item_Emoji_101_02.webp",
+            catalog.Items[1].ImageUrl);
+        Assert.True(File.Exists(Path.Combine(
+            harness.CoverDirectory, "stickers", "101", "UT_Item_Emoji_101_01.webp")));
+        Assert.Equal(
+            Harness.WebpBytes,
+            File.ReadAllBytes(Path.Combine(
+                harness.CoverDirectory, "stickers", "101", "UT_Item_Emoji_101_01.webp")));
+        // 第一个请求是目录 JSON，后面是两张图。
+        Assert.Equal(3, harness.Handler.Requests.Count);
+        Assert.Equal(Forge + "/api/stickers", harness.Handler.Requests[0]);
+        Assert.Contains(Forge + "/stickers/101/UT_Item_Emoji_101_01.webp", harness.Handler.Requests);
+        Assert.Contains(Forge + "/stickers/101/UT_Item_Emoji_101_02.webp", harness.Handler.Requests);
+
+        // 第二次：目录 JSON 仍会拉，但图片已缓存，不再下载。
+        harness.Handler.Requests.Clear();
+        var second = await harness.Service.GetStickerCatalogAsync(Forge);
+        Assert.Equal(catalog.Items[0].ImageUrl, second.Items[0].ImageUrl);
+        Assert.Single(harness.Handler.Requests);
+        Assert.Equal(Forge + "/api/stickers", harness.Handler.Requests[0]);
+    }
+
+    [Fact]
+    public async Task GetStickerCatalogAsync_FallsBackToCachedCatalogWhenOffline()
+    {
+        using var harness = new Harness();
+        harness.Handler.Payload = Encoding.UTF8.GetBytes("""
+        {
+          "generatedAt": "2026-11-06T00:00:00Z",
+          "groups": [
+            { "groupId": "101", "groupName": "帕露南", "count": 1 }
+          ],
+          "items": [
+            { "stickerId": "UT_Item_Emoji_101_01", "imageUrl": "/stickers/101/UT_Item_Emoji_101_01.webp", "groupId": "101", "groupName": "帕露南", "kind": "static", "sortIndex": 0 }
+          ],
+          "total": 1
+        }
+        """);
+        harness.Handler.ImagePayload = Harness.WebpBytes;
+
+        var first = await harness.Service.GetStickerCatalogAsync(Forge);
+        Assert.StartsWith(WorkshopService.CoverOrigin, first.Items[0].ImageUrl);
+
+        // 断网后仍能返回上次的目录（图片走缓存）。
+        harness.Handler.Status = HttpStatusCode.NotFound;
+        var fallback = await harness.Service.GetStickerCatalogAsync(Forge);
+        Assert.Equal(1, fallback.Total);
+        Assert.Equal(first.Items[0].ImageUrl, fallback.Items[0].ImageUrl);
+    }
+
+    [Fact]
+    public async Task RewriteStickerCountsAsync_RewritesImageUrlsToLocalCache()
+    {
+        using var harness = new Harness();
+        harness.Handler.Payload = Encoding.UTF8.GetBytes("""
+        {
+          "generatedAt": "2026-11-06T00:00:00Z",
+          "items": [
+            {
+              "modId": "HandViewerMod",
+              "reactionTotal": 3,
+              "stickers": [
+                { "stickerId": "UT_Item_Emoji_101_01", "imageUrl": "/stickers/101/UT_Item_Emoji_101_01.webp", "count": 2, "reactedByMe": true }
+              ]
+            }
+          ]
+        }
+        """);
+        harness.Handler.ImagePayload = Harness.WebpBytes;
+
+        var payload = await harness.Service.GetModStickersAsync(Forge, ["HandViewerMod"], "voter-123");
+        var item = Assert.Single(payload.Items);
+        Assert.Equal("/stickers/101/UT_Item_Emoji_101_01.webp", item.Stickers[0].ImageUrl);
+
+        await harness.Service.RewriteStickerCountsAsync(Forge, item.Stickers);
+        Assert.Equal(
+            WorkshopService.CoverOrigin + "stickers/101/UT_Item_Emoji_101_01.webp",
+            item.Stickers[0].ImageUrl);
+        Assert.True(File.Exists(Path.Combine(
+            harness.CoverDirectory, "stickers", "101", "UT_Item_Emoji_101_01.webp")));
+    }
+
+    [Fact]
+    public async Task CacheStickerImageAsync_RejectsNonWebpAndUnsafePaths()
+    {
+        using var harness = new Harness();
+        harness.Handler.Payload = "<html>Bad gateway</html>"u8.ToArray();
+        harness.Handler.ImagePayload = "<html>Bad gateway</html>"u8.ToArray();
+
+        Assert.Null(await harness.Service.CacheStickerImageAsync(Forge, "/stickers/101/UT_Item_Emoji_101_01.webp"));
+        Assert.Null(await harness.Service.CacheStickerImageAsync(Forge, "/stickers/../secret.webp"));
+        Assert.Null(await harness.Service.CacheStickerImageAsync(Forge, "/other/101/x.webp"));
+        Assert.Null(await harness.Service.CacheStickerImageAsync(Forge, ""));
+        Assert.Null(await harness.Service.CacheStickerImageAsync(Forge, null));
+    }
+
     // ============================== 夹具 ==============================
 
     /// <summary>沙箱化的市场客户端：假 HTTP 管道 + 独立封面目录。</summary>
@@ -577,6 +702,8 @@ public sealed class WorkshopServiceTests
         public List<string> Methods { get; } = [];
         public List<string> Bodies { get; } = [];
         public byte[] Payload { get; set; } = [];
+        /// <summary>贴纸图片请求（<c>/stickers/…</c>）的返回；目录/计数 JSON 仍用 <see cref="Payload"/>。</summary>
+        public byte[] ImagePayload { get; set; } = [];
         public HttpStatusCode Status { get; set; } = HttpStatusCode.OK;
         public long? ContentLength { get; set; }
 
@@ -594,10 +721,15 @@ public sealed class WorkshopServiceTests
             Bodies.Add(request.Content is null ? "" : await request.Content.ReadAsStringAsync(cancellationToken));
             cancellationToken.ThrowIfCancellationRequested();
 
+            var path = request.RequestUri!.AbsolutePath;
+            var body = path.StartsWith("/stickers/", StringComparison.OrdinalIgnoreCase) && ImagePayload.Length > 0
+                ? ImagePayload
+                : Payload;
+
             var response = new HttpResponseMessage(Status);
             if (Status == HttpStatusCode.OK)
             {
-                response.Content = new ByteArrayContent(Payload);
+                response.Content = new ByteArrayContent(body);
                 if (ContentLength is { } length) response.Content.Headers.ContentLength = length;
             }
 

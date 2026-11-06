@@ -105,6 +105,35 @@ public sealed class ModStickersPayload
     public List<ModStickerState> Items { get; set; } = new();
 }
 
+/// <summary>市场贴纸目录：<c>GET /api/stickers</c> 的返回（与 Forge 的贴纸目录对应）。</summary>
+public sealed class StickerCatalogResponse
+{
+    public string GeneratedAt { get; set; } = "";
+    public List<StickerGroup> Groups { get; set; } = new();
+    public List<StickerCatalogItem> Items { get; set; } = new();
+    public int Total { get; set; }
+}
+
+/// <summary>贴纸目录中的一个分组（角色）。</summary>
+public sealed class StickerGroup
+{
+    public string GroupId { get; set; } = "";
+    public string GroupName { get; set; } = "";
+    public int Count { get; set; }
+}
+
+/// <summary>贴纸目录中的一张贴纸；<see cref="ImageUrl"/> 由宿主改写为本地缓存地址。</summary>
+public sealed class StickerCatalogItem
+{
+    public string StickerId { get; set; } = "";
+    public string ImageUrl { get; set; } = "";
+    public string File { get; set; } = "";
+    public string GroupId { get; set; } = "";
+    public string GroupName { get; set; } = "";
+    public string Kind { get; set; } = "static";
+    public int SortIndex { get; set; }
+}
+
 /// <summary>下载进度（总量未知时 Percent 为 null）。</summary>
 public sealed class WorkshopDownloadProgress
 {

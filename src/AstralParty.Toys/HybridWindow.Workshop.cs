@@ -464,6 +464,50 @@ public partial class HybridWindow
 
     // ============================== 贴纸回应 ==============================
 
+    private async Task HandleWorkshopStickerCatalogAsync()
+    {
+        if (!RequireWorkshopConsent()) return;
+
+        var baseUrl = WorkshopBaseUrl;
+        try
+        {
+            var catalog = await _workshopService.GetStickerCatalogAsync(baseUrl);
+            Post(new
+            {
+                type = "workshopStickerCatalog",
+                payload = new
+                {
+                    baseUrl,
+                    generatedAt = catalog.GeneratedAt,
+                    total = catalog.Total,
+                    groups = catalog.Groups.Select(group => new
+                    {
+                        groupId = group.GroupId,
+                        groupName = group.GroupName,
+                        count = group.Count
+                    }).ToList(),
+                    items = catalog.Items.Select(item => new
+                    {
+                        stickerId = item.StickerId,
+                        imageUrl = item.ImageUrl,
+                        groupId = item.GroupId,
+                        groupName = item.GroupName,
+                        kind = item.Kind,
+                        sortIndex = item.SortIndex
+                    }).ToList()
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Post(new
+            {
+                type = "workshopStickerCatalog",
+                payload = new { baseUrl, error = DescribeWorkshopError(ex), groups = Array.Empty<object>(), items = Array.Empty<object>(), total = 0 }
+            });
+        }
+    }
+
     private async Task HandleWorkshopStickersAsync(JsonElement root)
     {
         if (!RequireWorkshopConsent()) return;
@@ -488,6 +532,11 @@ public partial class HybridWindow
         try
         {
             var payload = await _workshopService.GetModStickersAsync(baseUrl, modIds, voterId);
+            foreach (var item in payload.Items)
+            {
+                await _workshopService.RewriteStickerCountsAsync(baseUrl, item.Stickers);
+            }
+
             Post(new
             {
                 type = "workshopStickers",
@@ -532,6 +581,7 @@ public partial class HybridWindow
         try
         {
             var state = await _workshopService.ToggleModStickerAsync(baseUrl, modId, stickerId, voterId);
+            await _workshopService.RewriteStickerCountsAsync(baseUrl, state.Stickers);
             Post(new
             {
                 type = "workshopStickerToggle",

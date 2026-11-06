@@ -1401,6 +1401,10 @@
       window.StickerModule?.applyBulk(payload);
     },
 
+    renderStickerCatalog(payload) {
+      window.StickerModule?.applyCatalog(payload);
+    },
+
     renderStickerToggle(payload) {
       window.StickerModule?.applyToggle(payload);
     },

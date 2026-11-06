@@ -586,6 +586,9 @@ public partial class HybridWindow
                 case "workshopStickers":
                     await HandleWorkshopStickersAsync(root);
                     break;
+                case "workshopStickerCatalog":
+                    await HandleWorkshopStickerCatalogAsync();
+                    break;
                 case "workshopStickerToggle":
                     await HandleWorkshopStickerToggleAsync(root);
                     break;

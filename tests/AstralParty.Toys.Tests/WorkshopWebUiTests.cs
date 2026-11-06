@@ -164,10 +164,12 @@ public sealed class WorkshopWebUiTests
 
         var core = Read("js/core.js");
         Assert.Contains("case 'workshopStickers':", core);
+        Assert.Contains("case 'workshopStickerCatalog':", core);
         Assert.Contains("case 'workshopStickerToggle':", core);
 
         var dispatcher = File.ReadAllText(Path.Combine(TestPaths.AppSourceDirectory, "HybridWindow.Dispatcher.cs"));
         Assert.Contains("case \"workshopStickers\":", dispatcher);
+        Assert.Contains("case \"workshopStickerCatalog\":", dispatcher);
         Assert.Contains("case \"workshopStickerToggle\":", dispatcher);
 
         var js = Read("js/stickers.js");
@@ -175,45 +177,46 @@ public sealed class WorkshopWebUiTests
         Assert.Contains("forge.sticker.favorites.v1", js);
         Assert.Contains("forge.voter", js);
         Assert.Contains("type: 'workshopStickers'", js);
+        Assert.Contains("type: 'workshopStickerCatalog'", js);
         Assert.Contains("type: 'workshopStickerToggle'", js);
         Assert.Contains("window.StickerModule", js);
+        Assert.Contains("applyCatalog", js);
+        // 贴纸不再内嵌：页面不直接 fetch 程序集里的目录/图片。
+        Assert.DoesNotContain("sticker-catalog.json", js);
+        Assert.DoesNotContain("fetch('stickers/", js);
+        Assert.DoesNotContain("fetch(\"stickers/", js);
 
         var workshop = Read("js/workshop.js");
         Assert.Contains("window.StickerModule", workshop);
         Assert.Contains("renderStickers", workshop);
+        Assert.Contains("renderStickerCatalog", workshop);
         Assert.Contains("renderStickerToggle", workshop);
         Assert.Contains("handleClick", workshop);
 
         Assert.Contains("js/stickers.js", EmbeddedWebStore.Paths);
         Assert.Contains("css/stickers.css", EmbeddedWebStore.Paths);
-        // 498 张贴纸与目录都内嵌在程序集里（和网页版同一批 64×64 资源）。
-        Assert.Contains("stickers/sticker-catalog.json", EmbeddedWebStore.Paths);
-        Assert.Contains("stickers/101/UT_Item_Emoji_101_01.webp", EmbeddedWebStore.Paths);
+        // 贴纸从市场下载后本地缓存，不再内嵌在程序集里。
+        Assert.False(EmbeddedWebStore.Paths.Any(p => p.StartsWith("stickers/", StringComparison.Ordinal)),
+            "stickers/ 仍在程序集里：应改为市场下载缓存。");
     }
 
     [Fact]
-    public void StickerCatalog_IsCompleteAndMatchesEmbeddedFiles()
+    public void StickerCatalog_ComesFromMarketCacheNotFromEmbedding()
     {
-        using var stream = EmbeddedWebStore.Open("stickers/sticker-catalog.json");
-        Assert.NotNull(stream);
-        using var reader = new StreamReader(stream!);
-        using var doc = JsonDocument.Parse(reader.ReadToEnd());
-        var items = doc.RootElement.GetProperty("items");
-        var groups = doc.RootElement.GetProperty("groups");
-        Assert.Equal(498, items.GetArrayLength());
-        Assert.Equal(35, groups.GetArrayLength());
-        var first = items[0].GetProperty("stickerId").GetString();
-        Assert.False(string.IsNullOrEmpty(first));
+        Assert.False(EmbeddedWebStore.Paths.Any(p => p.StartsWith("stickers/", StringComparison.Ordinal)),
+            "stickers/ 仍在程序集里：应改为市场下载缓存。");
 
-        // 目录里每张贴纸的图都真的内嵌了；目录少一张、图多一张都算接线断。
-        foreach (var item in items.EnumerateArray())
-        {
-            var file = item.GetProperty("file").GetString();
-            Assert.False(string.IsNullOrEmpty(file));
-            using var image = EmbeddedWebStore.Open("stickers/" + file);
-            Assert.NotNull(image);
-            Assert.True(image!.Length > 0, $"内嵌图片是空的：{file}");
-        }
+        var service = File.ReadAllText(Path.Combine(
+            TestPaths.AppSourceDirectory, "Services", "WorkshopService.cs"));
+        Assert.Contains("GetStickerCatalogAsync", service);
+        Assert.Contains("CacheStickerImageAsync", service);
+        Assert.Contains("RewriteStickerCountsAsync", service);
+        Assert.Contains("/api/stickers", service);
+
+        var handler = File.ReadAllText(Path.Combine(
+            TestPaths.AppSourceDirectory, "HybridWindow.Workshop.cs"));
+        Assert.Contains("HandleWorkshopStickerCatalogAsync", handler);
+        Assert.Contains("RewriteStickerCountsAsync", handler);
     }
 
     [Fact]

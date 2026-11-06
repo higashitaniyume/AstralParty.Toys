@@ -1,8 +1,8 @@
 // stickers.js — 贴纸回应：选择器（与网页版一致的行为与外观）+ 模组上的回应药丸
 //
-// 资源全部内嵌在程序集里（WebUI/stickers/，随 WebUI\** 一起嵌入）：
-// 498 张 64×64 无损 WebP（424 静 + 74 动图）+ sticker-catalog.json 目录。
-// 计数与点选切换走宿主（WorkshopService 调 /api/mod-stickers），
+// 资源从市场下载后本地缓存（宿主 WorkshopService 调 /api/stickers 并缓存 64×64 无损 WebP，
+// 图片经 workshop.astral.local 虚拟域名提供），不再内嵌在程序集里。
+// 计数与点选切换同样走宿主（WorkshopService 调 /api/mod-stickers），
 // 匿名身份与网页版共用 localStorage 键名（ forge.voter / forge.sticker.* ），
 // 两边各自独立（WebView 与浏览器 localStorage 不互通，符合匿名计数）。
 (function () {
@@ -16,19 +16,16 @@
 
   const t = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
 
-  // ---------- 目录（内嵌） ----------
+  // ---------- 目录（由宿主从市场拉取并缓存） ----------
   let catalogPromise = null;
+  let catalogResolvers = [];
+  let catalogReady = false;
   let catalogItems = [];
   let catalogGroups = [];
   let catalogById = new Map();
 
   function stickerFileSrc(sticker) {
-    // sticker-catalog.json 里的 imageUrl 是 /stickers/...（网页服务路径），
-    // Toys 内嵌路径是相对文档的 stickers/...，按 file 字段拼。
-    if (sticker && sticker.file) return 'stickers/' + sticker.file;
-    const url = String(sticker?.imageUrl || '');
-    if (!url) return '';
-    return url.replace(/^\/stickers\//, 'stickers/');
+    return String(sticker?.imageUrl || '');
   }
 
   // 与网页版 lib/stickers.ts 的 matchesStickerQuery 一致：每个空格分词都命中。
@@ -39,7 +36,7 @@
       String(sticker.stickerId).replace(/[_-]+/g, ' '),
       sticker.groupId,
       sticker.groupName,
-      sticker.imageUrl || sticker.file || '',
+      sticker.imageUrl || '',
       sticker.kind,
       kindWord,
     ].join(' ').toLowerCase();
@@ -53,25 +50,20 @@
   }
 
   function loadCatalog() {
+    if (catalogReady) return Promise.resolve({ items: catalogItems, groups: catalogGroups });
     if (catalogPromise) return catalogPromise;
-    catalogPromise = fetch('stickers/sticker-catalog.json', { cache: 'no-store' })
-      .then(response => {
-        if (!response.ok) throw new Error('catalog HTTP ' + response.status);
-        return response.json();
-      })
-      .then(data => {
-        catalogItems = Array.isArray(data?.items) ? data.items : [];
-        catalogGroups = Array.isArray(data?.groups) ? data.groups : [];
-        catalogById = new Map(catalogItems.map(s => [s.stickerId, s]));
-        return { items: catalogItems, groups: catalogGroups };
-      })
-      .catch(() => {
-        catalogItems = [];
-        catalogGroups = [];
-        catalogById = new Map();
-        return { items: [], groups: [] };
-      });
+    catalogPromise = new Promise(resolve => {
+      catalogResolvers.push(resolve);
+      post({ type: 'workshopStickerCatalog' });
+    });
     return catalogPromise;
+  }
+
+  function resolveCatalogWaiters() {
+    const waiters = catalogResolvers;
+    catalogResolvers = [];
+    const value = { items: catalogItems, groups: catalogGroups };
+    waiters.forEach(resolve => resolve(value));
   }
 
   // ---------- 匿名身份 / 最近 / 收藏 ----------
@@ -666,6 +658,28 @@
       const ids = [...new Set((modIds || []).filter(Boolean))].slice(0, 100);
       if (!ids.length) return;
       post({ type: 'workshopStickers', modIds: ids, voterId: ensureVoterId() });
+    },
+    // 宿主回推的贴纸目录：写入本地缓存并唤醒等待打开选择器的调用。
+    applyCatalog(payload) {
+      if (!payload) return;
+      if (payload.error) {
+        catalogItems = [];
+        catalogGroups = [];
+        catalogById = new Map();
+        catalogPromise = null;
+        catalogReady = false;
+        toast(payload.error);
+        resolveCatalogWaiters();
+        if (pickerEl) renderPicker();
+        return;
+      }
+      catalogItems = Array.isArray(payload.items) ? payload.items : [];
+      catalogGroups = Array.isArray(payload.groups) ? payload.groups : [];
+      catalogById = new Map(catalogItems.map(s => [s.stickerId, s]));
+      catalogReady = true;
+      resolveCatalogWaiters();
+      renderAllStrips();
+      if (pickerEl) renderPicker();
     },
     applyBulk(payload) {
       if (!payload) return;
