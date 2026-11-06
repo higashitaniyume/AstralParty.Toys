@@ -323,16 +323,14 @@ body.page-home-active .page-container {
   display: flex;
   flex-direction: column;
   opacity: 1;
-  transform: translate3d(0, 0, 0) scale(1);
-  filter: blur(0);
   transform-origin: 50% 48%;
-  will-change: opacity, transform, filter;
 }
 .page-view.page-leaving {
   opacity: 0;
   transform: translate3d(-20px, 0, 0) scale(0.985);
   filter: blur(5px);
   pointer-events: none;
+  will-change: opacity, transform, filter;
   transition: opacity var(--motion-page-out) ease,
               transform var(--motion-page-out) ease,
               filter var(--motion-page-out) ease;
@@ -341,6 +339,7 @@ body.page-home-active .page-container {
   opacity: 0;
   transform: translate3d(26px, 8px, 0) scale(0.985);
   filter: blur(7px);
+  will-change: opacity, transform, filter;
 }
 .page-view:not(.page-entering):not(.page-leaving) {
   transition: opacity var(--motion-page-in) var(--motion-ease),

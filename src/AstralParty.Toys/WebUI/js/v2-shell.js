@@ -468,6 +468,9 @@
           <button class="v2-btn ghost" data-v2="gameMenu" data-v2menu>${ICON.folder}${esc(g.label || g.editionLabel || '切换')}${ICON.down}</button></div>
         <div class="v2-row"><span class="k">启动方式</span>
           <span class="v">${launchLabel()}${locked ? '　<span class="v2-muted">游戏启动中，稍后可切换</span>' : ''}</span></div>
+        <div class="v2-launch-mode-grid" role="radiogroup" aria-label="启动方式">
+          ${LAUNCH_MODES.map(([mode, label, desc]) => `<button class="v2-launch-mode${launchMode() === mode ? ' on' : ''}" data-v2-launch="${mode}" role="radio" aria-checked="${launchMode() === mode}" ${locked ? 'disabled' : ''} title="${esc(desc)}"><span class="v2-launch-mode-name">${esc(label)}</span><span class="v2-launch-mode-desc">${esc(desc)}</span></button>`).join('')}
+        </div>
       </div>
 
       <div class="v2-card">
@@ -619,6 +622,11 @@
     });
 
     document.addEventListener('click', e => {
+      const modeSet = e.target.closest('[data-v2-launch]');
+      if (modeSet && !modeSet.disabled) {
+        setLaunchMode(modeSet.dataset.v2Launch);
+        return;
+      }
       const a = e.target.closest('[data-v2]'), p = e.target.closest('[data-v2page]');
       if (a && !a.disabled) actions[a.dataset.v2]?.(a);
       if (p) showPage(p.dataset.v2page);

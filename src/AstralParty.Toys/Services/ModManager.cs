@@ -242,6 +242,11 @@ public sealed partial class ModManager
             status.InstalledVersion = status.Installed
                 ? (status.LoaderManaged ? ReadCurrentInstallationVersion(directory) : ReadInstalledVersion(directory)) : "";
             status.EmbeddedVersion = EmbeddedVersion;
+            status.InstalledSdkVersion = !string.IsNullOrEmpty(directory) && Directory.Exists(directory) &&
+                                         ModManager.TryReadInstalledSdkVersion(directory, out var installedSdk)
+                ? installedSdk
+                : "";
+            status.EmbeddedSdkVersion = EmbeddedSdkVersion;
 
             // mod 列表 / SDK 列表（安装目录存在才扫）
             var loaderRoot = string.IsNullOrEmpty(directory) ? "" : Path.Combine(directory, LoaderFolderName);

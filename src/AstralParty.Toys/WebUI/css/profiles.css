@@ -209,6 +209,8 @@
   border: 1px solid var(--gp-border);
   border-radius: var(--gp-radius-md);
   background: var(--gp-bg-card);
+  content-visibility: auto;
+  contain-intrinsic-size: 92px;
   transition: border-color var(--motion-fast) ease, background var(--motion-fast) ease;
 }
 

@@ -162,6 +162,18 @@ body.v2-maximized .v2-win .restore { display: block; }
 .v2-hero-text { flex: 1; min-width: 0; }
 .v2-hero-title { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 600; }
 .v2-hero-sub { color: var(--gp-text-muted); font-size: 13px; margin-top: 2px; }
+.v2-version-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.v2-launch-mode-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 0 18px 16px; }
+.v2-launch-mode { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 74px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--v2-border-strong); background: var(--v2-panel-2); color: var(--v2-text-soft); text-align: left; cursor: pointer; }
+.v2-launch-mode:hover { border-color: var(--gp-pink); }
+.v2-launch-mode.on { border-color: var(--gp-pink); background: var(--v2-pink-soft); color: var(--gp-text); }
+.v2-launch-mode-name { font-weight: 700; color: inherit; }
+.v2-launch-mode-desc { color: var(--gp-text-muted); font-size: 12px; }
+.v2-launch-mode.on .v2-launch-mode-desc { color: var(--gp-text-main); }
+.v2-launch-mode:disabled { opacity: .52; cursor: not-allowed; }
+.v2-version-pill { display: inline-flex; align-items: center; gap: 8px; padding: 4px 0; color: var(--gp-text-muted); font-size: 12px; }
+.v2-version-pill .k { color: var(--gp-pink); font-weight: 700; }
+.v2-version-pill b { color: var(--gp-text); font-size: 13px; padding: 2px 8px; border-radius: 6px; background: var(--v2-panel-2); border: 1px solid var(--v2-border); }
 .v2-row { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-top: 1px solid var(--v2-border); min-height: 48px; }
 .v2-card > .v2-row:first-child { border-top: 0; }
 .v2-row .k { width: 110px; color: var(--gp-text-muted); flex: none; }
@@ -303,7 +315,7 @@ details.v2-card[open] > summary svg { transform: rotate(180deg); }
 .v2-scheme .info small { color: var(--gp-text-muted); font-size: 12px; }
 
 .v2-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
-.v2-tcard { position: relative; border-radius: 8px; border: 1px solid var(--v2-border); background: var(--v2-panel); overflow: hidden; padding: 0; cursor: pointer; color: var(--v2-text-soft); text-align: left; }
+.v2-tcard { position: relative; border-radius: 8px; border: 1px solid var(--v2-border); background: var(--v2-panel); overflow: hidden; padding: 0; cursor: pointer; color: var(--v2-text-soft); text-align: left; content-visibility: auto; contain-intrinsic-size: 320px; }
 .v2-tcard:hover { border-color: var(--v2-border-strong); }
 .v2-tcard img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; background: var(--v2-well); }
 .v2-tcard .cap { display: block; padding: 6px 8px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
