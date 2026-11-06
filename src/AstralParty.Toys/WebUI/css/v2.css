@@ -312,6 +312,7 @@ details.v2-card[open] > summary svg { transform: rotate(180deg); }
 .v2-settings-layout { display: flex; gap: 18px; align-items: flex-start; }
 .v2-settings-side { width: 150px; flex: none; position: sticky; top: 0; display: flex; flex-direction: column; gap: 4px; padding: 6px; background: var(--v2-panel); border: 1px solid var(--v2-border); border-radius: 10px; }
 .v2-side-tab { position: relative; display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; border-radius: 8px; color: var(--gp-text-muted); font-size: 14px; text-align: left; }
+.v2-side-tab svg { width: 18px; height: 18px; flex: none; }
 .v2-side-tab:hover { background: var(--v2-hover); color: var(--v2-text); }
 .v2-side-tab.on { background: var(--v2-pink-soft); color: var(--gp-pink); font-weight: 600; }
 .v2-side-tab.danger { color: #f43f5e; margin-top: 6px; border-top: 1px solid var(--v2-border); border-radius: 0 0 8px 8px; }

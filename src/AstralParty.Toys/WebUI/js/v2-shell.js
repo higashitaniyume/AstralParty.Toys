@@ -120,8 +120,7 @@
     if (e.key === 'Escape' && $('v2Modal')?.classList.contains('show')) (modalCancel || closeModal)();
   });
 
-  /* ---------- 顶栏外部跳转（WIKI / GitHub） ----------
-     第一次点：按钮下方提示「再次点击跳转页面」，3 秒内再点才打开；两次点击至少隔 0.5 秒。 */
+  /* ---------- 顶栏外部跳转（WIKI / GitHub）：点一次直接打开 ---------- */
   const JUMPS = {
     wiki: { name: 'BWiki', url: 'https://wiki.biligame.com/starengine/%E9%A6%96%E9%A1%B5' },
     github: { name: 'GitHub 仓库', url: 'https://github.com/higashitaniyume/AstralParty.Toys' },
@@ -145,21 +144,12 @@
     Object.keys(jumpSt).forEach(k => { if (k !== except && jumpSt[k].mode === 'armed') jumpReset(k); });
   }
   function jumpClick(btn) {
-    const key = btn.dataset.v2jump, j = JUMPS[key], st = jumpSt[key], host = new URL(j.url).host;
+    const key = btn.dataset.v2jump, j = JUMPS[key], host = new URL(j.url).host;
     const now = Date.now();
     if (now - (jumpLast[key] || 0) < GAP_MS) return;
     jumpLast[key] = now;
     jumpCancelArmed(key);
     btn.classList.add('gap'); setTimeout(() => btn.classList.remove('gap'), GAP_MS);
-    if (st?.mode !== 'armed') {
-      if (st) jumpReset(key);
-      btn.classList.add('armed');
-      jumpTip(btn, `<b>再次点击跳转页面</b><span class="url">${host}</span>`, ARM_MS);
-      jumpSt[key] = { mode: 'armed', timer: setTimeout(() => jumpReset(key), ARM_MS) };
-      return;
-    }
-    clearTimeout(st.timer);
-    btn.classList.remove('armed');
     post({ type: 'openBrowser', url: j.url });
     jumpTip(btn, `已在浏览器打开${j.name}<span class="url">${host}</span>`, 0, 'done');
     jumpSt[key] = { mode: 'done', timer: setTimeout(() => jumpReset(key), 1500) };

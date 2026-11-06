@@ -32,13 +32,18 @@
 
   // 加载器状态（与原版 renderStatusHeader / renderVerdict 的分支一致）
   function loaderView(s) {
-    const newer = latest() && s.installedVersion && cmpVer(latest(), s.installedVersion) > 0 ? latest() : '';
+    const foreign = s.installed && !s.loaderManaged;
+    // 外来文件版本未知时：查到 GitHub 最新就视为有新版（点更新即覆盖），已知版本才比大小
+    const newer = foreign && latest()
+      ? (s.installedVersion ? (cmpVer(latest(), s.installedVersion) > 0 ? latest() : '') : latest())
+      : (latest() && s.installedVersion && cmpVer(latest(), s.installedVersion) > 0 ? latest() : '');
     if (s.bundleLoaderPresent === false) return { badge: '缺少内置文件', cls: 'warn', text: '本程序缺少内置加载器文件，无法安装，请使用完整发布包', act: null };
     if (!s.gameDirectory) return { badge: '未找到游戏', cls: 'warn', text: '还没找到游戏目录，在下面「高级操作」里自动检测或手动选择', act: 'adv' };
     if (s.loaderMissing) return { badge: s.loaderDisabled ? '已停用' : 'DLL 缺失', cls: 'off',
       text: s.canRestoreLoader ? `模组与配置都还在，可以恢复加载器（保留版本 ${s.installedVersion ? 'v' + s.installedVersion : '未知'}）` : '保留的组件读不出加载器版本，请重新安装或更新', act: 'restore' };
     if (!s.installed) return { badge: '未安装', cls: 'off', text: '安装后加载器和内置模组会一起装进游戏目录', act: 'install' };
-    if (!s.loaderManaged) return { badge: '文件不属于本工具', cls: 'warn', text: '游戏目录里的 version.dll 不是本工具装的（可能是旧版变速器或第三方文件）', act: 'adv' };
+    if (foreign && newer) return { badge: '文件不属于本工具 · 可更新', cls: 'warn', text: `GitHub 最新 v${newer}，更新会覆盖游戏目录里那个不属于本工具的 version.dll`, act: 'updateForeign', newer };
+    if (!s.loaderManaged) return { badge: '文件不属于本工具', cls: 'warn', text: '游戏目录里的 version.dll 不是本工具装的（可能是旧版变速器或第三方文件），仍可检查更新或覆盖安装内置版本', act: 'foreign' };
     if (newer) return { badge: '可更新', cls: 'warn', text: `已装 v${s.installedVersion}，最新 v${newer}`, act: 'update', newer };
     const note = latest() ? (cmpVer(latest(), s.installedVersion) === 0 ? '已是最新' : '比 GitHub 上的更新')
       : s.embeddedVersion && cmpVer(s.installedVersion, s.embeddedVersion) === 0 ? '与内置版本一致'
@@ -48,8 +53,14 @@
 
   function html() {
     const s = status();
-    const head = (primary) => `<div class="v2-head"><h1>模组</h1><span class="v2-top-spacer"></span>
+    const head = (primary) => {
+      const open = s?.gameDirectory;
+      return `<div class="v2-head"><h1>模组</h1><span class="v2-top-spacer"></span>
+      <button class="v2-btn line" data-v2m="openMods" ${open ? '' : 'disabled'}>${I().folder}打开 Mod 文件夹</button>
+      <button class="v2-btn line" data-v2m="openLogs" ${open ? '' : 'disabled'}>${I().folder}打开日志文件夹</button>
+      <button class="v2-btn line" data-v2m="openGame" ${open ? '' : 'disabled'}>${I().folder}打开游戏文件夹</button>
       <button class="v2-btn ${primary ? 'primary' : 'line'}" data-v2m="import" ${s && (s.installed || s.loaderRootExists) ? '' : 'disabled'}>${I().upload}导入模组</button></div>`;
+    };
     if (!s) {
       const skelRows = Array.from({ length: 6 }, () => `<div class="v2-skel-row" aria-hidden="true"><div class="v2-skel" style="width:36px;height:36px;border-radius:8px;flex:none"></div><div style="flex:1;display:grid;gap:6px"><div class="v2-skel v2-skel-block" style="width:38%"></div><div class="v2-skel v2-skel-block" style="width:72%"></div></div><div class="v2-skel" style="width:36px;height:20px;border-radius:999px"></div></div>`).join('');
       return `<div class="v2-page">${head(true)}
@@ -69,6 +80,8 @@
       update: `<button class="v2-btn primary" data-v2m="update" ${b ? 'disabled' : ''}>${I().download}更新到 v${esc(lv.newer || '')}</button>`,
       check: `<button class="v2-btn ghost" data-v2m="check" ${b || checking() ? 'disabled' : ''}>${I().refresh}${checking() ? '检查中…' : '检查更新'}</button>`,
       adv: '<button class="v2-btn line" data-v2m="adv">查看处理办法</button>',
+      foreign: `<button class="v2-btn ghost" data-v2m="check" ${b || checking() ? 'disabled' : ''}>${I().refresh}${checking() ? '检查中…' : '检查更新'}</button><button class="v2-btn line" data-v2m="reinstall" ${b ? 'disabled' : ''}>${I().download}覆盖安装内置版本</button>`,
+      updateForeign: `<button class="v2-btn primary" data-v2m="update" ${b ? 'disabled' : ''}>${I().download}更新到 v${esc(lv.newer || '')}（覆盖）</button><button class="v2-btn ghost" data-v2m="check" ${b || checking() ? 'disabled' : ''}>${I().refresh}${checking() ? '检查中…' : '检查更新'}</button>`,
     }[lv.act] || '';
     const loaderIsPrimary = ['install', 'restore', 'update'].includes(lv.act);
 
@@ -292,9 +305,12 @@
 
   const actions = {
     import: () => post({ type: 'modPickImport' }),
+    openMods: () => post({ type: 'modOpenModsFolder' }),
+    openLogs: () => post({ type: 'modOpenLogsFolder' }),
+    openGame: () => post({ type: 'speedhackOpenGameDir' }),
     install: () => post({ type: 'modInstall', overwriteDll: false, allowDowngrade: false, includeSample: true }),
     restore: () => MM()?.startRecovery(true),
-    update: () => post({ type: 'modDownloadUpdate', overwriteDll: false, allowDowngrade: false }),
+    update: () => { const st = status(), foreign = st?.installed && !st?.loaderManaged; post({ type: 'modDownloadUpdate', overwriteDll: !!foreign, allowDowngrade: false }); },
     check: () => {
       const mm = MM(); if (!mm) return;
       mm.updateInfo = { state: 'checking', latest: mm.updateInfo.latest, error: '' };

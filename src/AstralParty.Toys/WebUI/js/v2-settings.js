@@ -74,13 +74,13 @@
   }
 
   const TABS = [
-    ['ui', '界面'],
-    ['game', '游戏目录'],
-    ['lib', '回放库'],
-    ['net', '网络'],
-    ['update', '软件更新'],
-    ['about', '关于'],
-    ['uninstall', '卸载'],
+    ['ui', '界面', 'settings'],
+    ['game', '游戏目录', 'sports_esports'],
+    ['lib', '回放库', 'inventory_2'],
+    ['net', '网络', 'refresh'],
+    ['update', '软件更新', 'upgrade'],
+    ['about', '关于', 'info'],
+    ['uninstall', '卸载', 'delete'],
   ];
   const QQ_JOIN_URL = 'https://qm.qq.com/cgi-bin/qm/qr?k=tYrqev4U2Xr2PPAA4EkILA0NKmP3zgeU&jump_from=webapi&authKey=jHiIqsg0jEV53dBtQ9V3qXohKKHwLDGmfWprcrg7gueM9pU9iz+ST/QHR6d1j3wa';
   const DISCORD_URL = 'https://discord.gg/SZaYSwGX94';
@@ -90,11 +90,11 @@
     const info = window.VersionModule?.info;
     const mirror = LS().githubMirrorType || 'gh-proxy';
     const tab = TABS.some(([k]) => k === G.tab) ? G.tab : 'ui';
-    const side = TABS.map(([k, label]) => {
+    const side = TABS.map(([k, label, icon]) => {
       const on = k === tab ? ' on' : '';
       const danger = k === 'uninstall' ? ' danger' : '';
       const dot = k === 'update' && (updateStatus() === 'updateavailable' || updateStatus() === 'readytoinstall') ? '<span class="v2-tab-dot"></span>' : '';
-      return `<button class="v2-side-tab${on}${danger}" data-v2g-tab="${k}" role="tab" aria-selected="${k === tab}">${esc(label)}${dot}</button>`;
+      return `<button class="v2-side-tab${on}${danger}" data-v2g-tab="${k}" role="tab" aria-selected="${k === tab}">${window.Icons?.svg(icon) || ''}<span>${esc(label)}</span>${dot}</button>`;
     }).join('');
     let main = '';
     if (tab === 'ui') main = `
