@@ -1,4 +1,4 @@
-namespace AstralParty.Toys.Services;
+namespace AstralParty.Toys.Models;
 
 /// <summary>mod 配置表单字段（configs\{mod}.json 键值编辑）。</summary>
 public sealed class ModConfigField

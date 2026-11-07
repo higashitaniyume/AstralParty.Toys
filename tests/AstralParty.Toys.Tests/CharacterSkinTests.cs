@@ -1,7 +1,6 @@
 using System.IO.Compression;
 using System.Text.Json;
 using AstralParty.Toys.Services;
-using CesiumLoader.CharacterSkins;
 using Xunit;
 namespace AstralParty.Toys.Tests;
 public sealed class CharacterSkinTests : IDisposable

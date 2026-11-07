@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using AstralParty.Toys.Models;
 using AstralParty.Toys.Services.Common;
 
 namespace AstralParty.Toys.Services.Modding;

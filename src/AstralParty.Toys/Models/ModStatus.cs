@@ -1,4 +1,4 @@
-namespace AstralParty.Toys.Services;
+namespace AstralParty.Toys.Models;
 
 /// <summary>Mod 加载器与已安装 Mod 状态模型。</summary>
 public sealed class ModStatus

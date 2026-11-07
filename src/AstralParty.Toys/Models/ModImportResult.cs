@@ -1,4 +1,4 @@
-namespace AstralParty.Toys.Services;
+namespace AstralParty.Toys.Models;
 
 /// <summary>导入 mod 包（ZIP）的结果：一个包可以包含多个模组。</summary>
 public sealed class ModImportResult

@@ -1,7 +1,6 @@
 ﻿using System.IO;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using CesiumLoader.CharacterSkins;
 namespace AstralParty.Toys.Services.Skins;
 public sealed record CharacterTemplateResult(int Images,int Actions,int Frames,string[] Missing);
 public static class CharacterTemplateExporter

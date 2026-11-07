@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace CesiumLoader.CharacterSkins
+namespace AstralParty.Toys.Services.Skins
 {
     public sealed class CharacterSkinManifest
     {

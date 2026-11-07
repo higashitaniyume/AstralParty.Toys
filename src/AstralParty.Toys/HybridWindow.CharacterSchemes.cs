@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using AstralParty.Toys.Services;
-using CesiumLoader.CharacterSkins;
 using Microsoft.Win32;
 
 namespace AstralParty.Toys;

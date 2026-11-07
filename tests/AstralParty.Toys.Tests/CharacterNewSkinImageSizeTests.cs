@@ -1,6 +1,5 @@
 using AstralParty.Toys.Services;
 using AstralParty.Toys.Tests.Support;
-using CesiumLoader.CharacterSkins;
 
 namespace AstralParty.Toys.Tests;
 

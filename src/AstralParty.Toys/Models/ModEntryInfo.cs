@@ -1,4 +1,4 @@
-namespace AstralParty.Toys.Services;
+namespace AstralParty.Toys.Models;
 
 /// <summary>Mod 条目信息模型。</summary>
 public sealed class ModEntryInfo

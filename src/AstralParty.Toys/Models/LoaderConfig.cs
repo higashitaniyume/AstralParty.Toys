@@ -1,4 +1,4 @@
-namespace AstralParty.Toys.Services;
+namespace AstralParty.Toys.Models;
 
 /// <summary>加载器配置（doorstop_config.json）的可编辑字段。</summary>
 public sealed class LoaderConfig

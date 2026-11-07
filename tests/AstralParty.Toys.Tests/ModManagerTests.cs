@@ -1,5 +1,5 @@
 using System.IO.Compression;
-using AstralParty.Toys.Services;
+using AstralParty.Toys.Models;
 using AstralParty.Toys.Tests.Support;
 
 namespace AstralParty.Toys.Tests;

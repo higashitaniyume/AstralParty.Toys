@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using AssetsTools.NET.Extra;
-using CesiumLoader.CharacterSkins;
 
 namespace AstralParty.Toys.Services.Skins;
 

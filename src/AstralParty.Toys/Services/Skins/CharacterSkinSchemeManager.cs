@@ -1,7 +1,6 @@
 ﻿using System.IO;
 using System.IO.Compression;
 using System.Text.Json;
-using CesiumLoader.CharacterSkins;
 
 namespace AstralParty.Toys.Services.Skins;
 

@@ -1,4 +1,4 @@
-namespace AstralParty.Toys.Services;
+namespace AstralParty.Toys.Models;
 
 /// <summary>sidecar 里声明的依赖项。</summary>
 public sealed class ModDependencyInfo

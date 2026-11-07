@@ -1,6 +1,5 @@
 ﻿using System.IO;
 using System.Text.Json;
-using CesiumLoader.CharacterSkins;
 namespace AstralParty.Toys.Services.Skins;
 public sealed record CharacterImageTarget(int Width,int Height,string Asset,bool Verified);
 public static class CharacterImageSize

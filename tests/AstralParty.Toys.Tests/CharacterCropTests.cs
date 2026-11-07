@@ -1,6 +1,5 @@
 using AstralParty.Toys;
 using AstralParty.Toys.Services;
-using CesiumLoader.CharacterSkins;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;

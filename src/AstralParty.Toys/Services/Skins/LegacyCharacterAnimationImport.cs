@@ -3,7 +3,6 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using AssetsTools.NET;
 using AssetsTools.NET.Extra;
-using CesiumLoader.CharacterSkins;
 
 namespace AstralParty.Toys.Services.Skins;
 

@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Text.Json;
+using AstralParty.Toys.Models;
 
 namespace AstralParty.Toys.Services.Modding;
 

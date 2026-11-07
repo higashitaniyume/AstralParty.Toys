@@ -1,4 +1,4 @@
-namespace AstralParty.Toys.Services;
+namespace AstralParty.Toys.Models;
 
 /// <summary>mod 权限位（与 SDK 的 ModPermission 枚举一致）。</summary>
 [Flags]
