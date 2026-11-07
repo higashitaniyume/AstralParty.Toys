@@ -1,0 +1,280 @@
+﻿:root {
+  /* The whole app is dark. Declaring the scheme also makes native select
+     popups / scrollbars dark, otherwise Windows renders a white option list
+     while the page inherits white text. */
+  color-scheme: dark;
+
+  /* Astral Party Game Theme Palette */
+  --gp-bg: #121420;
+  --gp-bg-subtle: #1a1d2e;
+  --gp-bg-panel: rgba(22, 27, 46, 0.95);
+  --gp-bg-card: rgba(28, 35, 60, 0.85);
+  --gp-bg-hover: rgba(45, 55, 92, 0.9);
+  
+  --gp-border: rgba(255, 255, 255, 0.15);
+  --gp-border-highlight: rgba(255, 255, 255, 0.35);
+  --gp-border-gold: rgba(250, 204, 21, 0.6);
+  --gp-border-pink: rgba(255, 23, 118, 0.6);
+
+  --gp-pink: #ff1776;
+  --gp-pink-hover: #e11d48;
+  --gp-gold: #facc15;
+  --gp-gold-dark: #b45309;
+  --gp-blue: #38bdf8;
+  --gp-purple: #a855f7;
+  --gp-green: #a3e635;
+
+  --gp-text-main: #ffffff;
+  --gp-text-sub: #cbd5e1;
+  --gp-text-muted: #94a3b8;
+  --gp-text-dark: #0f172a;
+
+  --gp-radius-sm: 8px;
+  --gp-radius-md: 14px;
+  --gp-radius-lg: 20px;
+  --gp-radius-full: 9999px;
+
+  --gp-shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --gp-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --gp-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.65);
+  /* 粉色辉光：品牌 logo / 玩家卡 hover / --primary-glow 都用它。
+     注意它以前一直是"被引用但没定义"——那些 box-shadow 会被整条丢弃（不报错），
+     所以这里必须有一个具体值。 */
+  --gp-shadow-pink: 0 0 22px rgba(255, 23, 118, 0.38);
+  --header-height: 64px;
+  --motion-fast: 160ms;
+  --motion-page-out: 180ms;
+  --motion-page-in: 380ms;
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Theme Compatibility Aliases (Ensures all existing components adapt to dark game theme) */
+  --primary: var(--gp-pink);
+  --primary-hover: var(--gp-pink-hover);
+  --primary-light: rgba(255, 23, 118, 0.15);
+  --primary-glow: var(--gp-shadow-pink);
+
+  --text-main: var(--gp-text-main);
+  --text-secondary: var(--gp-text-sub);
+  --text-muted: var(--gp-text-muted);
+
+  --panel-bg: var(--gp-bg-panel);
+  --panel-card: var(--gp-bg-card);
+  --panel-border: var(--gp-border);
+  --panel-border-glow: var(--gp-border-pink);
+
+  --accent-cyan: var(--gp-blue);
+  --accent-gold: var(--gp-gold);
+  --accent-green: var(--gp-green);
+  --accent-red: #f43f5e;
+}
+
+* { box-sizing: border-box; }
+
+/* Windows' native dropdown surface ignores the select color in some WebView2
+   builds; pin option colors so every list stays readable in the dark theme. */
+select option,
+select optgroup {
+  background-color: #141826;
+  color: #f3f5fa;
+}
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei UI", "Hiragino Sans GB", sans-serif;
+  color: var(--gp-text-main);
+  background: var(--gp-bg);
+  user-select: none;
+}
+
+button, input, select, textarea { font: inherit; outline: none; }
+button { cursor: pointer; color: inherit; border: none; background: transparent; scale: 1; }
+button:active:not(:disabled) {
+  scale: 0.96;
+  transition-duration: 80ms;
+}
+
+/* 键盘焦点环。
+   上面那句 outline: none 是给鼠标点击去掉难看的默认描边的，但它把键盘可见性也一起干掉了
+   —— 全app就没有一处能看出焦点在哪。这里用 :focus-visible 补回来：键盘 Tab 才有，鼠标点击不出现。 */
+:focus-visible {
+  outline: 2px solid var(--gp-blue);
+  outline-offset: 2px;
+}
+
+/* 焦点落在被裁剪/带背景的元素里时，外描边会被切掉，改成内描边 */
+.mod-card:focus-visible,
+.mod-toggle input:focus-visible + .switch-track,
+.mods-advanced > summary:focus-visible,
+.mods-help > summary:focus-visible {
+  outline-offset: -2px;
+}
+
+.app-shell {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(circle at 62% 42%, #241d33 0%, #151624 55%, #0d0e17 100%);
+}
+
+/* Header participates in page navigation instead of popping in/out. */
+.global-header {
+  transition: opacity 240ms ease, transform 300ms var(--motion-ease), height 300ms var(--motion-ease),
+              flex-basis 300ms var(--motion-ease), padding 300ms var(--motion-ease), border-width 240ms ease;
+}
+body.page-home-active .global-header {
+  height: 0;
+  flex-basis: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  opacity: 0;
+  transform: translateY(-100%);
+  pointer-events: none;
+  border-bottom-width: 0;
+  overflow: hidden;
+}
+body.page-home-active .page-container {
+  height: 100vh;
+}
+
+/* Game Aesthetic Header for Subpages */
+.global-header {
+  height: var(--header-height);
+  flex: 0 0 var(--header-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: rgba(12, 16, 28, 0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.brand-section:hover { transform: scale(1.03); }
+
+.brand-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--gp-radius-md);
+  background: linear-gradient(135deg, #ff1776, #a855f7);
+  border: 2px solid #ffffff;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  box-shadow: var(--gp-shadow-pink);
+}
+
+/* 顶栏左上角用 App 本体图标（与 exe 图标一致），图标铺满 40×40 */
+.brand-logo.brand-logo-img {
+  background: none;
+  border: 0;
+  overflow: hidden;
+  padding: 0;
+  box-shadow: var(--gp-shadow-sm);
+}
+.brand-logo.brand-logo-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.brand-text h1 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+.brand-text small {
+  display: block;
+  font-size: 11px;
+  color: var(--gp-gold);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.nav-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 顶部导航图标：Material Symbols 内联 SVG（viewBox 0 -960 960 960），fill 跟随按钮文字色。 */
+.nav-ico {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  flex: 0 0 auto;
+  display: block;
+}
+
+/* 通用 Material Symbols 内联图标：随 font-size 缩放、颜色跟随文字色。
+   替换页面里原先的 emoji/符号（由 js/icons.js 的 data-icon 水合，或 Icons.svg() 内联）。 */
+.mi {
+  width: 1em;
+  height: 1em;
+  fill: currentColor;
+  display: inline-block;
+  vertical-align: -0.14em;
+  flex: 0 0 auto;
+}
+.mi-lg { width: 1.4em; height: 1.4em; }
+.mi-xl { width: 2.2em; height: 2.2em; vertical-align: middle; }
+/* data-icon 占位容器本身不占额外行高，图标由内部 svg 呈现 */
+[data-icon] { display: inline-flex; align-items: center; }
+
+.nav-crumb-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: var(--gp-radius-full);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--gp-text-sub);
+  font-size: 13px;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  border: 1.5px solid transparent;
+}
+.nav-crumb-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+.nav-crumb-btn.active {
+  background: linear-gradient(135deg, #ff1776 0%, #e11d48 100%);
+  color: #ffffff;
+  border-color: #ffffff;
+  box-shadow: 0 4px 14px rgba(255, 23, 118, 0.5);
+}
+
+/* 顶部栏右侧的版本胶囊：详情页才出现的顶部栏，所以这是"离开大厅后随时能看到版本"的位置。
+   自建构建显示提交号（关键识别信息），没有提交号时显示"本地构建"。 */
+.app-version-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: var(--gp-radius-full);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1.5px solid rgba(255, 255, 255, 0.16);
+  color: var(--gp-text-sub);

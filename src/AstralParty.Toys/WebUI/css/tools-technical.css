@@ -1,0 +1,461 @@
+﻿.badge-library {
+  color: #facc15;
+  background: rgba(250, 204, 21, 0.14);
+  border: 1px solid rgba(250, 204, 21, 0.45);
+}
+
+.badge-warn {
+  color: #fca5a5;
+  background: rgba(248, 113, 113, 0.14);
+  border: 1px solid rgba(248, 113, 113, 0.45);
+}
+
+.entry-side {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  margin-left: 12px;
+}
+
+.entry-side .entry-date { margin-left: 0; }
+
+.entry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.entry-actions button {
+  padding: 4px 10px;
+  border-radius: var(--gp-radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--gp-text-main);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.entry-actions button:hover {
+  color: #ffffff;
+  border-color: var(--gp-pink);
+  background: rgba(255, 23, 118, 0.22);
+}
+
+.entry-actions button.danger:hover {
+  border-color: #f87171;
+  background: rgba(248, 113, 113, 0.22);
+}
+
+.library-empty {
+  padding: 22px 8px;
+  text-align: center;
+  color: var(--gp-text-muted);
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+
+.library-warning {
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border-radius: var(--gp-radius-sm);
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  background: rgba(248, 113, 113, 0.12);
+  color: #fecaca;
+  font-size: 12px;
+}
+
+/* ============================== 按 ID 下载（弹窗内容） ============================== */
+
+.download-intro {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--gp-text-sub);
+  line-height: 1.75;
+}
+
+.download-intro strong { color: var(--gp-gold); }
+
+.download-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.download-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.download-field > span {
+  font-size: 12px;
+  color: var(--gp-text-muted);
+}
+
+.download-field .library-input,
+.download-field .library-select {
+  width: 100%;
+  flex: 1 1 auto;
+}
+
+.download-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.download-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.download-bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #facc15, #ff1776);
+  transition: width 0.2s ease;
+}
+
+/* 服务器没给 Content-Length 时用来回滑动代替百分比 */
+.download-bar.indeterminate i {
+  width: 40%;
+  animation: download-indeterminate 1.1s ease-in-out infinite;
+}
+
+@keyframes download-indeterminate {
+  0% { margin-left: 0; }
+  50% { margin-left: 60%; }
+  100% { margin-left: 0; }
+}
+
+.download-progress span {
+  font-size: 12px;
+  color: var(--gp-text-sub);
+}
+
+.download-status {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  color: #fca5a5;
+  line-height: 1.65;
+  white-space: pre-line;
+}
+
+.download-status.ok { color: var(--gp-text-sub); }
+
+.download-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 12.5px;
+  line-height: 1.65;
+}
+
+.download-actions {
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 1180px) {
+  .library-status { flex-direction: column; }
+  .library-row .entry-meta strong { max-width: 240px; }
+}
+
+/* ============================== 回放表现分析 ============================== */
+.performance-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 12px;
+}
+
+.performance-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px 24px;
+  background:
+    radial-gradient(circle at 90% 10%, rgba(255, 23, 118, 0.18), transparent 55%),
+    var(--gp-bg-panel);
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--gp-radius-lg);
+  box-shadow: var(--gp-shadow-md);
+}
+.performance-hero > div:first-child { min-width: 0; flex: 1 1 auto; }
+.performance-eyebrow {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--gp-blue);
+}
+.performance-hero h3 { margin: 0 0 8px; font-size: 24px; font-weight: 900; color: #ffffff; }
+.performance-hero p { margin: 0; max-width: 76em; font-size: 13px; line-height: 1.7; color: var(--gp-text-sub); }
+.performance-total {
+  flex: 0 0 auto;
+  min-width: 132px;
+  padding: 12px 16px;
+  text-align: right;
+  background: rgba(250, 204, 21, 0.08);
+  border: 1px solid rgba(250, 204, 21, 0.28);
+  border-radius: var(--gp-radius-md);
+}
+.performance-total small { display: block; font-size: 11px; font-weight: 700; color: var(--gp-text-muted); }
+.performance-total strong { display: block; margin: 2px 0; font-size: 26px; font-weight: 900; font-family: 'Fira Code', monospace; color: var(--gp-gold); }
+.performance-total span { font-size: 11px; color: var(--gp-text-muted); }
+
+.performance-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px 18px;
+  padding: 16px 18px;
+  background: var(--gp-bg-panel);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--gp-radius-lg);
+  box-shadow: var(--gp-shadow-sm);
+}
+.performance-controls > label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--gp-text-muted);
+}
+.performance-controls select {
+  min-height: 38px;
+  padding: 7px 12px;
+  font: inherit;
+  font-size: 13px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--gp-radius-sm);
+}
+.performance-controls select:focus { outline: 2px solid var(--gp-blue); outline-offset: 2px; }
+.performance-players {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-left: auto;
+}
+.performance-player-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  font-size: 12.5px;
+  color: var(--gp-text-sub);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--gp-radius-full);
+  cursor: pointer;
+  user-select: none;
+}
+.performance-player-toggle input { accent-color: var(--player-color, var(--gp-blue)); }
+.performance-player-toggle span::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--player-color, var(--gp-blue));
+}
+
+.performance-chart-card {
+  padding: 14px 18px 18px;
+  background: var(--gp-bg-panel);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--gp-radius-lg);
+  box-shadow: var(--gp-shadow-sm);
+  overflow: hidden;
+}
+.performance-chart { display: block; width: 100%; height: auto; color: var(--gp-text-sub); }
+.performance-grid-line { stroke: rgba(255, 255, 255, 0.1); stroke-width: 1; }
+.performance-axis-text { fill: var(--gp-text-muted); font-size: 12px; }
+.performance-tooltip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-top: 10px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  color: var(--gp-text-sub);
+  background: rgba(10, 14, 26, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--gp-radius-sm);
+}
+.performance-tooltip[hidden] { display: none; }
+.performance-tooltip strong { flex-basis: 100%; color: #ffffff; }
+.performance-tooltip span::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--player-color, var(--gp-blue));
+}
+
+.performance-player-grid,
+.performance-dice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+.performance-player-card,
+.performance-dice-card {
+  padding: 15px 17px;
+  background: var(--gp-bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--gp-radius-md);
+  box-shadow: var(--gp-shadow-sm);
+}
+.performance-player-card { border-top: 3px solid var(--player-color, var(--gp-blue)); }
+.performance-player-card h4,
+.performance-dice-card h4 { margin: 0 0 8px; font-size: 15px; font-weight: 800; color: #ffffff; overflow-wrap: anywhere; }
+.performance-player-card p,
+.performance-dice-card p { margin: 0 0 4px; font-size: 12.5px; line-height: 1.65; color: var(--gp-text-sub); }
+.performance-player-card b,
+.performance-dice-card b { color: var(--gp-gold); font-family: 'Fira Code', monospace; }
+
+.performance-section-head { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.performance-section-head h4 { margin: 0; font-size: 17px; font-weight: 900; color: #ffffff; }
+.performance-section-head p { margin: 0; font-size: 12.5px; line-height: 1.65; color: var(--gp-text-muted); }
+
+.performance-table-wrap {
+  max-height: 420px;
+  background: var(--gp-bg-panel);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--gp-radius-lg);
+  box-shadow: var(--gp-shadow-sm);
+}
+.performance-table-wrap .light-table { min-width: 760px; }
+
+.performance-bar {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 46px;
+  align-items: center;
+  gap: 8px;
+  margin: 5px 0;
+  font-size: 12px;
+  color: var(--gp-text-sub);
+}
+.performance-bar meter { width: 100%; height: 8px; }
+.performance-bar meter::-webkit-meter-bar { background: rgba(255, 255, 255, 0.1); border: 0; border-radius: 4px; }
+.performance-bar meter::-webkit-meter-optimum-value { background: linear-gradient(90deg, #38bdf8, #ff1776); border-radius: 4px; }
+.performance-note { font-size: 12px; color: var(--gp-text-muted); }
+
+.performance-rounds {
+  padding: 0 16px;
+  background: var(--gp-bg-panel);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--gp-radius-lg);
+  box-shadow: var(--gp-shadow-sm);
+}
+.performance-rounds summary { padding: 14px 0; font-size: 13px; font-weight: 800; color: var(--gp-gold); cursor: pointer; }
+.performance-rounds > .table-scroll-wrap { max-height: 380px; margin-bottom: 16px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+.performance-rounds .light-table { min-width: 820px; }
+.performance-empty { padding: 30px; }
+.performance-empty h3 { margin: 0 0 8px; font-size: 20px; color: #ffffff; }
+.performance-empty p { margin: 0; font-size: 13px; color: var(--gp-text-sub); }
+
+/* ============================== 转账贡献 ============================== */
+.transfer-summary {
+  margin-bottom: 24px;
+  padding: 18px 22px;
+  background: var(--gp-bg-panel);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--gp-radius-lg);
+  box-shadow: var(--gp-shadow-sm);
+}
+.transfer-summary header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 14px; }
+.transfer-summary h3 { margin: 0; font-size: 17px; font-weight: 900; color: #ffffff; }
+.transfer-summary header p { margin: 4px 0 0; font-size: 12px; line-height: 1.6; color: var(--gp-text-muted); }
+.transfer-summary header > span { flex: 0 0 auto; font-size: 12px; color: var(--gp-text-sub); white-space: nowrap; }
+.transfer-summary header strong { font-size: 19px; font-family: 'Fira Code', monospace; color: var(--gp-gold); }
+.transfer-player-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+.transfer-player-grid article {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px;
+  background: var(--gp-bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--gp-radius-md);
+}
+.transfer-player-grid img { flex: 0 0 36px; width: 36px; height: 36px; border-radius: 8px; object-fit: cover; background: #000000; }
+.transfer-player-grid strong { display: block; font-size: 13px; color: #ffffff; overflow-wrap: anywhere; }
+.transfer-player-grid p { margin: 2px 0 0; font-size: 12px; color: var(--gp-text-sub); }
+.transfer-player-grid b { color: var(--gp-gold); font-family: 'Fira Code', monospace; }
+.player-transfer-line { margin: 10px 0 0; font-size: 12px; color: var(--gp-text-sub); }
+.player-transfer-line b { color: var(--gp-gold); font-family: 'Fira Code', monospace; }
+
+/* ============================== 刷怪地块记录 ============================== */
+.monster-summary-grid { display: grid; grid-template-columns: minmax(180px, .65fr) minmax(0, 2fr); gap: 12px; }
+.monster-step-card,
+.monster-spawn-card {
+  min-width: 0;
+  padding: 13px 14px;
+  background: var(--gp-bg-card);
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: var(--gp-radius-md);
+}
+.monster-step-card small,
+.monster-spawn-card small { display: block; font-size: 12px; color: var(--gp-text-muted); line-height: 1.6; }
+.monster-step-total { display: block; margin: 4px 0 8px; font-family: 'Fira Code', monospace; font-size: 30px; line-height: 1; color: var(--gp-gold); }
+.monster-step-players { display: flex; flex-wrap: wrap; gap: 6px; }
+.monster-step-players > span {
+  padding: 4px 8px;
+  font-size: 12px;
+  color: var(--gp-text-sub);
+  background: rgba(255, 255, 255, .06);
+  border-radius: 999px;
+}
+.monster-spawn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 8px; margin-top: 9px; }
+.monster-spawn-item { display: flex; align-items: center; gap: 9px; min-width: 0; padding: 7px 9px; background: rgba(255, 255, 255, .045); border-radius: var(--gp-radius-sm); }
+.monster-spawn-item img,
+.monster-spawn-placeholder {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: contain;
+  background: #000;
+}
+.monster-spawn-placeholder { display: grid; place-items: center; color: var(--gp-text-muted); font-weight: 900; }
+.monster-spawn-item strong { display: block; font-size: 12px; color: #fff; overflow-wrap: anywhere; }
+.monster-spawn-item span { display: block; margin-top: 2px; font-size: 11px; color: var(--gp-text-muted); }
+.monster-summary .muted { font-size: 12px; color: var(--gp-text-muted); }
+.monster-step-list { display: grid; gap: 6px; margin-top: 12px; max-height: 220px; overflow: auto; }
+.monster-step-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 7px 10px; font-size: 12px; background: rgba(255, 255, 255, .04); border-radius: var(--gp-radius-sm); }
+.monster-step-meta { flex: 0 0 auto; color: var(--gp-text-muted); }
+.monster-step-result { color: var(--gp-text-sub); text-align: right; overflow-wrap: anywhere; }
+.monster-step-row.empty .monster-step-result { color: var(--gp-text-muted); font-style: italic; }
+
+@media (max-width: 760px) {
+  .performance-hero { flex-direction: column; }
+  .performance-total { text-align: left; }
+  .performance-players { margin-left: 0; }
+  .transfer-summary header { flex-direction: column; gap: 8px; }
+  .monster-summary-grid { grid-template-columns: 1fr; }
+}
+
+
+

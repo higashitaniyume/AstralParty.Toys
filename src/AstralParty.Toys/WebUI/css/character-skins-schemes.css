@@ -1,0 +1,350 @@
+﻿/* Character skin editor follows Toys' existing dark theme tokens. */
+.character-binding-list { display: grid; gap: 16px; margin-top: 20px; }
+.character-binding { border: 1px solid var(--cs-border); border-radius: var(--gp-radius-md); padding: 16px; background: var(--cs-card); }
+.character-binding h4 { margin: 0 0 12px; }
+.character-binding p { overflow-wrap: anywhere; }
+.character-mode-tabs { margin-bottom: 20px; }
+#characterBindingError:empty { display: none; }
+.skins-page {
+  --cs-surface: var(--gp-bg-panel);
+  --cs-card: var(--gp-bg-card);
+  --cs-input: var(--gp-bg-subtle);
+  --cs-hover: var(--gp-bg-hover);
+  --cs-text: var(--gp-text-main);
+  --cs-secondary: var(--gp-text-sub);
+  --cs-muted: var(--gp-text-muted);
+  --cs-border: var(--gp-border);
+  --cs-border-strong: var(--gp-border-highlight);
+  --cs-accent: var(--gp-pink);
+  --cs-shadow: 0 4px 16px color-mix(in srgb, var(--gp-bg) 70%, transparent);
+  --cs-accent-wash: color-mix(in srgb, var(--cs-accent) 12%, var(--cs-surface));
+  --cs-checker-light: color-mix(in srgb, var(--cs-input) 88%, var(--cs-text));
+  --cs-checker-dark: var(--cs-input);
+  --cs-error: #ff9caa;
+  --cs-success: #b6e6c3;
+  color-scheme: dark;
+  background: var(--gp-bg);
+  color: var(--cs-text);
+}
+.skins-page .skins-header {
+  background: var(--cs-surface);
+  color: var(--cs-text);
+}
+.skins-page .skins-header h2 {
+  color: var(--cs-text);
+}
+.skins-page .game-picker-bar {
+  background: var(--cs-card);
+  border-color: var(--cs-border);
+  color: var(--cs-secondary);
+}
+.skins-page .game-picker-select {
+  background: var(--cs-input);
+  color: var(--cs-text);
+  border-color: var(--cs-border-strong);
+}
+.skins-page .back-btn {
+  color: var(--cs-text);
+  background: var(--cs-input);
+  border-color: var(--cs-border-strong);
+}
+.skins-page .game-picker-label,
+.skins-page .game-picker-path {
+  color: var(--cs-secondary);
+}
+.skins-page .game-picker-bar .link-btn {
+  color: var(--gp-blue);
+}
+#characterSkinPanel .primary-btn,
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) .primary-btn {
+  background: var(--cs-accent);
+  border-color: transparent;
+  color: white;
+  box-shadow: none;
+}
+#characterSkinPanel .primary-btn:hover,
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) .primary-btn:hover {
+  background: color-mix(in srgb, var(--cs-accent) 88%, black);
+}
+.character-skin-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 20px;
+  padding: 4px;
+  width: fit-content;
+  border: 1px solid var(--cs-border);
+  border-radius: var(--gp-radius-md);
+  background: var(--cs-input);
+}
+.character-skin-tabs button {
+  min-height: 44px;
+  padding: 10px 24px;
+  background: transparent;
+  color: var(--cs-secondary);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.18s,
+    color 0.18s,
+    border-color 0.18s;
+}
+.character-skin-tabs button:hover {
+  background: var(--cs-hover);
+  color: var(--cs-text);
+}
+.character-skin-tabs button.active {
+  color: var(--cs-text);
+  background: var(--cs-card);
+  border-color: var(--cs-border-strong);
+  box-shadow: inset 0 -3px var(--cs-accent);
+}
+#characterSkinPanel {
+  color: var(--cs-text);
+  padding-bottom: 20px;
+}
+#characterSkinPanel .secondary-btn,
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) .secondary-btn {
+  color: var(--cs-text);
+  background: var(--cs-input);
+  border: 1px solid var(--cs-border-strong);
+  box-shadow: none;
+}
+#characterSkinPanel .secondary-btn:hover,
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) .secondary-btn:hover {
+  color: var(--cs-text);
+  background: var(--cs-hover);
+  border-color: var(--cs-border-strong);
+}
+#characterSkinPanel .link-btn {
+  color: var(--cs-secondary);
+  background: transparent;
+}
+#characterSkinPanel .link-btn:hover {
+  color: var(--cs-text);
+}
+#characterSkinPanel .danger-btn {
+  color: var(--cs-error);
+  background: color-mix(in srgb, var(--cs-error) 10%, var(--cs-card));
+  border-color: color-mix(in srgb, var(--cs-error) 40%, var(--cs-border));
+}
+#characterSkinPanel .danger-btn:hover {
+  background: color-mix(in srgb, var(--cs-error) 18%, var(--cs-card));
+}
+.character-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+#characterStatus {
+  color: var(--cs-secondary);
+  font-size: 13px;
+  margin-left: auto;
+}
+.character-note {
+  color: var(--cs-secondary);
+  line-height: 1.6;
+  margin: 0 0 20px;
+  padding: 12px 16px;
+  border: 1px solid var(--cs-border);
+  border-radius: var(--gp-radius-sm);
+  background: var(--cs-card);
+}
+.character-workspace {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+}
+.character-list-panel,
+.character-detail {
+  min-width: 0;
+  padding: 20px;
+  color: var(--cs-text);
+  background: var(--cs-surface);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--gp-radius-md);
+  box-shadow: var(--cs-shadow);
+}
+.character-list-panel {
+  position: sticky;
+  top: 12px;
+  max-height: calc(100vh - 260px);
+  overflow: auto;
+}
+.character-list-panel input {
+  width: 100%;
+  margin: 8px 0 16px;
+}
+.character-package {
+  display: block;
+  text-align: left;
+  width: 100%;
+  padding: 14px;
+  margin: 8px 0;
+  color: var(--cs-text);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--gp-radius-sm);
+  background: var(--cs-card);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background 0.18s,
+    border-color 0.18s;
+}
+.character-package:hover {
+  background: var(--cs-hover);
+  border-color: var(--cs-border-strong);
+}
+.character-package.active {
+  border-color: var(--cs-accent);
+  background: var(--cs-accent-wash);
+  box-shadow: inset 3px 0 var(--cs-accent);
+}
+.character-package strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.character-package small {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--cs-secondary);
+}
+.character-detail h3 {
+  margin: 0 0 12px;
+  font-size: 22px;
+  color: var(--cs-text);
+}
+.character-detail h4 {
+  margin: 28px 0 14px;
+  padding-top: 20px;
+  border-top: 1px solid var(--cs-border);
+  font-size: 17px;
+  color: var(--cs-text);
+}
+.character-detail p {
+  color: var(--cs-secondary);
+  line-height: 1.6;
+}
+.character-image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+.character-image-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 14px;
+  border: 1px solid var(--cs-border);
+  border-radius: var(--gp-radius-sm);
+  background: var(--cs-card);
+  min-width: 0;
+}
+.character-image-slot strong {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.character-image-slot p {
+  margin: 8px 0 12px;
+  font-size: 13px;
+}
+.character-image-slot img {
+  display: block;
+  width: 100%;
+  height: 140px;
+  object-fit: contain;
+  background: repeating-conic-gradient(
+      var(--cs-checker-light) 0% 25%,
+      var(--cs-checker-dark) 0% 50%
+    )
+    50% / 20px 20px;
+  border: 1px solid var(--cs-border);
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+.character-image-slot button {
+  min-height: 40px;
+  margin: 4px 0;
+}
+.character-image-slot button.secondary-btn {
+  width: 100%;
+  margin-top: auto;
+}
+.character-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+}
+.character-detail label,
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--cs-secondary);
+}
+.character-detail input,
+.character-detail select,
+.character-detail textarea,
+.character-list-panel input,
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) input,
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) select,
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) textarea {
+  width: 100%;
+  max-width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--cs-border-strong);
+  border-radius: var(--gp-radius-sm);
+  padding: 10px 12px;
+  font: inherit;
+  box-sizing: border-box;
+  background: var(--cs-input);
+  color: var(--cs-text);
+  transition:
+    border-color 0.18s,
+    box-shadow 0.18s;
+}
+.character-detail select option,
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) select option {
+  color: var(--cs-text);
+  background: var(--cs-input);
+}
+.character-detail input::placeholder,
+.character-detail textarea::placeholder,
+.character-list-panel input::placeholder,
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) input::placeholder,
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) textarea::placeholder {
+  color: var(--cs-muted);
+  opacity: 1;
+}
+.character-detail textarea {
+  min-height: 88px;
+  resize: vertical;
+  line-height: 1.6;
+}
+.character-detail input:focus,
+.character-detail select:focus,
+.character-detail textarea:focus,
+.character-list-panel input:focus,
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) input:focus,
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) select:focus,
+:is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) textarea:focus {
+  outline: 2px solid var(--gp-blue);
+  outline-offset: 2px;
+  border-color: var(--gp-blue);
+}
+.character-preview {
+  position: relative;
+  height: 300px;
+  background: repeating-conic-gradient(
+      var(--cs-checker-light) 0% 25%,
+      var(--cs-checker-dark) 0% 50%

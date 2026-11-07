@@ -1,0 +1,290 @@
+﻿/* home.css - Authentic In-Game Lobby Aesthetic for Astral Party */
+
+.in-game-lobby {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  background: radial-gradient(circle at 35% 45%, #2a203a 0%, #151624 55%, #0a0b12 100%);
+  user-select: none;
+}
+
+.in-game-lobby::before,
+.in-game-lobby::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.in-game-lobby::before {
+  inset: -18px;
+  background:
+    linear-gradient(rgba(8, 10, 18, 0.42), rgba(8, 10, 18, 0.58)),
+    url("../images/Anni2nd.png") center / cover no-repeat;
+  filter: blur(10px);
+  transform: scale(1.04);
+}
+
+.in-game-lobby::after {
+  width: 420px;
+  height: 140%;
+  top: -20%;
+  left: -520px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.045), transparent);
+  transform: skewX(-18deg);
+  animation: lobby-light-sweep 11s ease-in-out infinite 2s;
+}
+
+@keyframes lobby-light-sweep {
+  0%, 35% { transform: translateX(0) skewX(-18deg); opacity: 0; }
+  45% { opacity: 1; }
+  70%, 100% { transform: translateX(calc(100vw + 1000px)) skewX(-18deg); opacity: 0; }
+}
+
+.lobby-game-logo {
+  position: absolute;
+  top: clamp(8px, 2.5vh, 24px);
+  left: 57%;
+  z-index: 14;
+  width: clamp(360px, 34vw, 500px);
+  height: auto;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.7));
+  pointer-events: none;
+  user-select: none;
+}
+
+body:not(.reduce-motion) #homeView:not(.page-entering) .lobby-game-logo {
+  animation: lobby-logo-arrive 620ms var(--motion-ease) both;
+}
+
+@keyframes lobby-logo-arrive {
+  from { opacity: 0; transform: translate(-50%, -14px) scale(0.96); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+/* ==========================================================================
+   1. HERO CHARACTER STAGE ON THE LEFT
+   ========================================================================== */
+.lobby-hero-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  z-index: 2;
+  cursor: default;
+  overflow: hidden;
+}
+
+.lobby-stage-glow {
+  position: absolute;
+  left: 20%;
+  top: 48%;
+  transform: translate(-50%, -50%);
+  width: 650px;
+  height: 650px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(244, 63, 94, 0.2) 0%, rgba(168, 85, 247, 0.1) 45%, transparent 70%);
+  filter: blur(55px);
+  pointer-events: none;
+  animation: lobby-glow-pulse 5.5s ease-in-out infinite alternate;
+}
+
+@keyframes lobby-glow-pulse {
+  from { opacity: 0.6; transform: translate(-50%, -50%) scale(0.94); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+}
+
+.lobby-hero-art {
+  position: absolute;
+  left: 2%;
+  top: auto;
+  bottom: 56px;
+  transform: none;
+  transform-origin: left bottom;
+  height: calc(100% - 64px);
+  max-width: 72%;
+  object-fit: contain;
+  object-position: left bottom;
+  filter: drop-shadow(0 20px 45px rgba(0, 0, 0, 0.8));
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
+  animation: hero-idle-float-left 6s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+.lobby-hero-stage:hover .lobby-hero-art {
+  transform: scale(1.025);
+}
+
+@keyframes hero-idle-float-left {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-1.5%) scale(1.015); }
+}
+
+@keyframes hero-art-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ==========================================================================
+   2. RIGHT-SIDE ACTION BUTTONS: 变速器、回放与模组（右下角另有启动游戏）
+   ========================================================================== */
+.lobby-action-stack {
+  position: absolute;
+  right: 52px;
+  bottom: 78px;
+  z-index: 16;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 32px;
+}
+
+.lobby-right-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  align-items: flex-end;
+}
+
+.lobby-card-btn {
+  width: 240px;
+  height: 74px;
+  border-radius: 20px;
+  border: 3px solid #ffffff;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+  position: relative;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 36px;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.lobby-card-btn:hover {
+  transform: translateX(-10px) scale(1.06);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.75), inset 0 2px 6px rgba(255, 255, 255, 0.6);
+}
+
+.card-btn-text {
+  font-size: 32px;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 3px;
+  /* 白字 + 粗黑描边：paint-order 让描边画在字身外侧（WebView2 是 Chromium，支持）；
+     再加一圈八向硬阴影兜底，即使 paint-order 不生效也是粗黑边而不是细描边 */
+  -webkit-text-stroke: 4px #000000;
+  paint-order: stroke fill;
+  text-shadow:
+    2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000,
+    2px 2px 0 #000, -2px 2px 0 #000, 2px -2px 0 #000, -2px -2px 0 #000,
+    0 4px 9px rgba(0, 0, 0, 0.55);
+  z-index: 3;
+}
+
+.card-btn-chibi {
+  position: absolute;
+  left: -28px;
+  top: -20px;
+  width: 106px;
+  height: 106px;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.55));
+  transition: transform 0.25s ease;
+  z-index: 4;
+}
+
+.lobby-card-btn:hover .card-btn-chibi {
+  transform: scale(1.14) rotate(-6deg);
+}
+
+/* 启动游戏那颗用的是宽幅游戏 logo（16:9），按自身比例摆放，别塞进方形立绘框里 */
+.card-btn-logo {
+  position: absolute;
+  left: -34px;
+  top: -30px;
+  width: 104px;
+  height: auto;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.6));
+  transition: transform 0.25s ease;
+  z-index: 4;
+}
+
+.lobby-card-btn:hover .card-btn-logo {
+  transform: scale(1.08);
+}
+
+/* 维基 (Blue-Green Energy Gradient) */
+.card-wiki {
+  background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+  box-shadow: 0 12px 30px rgba(2, 132, 199, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+}
+.card-wiki:hover {
+  box-shadow: 0 18px 42px rgba(2, 132, 199, 0.75), inset 0 2px 6px rgba(255, 255, 255, 0.6);
+}
+
+/* 回放 (Neon Pink-Rose Signature Gradient) */
+.card-tools {
+  background: linear-gradient(135deg, #ff1776 0%, #e11d48 100%);
+  box-shadow: 0 12px 30px rgba(225, 29, 72, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+}
+.card-tools:hover {
+  box-shadow: 0 18px 42px rgba(225, 29, 72, 0.75), inset 0 2px 6px rgba(255, 255, 255, 0.6);
+}
+
+/* 皮肤 (Cyan-Teal Magic Gradient) */
+.card-skins {
+  background: linear-gradient(135deg, #06b6d4 0%, #0d9488 100%);
+  box-shadow: 0 12px 30px rgba(13, 148, 136, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+}
+.card-skins:hover {
+  box-shadow: 0 18px 42px rgba(13, 148, 136, 0.75), inset 0 2px 6px rgba(255, 255, 255, 0.6);
+}
+
+/* 模组 (Amber-Orange Energy Gradient) */
+.card-mods {
+  background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
+  box-shadow: 0 12px 30px rgba(249, 115, 22, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+}
+.card-mods:hover {
+  box-shadow: 0 18px 42px rgba(249, 115, 22, 0.75), inset 0 2px 6px rgba(255, 255, 255, 0.6);
+}
+
+/* 变速器 (Violet Energy Gradient) */
+.card-speedhack {
+  background: linear-gradient(135deg, #a855f7 0%, #6d28d9 100%);
+  box-shadow: 0 12px 30px rgba(109, 40, 217, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+}
+.card-speedhack:hover {
+  box-shadow: 0 18px 42px rgba(109, 40, 217, 0.75), inset 0 2px 6px rgba(255, 255, 255, 0.6);
+}
+
+/* 启动游戏 (Signature Magenta #FF308B) */
+.card-launch {
+  background: linear-gradient(135deg, #ff308b 0%, #c2166a 100%);
+  box-shadow: 0 12px 30px rgba(255, 48, 139, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+}
+.card-launch:hover {
+  box-shadow: 0 18px 42px rgba(255, 48, 139, 0.78), inset 0 2px 6px rgba(255, 255, 255, 0.6);
+}
+/* 启动中：短暂锁住并转圈，挡掉几秒启动窗口期内的重复点击 */
+.card-launch.is-launching {
+  pointer-events: none;
+  filter: saturate(0.85) brightness(0.95);
+}
+.card-launch.is-launching .card-btn-text::after {
+  content: '';
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  margin-left: 8px;

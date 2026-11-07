@@ -1,0 +1,382 @@
+﻿        <section id="modsView" class="page-view mods-page hidden">
+          <!-- 新界面：模组页由 js/v2-mods.js 渲染（原版内容保留并隐藏） -->
+          <div id="v2Mods"></div>
+          <div class="utilities-header mods-header">
+            <div class="utilities-title-group">
+              <button class="back-btn" id="modsBackHomeBtn" data-i18n="replay.back_to_lobby">‹ 返回大厅</button>
+              <h2 data-i18n="mods.title">模组管理</h2>
+              <span class="utilities-tagline"
+                >CesiumLoader · 加载器 / 模组 / 变速</span
+              >
+            </div>
+            <div class="utilities-header-actions">
+              <button class="secondary-btn" id="modOpenFolderTopBtn">
+                <span class="mi" data-icon="folder_open"></span> <span data-i18n="mods.open_mods_folder">打开 mods 目录</span>
+              </button>
+              <button class="primary-btn" id="modImportTopBtn" data-i18n="mods.import_mod">
+                ＋ 导入模组
+              </button>
+            </div>
+          </div>
+
+          <div class="game-picker-bar" id="modGamePickerBar">
+            <span class="game-picker-label" data-i18n="mods.current_game">当前游戏</span>
+            <select
+              class="game-picker-select"
+              id="modGameSelect"
+              aria-label="选择当前正在操作的游戏"
+            ></select>
+            <span class="game-picker-path" id="modGamePickerPath"></span>
+            <button class="link-btn" id="modGamePickerManageBtn" data-i18n="mods.manage_game_dirs">
+              管理游戏目录…
+            </button>
+          </div>
+
+          <div class="mods-body">
+            <!-- ① 加载器：状态 + 版本三栏 -->
+            <section class="loader-panel" id="modManagerCard">
+              <div class="loader-head">
+                <span class="loader-icon" id="modStatusIcon"
+                  ><span class="mi" data-icon="search"></span
+                ></span>
+                <div class="loader-head-text">
+                  <div class="loader-title-row">
+                    <h3 data-i18n="mods.loader_title">Mod 加载器</h3>
+                    <span class="badge badge-notice" id="modStatusBadge"
+                      >检测中</span
+                    >
+                  </div>
+                  <p class="loader-state" id="modStatusTitle">
+                    正在检测安装状态…
+                  </p>
+                  <p class="loader-hint" id="modStatusText">请稍候</p>
+                </div>
+              </div>
+
+              <!-- 版本三栏：已安装 / 随程序内置 / GitHub 最新，下方一句结论 -->
+              <div class="version-board">
+                <div class="version-cell" id="modInstalledCell">
+                  <span class="version-label" data-i18n="mods.installed_ver">已安装</span>
+                  <strong class="version-value" id="modInstalledVersion"
+                    >—</strong
+                  >
+                  <span class="version-note" id="modInstalledNote"
+                    >正在检测…</span
+                  >
+                </div>
+                <div class="version-cell" id="modEmbeddedCell">
+                  <span class="version-label" data-i18n="mods.builtin_ver">随本程序内置</span>
+                  <strong class="version-value" id="modEmbeddedVersion"
+                    >—</strong
+                  >
+                  <span class="version-note"
+                    >点「安装加载器」装的就是这一份</span
+                  >
+                </div>
+                <div class="version-cell" id="modLatestCell">
+                  <span class="version-label" data-i18n="mods.latest_ver">GitHub 最新</span>
+                  <strong class="version-value" id="modLatestVersion"
+                    >未检查</strong
+                  >
+                  <span class="version-note" id="modLatestNote"
+                    >点「检查更新」获取</span
+                  >
+                </div>
+              </div>
+              <div class="version-verdict" id="modVersionVerdict">
+                <span class="verdict-dot"></span>
+                <span id="modVersionVerdictText">正在读取版本信息…</span>
+              </div>
+
+              <div class="loader-mirror-bar" id="modLoaderMirrorBar">
+                <span class="loader-mirror-label">
+                  <span class="mi" data-icon="cloud_download"></span>
+                  <span data-i18n="mods.mirror_label">下载加速镜像：</span>
+                </span>
+                <select id="modLoaderMirrorSelect" class="settings-select mod-mirror-select">
+                  <option value="gh-proxy" data-i18n="settings.mirror_ghproxy">GH-Proxy（推荐 - gh-proxy.com）</option>
+                  <option value="ghfast" data-i18n="settings.mirror_ghfast">GHFast 节点（ghfast.top）</option>
+                  <option value="direct" data-i18n="settings.mirror_direct">GitHub 直连（海外/科学上网）</option>
+                  <option value="custom" data-i18n="settings.mirror_custom">自定义加速前缀…</option>
+                </select>
+                <input
+                  type="url"
+                  class="library-input hidden mod-mirror-custom-input"
+                  id="modLoaderCustomMirrorInput"
+                  spellcheck="false"
+                  placeholder="https://gh-proxy.com/"
+                />
+              </div>
+
+              <div class="loader-actions">
+                <button class="primary-btn" id="modInstallBtn">
+                  <span class="mi" data-icon="download"></span> <span data-i18n="mods.install_btn">安装加载器</span>
+                </button>
+                <button class="secondary-btn" id="modCheckUpdateBtn">
+                  <span class="mi" data-icon="refresh"></span> <span data-i18n="mods.check_update">检查更新</span>
+                </button>
+                <button class="primary-btn hidden" id="modDownloadUpdateBtn">
+                  <span class="mi" data-icon="upgrade"></span> <span data-i18n="mods.update_btn">更新到最新</span>
+                </button>
+                <button
+                  class="secondary-btn"
+                  id="modImportPackageBtn"
+                  title="导入本地 cesium-loader 发布 ZIP，安装加载器、SDK 与包内模组"
+                >
+                  <span class="mi" data-icon="download"></span> <span data-i18n="mods.import_package">导入发布包</span>
+                </button>
+                <button
+                  class="secondary-btn hidden"
+                  id="modDisableLoaderBtn"
+                  type="button"
+                  title="备份后只删除 version.dll，保留所有模组与配置"
+                >
+                  <span class="mi" data-icon="delete"></span> 仅删除 version.dll
+                </button>
+                <button
+                  class="primary-btn hidden"
+                  id="modRestoreLoaderBtn"
+                  type="button"
+                  title="恢复当前版本；本地缺失时下载对应版本发布包"
+                >
+                  <span class="mi" data-icon="download"></span> 恢复 version.dll
+                </button>
+                <button class="danger-btn" id="modUninstallBtn">
+                  <span class="mi" data-icon="delete"></span> 完整卸载加载器
+                </button>
+                <button class="secondary-btn" id="modLoaderSettingsBtn">
+                  <span class="mi" data-icon="settings"></span> 加载器设置
+                </button>
+                <button class="secondary-btn" id="modLoaderChangelogBtn">
+                  <span class="mi" data-icon="description"></span>
+                  加载器更新日志
+                </button>
+              </div>
+            </section>
+
+            <!-- ② 模组列表：本页主体 -->
+            <section class="mods-panel">
+              <div class="mods-panel-head">
+                <h3>
+                  已安装的模组
+                  <span class="mods-count" id="modModsCount">—</span>
+                </h3>
+                <div class="mods-panel-actions">
+                  <label class="mods-search">
+                    <span class="mi" data-icon="search"></span>
+                    <input
+                      id="modSearchInput"
+                      type="search"
+                      autocomplete="off"
+                      spellcheck="false"
+                      placeholder="搜索模组…"
+                      data-i18n-placeholder="mods.search_placeholder"
+                    />
+                  </label>
+                  <button class="secondary-btn" id="modRefreshBtn" title="刷新模组列表">
+                    <span class="mi" data-icon="refresh"></span> <span data-i18n="common.refresh">刷新</span>
+                  </button>
+                  <button class="secondary-btn" id="modOpenModsBtn">
+                    <span class="mi" data-icon="folder_open"></span> 打开 mods
+                    目录
+                  </button>
+                  <button class="secondary-btn" id="modOpenLogsBtn">
+                    <span class="mi" data-icon="description"></span>
+                    打开日志目录
+                  </button>
+                  <button
+                    class="primary-btn"
+                    id="modImportBtn"
+                    title="导入单个模组 DLL，或整个模组包（ZIP，解压到 mods 目录）"
+                  >
+                    ＋ 导入模组
+                  </button>
+                </div>
+              </div>
+              <div class="mod-cards" id="modListContainer">
+                <p class="mods-empty">尚未安装加载器 / 目录为空</p>
+              </div>
+              <p class="mods-foot-note">
+                启用 /
+                禁用与配置修改都在<strong>重启游戏后</strong>生效；「<span
+                  class="mi"
+                  data-icon="settings"
+                ></span
+                >」改这个模组自己的配置。
+              </p>
+            </section>
+
+            <!-- ③ 游戏变速（加载器内置功能，不是 mod） -->
+            <section class="mods-panel mods-panel-compact" id="modSpeedhackBar">
+              <div class="mods-panel-head">
+                <h3>
+                  游戏变速 <span class="mods-sub-count">加载器内置功能</span>
+                </h3>
+              </div>
+              <div class="speedhack-row">
+                <label
+                  class="mod-toggle speedhack-toggle"
+                  title="启用后，启动游戏即按该倍速运行（全程保持）"
+                >
+                  <input type="checkbox" id="modSpeedhackEnable" />
+                  <span class="switch-track"></span>
+                  <span class="mod-toggle-text" id="modSpeedhackEnableLabel"
+                    >变速已禁用</span
+                  >
+                </label>
+                <label class="speedhack-speed-row">
+                  <span>倍速</span>
+                  <input
+                    type="number"
+                    id="modSpeedhackSpeed"
+                    min="1"
+                    max="100"
+                    step="0.1"
+                    value="2.0"
+                    title="启动时基础倍速（1.0 = 正常；不支持减速，最小 1.0）"
+                  />
+                </label>
+                <button class="primary-btn" id="modSpeedhackSaveBtn">
+                  应用变速
+                </button>
+                <span class="speedhack-hint" id="modSpeedhackHint"
+                  >1.0 = 正常速度</span
+                >
+              </div>
+              <p class="mods-foot-note">
+                写入 <span class="util-mono">doorstop_config.json</span> 的
+                <span class="util-mono">speedhackBaseSpeed</span>：启用 =
+                启动游戏即按该倍速运行（全程保持）， 禁用 = 恢复 1.0
+                正常速度。最低 1.0（加载器不支持减速），重启游戏生效。
+              </p>
+            </section>
+
+            <!-- ④ 高级 / 诊断：默认折叠，只有排障与特殊安装才需要 -->
+            <details class="mods-advanced" id="modAdvancedDetails">
+              <summary>
+                高级与排障
+                <span class="mods-advanced-hint"
+                  >游戏目录 · 覆盖与降级 · SDK 依赖 · 卸载</span
+                >
+              </summary>
+
+              <div class="mods-advanced-body">
+                <span class="util-section-label"
+                  >游戏目录（version.dll 的安装位置）</span
+                >
+                <div class="util-path-box">
+                  <span class="path-value placeholder" id="modGameDirText"
+                    >尚未选择游戏目录</span
+                  >
+                  <button class="secondary-btn" id="modDetectDirBtn">
+                    自动检测
+                  </button>
+                  <button class="secondary-btn" id="modBrowseDirBtn">
+                    选择…
+                  </button>
+                </div>
+
+                <div
+                  class="mods-advanced-warn hidden"
+                  id="modAdvancedWarn"
+                ></div>
+
+                <span class="util-section-label">安装与覆盖选项</span>
+                <div class="util-check-row">
+                  <input type="checkbox" id="modIncludeSampleCheck" checked />
+                  <label for="modIncludeSampleCheck"
+                    >安装加载器时一并装上内置模组（行为日志 + 自由相机 +
+                    变速）</label
+                  >
+                </div>
+                <div class="util-check-row">
+                  <input type="checkbox" id="modOverwriteCheck" />
+                  <label for="modOverwriteCheck"
+                    >允许覆盖游戏目录里不属于本工具的 version.dll</label
+                  >
+                </div>
+                <div class="util-check-row">
+                  <input type="checkbox" id="modDowngradeCheck" />
+                  <label for="modDowngradeCheck"
+                    >允许把已装的加载器降级成内置的较旧版本</label
+                  >
+                </div>
+                <div class="util-check-row">
+                  <input type="checkbox" id="modUpdateOverwriteCheck" />
+                  <label for="modUpdateOverwriteCheck"
+                    >更新时允许覆盖游戏目录里不属于本工具的 version.dll</label
+                  >
+                </div>
+                <div class="util-check-row">
+                  <input type="checkbox" id="modUpdateDowngradeCheck" />
+                  <label for="modUpdateDowngradeCheck"
+                    >更新时允许降级（仅在发布包比已装版本旧时才需要）</label
+                  >
+                </div>
+                <div class="util-check-row">
+                  <input type="checkbox" id="modForceUninstallCheck" />
+                  <label for="modForceUninstallCheck"
+                    >强制卸载（version.dll 不属于本工具时也删除）</label
+                  >
+                </div>
+
+                <div class="util-btn-row">
+                  <button class="secondary-btn" id="modOpenSdkBtn">
+                    <span class="mi" data-icon="folder_open"></span> 打开 sdk
+                    目录
+                  </button>
+                </div>
+
+                <span class="util-section-label">SDK 依赖（sdk\ 目录）</span>
+                <div class="mod-cards mod-cards-sdk" id="modSdkContainer">
+                  <p class="mods-empty">尚未安装加载器 / 目录为空</p>
+                </div>
+
+                <details class="mods-help">
+                  <summary>它是怎么工作的？</summary>
+                  <ul>
+                    <li>
+                      把内置
+                      <span class="util-mono">version.dll</span
+                      >（CesiumLoader，Doorstop 式代理）放到游戏 exe
+                      旁边；游戏启动时由 UnityPlayer 自动加载，再读取
+                      <span class="util-mono"
+                        >AstralParty_ModLoader\doorstop_config.json</span
+                      >，按 <span class="util-mono">mods\</span> 下每个模组的
+                      sidecar（同名
+                      <span class="util-mono">.json</span>）做依赖排序与 SDK
+                      版本协商，然后逐个加载，并在控制台窗口按颜色分级打印加载报告。不会修改游戏文件本身。
+                    </li>
+                    <li>
+                      每个模组是引用 CesiumLoader.SDK 的 .NET
+                      DLL，一个模组一个文件夹：<span class="util-mono"
+                        >mods\{ModId}\{ModId}.dll</span
+                      >，sidecar 与配置（<span class="util-mono"
+                        >config.json</span
+                      >）都在同一个文件夹里。
+                    </li>
+                    <li>
+                      版本信息只以<strong>安装清单</strong>（<span
+                        class="util-mono"
+                        >AstralParty_ModLoader\cesium-loader.json</span
+                      >）为准：安装或更新时写入，界面读它显示「已安装」。看不出（0.4.7
+                      之前的老安装、或清单被删）时界面会如实显示「版本未知」——重新安装一次即可纳入版本管理。
+                    </li>
+                    <li>
+                      加载器与旧版独立变速器（「游戏工具」页）共用
+                      <span class="util-mono">version.dll</span
+                      >，<strong>只能装一个</strong>；加载器本身已内置变速，装它就够了。
+                    </li>
+                    <li>
+                      游戏运行中也能安装 / 卸载，但
+                      <span class="util-mono">version.dll</span>
+                      被占用时写入或删除会失败——那种情况先完全退出游戏再操作。
+                    </li>
+                  </ul>
+                </details>
+              </div>
+            </details>
+          </div>
+        </section>
+
+        <!-- 4.4. WORKSHOP VIEW (Community mod catalog) -->

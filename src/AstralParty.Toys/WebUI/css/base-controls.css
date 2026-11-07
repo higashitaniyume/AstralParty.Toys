@@ -1,0 +1,331 @@
+﻿  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.75), 0 0 16px rgba(250, 204, 21, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(92vw, 760px);
+  word-break: break-word;
+}
+.toast-container.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  animation: toast-arrive 420ms var(--motion-spring) both;
+}
+
+@keyframes toast-arrive {
+  0% { opacity: 0; transform: translateX(-50%) translateY(28px) scale(0.9); }
+  70% { opacity: 1; transform: translateX(-50%) translateY(-4px) scale(1.025); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+
+/* Game Aesthetic Modal Window */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 11, 20, 0.75);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 900;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.modal-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-content {
+  width: min(680px, 92vw);
+  max-height: 85vh;
+  background: linear-gradient(135deg, rgba(22, 28, 50, 0.98) 0%, rgba(14, 18, 34, 0.98) 100%);
+  border-radius: var(--gp-radius-lg);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85), 0 0 30px rgba(255, 23, 118, 0.25);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: scale(0.94);
+  transition: transform 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.15);
+  color: #ffffff;
+}
+.modal-backdrop.open .modal-content {
+  transform: scale(1);
+  animation: soft-pop 320ms var(--motion-spring) both;
+}
+
+/* 配置类弹窗：模组配置字段带多语言说明，按内容加宽；普通提示弹窗仍用 680px。 */
+.modal-content.modal-wide {
+  width: min(900px, 94vw);
+}
+
+.modal-header {
+  padding: 18px 24px;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+}
+.modal-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  color: #ffffff;
+  transition: all 0.2s ease;
+}
+.modal-close-btn:hover {
+  background: #ff1776;
+  border-color: #ffffff;
+  transform: scale(1.1);
+}
+
+@keyframes content-rise {
+  from { opacity: 0; transform: translate3d(0, 18px, 0) scale(0.985); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes content-slide-left {
+  from { opacity: 0; transform: translate3d(22px, 0, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes glow-sweep {
+  from { transform: translateX(-160%) skewX(-18deg); }
+  to { transform: translateX(280%) skewX(-18deg); }
+}
+
+@keyframes soft-pop {
+  0% { opacity: 0; transform: scale(0.92); }
+  70% { opacity: 1; transform: scale(1.025); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Respect both the in-app setting and Windows' reduced-motion preference. */
+body.reduce-motion *,
+body.reduce-motion *::before,
+body.reduce-motion *::after {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 1ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.loading-backdrop {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.loading-card {
+  position: relative;
+  overflow: hidden;
+  background: var(--gp-bg-panel);
+  border: 2px solid var(--gp-pink);
+  padding: 30px 42px;
+  border-radius: var(--gp-radius-lg);
+  box-shadow: var(--gp-shadow-lg), 0 0 28px rgba(255, 23, 118, 0.22);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: #ffffff;
+  animation: soft-pop 360ms var(--motion-spring) both;
+}
+
+.loading-card::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 -50%;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  animation: glow-sweep 1.8s ease-in-out infinite;
+}
+
+.modal-body {
+  padding: 24px 26px;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--gp-text-sub);
+}
+
+/* ==========================================================================
+   版本信息弹窗（js/version.js）：顶部栏版本胶囊 / 大厅状态栏点开就是它
+   ========================================================================== */
+.version-info-hero {
+  padding: 4px 0 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.version-info-number {
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 12px rgba(255, 23, 118, 0.45);
+}
+.version-info-sub {
+  margin-top: 6px;
+  color: var(--gp-text-sub);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.version-info-rows {
+  margin: 18px 0 0;
+  display: grid;
+  gap: 2px;
+}
+.version-info-row {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.version-info-row dt {
+  flex: none;
+  width: 96px;
+  color: var(--gp-text-sub);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.version-info-row dd {
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.version-info-note {
+  margin: 16px 0 0;
+  padding-left: 10px;
+  border-left: 3px solid var(--gp-pink);
+  color: var(--gp-text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.version-info-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* ==========================================================================
+   更新日志弹窗（js/version.js renderChangelog）：把内嵌的 CHANGELOG.md 渲染成可读列表
+   ========================================================================== */
+.changelog { font-size: 13px; line-height: 1.65; }
+.changelog-empty {
+  color: var(--gp-text-muted);
+  font-size: 13px;
+}
+.changelog-h1 {
+  font-size: 18px;
+  font-weight: 900;
+  color: #fff;
+  margin: 0 0 6px;
+}
+.changelog-h2 {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--gp-pink);
+  margin: 22px 0 4px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.changelog-h2:first-of-type { border-top: none; padding-top: 0; margin-top: 12px; }
+.changelog-h3 {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--gp-gold);
+  margin: 16px 0 4px;
+}
+.changelog-p { margin: 6px 0; color: var(--gp-text-sub); }
+.changelog-list {
+  margin: 4px 0 4px;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.changelog-list li { color: var(--gp-text-sub); }
+.changelog-list li strong { color: #fff; font-weight: 800; }
+.changelog code {
+  font-family: Consolas, monospace;
+  font-size: 12px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--gp-blue);
+}
+.changelog-tabs {
+  display: flex;
+  gap: 6px;
+  margin: -6px 0 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.changelog-tab {
+  appearance: none;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--gp-text-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.changelog-tab:hover { color: var(--gp-text-sub); }
+.changelog-tab.is-active {
+  color: #fff;
+  border-bottom-color: var(--gp-pink);
+}
+.changelog-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.changelog-source { font-size: 12px; color: var(--gp-text-muted); }
+.changelog-refresh { flex: none; }

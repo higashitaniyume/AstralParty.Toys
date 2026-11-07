@@ -1,0 +1,96 @@
+﻿        <!-- 5. WIKI VIEW (Direct BWiki Webpage) -->
+        <section id="wikiView" class="page-view wiki-page hidden">
+          <div class="wiki-top-toolbar">
+            <div class="wiki-toolbar-left">
+              <button class="back-btn" id="wikiBackHomeBtn" data-i18n="replay.back_to_lobby">‹ 返回大厅</button>
+              <div class="wiki-title-info">
+                <h2>吉星派对 · BWiki 维基攻略</h2>
+                <span class="wiki-url-badge">wiki.biligame.com/starengine</span>
+              </div>
+            </div>
+            <div class="wiki-toolbar-right">
+              <button
+                class="secondary-btn"
+                id="wikiRefreshBtn"
+                title="重新载入维基页面"
+              >
+                <span class="mi" data-icon="refresh"></span> <span data-i18n="common.refresh">刷新</span>
+              </button>
+              <button
+                class="primary-btn"
+                id="wikiExternalBtn"
+                title="在系统默认浏览器中打开"
+              >
+                <span class="mi" data-icon="open_in_new"></span> <span data-i18n="wiki.open_external">浏览器打开</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="wiki-frame-container">
+            <!-- 不放 src：这一页 hidden 时 iframe 照样会加载，等于每次启动都去拉一整个第三方维基。
+               首次进入维基页时由 wiki.js 懒加载 -->
+            <iframe
+              id="wikiIframe"
+              class="wiki-iframe"
+              title="游戏维基（Starengine Wiki）"
+              frameborder="0"
+              allowfullscreen
+            >
+            </iframe>
+          </div>
+        </section>
+
+        <!-- 5. SETTINGS VIEW -->
+        <!-- 游戏多开：账号 profile 管理（加载器侧做目录重定向） -->
+        <section id="profilesView" class="page-view profiles-page hidden">
+          <div class="profiles-header">
+            <h2 data-i18n="profile.title">游戏多开</h2>
+            <p data-i18n="profile.subtitle">
+              每套 profile 保存独立的账号、存档与回放。加载器把游戏读取的目录重定向到对应的 profile，不需要复制游戏文件。
+            </p>
+          </div>
+
+          <div class="profiles-status" id="accountProfilesStatus"></div>
+
+          <label class="profiles-option" id="accountProfileWindowTitleOption">
+            <input type="checkbox" id="accountProfileWindowTitleToggle" />
+            <span class="profiles-option-text">
+              <span class="profiles-option-title" data-i18n="profile.window_title">游戏窗口标题带上 profile 名</span>
+              <span class="profiles-option-hint" data-i18n="profile.window_title_hint">
+                默认开启。选中 profile 后，窗口标题显示为「原标题 · profile 名」，方便在任务栏和 Alt+Tab 里区分多个实例；下次启动游戏生效。
+              </span>
+            </span>
+          </label>
+
+          <div class="profiles-create">
+            <input
+              class="profiles-input"
+              id="accountProfileNameInput"
+              type="text"
+              maxlength="32"
+              pattern="[A-Za-z0-9_]+"
+              spellcheck="false"
+              autocomplete="off"
+              data-i18n-placeholder="profile.name_placeholder"
+              placeholder="新 profile 名称，例如 P2"
+            />
+            <button class="primary-btn" id="accountProfileCreateBtn" disabled>
+              <span class="mi" data-icon="group"></span>
+              <span data-i18n="profile.create">新建 profile</span>
+            </button>
+            <button class="secondary-btn" id="accountProfilesRefreshBtn">
+              <span class="mi" data-icon="refresh"></span>
+              <span data-i18n="common.refresh">刷新</span>
+            </button>
+          </div>
+          <div class="profiles-name-hint" id="accountProfileNameHint" data-i18n="profile.name_hint">
+            只能用英文、数字和下划线，最多 32 个字符
+          </div>
+
+          <div class="profiles-list" id="accountProfilesList"></div>
+
+          <p class="profiles-note" data-i18n="profile.note">
+            切换只写入加载器配置，下次启动游戏生效。同时开多个实例需要不同的 exe 路径（Unity 单实例互斥与 exe 路径绑定）；同一账号不能同时在线。
+          </p>
+        </section>
+

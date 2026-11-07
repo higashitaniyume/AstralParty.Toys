@@ -1,0 +1,336 @@
+﻿  border-color: var(--gp-border-pink);
+}
+
+.forge-sticker-tab.is-active {
+  border-color: var(--gp-pink);
+  background: rgba(255, 23, 118, 0.12);
+  box-shadow: 0 0 0 2px rgba(255, 23, 118, 0.25);
+  color: var(--gp-text-main);
+}
+
+.forge-sticker-tab-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.forge-sticker-tab-char {
+  font-size: 10px;
+  color: var(--gp-text-muted);
+}
+
+.forge-sticker-divider {
+  width: 1px;
+  flex: 0 0 auto;
+  align-self: stretch;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 2px 2px;
+}
+
+.forge-sticker-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px 4px;
+  color: var(--gp-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.forge-sticker-clearlink {
+  border: 0;
+  background: transparent;
+  color: var(--gp-pink);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.forge-sticker-clearlink:hover {
+  text-decoration: underline;
+}
+
+.forge-sticker-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 12px 8px;
+}
+
+.forge-sticker-grid-inner {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 64px);
+  justify-content: start;
+  gap: 4px;
+}
+
+.forge-sticker-cell {
+  position: relative;
+}
+
+.forge-sticker-cell-btn {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.12s ease, box-shadow 0.12s ease;
+}
+
+.forge-sticker-cell-btn:hover,
+.forge-sticker-cell-btn.is-hover {
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 0 0 2px rgba(255, 23, 118, 0.35);
+}
+
+.forge-sticker-cell-btn.is-mine {
+  background: rgba(255, 23, 118, 0.12);
+  box-shadow: 0 0 0 2px var(--gp-pink);
+}
+
+.forge-sticker-cell-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.forge-sticker-cell-btn:focus-visible {
+  outline: 2px solid var(--gp-blue);
+  outline-offset: 1px;
+}
+
+.forge-sticker-cell-img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  transition: transform 0.12s ease;
+}
+
+.forge-sticker-cell-btn:hover .forge-sticker-cell-img {
+  transform: scale(1.1);
+}
+
+.forge-sticker-fav {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--gp-bg-panel);
+  color: var(--gp-text-muted);
+  font-size: 11px;
+  line-height: 1;
+  box-shadow: var(--gp-shadow-sm);
+  opacity: 0;
+  cursor: pointer;
+}
+
+.forge-sticker-cell:hover .forge-sticker-fav,
+.forge-sticker-fav.is-fav {
+  opacity: 1;
+}
+
+.forge-sticker-fav.is-fav {
+  background: var(--gp-pink);
+  color: #fff;
+}
+
+.forge-sticker-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.forge-sticker-empty-ico {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--gp-text-muted);
+}
+
+.forge-sticker-empty-title {
+  margin: 0;
+  color: var(--gp-text-main);
+  font-size: 13px;
+}
+
+.forge-sticker-empty-hint {
+  margin: 0;
+  max-width: 240px;
+  color: var(--gp-text-muted);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.forge-sticker-empty-clear {
+  margin-top: 4px;
+  padding: 4px 12px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-full);
+  background: transparent;
+  color: var(--gp-text-sub);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.forge-sticker-empty-clear:hover {
+  border-color: var(--gp-border-pink);
+  color: var(--gp-text-main);
+}
+
+.forge-sticker-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--gp-border);
+}
+
+.forge-sticker-preview-img {
+  width: 80px;
+  height: 80px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.forge-sticker-preview-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.forge-sticker-preview-id {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11px;
+  color: var(--gp-text-main);
+}
+
+.forge-sticker-preview-meta {
+  margin: 2px 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--gp-text-muted);
+  font-size: 11px;
+}
+
+.forge-sticker-preview-fav {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--gp-text-muted);
+  cursor: pointer;
+}
+
+.forge-sticker-preview-fav:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--gp-text-main);
+}
+
+.forge-sticker-preview-fav.is-fav {
+  background: var(--gp-pink);
+  color: #fff;
+}
+
+.forge-sticker-preview-star {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.forge-sticker-hint {
+  margin: 0;
+  color: var(--gp-text-muted);
+  font-size: 11px;
+}
+
+.forge-sticker-hint-dim {
+  opacity: 0.6;
+}
+
+.forge-sticker-error {
+  margin: 0;
+  padding: 6px 12px;
+  border-top: 1px solid var(--gp-border);
+  color: #fda4af;
+  font-size: 11px;
+}
+
+/* ---------- 贴纸缓存进度（首次从市场下载时） ---------- */
+
+.forge-sticker-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--gp-border);
+}
+
+.forge-sticker-progress[hidden] {
+  display: none;
+}
+
+.forge-sticker-progress-text {
+  color: var(--gp-text-muted);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.forge-sticker-progress-bar {
+  position: relative;
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--gp-radius-full);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.forge-sticker-progress-fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--gp-pink), var(--gp-gold));
+  transition: width 0.25s ease;
+}
+
+.forge-sticker-progress-bar.is-indeterminate .forge-sticker-progress-fill {
+  width: 40%;
+  animation: forge-sticker-indeterminate 1.1s ease-in-out infinite;
+}
+
+@keyframes forge-sticker-indeterminate {
+  0% { transform: translateX(-40%); }
+  100% { transform: translateX(260%); }
+}
+
+.forge-sticker-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--gp-text-muted);
+  font-size: 12px;
+}

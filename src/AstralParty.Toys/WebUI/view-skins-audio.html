@@ -1,0 +1,204 @@
+﻿          <section
+            id="audioSkinPanel"
+            class="hidden"
+            role="tabpanel"
+            aria-labelledby="audioSkinTab"
+          >
+            <!-- 方案控制面板 -->
+            <section class="skin-active-panel">
+              <div class="skin-active-left">
+                <div class="skin-select-row">
+                  <label for="audioSchemeSelect" class="skin-select-label" data-i18n="audio_skins.select_scheme">选择音效方案：</label>
+                  <select id="audioSchemeSelect" class="skin-profile-dropdown"></select>
+                  <span id="audioActiveBadge" class="badge badge-success hidden" data-i18n="skins.active_badge">当前生效中</span>
+                </div>
+                <div class="skin-meta-info" id="audioMetaInfo">
+                  <h3 id="audioDisplayName" class="skin-name">—</h3>
+                  <p id="audioDescription" class="skin-desc">暂无方案描述</p>
+                  <div class="skin-meta-badges">
+                    <span class="skin-meta-tag" id="audioRuleCountTag">0 项规则</span>
+                    <span class="skin-meta-tag" id="audioAuthorTag">作者: —</span>
+                    <span class="skin-meta-tag" id="audioDateTag">更新: —</span>
+                  </div>
+                </div>
+              </div>
+              <div class="skin-active-right">
+                <button class="primary-btn" id="audioApplyActiveBtn" data-i18n="audio_skins.apply_active">设为当前方案</button>
+                <button class="secondary-btn" id="audioNewSchemeBtn" data-i18n="audio_skins.new_scheme">＋ 新建方案</button>
+                <button class="secondary-btn" id="audioDuplicateBtn" data-i18n="audio_skins.duplicate_scheme">新建副本…</button>
+                <button class="secondary-btn" id="audioEditMetaBtn" data-i18n="audio_skins.edit_meta">编辑方案信息</button>
+                <button class="secondary-btn" id="audioOpenFolderBtn" data-i18n="audio_skins.open_folder">
+                  <span class="mi" data-icon="folder"></span> 打开本方案目录
+                </button>
+                <button class="secondary-btn" id="audioExportZipBtn" data-i18n="audio_skins.export_zip">导出 ZIP</button>
+                <button class="secondary-btn" id="audioImportZipBtn" data-i18n="audio_skins.import_zip">导入 ZIP</button>
+                <button class="secondary-btn" id="audioExtractGameBtn" data-i18n="audio_skins.extract_game" title="从游戏资源中整理与提取全部原版音频用于试听和参考">
+                  <span class="mi" data-icon="download"></span> 提取原版音频
+                </button>
+                <button class="secondary-btn" id="audioImportOriginalZipBtnBar" data-i18n="audio_skins.import_original_zip" title="从外部下载的原版音频 ZIP 压缩包快速导入至本地试听缓存">
+                  <span class="mi" data-icon="folder_zip"></span> 导入原版音频
+                </button>
+                <button class="secondary-btn" id="audioExportOriginalBtn" title="将游戏全部原版音频按角色与分类打包导出为 ZIP 文件">
+                  <span class="mi" data-icon="archive"></span> 导出原版音频
+                </button>
+                <button class="danger-btn" id="audioDeleteSchemeBtn" data-i18n="audio_skins.delete_scheme">删除此方案</button>
+              </div>
+            </section>
+
+            <!-- 提取进度条 -->
+            <div id="audioExtractBanner" class="resource-mod-progress hidden" style="margin: 12px 0;">
+              <div class="rmp-head">
+                <strong id="audioExtractText">正在提取官方音频…</strong>
+                <span id="audioExtractPercent">0%</span>
+              </div>
+              <progress id="audioExtractBar" max="100" value="0" style="width:100%;"></progress>
+            </div>
+
+            <!-- 分类筛选与搜索 -->
+            <section class="skin-gallery-panel">
+              <div class="gallery-toolbar">
+                <span class="skin-gallery-count" id="audioGalleryCount">共 1322 个音频</span>
+
+                <div class="gallery-filter-tabs" id="audioCategoryTabs">
+                  <button class="gallery-tab active" data-category="all">全部 (<span id="audioCountAll">1322</span>)</button>
+                  <button class="gallery-tab" data-category="UI">界面交互 (<span id="audioCountUI">38</span>)</button>
+                  <button class="gallery-tab" data-category="Dice">掷骰与地图 (<span id="audioCountDice">24</span>)</button>
+                  <button class="gallery-tab" data-category="Combat">战斗对拍 (<span id="audioCountCombat">159</span>)</button>
+                  <button class="gallery-tab" data-category="Card">卡牌与技能 (<span id="audioCountCard">31</span>)</button>
+                  <button class="gallery-tab" data-category="Voice">角色语音 (<span id="audioCountVoice">957</span>)</button>
+                  <button class="gallery-tab" data-category="BGM">背景音乐 (<span id="audioCountBGM">38</span>)</button>
+                  <button class="gallery-tab" data-category="Misc">其它特效 (<span id="audioCountMisc">75</span>)</button>
+                </div>
+
+                <div class="gallery-search-box">
+                  <svg viewBox="0 0 24 24" class="search-ico">
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+                  </svg>
+                  <input type="text" id="audioSearchInput" placeholder="搜索音效名、ID #1001 或说明…" spellcheck="false" />
+                  <button class="search-clear-btn hidden" id="audioSearchClear" title="清空搜索">✕</button>
+                </div>
+              </div>
+
+              <!-- 角色语音专用的角色与皮肤二级筛选栏（在选择“角色语音”时显示） -->
+              <div id="audioVoiceFilterRow" class="hidden" style="display:none; align-items:center; flex-wrap:wrap; gap:16px; margin: 12px 0 6px 0; padding: 10px 14px; background:var(--cs-input); border:1px solid var(--cs-border-subtle); border-radius:var(--gp-radius-md);">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <label for="audioVoiceCharSelect" style="font-size:13px; font-weight:600; color:var(--cs-secondary); margin:0;">所属角色：</label>
+                  <select id="audioVoiceCharSelect" style="min-width:140px; height:34px; padding:4px 8px; border-radius:4px; background:var(--cs-surface); color:var(--cs-text); border:1px solid var(--cs-border-strong);">
+                    <option value="all">全部角色 (全部)</option>
+                  </select>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <label for="audioVoiceSkinSelect" style="font-size:13px; font-weight:600; color:var(--cs-secondary); margin:0;">所属皮肤：</label>
+                  <select id="audioVoiceSkinSelect" style="min-width:140px; height:34px; padding:4px 8px; border-radius:4px; background:var(--cs-surface); color:var(--cs-text); border:1px solid var(--cs-border-strong);">
+                    <option value="all">全部皮肤</option>
+                  </select>
+                </div>
+                <div id="audioVoiceFilterCount" style="font-size:12px; color:var(--cs-muted); margin-left:auto;">
+                  当前角色语音: 957 条
+                </div>
+              </div>
+
+              <!-- 状态快捷筛选 -->
+              <div class="audio-filter-subbar" style="display:flex; gap:16px; margin: 10px 0; font-size:13px; color:var(--cs-secondary);">
+                <label style="cursor:pointer;"><input type="radio" name="audioStatusFilter" value="all" checked /> 全部显示</label>
+                <label style="cursor:pointer;"><input type="radio" name="audioStatusFilter" value="replaced" /> 仅看已替换</label>
+                <label style="cursor:pointer;"><input type="radio" name="audioStatusFilter" value="muted" /> 仅看已静音</label>
+              </div>
+
+              <!-- 音频列表 -->
+              <div class="audio-items-container" id="audioItemsContainer" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 14px; margin-top: 14px;">
+                <!-- 由 audio-skins.js 动态渲染 -->
+              </div>
+            </section>
+
+            <!-- 新建模态窗 -->
+            <dialog id="audioCreateDialog" class="skin-modal-dialog">
+              <form id="audioCreateForm" method="dialog">
+                <h3 data-i18n="audio_skins.new_scheme_title">新建音效方案</h3>
+                <label>方案目录标识 (纯英文/数字/下划线)<input name="id" required pattern="[A-Za-z0-9_\-]+" maxlength="50" placeholder="例如: retro_arcade" /></label>
+                <label>显示名称<input name="name" required maxlength="100" placeholder="例如: 复古街机音效" /></label>
+                <label>作者<input name="author" maxlength="100" placeholder="例如: 我的名字" /></label>
+                <label>描述<textarea name="description" maxlength="1000" rows="3" placeholder="方案介绍或备注…"></textarea></label>
+                <div class="character-toolbar" style="margin-top:16px;">
+                  <button type="submit" class="primary-btn">创建</button>
+                  <button type="button" class="secondary-btn" id="audioCreateCancel">取消</button>
+                </div>
+              </form>
+            </dialog>
+
+            <!-- 复制方案模态窗 -->
+            <dialog id="audioDuplicateDialog" class="skin-modal-dialog">
+              <form id="audioDuplicateForm" method="dialog">
+                <h3>新建方案副本</h3>
+                <input type="hidden" name="sourceId" id="audioDuplicateSourceId" />
+                <label>源方案标识<input id="audioDuplicateSourceDisplay" disabled readonly /></label>
+                <label>新方案目录标识 (纯英文/数字/下划线)<input name="newId" id="audioDuplicateNewId" required pattern="[A-Za-z0-9_\-]+" maxlength="50" placeholder="例如: arcade_copy" /></label>
+                <label>新方案显示名称<input name="newName" id="audioDuplicateNewName" required maxlength="100" placeholder="例如: 街机音效 (副本)" /></label>
+                <div class="character-toolbar" style="margin-top:16px;">
+                  <button type="submit" class="primary-btn">创建副本</button>
+                  <button type="button" class="secondary-btn" id="audioDuplicateCancel">取消</button>
+                </div>
+              </form>
+            </dialog>
+
+            <!-- 编辑元数据模态窗 -->
+            <dialog id="audioEditMetaDialog" class="skin-modal-dialog">
+              <form id="audioEditMetaForm" method="dialog">
+                <h3>编辑方案信息</h3>
+                <input type="hidden" name="id" id="audioEditMetaId" />
+                <label>方案显示名称<input name="name" id="audioEditMetaName" required maxlength="100" /></label>
+                <label>作者<input name="author" id="audioEditMetaAuthor" maxlength="100" /></label>
+                <label>方案介绍<textarea name="description" id="audioEditMetaDesc" maxlength="1000" rows="3"></textarea></label>
+                <div class="character-toolbar" style="margin-top:16px;">
+                  <button type="submit" class="primary-btn">保存</button>
+                  <button type="button" class="secondary-btn" id="audioEditMetaCancel">取消</button>
+                </div>
+              </form>
+            </dialog>
+
+            <!-- 删除方案确认模态窗 -->
+            <dialog id="audioDeleteConfirmDialog" class="skin-modal-dialog">
+              <form id="audioDeleteConfirmForm" method="dialog">
+                <h3 style="color:var(--cs-error, #ff4d4f);">删除音效方案</h3>
+                <p style="margin: 14px 0; color:var(--cs-text); line-height: 1.6;">
+                  确定要删除方案 [<strong id="audioDeleteSchemeTargetName">—</strong>] 及其包含的所有自定义音频吗？<br>
+                  <span style="color:var(--cs-muted); font-size:12px;">此操作将永久移除该方案目录与替换规则，不可撤销。</span>
+                </p>
+                <div class="character-toolbar" style="margin-top:20px;">
+                  <button type="submit" class="danger-btn">确认删除</button>
+                  <button type="button" class="secondary-btn" id="audioDeleteConfirmCancel">取消</button>
+                </div>
+              </form>
+            </dialog>
+
+            <!-- 提取原版音频模态窗 -->
+            <dialog id="audioExtractConfirmDialog" class="skin-modal-dialog">
+              <form id="audioExtractConfirmForm" method="dialog">
+                <h3 style="display:flex; align-items:center; gap:8px;">
+                  <span class="mi" data-icon="download"></span> 整理与导出原版音频
+                </h3>
+                <p style="margin: 12px 0 16px; color:var(--cs-secondary); line-height:1.6;">
+                  将从游戏资源库整理全部 1,322 个原版音频文件（UI 交互、掷骰地图、战斗音效、卡牌技能、角色语音与 BGM）。<br>
+                  整理后可在各条目中直接点击<b>「试听原版」</b>进行对比参考。
+                </p>
+                <div style="background:var(--cs-input); border:1px solid var(--cs-border-subtle); border-radius:6px; padding:12px 14px; margin-bottom:20px; font-size:13px; color:var(--cs-muted); line-height:1.6;">
+                  <div>• 覆盖范围：全量 7 大分类，共 1,278 项有效原声音频</div>
+                  <div>• 角色语音：包含全部 37 位角色、全皮肤形态语音</div>
+                  <div>• 目标目录：游戏运行目录下的 <code>audio-cache/</code></div>
+                  <div>• 离线音频包：如本地游戏未包含预提取素材，可直接点击<b>「导入音频包」</b>选择下载的官方原版 ZIP 快速就绪</div>
+                </div>
+                <div class="character-toolbar" style="gap:10px;">
+                  <button type="button" class="secondary-btn" id="audioImportOriginalZipBtn" title="从外部下载的原版音频 ZIP 压缩包快速导入至本地试听缓存">
+                    <span class="mi" data-icon="folder_zip"></span> 导入音频包 (.zip)
+                  </button>
+                  <button type="button" class="secondary-btn" id="audioExportZipDirectBtn" title="将全部原版音频打包为 ZIP 文件保存到本地">
+                    <span class="mi" data-icon="archive"></span> 导出为 ZIP
+                  </button>
+                  <button type="submit" class="primary-btn" id="audioStartExtractBtn">整理至试听缓存</button>
+                  <button type="button" class="secondary-btn" id="audioExtractCancelBtn">取消</button>
+                </div>
+              </form>
+            </dialog>
+          </section>
+
+          <div

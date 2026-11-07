@@ -1,0 +1,95 @@
+﻿        <section id="skinsView" class="page-view skins-page hidden">
+          <!-- 新界面：自定义页外框与卡牌 / 音效 / 资源包由 js/v2-skins.js 渲染（原版面板保留） -->
+          <div id="v2Skins"></div>
+          <div class="utilities-header skins-header">
+            <div class="utilities-title-group">
+              <button class="back-btn" id="skinsBackHomeBtn" data-i18n="replay.back_to_lobby">‹ 返回大厅</button>
+              <h2 data-i18n="nav.skins">皮肤</h2>
+              <span class="utilities-tagline"
+                >CardSkinMod · 方案管理 / 导入 / 单卡可视化替换</span
+              >
+            </div>
+            <div class="utilities-header-actions">
+              <button class="secondary-btn" id="skinOpenFolderTopBtn">
+                <span class="mi" data-icon="folder_open"></span> <span data-i18n="skins.open_folder">打开皮肤目录</span>
+              </button>
+              <button class="secondary-btn" id="skinDownloadDefaultBtn" data-i18n="skins.download_default">
+                下载默认包
+              </button>
+              <button class="secondary-btn" id="skinRestoreDefaultBtn" data-i18n="skins.restore_builtin">
+                恢复内置默认包
+              </button>
+              <button class="secondary-btn" id="skinNewProfileTopBtn" data-i18n="skins.new_scheme">
+                ＋ 新建方案
+              </button>
+              <button class="primary-btn" id="skinImportZipTopBtn">
+                <span class="mi" data-icon="download"></span> <span data-i18n="skins.import_zip">导入皮肤包 (.zip)</span>
+              </button>
+              <button class="secondary-btn" id="skinLegacyImportTopBtn" data-i18n="skins.import_legacy" title="将含 bundle 的旧式卡面 ZIP 转换为卡牌皮肤方案">
+                导入旧式皮肤包
+              </button>
+            </div>
+          </div>
+
+          <div class="game-picker-bar" id="skinGamePickerBar">
+            <span class="game-picker-label" data-i18n="mods.current_game">当前游戏</span>
+            <select
+              class="game-picker-select"
+              id="skinGameSelect"
+              aria-label="选择当前正在操作的游戏"
+            ></select>
+            <span class="game-picker-path" id="skinGamePickerPath"></span>
+            <button class="link-btn" id="skinGamePickerManageBtn" data-i18n="mods.manage_game_dirs">
+              管理游戏目录…
+            </button>
+          </div>
+
+          <div class="character-skin-tabs" role="tablist" aria-label="皮肤类型">
+            <button
+              id="cardSkinTab"
+              role="tab"
+              aria-selected="true"
+              aria-controls="cardSkinPanel"
+              class="active"
+              data-i18n="skins.card_skins"
+            >
+              卡牌皮肤
+            </button>
+            <button
+              id="characterSkinTab"
+              role="tab"
+              aria-selected="false"
+              aria-controls="characterSkinPanel"
+              tabindex="-1"
+              data-i18n="skins.char_skins" style="display: none;" hidden
+            >
+              角色皮肤
+            </button>
+            <button
+              id="audioSkinTab"
+              role="tab"
+              aria-selected="false"
+              aria-controls="audioSkinPanel"
+              tabindex="-1"
+              data-i18n="skins.audio_skins"
+            >
+              音效方案
+            </button>
+            <button
+              id="resourceModTab"
+              role="tab"
+              aria-selected="false"
+              aria-controls="resourceModPanel"
+              tabindex="-1"
+              data-i18n="skins.resource_mods"
+            >
+              资源模组
+            </button>
+          </div>
+          <!-- @include view-skins-resources.html -->
+          <!-- @include view-skins-character.html -->
+          <!-- @include view-skins-audio.html -->
+          <!-- @include view-skins-card.html -->
+          </div>
+        </section>
+

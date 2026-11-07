@@ -1,0 +1,380 @@
+﻿/* mods.css —— 模组管理页（Mod 加载器 / 模组 / 变速）专用样式。
+ *
+ * 信息层级（页面从上到下就是用户的操作顺序）：
+ *   ① .loader-panel  加载器状态 + 版本三栏 —— 版本是这个工具最敏感的信息，字号最大、位置最靠上
+ *   ② .mods-panel    已安装的模组（本页主体）
+ *   ③ 变速          加载器内置功能
+ *   ④ .mods-advanced 高级与排障，默认折叠
+ *
+ * 颜色语义（不靠颜色单独表意，每个状态都同时有文字）：
+ *   绿 = 最新 / 正常   金 = 可更新   红 = 冲突（不是本工具的文件）   灰 = 未知 / 未检测
+ */
+
+.mods-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--gp-bg);
+  overflow: hidden;
+  color: var(--gp-text-main);
+}
+
+/* 进入动画（与其它页面同一套；系统设置里关掉动效时不播） */
+body:not(.reduce-motion) #modsView:not(.page-entering) .utilities-header {
+  animation: content-rise 360ms var(--motion-ease) both;
+}
+body:not(.reduce-motion) #modsView:not(.page-entering) .loader-panel {
+  animation: content-rise 440ms var(--motion-ease) both;
+}
+body:not(.reduce-motion) #modsView:not(.page-entering) .mods-panel {
+  animation: content-rise 440ms var(--motion-ease) 60ms both;
+}
+body:not(.reduce-motion) #modsView:not(.page-entering) .mods-advanced {
+  animation: content-rise 440ms var(--motion-ease) 120ms both;
+}
+
+/* 危险 / 冲突语义的徽标（base.css 只有 notice / event / update / muted） */
+.badge-danger {
+  background: rgba(244, 63, 94, 0.18);
+  color: #ff8298;
+  border: 1px solid rgba(244, 63, 94, 0.45);
+}
+
+.mods-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 26px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* 关键：内容块默认 flex-shrink:1，内容超高时会被压扁而不是让 .mods-body 滚动。
+   .mods-advanced 又是 overflow:hidden —— 一压扁就把「高级与排障」展开后的内容裁掉，
+   于是展开后「根本看不到什么」。禁止收缩，让滚动条正常出现。 */
+.mods-body > * {
+  flex-shrink: 0;
+}
+
+/* ============ ① 加载器面板 ============ */
+
+.loader-panel {
+  position: relative;
+  border-radius: var(--gp-radius-md);
+  border: 1px solid var(--gp-border);
+  background: linear-gradient(135deg, rgba(38, 30, 60, 0.92) 0%, rgba(20, 24, 44, 0.92) 62%);
+  box-shadow: var(--gp-shadow-sm);
+  padding: 16px 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.loader-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  border-radius: var(--gp-radius-md) 0 0 var(--gp-radius-md);
+  background: var(--gp-pink);
+  opacity: 0.75;
+}
+
+.loader-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+.loader-icon {
+  font-size: 24px;
+  line-height: 1.2;
+  flex-shrink: 0;
+}
+.loader-head-text { min-width: 0; flex: 1; }
+.loader-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.loader-title-row h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+}
+.loader-state {
+  margin: 5px 0 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--gp-text-main);
+}
+.loader-hint {
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--gp-text-sub);
+}
+
+/* ---------- 版本三栏 ---------- */
+
+.version-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (max-width: 900px) {
+  .version-board { grid-template-columns: 1fr; }
+}
+
+.version-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: var(--gp-radius-sm);
+  border: 1px solid var(--gp-border);
+  background: rgba(0, 0, 0, 0.24);
+  border-left-width: 3px;
+  border-left-color: rgba(148, 163, 184, 0.5);
+  min-width: 0;
+}
+.version-cell .version-label {
+  font-size: 12px;
+  letter-spacing: 0.6px;
+  color: var(--gp-text-muted);
+  font-weight: 700;
+}
+.version-cell .version-value {
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--gp-text-main);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+  overflow-wrap: anywhere;
+}
+.version-cell .version-note {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--gp-text-muted);
+}
+
+.version-cell.is-current { border-left-color: var(--gp-green); }
+.version-cell.is-current .version-value { color: var(--gp-green); }
+.version-cell.is-update { border-left-color: var(--gp-gold); }
+.version-cell.is-update .version-value { color: var(--gp-gold); }
+.version-cell.is-conflict { border-left-color: #f43f5e; }
+.version-cell.is-conflict .version-value { color: #ff8298; font-size: 17px; }
+.version-cell.is-unknown { border-left-color: rgba(148, 163, 184, 0.6); }
+.version-cell.is-unknown .version-value { color: var(--gp-text-muted); font-size: 17px; }
+
+/* ---------- 版本结论 ---------- */
+
+.version-verdict {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: var(--gp-radius-sm);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--gp-border);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gp-text-sub);
+  line-height: 1.5;
+}
+.verdict-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--gp-blue);
+  box-shadow: 0 0 8px currentColor;
+}
+.version-verdict.is-ok { border-color: rgba(163, 230, 53, 0.45); color: var(--gp-green); }
+.version-verdict.is-ok .verdict-dot { background: var(--gp-green); }
+.version-verdict.is-update { border-color: var(--gp-border-gold); color: var(--gp-gold); }
+.version-verdict.is-update .verdict-dot { background: var(--gp-gold); }
+.version-verdict.is-warn { border-color: rgba(244, 63, 94, 0.5); color: #ff8298; }
+.version-verdict.is-warn .verdict-dot { background: #f43f5e; }
+.version-verdict.is-idle .verdict-dot { background: var(--gp-text-muted); }
+
+.loader-mirror-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  font-size: 13px;
+}
+.loader-mirror-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--gp-text-sub);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.loader-mirror-label .mi {
+  font-size: 16px;
+  color: var(--gp-pink);
+}
+.mod-mirror-select {
+  padding: 5px 10px;
+  font-size: 12.5px;
+  min-width: 150px;
+  height: 32px;
+}
+.mod-mirror-custom-input {
+  max-width: 280px;
+  height: 32px;
+  padding: 4px 10px;
+  font-size: 12.5px;
+}
+
+.loader-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.loader-actions .primary-btn,
+.loader-actions .secondary-btn,
+.loader-actions .danger-btn {
+  padding: 8px 18px;
+  font-size: 13px;
+}
+
+/* ============ ② / ③ 通用面板 ============ */
+
+.mods-panel {
+  border-radius: var(--gp-radius-md);
+  border: 1px solid var(--gp-border);
+  background: var(--gp-bg-card);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mods-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.mods-panel-head h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mods-panel-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.mods-panel-actions .primary-btn,
+.mods-panel-actions .secondary-btn { padding: 7px 14px; font-size: 12.5px; }
+
+.mods-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  height: 32px;
+  width: 180px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-full);
+  background: rgba(10, 13, 24, 0.65);
+  color: var(--gp-text-muted);
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, width 0.2s ease;
+}
+
+.mods-search:focus-within {
+  border-color: var(--gp-border-pink);
+  box-shadow: 0 0 0 3px rgba(255, 23, 118, 0.12);
+  width: 220px;
+}
+
+.mods-search .mi {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
+.mods-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--gp-text-main);
+  font-size: 12.5px;
+  font-family: inherit;
+}
+
+.mods-search input::placeholder {
+  color: var(--gp-text-muted);
+}
+
+.mods-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  padding: 1px 8px;
+  border-radius: var(--gp-radius-full);
+  background: rgba(56, 189, 248, 0.18);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: var(--gp-blue);
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.mods-sub-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gp-text-muted);
+  letter-spacing: 0.3px;
+}
+
+.mods-foot-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--gp-text-muted);
+}
+
+/* ---------- 模组卡片列表 ---------- */
+
+.mod-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mod-cards-sdk { max-height: 200px; overflow-y: auto; }
+
+.mods-empty {
+  margin: 0;
+  padding: 18px 14px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--gp-text-muted);
+  border: 1px dashed var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.mod-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 13px;
+  border-radius: var(--gp-radius-sm);

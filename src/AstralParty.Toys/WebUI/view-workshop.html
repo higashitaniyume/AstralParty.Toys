@@ -1,0 +1,119 @@
+﻿        <section id="workshopView" class="page-view workshop-page hidden">
+          <div class="utilities-header workshop-header">
+            <div class="utilities-title-group">
+              <button class="back-btn" id="workshopBackHomeBtn" data-i18n="replay.back_to_lobby">‹ 返回大厅</button>
+              <h2 data-i18n="nav.workshop">市场</h2>
+              <span class="utilities-tagline" data-i18n="workshop.tagline"
+                >社区模组目录 · 下载 / 校验 / 一键安装</span
+              >
+            </div>
+            <div class="utilities-header-actions">
+              <span class="workshop-source" id="workshopSourceUrl"></span>
+              <button class="secondary-btn" id="workshopRefreshBtn">
+                <span class="mi" data-icon="refresh"></span>
+                <span data-i18n="common.refresh">刷新</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="workshop-toolbar">
+            <label class="workshop-search">
+              <span class="mi" data-icon="search"></span>
+              <input
+                id="workshopSearchInput"
+                type="search"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="搜索模组、作者或简介"
+                data-i18n-placeholder="workshop.search_placeholder"
+              />
+            </label>
+            <select
+              id="workshopStatusSelect"
+              class="workshop-select"
+              aria-label="状态筛选"
+            >
+              <option value="all" data-i18n="workshop.status_all">全部状态</option>
+              <option value="updatable" data-i18n="workshop.status_updatable">可更新</option>
+              <option value="not_installed" data-i18n="workshop.status_not_installed">未安装</option>
+              <option value="installed" data-i18n="workshop.status_installed">已安装</option>
+              <option value="builtin" data-i18n="workshop.status_builtin">官方内置</option>
+            </select>
+            <select
+              id="workshopTagSelect"
+              class="workshop-select"
+              aria-label="标签筛选"
+            >
+              <option value="" data-i18n="workshop.tags_all">全部标签</option>
+            </select>
+            <select
+              id="workshopSortSelect"
+              class="workshop-select"
+              aria-label="排序方式"
+            >
+              <option value="downloads" data-i18n="workshop.sort_downloads">下载量</option>
+              <option value="updated" data-i18n="workshop.sort_updated">最近更新</option>
+              <option value="name" data-i18n="workshop.sort_name">名称</option>
+            </select>
+            <div class="workshop-view-switch" role="group" aria-label="视图模式切换">
+              <button
+                type="button"
+                class="view-switch-btn active"
+                id="workshopViewListBtn"
+                data-mode="list"
+                data-i18n-title="workshop.view_list"
+                title="列表视图"
+              >
+                <span class="mi" data-icon="format_list_bulleted"></span>
+              </button>
+              <button
+                type="button"
+                class="view-switch-btn"
+                id="workshopViewGridBtn"
+                data-mode="grid"
+                data-i18n-title="workshop.view_grid"
+                title="卡片视图"
+              >
+                <span class="mi" data-icon="grid_view"></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="workshop-scroll">
+            <div id="workshopNotice" class="workshop-notice hidden" role="status"></div>
+            <div id="workshopGrid" class="workshop-grid" aria-live="polite"></div>
+            <div id="workshopPager" class="workshop-pager hidden">
+              <button class="secondary-btn" id="workshopPrevBtn" data-i18n="workshop.prev_page">
+                上一页
+              </button>
+              <span id="workshopPageInfo"></span>
+              <button class="secondary-btn" id="workshopNextBtn" data-i18n="workshop.next_page">
+                下一页
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4.4.1 WORKSHOP DETAIL VIEW (one mod, full metadata) -->
+        <section id="workshopDetailView" class="page-view workshop-page workshop-detail-page hidden">
+          <div class="utilities-header workshop-header">
+            <div class="utilities-title-group">
+              <button class="back-btn" id="workshopDetailBackBtn" data-i18n="workshop.back_to_list">
+                ‹ 返回市场
+              </button>
+              <h2 id="workshopDetailTitle" data-i18n="workshop.detail_title">模组详情</h2>
+              <span class="utilities-tagline" id="workshopDetailSource"></span>
+            </div>
+            <div class="utilities-header-actions">
+              <button class="secondary-btn" id="workshopDetailRefreshBtn">
+                <span class="mi" data-icon="refresh"></span>
+                <span data-i18n="common.refresh">刷新</span>
+              </button>
+            </div>
+          </div>
+          <div class="workshop-scroll" id="workshopDetailScroll">
+            <div id="workshopDetailContent" class="workshop-detail-content" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <!-- 4.5. SKINS VIEW (Card Skin Profiles & Management) -->

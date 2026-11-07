@@ -1,0 +1,280 @@
+﻿  flex: none;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.app-version-chip:hover {
+  background: rgba(56, 189, 248, 0.16);
+  border-color: rgba(56, 189, 248, 0.55);
+  color: #ffffff;
+}
+.app-version-chip svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  opacity: 0.85;
+}
+.app-version-chip-value {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.2px;
+  font-variant-numeric: tabular-nums;
+}
+.app-version-chip-commit {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gp-text-sub);
+  font-variant-numeric: tabular-nums;
+}
+.app-version-chip-commit:empty { display: none; }
+
+/* 标题栏全局游戏版本按钮：标题左边，显示 [区服] 游戏名称，路径走 title 提示 */
+.v2-global-game {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: var(--gp-radius-full);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1.5px solid rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  flex: none;
+  max-width: 280px;
+  cursor: pointer;
+  font: inherit;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.v2-global-game:hover {
+  background: rgba(56, 189, 248, 0.16);
+  border-color: rgba(56, 189, 248, 0.55);
+}
+.v2-global-game svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  opacity: 0.85;
+}
+.v2-global-game-text {
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 窄窗口（窗口最小 1120px）先舍掉提交号，版本号本身必须在 */
+@media (max-width: 1300px) {
+  .nav-breadcrumbs { gap: 6px; }
+  .nav-crumb-btn { padding: 8px 12px; }
+  .app-version-chip-commit { display: none; }
+}
+@media (max-width: 1180px) {
+  .app-version-chip { padding: 7px 10px; }
+  .app-version-chip svg { display: none; }
+}
+
+.page-container {
+  flex: 1 1 auto;
+  height: calc(100% - var(--header-height));
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.page-view {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  opacity: 1;
+  transform-origin: 50% 48%;
+}
+.page-view.page-leaving {
+  opacity: 0;
+  transform: translate3d(-20px, 0, 0) scale(0.985);
+  filter: blur(5px);
+  pointer-events: none;
+  will-change: opacity, transform, filter;
+  transition: opacity var(--motion-page-out) ease,
+              transform var(--motion-page-out) ease,
+              filter var(--motion-page-out) ease;
+}
+.page-view.page-entering {
+  opacity: 0;
+  transform: translate3d(26px, 8px, 0) scale(0.985);
+  filter: blur(7px);
+  will-change: opacity, transform, filter;
+}
+.page-view:not(.page-entering):not(.page-leaving) {
+  transition: opacity var(--motion-page-in) var(--motion-ease),
+              transform var(--motion-page-in) var(--motion-ease),
+              filter 300ms ease;
+}
+.page-view.hidden {
+  display: none !important;
+}
+body.page-transitioning .nav-crumb-btn,
+body.page-transitioning .brand-section {
+  pointer-events: none;
+}
+
+/* Game Style Primary Button */
+.primary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 22px;
+  background: linear-gradient(135deg, #ff1776 0%, #e11d48 100%);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 14px;
+  border-radius: var(--gp-radius-md);
+  box-shadow: 0 6px 18px rgba(255, 23, 118, 0.45);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 2px solid #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+.primary-btn:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 10px 26px rgba(255, 23, 118, 0.65);
+  filter: brightness(1.08);
+}
+.primary-btn:active { transform: translateY(0); }
+.primary-btn:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+  filter: grayscale(0.8);
+}
+
+/* 按钮"进行中"状态（模组页的安装 / 卸载 / 检查更新 / 更新到最新）。
+   按钮被禁用是为了防重复点击，但看起来应该是"正在做"而不是"不可用"，所以不套灰化。 */
+button.is-busy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: progress;
+}
+.primary-btn.is-busy:disabled,
+.secondary-btn.is-busy:disabled,
+.danger-btn.is-busy:disabled {
+  opacity: 1;
+  filter: none;
+}
+.btn-spinner {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+/* 任何按钮被禁用时都要一眼看出"按不动"，不必每个组件各写一遍 */
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Game Style Secondary Button */
+.secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: var(--gp-radius-md);
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--gp-shadow-sm);
+  transition: all 0.2s ease;
+}
+.secondary-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #ffffff;
+  transform: translateY(-2px);
+  color: #ffffff;
+}
+.secondary-btn:active { transform: translateY(0); }
+.secondary-btn:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* Badge System */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+}
+.badge-notice {
+  background: rgba(56, 189, 248, 0.18);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+}
+.badge-event {
+  background: rgba(250, 204, 21, 0.18);
+  color: #facc15;
+  border: 1px solid rgba(250, 204, 21, 0.4);
+}
+.badge-update {
+  background: rgba(163, 230, 53, 0.18);
+  color: #a3e635;
+  border: 1px solid rgba(163, 230, 53, 0.4);
+}
+.badge-muted {
+  background: rgba(148, 163, 184, 0.16);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+/* Back Button */
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--gp-radius-full);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+}
+.back-btn:hover {
+  background: rgba(255, 23, 118, 0.35);
+  border-color: #ff1776;
+  color: #ffffff;
+  transform: translateX(-2px);
+}
+
+/* Toast Notification (Game style float) */
+.toast-container {
+  position: fixed;
+  bottom: 84px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(18, 24, 42, 0.96);
+  border: 2px solid var(--gp-gold);
+  color: #ffffff;
+  padding: 12px 24px;
+  border-radius: var(--gp-radius-full);
+  font-size: 14px;
+  font-weight: 800;

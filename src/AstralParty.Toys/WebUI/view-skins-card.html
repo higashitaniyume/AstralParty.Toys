@@ -1,0 +1,120 @@
+﻿            class="skins-body"
+            id="cardSkinPanel"
+            role="tabpanel"
+            aria-labelledby="cardSkinTab"
+          >
+            <!-- 当前方案控制面板 -->
+            <section class="skin-active-panel">
+              <div class="skin-active-left">
+                <div class="skin-select-row">
+                  <label for="skinProfileSelect" class="skin-select-label"
+                    >选择皮肤方案：</label
+                  >
+                  <select
+                    id="skinProfileSelect"
+                    class="skin-profile-dropdown"
+                  ></select>
+                  <span id="skinActiveBadge" class="badge badge-success"
+                    >当前生效中</span
+                  >
+                </div>
+                <div class="skin-meta-info" id="skinMetaInfo">
+                  <h3 id="skinDisplayName" class="skin-name">—</h3>
+                  <p id="skinDescription" class="skin-desc">暂无方案描述</p>
+                  <div class="skin-meta-badges">
+                    <span class="skin-meta-tag" id="skinCardCountTag"
+                      >0 张卡面</span
+                    >
+                    <span class="skin-meta-tag" id="skinAuthorTag"
+                      >作者: —</span
+                    >
+                    <span class="skin-meta-tag" id="skinDateTag">更新: —</span>
+                  </div>
+                </div>
+              </div>
+              <div class="skin-active-right">
+                <button class="primary-btn" id="skinApplyActiveBtn">
+                  设为当前皮肤
+                </button>
+                <button class="secondary-btn" id="skinDuplicateProfileBtn">
+                  从内置模板新建…
+                </button>
+                <button class="secondary-btn" id="skinEditMetaBtn">
+                  编辑方案信息
+                </button>
+                <button class="secondary-btn" id="skinOpenProfileFolderBtn">
+                  <span class="mi" data-icon="folder"></span> 打开本方案目录
+                </button>
+                <button class="secondary-btn" id="skinAnimationBindingBtn">
+                  按编号导入动态卡面…
+                </button>
+                <button class="secondary-btn" id="skinExportZipBtn">
+                  导出 ZIP
+                </button>
+                <button class="danger-btn" id="skinDeleteProfileBtn">
+                  删除此方案
+                </button>
+              </div>
+            </section>
+
+            <!-- 卡面网格与分类筛选 -->
+            <section class="skin-gallery-panel">
+              <div class="gallery-toolbar">
+                <span class="skin-gallery-count" id="skinGalleryCount"
+                  >共 0 张卡面</span
+                >
+
+                <div class="gallery-filter-tabs">
+                  <button class="gallery-tab active" data-category="all">
+                    全部类别
+                  </button>
+                  <button class="gallery-tab" data-category="手牌卡">
+                    手牌卡 (<span id="countHand">0</span>)
+                  </button>
+                  <button class="gallery-tab" data-category="命运卡">
+                    命运卡 (<span id="countDestiny">0</span>)
+                  </button>
+                  <button class="gallery-tab" data-category="事件卡">
+                    事件卡 (<span id="countEvent">0</span>)
+                  </button>
+                  <button class="gallery-tab" data-category="地图事件">
+                    地图事件 (<span id="countMapEvent">0</span>)
+                  </button>
+                  <button class="gallery-tab" data-category="异画道具">
+                    异画道具 (<span id="countAltArt">0</span>)
+                  </button>
+                </div>
+
+                <div class="gallery-search-box">
+                  <svg viewBox="0 0 24 24" class="search-ico">
+                    <path
+                      d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
+                    />
+                  </svg>
+                  <input
+                    type="text"
+                    id="skinCardSearchInput"
+                    placeholder="搜索卡名、卡号 #101 或标识…"
+                    spellcheck="false"
+                  />
+                  <button
+                    class="search-clear-btn hidden"
+                    id="skinCardSearchClear"
+                    title="清空搜索"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              <div class="skin-card-grid" id="skinCardGrid">
+                <!-- 卡牌由 JS 渲染 -->
+              </div>
+              <div class="skin-empty-state hidden" id="skinEmptyState">
+                <div class="empty-icon-wrap">🎨</div>
+                <p id="skinEmptyMsg">未找到匹配的卡牌</p>
+                <button class="secondary-btn" id="skinEmptyResetBtn">
+                  重置筛选条件
+                </button>
+              </div>
+            </section>

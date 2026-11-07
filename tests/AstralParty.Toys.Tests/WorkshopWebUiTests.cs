@@ -211,8 +211,10 @@ public sealed class WorkshopWebUiTests
         Assert.False(EmbeddedWebStore.Paths.Any(p => p.StartsWith("stickers/", StringComparison.Ordinal)),
             "stickers/ 仍在程序集里：应改为市场下载缓存。");
 
-        var service = File.ReadAllText(Path.Combine(
-            TestPaths.AppSourceDirectory, "Services", "WorkshopService.cs"));
+        var servicePath = File.Exists(Path.Combine(TestPaths.AppSourceDirectory, "Services", "Modding", "WorkshopService.cs"))
+            ? Path.Combine(TestPaths.AppSourceDirectory, "Services", "Modding", "WorkshopService.cs")
+            : Path.Combine(TestPaths.AppSourceDirectory, "Services", "WorkshopService.cs");
+        var service = File.ReadAllText(servicePath);
         Assert.Contains("GetStickerCatalogAsync", service);
         Assert.Contains("CacheStickerImageAsync", service);
         Assert.Contains("RewriteStickerCountsAsync", service);

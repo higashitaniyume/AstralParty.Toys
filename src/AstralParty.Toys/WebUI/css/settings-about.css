@@ -1,0 +1,332 @@
+﻿
+/* ============================== 回放库设置 ============================== */
+
+.settings-card-note {
+  margin: 0 0 16px;
+  font-size: 12.5px;
+  line-height: 1.75;
+  color: var(--gp-text-sub);
+  max-width: 78ch;
+}
+
+.settings-card-note strong { color: var(--gp-gold); }
+
+/* 字段下方的补充说明（比正文更轻，例如「库目录」下面解释这也是配置文件夹） */
+.settings-field-hint {
+  margin: 2px 0 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--gp-text-muted);
+  max-width: 78ch;
+}
+.settings-field-hint strong { color: var(--gp-gold); }
+.settings-field-hint code {
+  font-family: Consolas, monospace;
+  font-size: 11.5px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--gp-blue);
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.settings-field:last-child { border-bottom: none; }
+
+.settings-field > label {
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.settings-field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.settings-field-row .secondary-btn {
+  padding: 6px 14px;
+  font-size: 12px;
+  flex: 0 0 auto;
+}
+
+.settings-field-row .library-input[type="number"] {
+  width: 80px;
+  flex: 0 0 auto;
+  text-align: center;
+}
+
+/* 说明文字较长时不要把开关压扁（滑块位移是按 48px 宽设计的） */
+.toggle-switch-row .switch-input {
+  flex: 0 0 auto;
+}
+
+/* ==========================================================================
+   游戏目录（多个位置）
+   ========================================================================== */
+.settings-card-count {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--gp-text-sub);
+  padding: 3px 10px;
+  border-radius: var(--gp-radius-full);
+  background: rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+}
+
+/* 铺满整行时左右分栏：左边档案列表（占大头），右边操作 + 系统搜索 */
+.game-dir-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .game-dir-body { grid-template-columns: 1fr; }
+}
+.game-dir-col-main,
+.game-dir-col-side {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.game-profile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.game-profile-empty {
+  font-size: 12.5px;
+  color: var(--gp-text-muted);
+  padding: 22px 16px;
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+  border-radius: 12px;
+  text-align: center;
+  line-height: 1.7;
+}
+
+.game-profile-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+.game-profile-row:hover { border-color: rgba(148, 163, 184, 0.4); }
+.game-profile-row.is-active {
+  border-color: var(--gp-pink, #ff1776);
+  background: rgba(255, 23, 118, 0.08);
+  box-shadow: inset 3px 0 0 var(--gp-pink, #ff1776);
+}
+.game-profile-row.is-broken {
+  border-color: rgba(248, 113, 113, 0.5);
+}
+
+.game-profile-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.game-profile-line1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.game-profile-edition {
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 7px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: var(--gp-bg-panel);
+  color: var(--gp-text-main);
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+.game-profile-label {
+  flex: 1 1 160px;
+  min-width: 120px;
+  padding: 5px 9px;
+  font-size: 13.5px;
+  font-weight: 800;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #ffffff;
+}
+.game-profile-label:hover { border-color: rgba(148, 163, 184, 0.3); }
+.game-profile-label:focus {
+  border-color: var(--gp-pink, #ff1776);
+  background: rgba(0, 0, 0, 0.3);
+  outline: none;
+}
+.game-profile-active-tag {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 9px;
+  border-radius: var(--gp-radius-full);
+  background: var(--gp-pink, #ff1776);
+  color: #fff;
+  flex: 0 0 auto;
+}
+.game-profile-warn {
+  font-size: 12px;
+  color: #fca5a5;
+  flex: 0 0 auto;
+}
+.game-profile-path {
+  font-size: 12px;
+  color: var(--gp-text-muted);
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: Consolas, monospace;
+}
+.game-profile-actions {
+  display: flex;
+  gap: 6px;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.game-profile-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.game-dir-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.game-dir-actions .secondary-btn,
+.game-dir-actions .primary-btn {
+  flex: 1 1 auto;
+  padding: 9px 14px;
+  font-size: 13px;
+}
+
+.game-scan-panel {
+  padding: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.18);
+}
+.game-scan-status {
+  font-size: 12px;
+  color: var(--gp-text-sub);
+  white-space: pre-line;
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+.game-scan-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.game-cand-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 9px;
+}
+.game-cand-main { flex: 1 1 auto; min-width: 0; }
+.game-cand-line1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+.game-cand-edition { font-weight: 800; color: #fff; }
+.game-cand-exe { color: var(--gp-text-sub); font-family: Consolas, monospace; }
+.game-cand-tag {
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: var(--gp-radius-full);
+}
+.game-cand-tag.ok { background: rgba(34, 197, 94, 0.18); color: #86efac; }
+.game-cand-tag.warn { background: rgba(250, 204, 21, 0.18); color: #fde047; }
+.game-cand-src { font-size: 11px; color: var(--gp-text-muted); }
+.game-cand-path {
+  font-size: 12px;
+  color: var(--gp-text-muted);
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: Consolas, monospace;
+}
+.game-cand-add { padding: 6px 13px; font-size: 12px; flex: 0 0 auto; }
+.game-cand-added {
+  font-size: 12px;
+  color: var(--gp-text-muted);
+  flex: 0 0 auto;
+}
+
+.game-scan-deep {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(148, 163, 184, 0.25);
+}
+.game-scan-deep-label {
+  display: block;
+  font-size: 12px;
+  color: var(--gp-text-muted);
+  margin-bottom: 8px;
+  line-height: 1.6;
+}
+.game-scan-deep-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.game-scan-deep-row select { flex: 1 1 90px; min-width: 80px; }
+.game-scan-deep-row .secondary-btn { padding: 7px 14px; font-size: 12px; flex: 0 0 auto; }
+
+.settings-select-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.settings-select {
+  padding: 8px 12px;
+  background: rgba(18, 22, 36, 0.9);
+  color: #f3f5fa;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  font-size: 13.5px;
+  cursor: pointer;
+  min-width: 130px;
+}
+.settings-select:hover {
+  border-color: rgba(255, 48, 139, 0.6);
+}
+.settings-select:focus {
+  border-color: #ff308b;
+  outline: none;
+}
+.settings-select option {
+  background: #141826;
+  color: #f3f5fa;
+}
+

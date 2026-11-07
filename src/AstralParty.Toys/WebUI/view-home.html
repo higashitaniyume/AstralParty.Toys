@@ -1,0 +1,230 @@
+﻿        <section id="homeView" class="page-view home-page in-game-lobby">
+          <!-- 新界面：概览由 js/v2-shell.js 渲染。原版大厅保留并隐藏，启动等逻辑仍由 home.js 驱动 -->
+          <div id="v2Home"></div>
+          <div class="v2-legacy" hidden>
+          <img
+            class="lobby-game-logo"
+            src="images/astral-party-logo.png"
+            alt="Astral Party"
+          />
+
+          <!-- 「公告位」：工具箱更新提示卡（js/version.js）。默认隐藏，仅当检测到有未读过的新版本时出现；
+             点「知道了」记住这一版不再提示，更新到新版本后再自动出现一次。 -->
+          <article
+            class="lobby-whatsnew hidden"
+            id="lobbyWhatsNew"
+            aria-live="polite"
+          >
+            <div class="lobby-whatsnew-head">
+              <span class="lobby-whatsnew-label"
+                ><span class="mi" data-icon="auto_awesome"></span>
+                工具箱已更新</span
+              >
+              <button
+                class="lobby-whatsnew-close"
+                id="lobbyWhatsNewClose"
+                type="button"
+                aria-label="知道了，这一版不再提示"
+              >
+                <span class="mi" data-icon="close"></span>
+              </button>
+            </div>
+            <h3 class="lobby-whatsnew-title" id="lobbyWhatsNewTitle">新版本</h3>
+            <ul class="lobby-whatsnew-list" id="lobbyWhatsNewList"></ul>
+            <button
+              class="lobby-whatsnew-more"
+              id="lobbyWhatsNewMore"
+              type="button"
+            >
+              查看完整更新日志 ›
+            </button>
+          </article>
+
+          <!-- Hero Character Stage on Left -->
+          <div class="lobby-hero-stage stage-left" id="heroPortraitWrapper">
+            <div class="lobby-stage-glow"></div>
+            <img
+              id="heroPortraitImg"
+              class="lobby-hero-art"
+              src="https://assets.astral.local/Portraits/UT_Hero_Card_306.png"
+              alt="橘雪莉"
+            />
+          </div>
+
+          <!-- Right Side Primary Functional Buttons: 回放、皮肤与模组 -->
+          <div class="lobby-action-stack">
+            <div class="lobby-right-menu">
+              <!-- 1. 回放分析 -->
+              <button
+                class="lobby-card-btn card-tools"
+                id="btnMenuTools"
+                title="回放分析与复盘工具"
+              >
+                <div class="card-btn-text" data-i18n="nav.replays">回放</div>
+                <img
+                  class="card-btn-chibi"
+                  src="https://assets.astral.local/UI/UT_Hero_LevelUp_108_01.webp"
+                  alt="回放"
+                />
+              </button>
+
+              <!-- 2. 皮肤 -->
+              <button
+                class="lobby-card-btn card-skins"
+                id="btnMenuSkins"
+                title="皮肤方案管理与切换"
+              >
+                <div class="card-btn-text" data-i18n="nav.skins">皮肤</div>
+                <img
+                  class="card-btn-chibi"
+                  src="images/UT_Hero_LevelUp_104_Max.png"
+                  alt="皮肤"
+                />
+              </button>
+
+              <!-- 3. 模组管理 -->
+              <button
+                class="lobby-card-btn card-mods"
+                id="btnMenuMods"
+                title="Mod 加载器与模组管理"
+              >
+                <div class="card-btn-text" data-i18n="nav.mods">模组</div>
+                <img
+                  class="card-btn-chibi"
+                  src="https://assets.astral.local/UI/UT_Hero_LevelUp_102_01.webp"
+                  alt=""
+                />
+              </button>
+            </div>
+
+            <!-- 大厅右侧菜单不再放「维基」入口；维基仍可从顶部菜单栏的「📖 维基攻略」进入。 -->
+
+            <!-- 右下角：启动游戏（Steam AppID 2622000），比其他入口大一圈。
+             按钮下面一组单选框二选一：从 Steam 启动（默认）/ 绕过 Steam 启动 —— 后者直接拉起游戏主程序，
+             并把加载器的 Steam 绕过开关一起打开（两者是同一个配置，见 doorstop_config.json）。 -->
+            <div class="lobby-corner-launch">
+              <button
+                class="lobby-card-btn card-launch"
+                id="btnMenuLaunchGame"
+                title="启动 Astral Party（吉星派对）"
+              >
+                <div class="card-btn-text" data-i18n="home.launch_game">启动游戏</div>
+                <img
+                  class="card-btn-logo"
+                  src="images/astral-party-logo.png"
+                  alt="Astral Party"
+                />
+              </button>
+              <!-- 启动版本：从游戏库里选一个版本（国服 / 国际服 / TapTap / 自定义），选中即设为当前游戏。
+               下面两种启动方式都对这个选中的版本生效。 -->
+              <div class="lobby-launch-version">
+                <span class="lobby-launch-version-label" data-i18n="home.game_version">启动版本</span>
+                <select
+                  class="lobby-game-select"
+                  id="lobbyGameSelect"
+                  aria-label="选择要启动的游戏版本"
+                ></select>
+              </div>
+              <div
+                class="launch-mode-options"
+                role="radiogroup"
+                aria-label="启动方式"
+              >
+                <label
+                  class="launch-mode-item"
+                  id="launchModeSteam"
+                  title="交给 Steam 启动（DRM / 云存档 / 更新检查都走 Steam），并关闭加载器的 Steam 绕过 —— Steam 大厅 / 好友邀请进房恢复正常（默认）"
+                >
+                  <input
+                    type="radio"
+                    name="launchMode"
+                    id="launchViaSteam"
+                    value="steam"
+                    checked
+                  />
+                  <span data-i18n="home.launch_steam">从 Steam 启动</span>
+                </label>
+                <label
+                  class="launch-mode-item"
+                  id="launchModeBypassSteam"
+                  title="直接启动游戏主程序，完全不经过 Steam；会打开加载器的 Steam 绕过（没装 Steam 也能进游戏），代价是 Steam 大厅 / 好友邀请进房失效"
+                >
+                  <input
+                    type="radio"
+                    name="launchMode"
+                    id="launchBypassSteam"
+                    value="bypassSteam"
+                  />
+                  <span data-i18n="home.launch_bypass">绕过 Steam 启动</span>
+                </label>
+                <label
+                  class="launch-mode-item"
+                  id="launchModeTapTap"
+                  title="交给 TapTap 启动（通过 TapTap PC 客户端拉起游戏），并关闭加载器的绕过"
+                >
+                  <input
+                    type="radio"
+                    name="launchMode"
+                    id="launchViaTapTap"
+                    value="taptap"
+                  />
+                  <span data-i18n="home.launch_taptap">从 TapTap 启动</span>
+                </label>
+                <label
+                  class="launch-mode-item"
+                  id="launchModeBypassTapTap"
+                  title="直接启动游戏主程序，完全不经过 TapTap 客户端；会打开加载器的 TapTap 绕过"
+                >
+                  <input
+                    type="radio"
+                    name="launchMode"
+                    id="launchBypassTapTap"
+                    value="bypassTapTap"
+                  />
+                  <span data-i18n="home.launch_bypass_taptap">绕过 TapTap 启动</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Dock Bar -->
+          <footer class="lobby-bottom-dock">
+            <!-- Left: version status. The lobby hides the global header, so this dock is the only
+               place a version can live on this page. -->
+            <button
+              class="dock-version"
+              id="dockVersionBtn"
+              type="button"
+              title="查看详细版本信息"
+            >
+              <span class="dock-version-dot" aria-hidden="true"></span>
+              <span class="dock-version-name">AstralParty.Toys</span>
+              <span class="dock-version-value" id="dockVersionValue"
+                >版本读取中…</span
+              >
+            </button>
+
+            <nav class="dock-actions-nav">
+              <button
+                class="dock-nav-item"
+                id="dockBtnSettings"
+                title="系统设置"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="22"
+                  height="22"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"
+                  />
+                </svg>
+                <span data-i18n="nav.settings">设置</span>
+              </button>
+            </nav>
+          </footer>
+          </div><!-- /.v2-legacy -->
+        </section>
+
+        <!-- 2. TOOLS VIEW (Replay Tool Integrated) -->

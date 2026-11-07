@@ -1,0 +1,330 @@
+﻿.replay-entry-row:nth-child(n + 6) { animation-delay: 175ms; }
+
+.replay-entry-row:hover {
+  background: rgba(255, 23, 118, 0.15);
+  border-color: #ff1776;
+  transform: translateX(6px) scale(1.01);
+  box-shadow: 0 4px 14px rgba(255, 23, 118, 0.25);
+}
+
+.entry-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.entry-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--gp-radius-sm);
+  background: linear-gradient(135deg, #facc15, #b45309);
+  color: #000000;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  font-weight: 900;
+  box-shadow: 0 2px 8px rgba(250, 204, 21, 0.4);
+}
+
+.entry-meta strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  color: #ffffff;
+}
+.entry-meta small {
+  font-size: 12px;
+  color: var(--gp-text-sub);
+}
+
+.entry-date {
+  flex: 0 0 auto;
+  margin-left: 14px;
+  font-size: 12px;
+  color: var(--gp-text-muted);
+  font-family: Consolas, monospace;
+}
+
+@media (max-width: 1180px) {
+  .replay-empty-state {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    padding: 22px;
+  }
+
+  .replay-picker-panel {
+    padding: 28px 22px;
+  }
+}
+
+/* Active Replay Views */
+#replayWorkspaceBox {
+  min-height: 0;
+}
+
+.replay-view {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 30px 48px;
+}
+
+#timelineView,
+#relicsView,
+#shopsView,
+#technicalView {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 24px;
+}
+
+#timelineView > .data-table-card,
+#relicsView > .data-table-card,
+#shopsView > .data-table-card {
+  width: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+}
+
+#timelineView .table-scroll-wrap,
+#relicsView .table-scroll-wrap,
+#shopsView .table-scroll-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow: auto;
+}
+
+#technicalView > :first-child {
+  flex: 0 0 auto;
+}
+
+#techStatsPane,
+#techProtocolPane {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+#techStatsPane { overflow-y: auto; }
+#techProtocolPane { overflow: hidden; }
+
+/* Summary Grid */
+.summary-grid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 22px;
+  margin-bottom: 24px;
+}
+
+.map-banner-card {
+  background: var(--gp-bg-panel);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--gp-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--gp-shadow-md);
+  display: flex;
+  flex-direction: column;
+}
+
+.map-img-box {
+  width: 100%;
+  height: 180px;
+  background: #000000;
+  position: relative;
+  overflow: hidden;
+}
+
+.map-img-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+.map-banner-card:hover .map-img-box img {
+  transform: scale(1.05);
+}
+
+.map-info {
+  padding: 16px 20px;
+}
+.map-info small {
+  font-size: 12px;
+  color: var(--gp-blue);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.map-info h3 {
+  margin: 4px 0 6px;
+  font-size: 20px;
+  font-weight: 900;
+  color: #ffffff;
+}
+.map-info p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--gp-text-sub);
+}
+
+.result-banner-card {
+  background: var(--gp-bg-panel);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--gp-radius-lg);
+  padding: 22px 26px;
+  box-shadow: var(--gp-shadow-md);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.result-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.1);
+}
+
+.result-outcome {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--gp-pink);
+  letter-spacing: 1px;
+  text-shadow: 0 0 12px rgba(255, 23, 118, 0.5);
+}
+.result-winner {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--gp-gold);
+  margin-top: 4px;
+}
+
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.metric-cell {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--gp-radius-md);
+  padding: 12px 14px;
+}
+.metric-cell small {
+  display: block;
+  font-size: 12px;
+  color: var(--gp-text-muted);
+  font-weight: 700;
+}
+.metric-cell strong {
+  display: block;
+  font-size: 18px;
+  font-weight: 900;
+  color: #ffffff;
+  margin-top: 4px;
+  font-family: 'Fira Code', monospace;
+}
+
+/* Player Cards Grid */
+.players-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 18px;
+}
+
+.player-card {
+  background: var(--gp-bg-card);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--gp-radius-lg);
+  padding: 18px;
+  box-shadow: var(--gp-shadow-sm);
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.player-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--gp-pink);
+  box-shadow: var(--gp-shadow-pink);
+}
+
+.player-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.player-avatar-box {
+  width: 54px;
+  height: 54px;
+  border-radius: var(--gp-radius-md);
+  background: #000000;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  flex: 0 0 54px;
+}
+.player-avatar-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.player-titles h4 {
+  margin: 0 0 3px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffffff;
+}
+.player-titles small {
+  font-size: 12px;
+  color: var(--gp-text-sub);
+}
+
+.player-stat-badges {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.stat-badge-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 6px 10px;
+  border-radius: var(--gp-radius-sm);
+  text-align: center;
+}
+.stat-badge-item small {
+  display: block;
+  font-size: 12px;
+  color: var(--gp-text-muted);
+}
+.stat-badge-item b {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-top: 2px;
+  font-family: 'Fira Code', monospace;
+}
+
+/* Data Table Card (Game Table Aesthetic) */
+.data-table-card {
+  background: var(--gp-bg-panel);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--gp-radius-lg);
+  box-shadow: var(--gp-shadow-md);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.table-filter-bar {
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;

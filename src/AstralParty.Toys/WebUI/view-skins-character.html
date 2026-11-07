@@ -1,0 +1,117 @@
+﻿          <section
+            id="characterSkinPanel"
+            class="hidden"
+            role="tabpanel"
+            aria-labelledby="characterSkinTab"
+          >
+            <div class="character-toolbar character-mode-tabs" role="group" aria-label="角色皮肤管理">
+              <button class="primary-btn" id="characterSchemesMode" aria-pressed="true" data-i18n="skins.my_schemes">我的方案</button>
+              <button class="secondary-btn" id="characterPackagesMode" aria-pressed="false" data-i18n="skins.packages_library">皮肤包素材库</button>
+            </div>
+            <div id="characterSchemesPanel"></div>
+            <div id="characterPackagesPanel" class="hidden">
+            <div class="character-toolbar">
+              <button class="primary-btn" id="characterNew">
+                新建自定义皮肤包
+              </button>
+              <button class="secondary-btn" id="characterImport">
+                导入 ZIP
+              </button>
+              <button class="secondary-btn" id="characterLegacyImport" title="将含 bundle 的旧式皮肤 ZIP 转换为自定义皮肤包">
+                导入旧式皮肤包
+              </button>
+              <button class="secondary-btn" id="characterFolder">
+                打开皮肤目录
+              </button>
+              <button class="secondary-btn" id="characterInstall">
+                安装角色皮肤模组
+              </button>
+              <span id="characterStatus" role="status"></span>
+            </div>
+            <p class="character-note">
+              修改后完全退出并重启游戏生效。图片、文案和地图动画已提供；媒体、特效及特殊演出保留原版，运行时效果待游戏验证。
+            </p>
+            <div class="character-workspace">
+              <aside class="character-list-panel">
+                <label for="characterSearch">搜索角色 / 皮肤包</label
+                ><input
+                  id="characterSearch"
+                  type="search"
+                  placeholder="输入角色名或皮肤名"
+                />
+                <div id="characterList"></div>
+              </aside>
+              <div id="characterDetail" class="character-detail">
+                <p>选择一个皮肤包，或新建方案开始制作。</p>
+              </div>
+            </div>
+            <dialog id="characterCreateDialog">
+              <form id="characterCreateForm">
+                <h3>新建自定义皮肤包</h3>
+                <input type="hidden" name="id" />
+                <label
+                  >显示名称<input name="name" required maxlength="100"
+                /></label>
+                <label
+                  >目标角色<select
+                    name="heroId"
+                    id="characterCreateHero"
+                    required
+                  ></select
+                ></label>
+                <label id="characterCreateTargetLabel"
+                  >适用原皮肤<select
+                    name="skinItemId"
+                    id="characterCreateSkin"
+                    required
+                  >
+                    <option value="0">该角色全部原皮肤</option>
+                  </select></label
+                >
+                <p>从方案中创建会自动加入该方案。你可以导出原版素材作为起点，也可以取消勾选，从空白皮肤开始。</p>
+                <label class="character-template-toggle"
+                  ><input
+                    type="checkbox"
+                    id="characterCreateFromGame"
+                    name="fromGame"
+                    checked
+                  />从游戏导出官方皮肤素材</label
+                >
+                <div id="characterTemplateOptions" class="hidden">
+                  <label>导出哪套官方皮肤<select id="characterTemplateSource" name="sourceSkinItemId" required></select></label>
+                  <label
+                    >热更新资源缓存<input
+                      id="characterTemplateCache"
+                      name="cache"
+                      placeholder="com.unity.addressables 目录"
+                  /></label>
+                  <p>
+                    导出所选皮肤的图片与二维动画作为编辑起点。方案中的替换范围保持原设置；独立创建的包默认对应所选皮肤。资源未下载时，请先在游戏中查看该皮肤。
+                  </p>
+                </div>
+                <p
+                  id="characterTemplateProgress"
+                  role="status"
+                  aria-live="polite"
+                ></p>
+                <div class="character-toolbar">
+                  <button
+                    type="submit"
+                    id="characterCreateSubmit"
+                    class="primary-btn"
+                  >
+                    创建</button
+                  ><button
+                    type="button"
+                    id="characterCreateCancel"
+                    class="secondary-btn"
+                  >
+                    取消
+                  </button>
+                </div>
+              </form>
+            </dialog>
+            </div>
+          </section>
+          
+          <!-- AUDIO SKIN PANEL -->

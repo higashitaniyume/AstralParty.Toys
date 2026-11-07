@@ -1,0 +1,260 @@
+﻿/* utilities.css - 游戏工具页（变速器安装/卸载/配置） */
+.utilities-page {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--gp-bg);
+  overflow: hidden;
+  color: var(--gp-text-main);
+}
+
+.utilities-header {
+  height: 60px;
+  flex: 0 0 60px;
+  padding: 0 24px;
+  background: rgba(18, 22, 38, 0.95);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--gp-shadow-sm);
+  z-index: 50;
+}
+
+body:not(.reduce-motion) #utilitiesView:not(.page-entering) .utilities-header {
+  animation: content-rise 360ms var(--motion-ease) both;
+}
+body:not(.reduce-motion) #utilitiesView:not(.page-entering) .util-card {
+  animation: content-rise 440ms var(--motion-ease) both;
+}
+body:not(.reduce-motion) #utilitiesView:not(.page-entering) .util-card:nth-child(2) {
+  animation-delay: 90ms;
+}
+body:not(.reduce-motion) #utilitiesView:not(.page-entering) .util-form-row,
+body:not(.reduce-motion) #utilitiesView:not(.page-entering) .util-state-row {
+  animation: content-slide-left 360ms var(--motion-ease) both;
+}
+body:not(.reduce-motion) #utilitiesView:not(.page-entering) .util-form-row:nth-child(3) { animation-delay: 35ms; }
+body:not(.reduce-motion) #utilitiesView:not(.page-entering) .util-form-row:nth-child(4) { animation-delay: 70ms; }
+body:not(.reduce-motion) #utilitiesView:not(.page-entering) .util-form-row:nth-child(n + 5) { animation-delay: 105ms; }
+
+.utilities-title-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.utilities-title-group h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.utilities-tagline {
+  font-size: 12px;
+  color: var(--gp-text-muted);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-full);
+  padding: 4px 12px;
+}
+
+.utilities-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.utilities-body {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 24px 32px;
+}
+
+.util-grid {
+  display: grid;
+  grid-template-columns: minmax(360px, 5fr) minmax(520px, 7fr);
+  gap: 18px;
+  align-items: stretch;
+  width: 100%;
+  min-height: 100%;
+}
+
+@media (max-width: 1080px) {
+  .util-grid { grid-template-columns: 1fr; }
+}
+
+.util-card {
+  background: var(--gp-bg-panel);
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-lg);
+  box-shadow: var(--gp-shadow-sm);
+  padding: 20px 22px;
+  transition: transform 220ms var(--motion-ease), border-color 220ms ease, box-shadow 220ms ease;
+}
+
+.util-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 255, 255, 0.27);
+  box-shadow: var(--gp-shadow-md);
+}
+
+.util-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.util-card-head h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.4px;
+}
+
+.util-section-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gp-text-muted);
+  margin: 14px 0 8px;
+  letter-spacing: 1px;
+}
+
+/* 安装状态条 */
+.util-status-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--gp-radius-md);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--gp-border);
+}
+
+.util-status-line .status-icon { font-size: 20px; line-height: 1.3; }
+
+.util-status-texts { min-width: 0; flex: 1; }
+
+.util-status-texts strong { font-size: 14px; }
+
+.util-status-texts p {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--gp-text-sub);
+  line-height: 1.55;
+  word-break: break-all;
+}
+
+/* 路径展示盒 */
+.util-path-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-md);
+}
+
+.util-path-box .path-value {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--gp-text-sub);
+  font-family: Consolas, "Cascadia Mono", monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.util-path-box .placeholder { color: var(--gp-text-muted); }
+
+.util-meta-list { list-style: none; margin: 12px 0 0; padding: 0; }
+
+.util-meta-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--gp-text-sub);
+  padding: 3px 0;
+}
+
+.util-meta-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gp-text-muted);
+  flex: 0 0 auto;
+}
+
+.util-meta-dot.ok { background: var(--gp-green); box-shadow: 0 0 8px var(--gp-green); }
+.util-meta-dot.warn { background: var(--gp-gold); box-shadow: 0 0 8px var(--gp-gold); }
+.util-meta-dot.bad { background: var(--accent-red); box-shadow: 0 0 8px var(--accent-red); }
+.util-meta-dot.info { background: var(--gp-blue); box-shadow: 0 0 8px var(--gp-blue); }
+
+.util-mono { font-family: Consolas, "Cascadia Mono", monospace; font-size: 12px; }
+
+.util-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.util-btn-row .primary-btn,
+.util-btn-row .secondary-btn { padding: 8px 16px; font-size: 13px; }
+
+.danger-btn {
+  background: rgba(244, 63, 94, 0.16);
+  color: #ff8298;
+  border: 1.5px solid rgba(244, 63, 94, 0.55);
+  border-radius: var(--gp-radius-md);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 8px 16px;
+  transition: all 0.2s ease;
+}
+
+.danger-btn:hover:not(:disabled) {
+  background: rgba(244, 63, 94, 0.34);
+  border-color: #f43f5e;
+}
+
+.danger-btn:disabled { opacity: 0.4; pointer-events: none; }
+
+.util-check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: var(--gp-text-sub);
+  cursor: pointer;
+  user-select: none;
+}
+
+.util-check-row input { accent-color: var(--gp-pink); width: 15px; height: 15px; cursor: pointer; }
+
+/* 勾选框本身只有 15px：让整行文字都可点，并把可点高度撑到 ~26px */
+.util-check-row label { padding: 3px 0; line-height: 1.45; }
+
+.util-note-box {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-radius: var(--gp-radius-md);
+  background: rgba(250, 204, 21, 0.08);
+  border: 1px solid rgba(250, 204, 21, 0.35);
+}
+

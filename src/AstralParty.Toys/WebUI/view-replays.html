@@ -1,0 +1,230 @@
+﻿        <section id="toolsView" class="page-view tools-page hidden">
+          <!-- 新界面：回放页的列表 / 详情外框由 js/v2-replays.js 渲染 -->
+          <div id="v2Replays"></div>
+          <div class="tools-header">
+            <div class="tools-title-group">
+              <button class="back-btn" id="toolsBackHomeBtn" data-i18n="replay.back_to_lobby">‹ 返回大厅</button>
+              <h2 data-i18n="replay.title">对局回放分析工具</h2>
+              <span class="tools-file-info" id="toolFileMeta" data-i18n="replay.no_file_loaded"
+                >尚未打开回放文件</span
+              >
+            </div>
+            <div class="tools-header-actions">
+              <button class="secondary-btn" id="toolExportBtn" data-i18n="replay.export_json" disabled>
+                导出 JSON
+              </button>
+              <button class="primary-btn" id="toolOpenBtn" data-i18n="replay.select_file_btn">＋ 选择回放文件</button>
+            </div>
+          </div>
+
+          <!-- Replay Sub Navigation Tabs (Visible when replay is active) -->
+          <div class="replay-subnav hidden" id="replaySubnav">
+            <button class="subnav-tab" data-tab="performance">
+              <svg
+                class="subnav-ico"
+                viewBox="0 -960 960 960"
+                aria-hidden="true"
+              >
+                <path
+                  d="M120-120v-720h80v640h640v80H120Zm160-160v-200h80v200h-80Zm160 0v-320h80v320h-80Zm160 0v-440h80v440h-80Z"
+                /></svg
+              ><span data-i18n="replay.tab_performance">表现分析</span>
+            </button>
+            <button class="subnav-tab active" data-tab="summary">
+              <svg
+                class="subnav-ico"
+                viewBox="0 -960 960 960"
+                aria-hidden="true"
+              >
+                <path
+                  d="M348.5-611.5Q360-623 360-640t-11.5-28.5Q337-680 320-680t-28.5 11.5Q280-657 280-640t11.5 28.5Q303-600 320-600t28.5-11.5Zm0 160Q360-463 360-480t-11.5-28.5Q337-520 320-520t-28.5 11.5Q280-497 280-480t11.5 28.5Q303-440 320-440t28.5-11.5Zm0 160Q360-303 360-320t-11.5-28.5Q337-360 320-360t-28.5 11.5Q280-337 280-320t11.5 28.5Q303-280 320-280t28.5-11.5ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h440l200 200v440q0 33-23.5 56.5T760-120H200Zm0-80h560v-400H600v-160H200v560Zm0-560v160-160 560-560Z"
+                /></svg
+              ><span data-i18n="replay.tab_summary">对局摘要</span>
+            </button>
+            <button class="subnav-tab" data-tab="players">
+              <svg
+                class="subnav-ico"
+                viewBox="0 -960 960 960"
+                aria-hidden="true"
+              >
+                <path
+                  d="M40-160v-112q0-34 17.5-62.5T104-378q62-31 126-46.5T360-440q66 0 130 15.5T616-378q29 15 46.5 43.5T680-272v112H40Zm720 0v-120q0-44-24.5-84.5T666-434q51 6 96 20.5t84 35.5q36 20 55 44.5t19 53.5v120H760ZM247-527q-47-47-47-113t47-113q47-47 113-47t113 47q47 47 47 113t-47 113q-47 47-113 47t-113-47Zm466 0q-47 47-113 47-11 0-28-2.5t-28-5.5q27-32 41.5-71t14.5-81q0-42-14.5-81T544-792q14-5 28-6.5t28-1.5q66 0 113 47t47 113q0 66-47 113ZM120-240h480v-32q0-11-5.5-20T580-306q-54-27-109-40.5T360-360q-56 0-111 13.5T140-306q-9 5-14.5 14t-5.5 20v32Zm240-320Zm0-80Z"
+                /></svg
+              ><span data-i18n="replay.tab_players">玩家表现</span>
+            </button>
+            <button class="subnav-tab" data-tab="timeline">
+              <svg
+                class="subnav-ico"
+                viewBox="0 -960 960 960"
+                aria-hidden="true"
+              >
+                <path
+                  d="M120-240q-33 0-56.5-23.5T40-320q0-33 23.5-56.5T120-400h10.5q4.5 0 9.5 2l182-182q-2-5-2-9.5V-600q0-33 23.5-56.5T400-680q33 0 56.5 23.5T480-600q0 2-2 20l102 102q5-2 9.5-2h21q4.5 0 9.5 2l142-142q-2-5-2-9.5V-640q0-33 23.5-56.5T840-720q33 0 56.5 23.5T920-640q0 33-23.5 56.5T840-560h-10.5q-4.5 0-9.5-2L678-420q2 5 2 9.5v10.5q0 33-23.5 56.5T600-320q-33 0-56.5-23.5T520-400v-10.5q0-4.5 2-9.5L420-522q-5 2-9.5 2H400q-2 0-20-2L198-340q2 5 2 9.5v10.5q0 33-23.5 56.5T120-240Z"
+                /></svg
+              ><span data-i18n="replay.tab_timeline">事件时间线</span>
+            </button>
+            <button class="subnav-tab" data-tab="relics">
+              <svg
+                class="subnav-ico"
+                viewBox="0 -960 960 960"
+                aria-hidden="true"
+              >
+                <path
+                  d="M480-120 80-600l120-240h560l120 240-400 480Zm-95-520h190l-60-120h-70l-60 120Zm55 347v-267H218l222 267Zm80 0 222-267H520v267Zm144-347h106l-60-120H604l60 120Zm-474 0h106l60-120H250l-60 120Z"
+                /></svg
+              ><span data-i18n="replay.tab_relics">筹码记录</span>
+            </button>
+            <button class="subnav-tab" data-tab="shops">
+              <svg
+                class="subnav-ico"
+                viewBox="0 -960 960 960"
+                aria-hidden="true"
+              >
+                <path
+                  d="M223.5-103.5Q200-127 200-160t23.5-56.5Q247-240 280-240t56.5 23.5Q360-193 360-160t-23.5 56.5Q313-80 280-80t-56.5-23.5Zm400 0Q600-127 600-160t23.5-56.5Q647-240 680-240t56.5 23.5Q760-193 760-160t-23.5 56.5Q713-80 680-80t-56.5-23.5ZM246-720l96 200h280l110-200H246Zm-38-80h590q23 0 35 20.5t1 41.5L692-482q-11 20-29.5 31T622-440H324l-44 80h480v80H280q-45 0-68-39.5t-2-78.5l54-98-144-304H40v-80h130l38 80Zm134 280h280-280Z"
+                /></svg
+              ><span data-i18n="replay.tab_shops">商店记录</span>
+            </button>
+            <button class="subnav-tab" data-tab="technical">
+              <svg
+                class="subnav-ico"
+                viewBox="0 -960 960 960"
+                aria-hidden="true"
+              >
+                <path
+                  d="M560-160v-80h120q17 0 28.5-11.5T720-280v-80q0-38 22-69t58-44v-14q-36-13-58-44t-22-69v-80q0-17-11.5-28.5T680-720H560v-80h120q50 0 85 35t35 85v80q0 17 11.5 28.5T840-560h40v160h-40q-17 0-28.5 11.5T800-360v80q0 50-35 85t-85 35H560Zm-280 0q-50 0-85-35t-35-85v-80q0-17-11.5-28.5T120-400H80v-160h40q17 0 28.5-11.5T160-600v-80q0-50 35-85t85-35h120v80H280q-17 0-28.5 11.5T240-680v80q0 38-22 69t-58 44v14q36 13 58 44t22 69v80q0 17 11.5 28.5T280-240h120v80H280Z"
+                /></svg
+              ><span data-i18n="replay.tab_technical">专业信息</span>
+            </button>
+          </div>
+
+          <div class="tools-workspace">
+            <!-- Empty State / Recent Replays List -->
+            <div class="replay-empty-state" id="replayEmptyBox">
+              <section class="recent-replays-box">
+                <div class="recent-head">
+                  <div>
+                    <h4 data-i18n="replay.library">回放列表</h4>
+                    <small id="libraryDirectoryText">正在检测回放目录…</small>
+                  </div>
+                  <div class="recent-head-actions">
+                    <button
+                      class="secondary-btn"
+                      id="libraryDownloadBtn"
+                      data-i18n="replay.download_id"
+                      title="知道回放 ID（游戏战绩里那一串数字）时，直接从官方回放服务器下载进回放库"
+                    >
+                      按 ID 下载
+                    </button>
+                    <button class="secondary-btn" id="libraryImportBtn">
+                      导入回放
+                    </button>
+                    <button class="secondary-btn" id="refreshLibraryBtn" data-i18n="common.refresh">
+                      刷新列表
+                    </button>
+                  </div>
+                </div>
+
+                <div class="library-status" id="libraryStatus">
+                  <div class="library-status-cell">
+                    <span class="library-status-label" data-i18n="replay.game_slots">游戏内席位</span>
+                    <strong id="libraryGameSlots">—</strong>
+                    <div class="library-slot-bar">
+                      <i id="librarySlotBar"></i>
+                    </div>
+                    <small
+                      class="library-status-hint"
+                      id="libraryGameRunningHint"
+                    ></small>
+                  </div>
+                  <div class="library-status-cell">
+                    <span class="library-status-label" data-i18n="replay.library">回放库</span>
+                    <strong id="libraryCountText">—</strong>
+                    <button class="link-btn" id="libraryOpenFolderBtn" data-i18n="replay.open_library_folder">
+                      打开库目录
+                    </button>
+                  </div>
+                </div>
+
+                <div class="library-banner hidden" id="libraryBanner">
+                  <div class="library-banner-main">
+                    <strong id="libraryBannerTitle">游戏内回放席位已满</strong>
+                    <p id="libraryBannerText"></p>
+                  </div>
+                  <div class="library-banner-actions">
+                    <button class="primary-btn" id="libraryBannerArchiveBtn">
+                      归档最旧的 3 局
+                    </button>
+                    <button class="secondary-btn" id="libraryBannerAutoBtn">
+                      以后自动保持最近 10 局
+                    </button>
+                    <button class="link-btn" id="libraryBannerDismissBtn">
+                      稍后再说
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  class="library-warning hidden"
+                  id="libraryWarningBox"
+                ></div>
+
+                <div class="library-filter-bar">
+                  <input
+                    type="search"
+                    class="library-input"
+                    id="librarySearchInput"
+                    placeholder="搜索回放 ID / 地图 / 玩家…"
+                    data-i18n-placeholder="replay.search_placeholder"
+                    aria-label="搜索回放"
+                  />
+                  <select
+                    class="library-select"
+                    id="libraryFilterSelect"
+                    aria-label="按来源筛选"
+                  >
+                    <option value="all" data-i18n="replay.filter_all_sources">全部来源</option>
+                    <option value="game" data-i18n="replay.filter_game_only">仅游戏内</option>
+                    <option value="library" data-i18n="replay.filter_library_only">仅回放库</option>
+                  </select>
+                  <select
+                    class="library-select"
+                    id="librarySortSelect"
+                    aria-label="排序方式"
+                  >
+                    <option value="time" data-i18n="replay.sort_time">按对局时间</option>
+                    <option value="size" data-i18n="replay.sort_size">按文件大小</option>
+                    <option value="id" data-i18n="replay.sort_id">按回放 ID</option>
+                  </select>
+                  <span class="library-list-count" id="libraryListCount"></span>
+                </div>
+
+                <div class="replay-entry-list" id="recentReplayList"></div>
+              </section>
+            </div>
+
+            <!-- Active Replay Detail Workspace -->
+            <div class="hidden" id="replayWorkspaceBox" style="height: 100%">
+              <div id="summaryView" class="replay-view"></div>
+              <div id="performanceView" class="replay-view hidden"></div>
+              <div id="playersView" class="replay-view hidden"></div>
+              <div id="timelineView" class="replay-view hidden"></div>
+              <div id="relicsView" class="replay-view hidden"></div>
+              <div id="shopsView" class="replay-view hidden"></div>
+              <div id="technicalView" class="replay-view hidden">
+                <div style="display: flex; gap: 10px; margin-bottom: 18px">
+                  <button class="subnav-tab active" id="techTabStatistics" data-i18n="replay.tech_stats">
+                    数据统计
+                  </button>
+                  <button class="subnav-tab" id="techTabProtocol" data-i18n="replay.tech_protocol">
+                    原始协议帧
+                  </button>
+                </div>
+                <div id="techStatsPane"></div>
+                <div id="techProtocolPane" class="hidden"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. UTILITIES VIEW (Game Companion Tools: Speedhack Installer) -->

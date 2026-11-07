@@ -1,0 +1,544 @@
+﻿
+.workshop-consent-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.workshop-blocked {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 64px 24px;
+  border: 1px dashed var(--gp-border);
+  border-radius: var(--gp-radius-md);
+  background: rgba(250, 204, 21, 0.04);
+  text-align: center;
+}
+
+.workshop-blocked .mi {
+  width: 34px;
+  height: 34px;
+  color: var(--gp-gold);
+  opacity: 0.85;
+}
+
+.workshop-blocked h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gp-text-main);
+}
+
+.workshop-blocked p {
+  margin: 0;
+  max-width: 48ch;
+  color: var(--gp-text-muted);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.workshop-recent-downloads {
+  color: rgba(163, 230, 53, 0.85);
+}
+
+/* ============================== 降级确认 ============================== */
+
+.workshop-confirm-lead {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.workshop-confirm-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.workshop-confirm-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 12.5px;
+}
+
+.workshop-confirm-list li span {
+  color: var(--gp-gold);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.workshop-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+@media (max-width: 760px) {
+  .workshop-toolbar {
+    flex-wrap: wrap;
+    padding: 12px 16px;
+  }
+
+  .workshop-search {
+    flex-basis: 100%;
+  }
+
+  .workshop-select {
+    flex: 1 1 calc(50% - 5px);
+    max-width: none;
+  }
+
+  .workshop-scroll {
+    padding: 14px 16px 22px;
+  }
+
+  .workshop-detail-hero {
+    flex-direction: column;
+  }
+
+  .workshop-detail-cover {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+}
+
+/* ============================== 详情页 ============================== */
+
+.workshop-detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 20px 26px 34px;
+}
+
+.workshop-detail-page .workshop-detail-hero {
+  padding: 18px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-lg);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.workshop-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--gp-border);
+}
+
+.workshop-tab {
+  flex: 0 0 auto;
+  padding: 9px 16px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--gp-text-muted);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.workshop-tab:hover {
+  color: var(--gp-text-sub);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.workshop-tab.is-active {
+  border-bottom-color: var(--gp-pink);
+  color: var(--gp-text-main);
+}
+
+.workshop-tab:focus-visible {
+  outline: 2px solid var(--gp-blue);
+  outline-offset: -2px;
+}
+
+.workshop-tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.workshop-tab-panel[hidden] {
+  display: none;
+}
+
+.workshop-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px 24px;
+  margin: 0;
+  padding: 16px 18px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-md);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.workshop-fact {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.workshop-fact dt {
+  flex: 0 0 auto;
+  color: var(--gp-text-muted);
+}
+
+.workshop-fact dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--gp-text-sub);
+  overflow-wrap: anywhere;
+}
+
+.workshop-fact dd.is-mono {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.workshop-fact dd a {
+  color: var(--gp-blue);
+  text-decoration: none;
+}
+
+.workshop-fact dd a:hover {
+  text-decoration: underline;
+}
+
+.workshop-detail-section {
+  padding: 16px 18px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-md);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.workshop-detail-section h4 {
+  margin: 0;
+  color: var(--gp-text-main);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.workshop-download-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.workshop-download-link {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--gp-blue);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11.5px;
+  text-decoration: none;
+}
+
+.workshop-download-link:hover {
+  text-decoration: underline;
+}
+
+.workshop-download-note {
+  color: var(--gp-text-muted);
+  font-size: 12px;
+}
+
+.workshop-detail-text {
+  margin: 10px 0 0;
+  white-space: pre-line;
+  color: var(--gp-text-sub);
+  font-size: 13px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.workshop-panel-empty {
+  margin: 0;
+  padding: 26px 18px;
+  border: 1px dashed var(--gp-border);
+  border-radius: var(--gp-radius-md);
+  color: var(--gp-text-muted);
+  font-size: 12.5px;
+  text-align: center;
+}
+
+.workshop-version-notes.markdown-body {
+  margin-top: 10px;
+  white-space: normal;
+}
+
+.workshop-version-notes.is-empty {
+  color: var(--gp-text-muted);
+}
+
+.workshop-license-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.workshop-license-tag {
+  padding: 2px 9px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-full);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--gp-text-sub);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11px;
+}
+
+.workshop-license-text {
+  max-height: 460px;
+  margin: 12px 0 0;
+  overflow: auto;
+  padding: 14px 16px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  background: rgba(8, 11, 20, 0.7);
+  color: var(--gp-text-sub);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11.5px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* 详情页的封面按图片自身比例撑开，不套固定画框：横图、方图、竖图都不会被裁，
+   也不会在上下留出一条明显的空带（列表卡片仍保持统一 16:9，方便排版）。 */
+.workshop-detail-page .workshop-detail-hero .workshop-detail-cover {
+  flex-basis: 300px;
+  aspect-ratio: auto;
+  height: auto;
+  min-height: 150px;
+}
+
+.workshop-detail-page .workshop-detail-cover img {
+  width: 100%;
+  height: auto;
+  max-height: 360px;
+  object-fit: contain;
+}
+
+.workshop-detail-hero .workshop-detail-main h3 {
+  font-size: 21px;
+}
+
+/* 详情页自己控制内边距，滚动容器不要再加一层。 */
+.workshop-detail-page .workshop-scroll {
+  padding: 0;
+}
+
+.workshop-detail-content .workshop-empty {
+  margin: 48px auto;
+}
+
+
+/* ============================== 视图切换与列表视图 ============================== */
+
+.workshop-view-switch {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-full);
+  background: rgba(10, 13, 24, 0.65);
+  padding: 2px;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.view-switch-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--gp-radius-full);
+  background: transparent;
+  color: var(--gp-text-muted);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  padding: 0;
+}
+
+.view-switch-btn:hover {
+  color: var(--gp-text-main);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.view-switch-btn.active {
+  background: var(--gp-blue, #3b82f6);
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.view-switch-btn .mi {
+  width: 18px;
+  height: 18px;
+}
+
+/* 列表模式 */
+.workshop-grid.is-list-view {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.workshop-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-md);
+  background: linear-gradient(160deg, rgba(32, 40, 68, 0.75), rgba(20, 25, 44, 0.8));
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+}
+
+.workshop-row:hover {
+  transform: translateX(2px);
+  border-color: var(--gp-border-highlight);
+  background: linear-gradient(160deg, rgba(38, 48, 82, 0.88), rgba(25, 31, 56, 0.92));
+  box-shadow: var(--gp-shadow-sm);
+}
+
+.workshop-row.is-installing {
+  border-color: rgba(163, 230, 53, 0.6);
+}
+
+.workshop-row-thumb {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-radius: var(--gp-radius-sm);
+  background: linear-gradient(135deg, rgba(255, 23, 118, 0.18), rgba(56, 189, 248, 0.12));
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.workshop-row-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.workshop-row-thumb .workshop-cover-fallback {
+  font-size: 16px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.workshop-row-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.workshop-row-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.workshop-row-title {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--gp-text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workshop-row-desc {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--gp-text-sub);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.workshop-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11.5px;
+  color: var(--gp-text-muted);
+  flex-wrap: wrap;
+}
+
+.workshop-row-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.workshop-row-tags {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.workshop-row-tags span {
+  padding: 1px 6px;
+  border-radius: var(--gp-radius-full);
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 10.5px;
+  color: var(--gp-text-sub);
+}
+
+.workshop-row-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.workshop-row-progress {
+  width: 80px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--gp-radius-full);
+  overflow: hidden;
+}
+
+.workshop-row-progress span {
+  display: block;
+  height: 100%;
+  background: var(--gp-green);
+  transition: width 0.2s ease;
+}

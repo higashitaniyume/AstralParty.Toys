@@ -1,0 +1,330 @@
+﻿/* workshop.css —— 市场（社区模组目录 / 安装 / 更新）。
+ *
+ * 结构与模组页保持一致：顶部标题栏 + 可滚动内容区。
+ * 颜色语义：绿 = 已安装 / 最新，金 = 可更新，灰 = 内置 / 不可安装，红 = 加载或安装失败。
+ */
+
+.workshop-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--gp-bg);
+  overflow: hidden;
+  color: var(--gp-text-main);
+}
+
+body:not(.reduce-motion) #workshopView:not(.page-entering) .utilities-header {
+  animation: content-rise 360ms var(--motion-ease) both;
+}
+
+body:not(.reduce-motion) #workshopView:not(.page-entering) .workshop-toolbar {
+  animation: content-rise 420ms var(--motion-ease) 40ms both;
+}
+
+body:not(.reduce-motion) #workshopView:not(.page-entering) .workshop-scroll {
+  animation: content-rise 440ms var(--motion-ease) 80ms both;
+}
+
+.workshop-header .utilities-title-group {
+  min-width: 0;
+}
+
+.workshop-source {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--gp-text-muted);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+/* ============================== 工具栏 ============================== */
+
+.workshop-toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 26px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(18, 21, 34, 0.6);
+}
+
+.workshop-search {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  height: 38px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-full);
+  background: rgba(10, 13, 24, 0.65);
+  color: var(--gp-text-muted);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.workshop-search:focus-within {
+  border-color: var(--gp-border-pink);
+  box-shadow: 0 0 0 3px rgba(255, 23, 118, 0.12);
+}
+
+.workshop-search .mi {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.workshop-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--gp-text-main);
+  font-size: 13.5px;
+  font-family: inherit;
+}
+
+.workshop-search input::placeholder {
+  color: var(--gp-text-muted);
+}
+
+.workshop-select {
+  flex: 0 0 auto;
+  height: 38px;
+  max-width: 180px;
+  padding: 0 12px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-full);
+  background: rgba(10, 13, 24, 0.65);
+  color: var(--gp-text-sub);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.workshop-select:focus-visible {
+  outline: 2px solid var(--gp-blue);
+  outline-offset: 1px;
+}
+
+/* ============================== 内容区 ============================== */
+
+.workshop-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 26px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.workshop-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--gp-text-muted);
+  font-size: 12.5px;
+}
+
+.workshop-notice p {
+  margin: 0;
+}
+
+.workshop-notice.is-muted {
+  background: transparent;
+  border-color: transparent;
+  padding: 0 2px;
+}
+
+.workshop-notice.is-error {
+  flex-direction: column;
+  align-items: flex-start;
+  border-color: rgba(244, 63, 94, 0.4);
+  background: rgba(244, 63, 94, 0.08);
+  color: #ffb3c1;
+}
+
+.workshop-notice-detail {
+  font-size: 12px;
+  color: #ff8298;
+  word-break: break-word;
+}
+
+.workshop-notice .secondary-btn {
+  padding: 6px 14px;
+  font-size: 12px;
+}
+
+.workshop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+/* ============================== 卡片 ============================== */
+
+.workshop-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-md);
+  background: linear-gradient(160deg, rgba(32, 40, 68, 0.9), rgba(20, 25, 44, 0.92));
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.workshop-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--gp-border-highlight);
+  box-shadow: var(--gp-shadow-md);
+}
+
+.workshop-card.is-installing {
+  border-color: rgba(163, 230, 53, 0.5);
+}
+
+.workshop-cover {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: linear-gradient(135deg, rgba(255, 23, 118, 0.18), rgba(56, 189, 248, 0.12));
+  cursor: pointer;
+  overflow: hidden;
+}
+
+/* 封面必须完整显示：按原比例缩放，留出的空隙用容器的渐变底填充。
+   不做 hover 放大，否则边缘会被容器裁掉。 */
+.workshop-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.workshop-cover:focus-visible {
+  outline: 2px solid var(--gp-blue);
+  outline-offset: -2px;
+}
+
+.workshop-cover-fallback {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.workshop-featured {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 3px 10px;
+  border: 1px solid rgba(250, 204, 21, 0.5);
+  border-radius: var(--gp-radius-full);
+  background: rgba(15, 18, 30, 0.7);
+  color: var(--gp-gold);
+  font-size: 10.5px;
+  font-weight: 700;
+  backdrop-filter: blur(6px);
+}
+
+.workshop-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 auto;
+  padding: 14px 15px 15px;
+}
+
+.workshop-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.workshop-card-head h3 {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.workshop-version {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-full);
+  color: var(--gp-text-muted);
+  font-size: 10.5px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.workshop-card-summary {
+  margin: 0;
+  min-height: 2.9em;
+  color: var(--gp-text-sub);
+  font-size: 12.5px;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.workshop-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.workshop-tags span {
+  padding: 2px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--gp-radius-full);
+  color: var(--gp-text-muted);
+  font-size: 10.5px;
+}
+
+.workshop-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: var(--gp-text-muted);
+  font-size: 11px;
+}
+
+.workshop-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+

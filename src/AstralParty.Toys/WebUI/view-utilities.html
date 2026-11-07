@@ -1,0 +1,378 @@
+﻿        <section id="utilitiesView" class="page-view utilities-page hidden">
+          <div class="utilities-header">
+            <div class="utilities-title-group">
+              <button class="back-btn" id="utilsBackHomeBtn">‹ 返回大厅</button>
+              <h2>游戏工具</h2>
+            </div>
+            <div class="utilities-header-actions">
+              <button class="secondary-btn" id="utilsEditJsonBtn">
+                <span class="mi" data-icon="edit"></span> 编辑配置 JSON
+              </button>
+            </div>
+          </div>
+
+          <div class="utilities-body">
+            <!-- 兼容性大警告: 本页是旧版独立变速器, 与模组加载器互斥 -->
+            <section class="util-compat-warning" id="utilsCompatWarning">
+              <div class="util-compat-icon">
+                <span class="mi" data-icon="warning"></span>
+              </div>
+              <div class="util-compat-main">
+                <h3>
+                  注意：这个「变速器」和模组系统<strong>不兼容</strong>，两个只能装一个
+                </h3>
+                <p class="util-compat-lead">
+                  本页安装的是<strong>旧版独立变速器</strong>（<span
+                    class="util-mono"
+                    >speedhack-rs</span
+                  >）， 模组加载器用的也是同一个文件名
+                  <span class="util-mono">version.dll</span> ——
+                  同时安装会互相覆盖，游戏只会加载其中一个。
+                </p>
+                <div class="util-compat-choice">
+                  <div class="util-compat-option">
+                    <span class="util-compat-tag tag-old">只想要变速</span>
+                    <p>
+                      不装任何 mod、只用加速 → 就留在本页，按下面卡片里的「<span
+                        class="mi"
+                        data-icon="bolt"
+                      ></span>
+                      安装」即可。 <br /><small
+                        >（本页的旧版变速器自带独立的配置与热键，功能到此为止。）</small
+                      >
+                    </p>
+                  </div>
+                  <div class="util-compat-option">
+                    <span class="util-compat-tag tag-new">想要新功能</span>
+                    <p>
+                      相机工具 / 活动日志 / 模组管理 / 权限声明 /
+                      游戏内热键变速… <strong>也包括变速本身</strong> →
+                      请到「<span class="mi" data-icon="extension"></span>
+                      模组」页面。 <br /><small
+                        >模组页面内置换速开关：<span class="util-mono"
+                          >1.0</span
+                        >
+                        = 正常， <span class="util-mono">2.0</span> = 全程 2
+                        倍速；进游戏后还能用
+                        <span class="util-mono">Alt</span>+<span
+                          class="util-mono"
+                          >=</span
+                        >
+                        / <span class="util-mono">Alt</span>+<span
+                          class="util-mono"
+                          >-</span
+                        >
+                        实时调整（最低 1 倍，不支持减速）。</small
+                      >
+                    </p>
+                  </div>
+                </div>
+                <div class="util-compat-actions">
+                  <button class="primary-btn" id="utilsGoModsBtn">
+                    <span class="mi" data-icon="extension"></span>
+                    去模组页面（推荐）
+                  </button>
+                  <span class="util-compat-keep"
+                    >只想用旧版变速器？忽略这段，照下面操作即可。</span
+                  >
+                </div>
+              </div>
+            </section>
+
+            <div class="util-grid">
+              <!-- 左：安装管理 -->
+              <article class="util-card">
+                <div class="util-card-head">
+                  <h3>
+                    <span class="mi" data-icon="bolt"></span> 游戏加速（变速器）
+                  </h3>
+                  <span class="badge badge-notice" id="utilsStatusBadge"
+                    >未检测</span
+                  >
+                </div>
+
+                <div class="util-status-line">
+                  <span class="status-icon" id="utilsStatusIcon"
+                    ><span class="mi" data-icon="search"></span
+                  ></span>
+                  <div class="util-status-texts">
+                    <strong id="utilsStatusTitle">正在检测安装状态…</strong>
+                    <p id="utilsStatusText">请稍候</p>
+                  </div>
+                </div>
+
+                <span class="util-section-label"
+                  >游戏目录（version.dll 的安装位置）</span
+                >
+                <div class="util-path-box">
+                  <span class="path-value placeholder" id="utilsGameDirText"
+                    >尚未选择游戏目录</span
+                  >
+                  <button
+                    class="secondary-btn"
+                    id="utilsDetectDirBtn"
+                    style="padding: 5px 12px; font-size: 12px"
+                  >
+                    自动检测
+                  </button>
+                  <button
+                    class="secondary-btn"
+                    id="utilsBrowseDirBtn"
+                    style="padding: 5px 12px; font-size: 12px"
+                  >
+                    选择…
+                  </button>
+                  <button
+                    class="primary-btn"
+                    id="utilsInstallBtn"
+                    style="
+                      padding: 5px 13px;
+                      font-size: 12px;
+                      white-space: nowrap;
+                    "
+                  >
+                    <span class="mi" data-icon="bolt"></span> 安装
+                  </button>
+                </div>
+
+                <ul class="util-meta-list" id="utilsMetaList"></ul>
+
+                <div class="util-check-row">
+                  <input type="checkbox" id="utilsOverwriteCheck" />
+                  <label for="utilsOverwriteCheck"
+                    >允许覆盖游戏目录里其它
+                    version.dll（用于强行更新安装）</label
+                  >
+                </div>
+                <div class="util-check-row">
+                  <input type="checkbox" id="utilsForceUninstallCheck" />
+                  <label for="utilsForceUninstallCheck"
+                    >强制卸载（version.dll 与内置不一致时也删除）</label
+                  >
+                </div>
+
+                <div class="util-btn-row">
+                  <button class="secondary-btn" id="utilsSyncConfigBtn">
+                    <span class="mi" data-icon="refresh"></span> 同步配置到游戏
+                  </button>
+                  <button class="danger-btn" id="utilsUninstallBtn">
+                    <span class="mi" data-icon="delete"></span> 卸载变速器
+                  </button>
+                </div>
+
+                <div class="util-note-box">
+                  <span class="util-note-title"
+                    ><span class="mi" data-icon="warning"></span> 使用须知</span
+                  >
+                  <ul>
+                    <li>
+                      原理：把内置
+                      <span class="util-mono">version.dll</span> 放到游戏 exe
+                      旁边，游戏启动时自动加载。游戏运行中也允许安装/卸载，只是本次写入要<strong>重启游戏</strong>才生效，而且
+                      DLL
+                      被占用时写入/删除会失败——那种情况先完全退出游戏再操作即可。
+                    </li>
+                    <li>
+                      倍速基于修改进程时间函数，需在游戏设置里<strong>关闭垂直同步</strong>才生效；修改配置后<strong>重启游戏</strong>，或在游戏内按重载热键（默认
+                      Ctrl+Shift+R）。
+                    </li>
+                    <li>
+                      工具来源：<a
+                        href="https://github.com/Hirtol/speedhack-rs"
+                        target="_blank"
+                        rel="noopener"
+                        style="color: var(--gp-blue)"
+                        >github.com/Hirtol/speedhack-rs</a
+                      >（构建于 2024-04-13）。
+                    </li>
+                  </ul>
+                </div>
+              </article>
+
+              <!-- 右：配置编辑器 -->
+              <article class="util-card">
+                <div class="util-card-head">
+                  <h3>
+                    <span class="mi" data-icon="settings"></span>
+                    speedhack_config.json 配置
+                  </h3>
+                  <span class="badge badge-update" id="utilsConfigStateBadge"
+                    >已同步</span
+                  >
+                </div>
+
+                <div class="util-form-row">
+                  <div class="util-form-label">
+                    <strong>进入游戏自动倍速</strong>
+                    <small
+                      >启用后无需按快捷键，游戏加载完成就持续使用下方倍速</small
+                    >
+                  </div>
+                  <label
+                    class="util-switch"
+                    title="每次进入游戏自动启用设定倍速"
+                  >
+                    <input
+                      type="checkbox"
+                      id="utilsAutoSpeedToggle"
+                      aria-label="进入游戏自动倍速"
+                    />
+                    <span class="switch-track"></span>
+                  </label>
+                </div>
+
+                <div class="util-form-row">
+                  <div class="util-form-label">
+                    <strong>自动倍速</strong>
+                    <small
+                      >关闭自动倍速时固定为
+                      1.0；快捷键档位仍可临时切换速度</small
+                    >
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <div class="speed-presets">
+                      <button
+                        class="speed-preset-btn auto-speed-preset"
+                        data-speed="2"
+                      >
+                        ×2
+                      </button>
+                      <button
+                        class="speed-preset-btn auto-speed-preset"
+                        data-speed="5"
+                      >
+                        ×5
+                      </button>
+                      <button
+                        class="speed-preset-btn auto-speed-preset"
+                        data-speed="10"
+                      >
+                        ×10
+                      </button>
+                    </div>
+                    <input
+                      type="number"
+                      class="util-input"
+                      id="utilsBaseSpeed"
+                      min="0.1"
+                      step="0.5"
+                      value="2"
+                      aria-label="自动倍速倍率"
+                    />
+                  </div>
+                </div>
+
+                <div class="util-form-row">
+                  <div class="util-form-label">
+                    <strong>调试控制台 console</strong>
+                    <small>打开变速器自带的日志控制台窗口</small>
+                  </div>
+                  <label class="util-switch" title="调试控制台">
+                    <input
+                      type="checkbox"
+                      id="utilsConsoleToggle"
+                      aria-label="调试控制台"
+                    />
+                    <span class="switch-track"></span>
+                  </label>
+                </div>
+
+                <div class="util-form-row">
+                  <div class="util-form-label">
+                    <strong>挂接延迟 wait_with_hook</strong>
+                    <small>进游戏后等待再挂接时间函数的毫秒数（防崩溃）</small>
+                  </div>
+                  <input
+                    type="number"
+                    class="util-input"
+                    id="utilsWaitMs"
+                    min="0"
+                    step="100"
+                    value="250"
+                    aria-label="挂接延迟（毫秒）"
+                  />
+                </div>
+
+                <div class="util-form-row">
+                  <div class="util-form-label">
+                    <strong>启动加速 startup_state</strong>
+                    <small
+                      >游戏启动后自动以指定倍速加速一段时长（跳过开场动画）</small
+                    >
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <input
+                      type="number"
+                      class="util-input"
+                      id="utilsStartupSpeed"
+                      min="0.1"
+                      step="0.5"
+                      disabled
+                      style="width: 74px"
+                      aria-label="启动加速倍率"
+                    />
+                    <input
+                      type="number"
+                      class="util-input"
+                      id="utilsStartupDuration"
+                      min="1"
+                      step="1"
+                      disabled
+                      style="width: 74px"
+                      title="时长(秒)"
+                      aria-label="启动加速时长（秒）"
+                    />
+                    <label class="util-switch" title="启用启动加速">
+                      <input
+                        type="checkbox"
+                        id="utilsStartupToggle"
+                        aria-label="启用启动加速"
+                      />
+                      <span class="switch-track"></span>
+                    </label>
+                  </div>
+                </div>
+
+                <span class="util-section-label"
+                  >倍速档位（满足按键组合时切换速度）</span
+                >
+                <div id="utilsStateRows"></div>
+                <button
+                  class="util-add-chip-btn"
+                  id="utilsAddStateBtn"
+                  style="margin-top: 12px"
+                >
+                  ＋ 添加倍速档位
+                </button>
+
+                <span class="util-section-label"
+                  >重载配置热键 reload_config_keys</span
+                >
+                <div class="util-keys-area" id="utilsReloadKeysArea">
+                  <button class="util-add-chip-btn" id="utilsReloadKeysAddBtn">
+                    ＋ 按键
+                  </button>
+                </div>
+
+                <div class="util-config-foot">
+                  <span
+                    class="util-config-path"
+                    id="utilsConfigPathText"
+                  ></span>
+                  <div style="display: flex; gap: 10px; flex-wrap: wrap">
+                    <button class="secondary-btn" id="utilsRestoreConfigBtn">
+                      恢复默认模板
+                    </button>
+                    <button class="primary-btn" id="utilsSaveConfigBtn">
+                      <span class="mi" data-icon="save"></span> 保存配置
+                    </button>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. MODS VIEW (Mod Loader & Mod Management)
+           信息层级：① 加载器状态与版本（本页最敏感的信息）→ ② 已安装的模组（主体）
+           → ③ 游戏变速 → ④ 高级 / 诊断（默认折叠）。 -->
