@@ -10,7 +10,7 @@
     <AssemblyName>AstralParty.Toys</AssemblyName>
     <RootNamespace>AstralParty.Toys</RootNamespace>
     <StartupObject>AstralParty.Toys.App</StartupObject>
-    <!-- v2.1.0-rc.1 pre-release, program version is 2.1.0. -->
+    <!-- v2.1.0 正式发布，程序与安装器数字版本为 2.1.0。 -->
     <Version>2.1.0</Version>
     <AssemblyVersion>2.1.0.0</AssemblyVersion>
     <FileVersion>2.1.0.0</FileVersion>

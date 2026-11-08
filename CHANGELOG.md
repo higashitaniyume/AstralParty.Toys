@@ -2,7 +2,7 @@
 
 本文件按版本记录 `AstralParty.Toys` 的功能变更。版本号与 GitHub 发布 tag 一一对应（如 `v0.2.0`），发布产物由 [release.yml](.github/workflows/release.yml) 在打 tag 时自动构建。
 
-## [v2.1.0-rc.1] - 2026-11-08
+## [v2.1.0] - 2026-11-08
 
 ### 优化
 
