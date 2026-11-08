@@ -108,7 +108,7 @@ end;
 function RemoveDesktopShortcut(): Boolean;
 begin
   Result := not WizardIsTaskSelected('desktopicon');
-end
+end;
 
 function RegisterProtocol(): Boolean;
 begin
