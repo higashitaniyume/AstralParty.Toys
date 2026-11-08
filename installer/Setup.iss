@@ -134,7 +134,7 @@ begin
       FindClose(FindRec);
     end;
   end;
-end
+end;
 
 function IsExistingToysInstall(const Directory: String): Boolean;
 begin
