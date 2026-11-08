@@ -30,7 +30,7 @@ public sealed class WorkshopWebUiTests
         Assert.Contains("id=\"workshopView\"", html);
         Assert.Contains("id=\"workshopGrid\"", html);
         Assert.Contains("css/workshop.css", html);
-        Assert.Contains("js/workshop.js", html);
+        Assert.Contains("js/workshop/module.js", html);
         // 详情是独立页面，不再是弹窗。
         Assert.Contains("id=\"workshopDetailView\"", html);
         Assert.Contains("id=\"workshopDetailContent\"", html);
@@ -47,7 +47,7 @@ public sealed class WorkshopWebUiTests
         Assert.Contains("id=\"workshopInstallBar\"", html);
         Assert.Contains("id=\"workshopInstallCancel\"", html);
 
-        var core = Read("js/core.js");
+        var core = Read("js/core/router.js") + Read("js/core/dispatcher.js");
         Assert.Contains("pageName === 'workshop'", core);
         Assert.Contains("WorkshopModule?.onShow", core);
         Assert.Contains("pageName === 'workshopDetail'", core);
@@ -68,7 +68,7 @@ public sealed class WorkshopWebUiTests
     [Fact]
     public void WorkshopModule_UsesTheSameOutgoingMessageNamesAsTheHost()
     {
-        var js = Read("js/workshop.js");
+        var js = Read("js/workshop/module.js");
 
         foreach (var message in new[]
                  {
@@ -85,7 +85,7 @@ public sealed class WorkshopWebUiTests
     public void EveryWorkshopTranslationKey_ExistsInAllFourLanguages()
     {
         var keys = new SortedSet<string>(StringComparer.Ordinal);
-        foreach (var match in JsKey.Matches(Read("js/workshop.js")).Cast<Match>())
+        foreach (var match in JsKey.Matches(Read("js/workshop/module.js")).Cast<Match>())
             keys.Add(match.Groups[1].Value);
         foreach (var match in IndexKey.Matches(Read("index.html")).Cast<Match>())
         {
@@ -102,7 +102,7 @@ public sealed class WorkshopWebUiTests
         Assert.Contains("workshop.perm_files", keys);
         Assert.Contains("settings.workshop_url", keys);
 
-        var translations = Read("js/i18n.js");
+        var translations = Read("js/i18n/dict-zh-Hans.js") + Read("js/i18n/dict-en.js") + Read("js/i18n/dict-ja.js") + Read("js/i18n/dict-zh-Hant.js");
         foreach (var key in keys)
         {
             var occurrences = Regex.Matches(translations, Regex.Escape($"'{key}'")).Count;
@@ -119,7 +119,7 @@ public sealed class WorkshopWebUiTests
             .ToHashSet(StringComparer.Ordinal);
         Assert.NotEmpty(keys);
 
-        var translations = Read("js/i18n.js");
+        var translations = Read("js/i18n/dict-zh-Hans.js") + Read("js/i18n/dict-en.js") + Read("js/i18n/dict-ja.js") + Read("js/i18n/dict-zh-Hant.js");
         foreach (var key in keys)
         {
             var occurrences = Regex.Matches(translations, Regex.Escape($"'{key}'")).Count;
@@ -130,7 +130,7 @@ public sealed class WorkshopWebUiTests
     [Fact]
     public void WorkshopScriptsAndStyles_AreEmbedded()
     {
-        Assert.Contains("js/workshop.js", EmbeddedWebStore.Paths);
+        Assert.Contains("js/workshop/module.js", EmbeddedWebStore.Paths);
         Assert.Contains("css/workshop.css", EmbeddedWebStore.Paths);
         // README 渲染依赖的内嵌第三方资源，缺一个页面就只剩纯文本。
         Assert.Contains("js/markdown.js", EmbeddedWebStore.Paths);
@@ -144,7 +144,7 @@ public sealed class WorkshopWebUiTests
     [Fact]
     public void WorkshopDetailPage_UsesTabsAndRendersMarkdown()
     {
-        var js = Read("js/workshop.js");
+        var js = Read("js/workshop/module.js");
 
         // 四个 tab 与各自的容器都在页面脚本里生成。
         foreach (var tab in new[] { "details", "versions", "readme", "license" })
@@ -160,9 +160,9 @@ public sealed class WorkshopWebUiTests
     {
         var html = Read("index.html");
         Assert.Contains("css/stickers.css", html);
-        Assert.Contains("js/stickers.js", html);
+        Assert.Contains("js/stickers/module.js", html);
 
-        var core = Read("js/core.js");
+        var core = Read("js/core/router.js") + Read("js/core/dispatcher.js");
         Assert.Contains("case 'workshopStickers':", core);
         Assert.Contains("case 'workshopStickerCatalog':", core);
         Assert.Contains("case 'workshopStickerCatalogProgress':", core);
@@ -173,7 +173,7 @@ public sealed class WorkshopWebUiTests
         Assert.Contains("case \"workshopStickerCatalog\":", dispatcher);
         Assert.Contains("case \"workshopStickerToggle\":", dispatcher);
 
-        var js = Read("js/stickers.js");
+        var js = Read("js/stickers/module.js");
         Assert.Contains("forge.sticker.recent.v1", js);
         Assert.Contains("forge.sticker.favorites.v1", js);
         Assert.Contains("forge.voter", js);
@@ -190,7 +190,7 @@ public sealed class WorkshopWebUiTests
         Assert.DoesNotContain("fetch('stickers/", js);
         Assert.DoesNotContain("fetch(\"stickers/", js);
 
-        var workshop = Read("js/workshop.js");
+        var workshop = Read("js/workshop/module.js");
         Assert.Contains("window.StickerModule", workshop);
         Assert.Contains("renderStickers", workshop);
         Assert.Contains("renderStickerCatalog", workshop);
@@ -198,7 +198,7 @@ public sealed class WorkshopWebUiTests
         Assert.Contains("renderStickerToggle", workshop);
         Assert.Contains("handleClick", workshop);
 
-        Assert.Contains("js/stickers.js", EmbeddedWebStore.Paths);
+        Assert.Contains("js/stickers/module.js", EmbeddedWebStore.Paths);
         Assert.Contains("css/stickers.css", EmbeddedWebStore.Paths);
         // 贴纸从市场下载后本地缓存，不再内嵌在程序集里。
         Assert.False(EmbeddedWebStore.Paths.Any(p => p.StartsWith("stickers/", StringComparison.Ordinal)),
@@ -234,14 +234,14 @@ public sealed class WorkshopWebUiTests
         var stickerKey = new Regex(
             """['"](workshop\.sticker_[A-Za-z0-9_]+)['"]""", RegexOptions.Compiled);
         var keys = new SortedSet<string>(StringComparer.Ordinal);
-        foreach (var match in stickerKey.Matches(Read("js/stickers.js")).Cast<Match>())
+        foreach (var match in stickerKey.Matches(Read("js/stickers/module.js")).Cast<Match>())
             keys.Add(match.Groups[1].Value);
         Assert.NotEmpty(keys);
         Assert.Contains("workshop.sticker_add", keys);
         Assert.Contains("workshop.sticker_picker_label", keys);
         Assert.Contains("workshop.sticker_recent", keys);
 
-        var translations = Read("js/i18n.js");
+        var translations = Read("js/i18n/dict-zh-Hans.js") + Read("js/i18n/dict-en.js") + Read("js/i18n/dict-ja.js") + Read("js/i18n/dict-zh-Hant.js");
         foreach (var key in keys)
         {
             var occurrences = Regex.Matches(translations, Regex.Escape($"'{key}'")).Count;

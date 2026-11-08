@@ -1,7 +1,0 @@
-﻿// @include "i18n.part1.js"
-// @include "i18n.part2.js"
-// @include "i18n.part3.js"
-// @include "i18n.part4.js"
-// @include "i18n.part5.js"
-// @include "i18n.part6.js"
-// @include "i18n.part7.js"

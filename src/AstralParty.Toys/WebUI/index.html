@@ -20,6 +20,7 @@
     <link rel="stylesheet" href="css/skins.css" />
     <link rel="stylesheet" href="css/resource-mods.css" />
     <link rel="stylesheet" href="css/profiles.css" />
+    <link rel="stylesheet" href="css/character-skins.css" />
     <!-- 浅色模式：由 tools/gen-light-css.js 从原版样式生成，必须在原版之后、v2.css 之前 -->
     <link rel="stylesheet" href="css/v2-light.css" />
     <!-- 新界面（重做）：放最后，覆盖外壳布局 -->
@@ -161,39 +162,85 @@
 
     <!-- Modular Scripts -->
     <script src="js/icons.js"></script>
-    <script src="js/i18n.source.js"></script>
-    <script src="js/i18n.js"></script>
-    <script src="js/core.js"></script>
+    <script src="js/i18n/source-en.js"></script>
+    <script src="js/i18n/source-ja.js"></script>
+    <script src="js/i18n/source-zh-Hant.js"></script>
+    <script src="js/i18n/templates-en.js"></script>
+    <script src="js/i18n/templates-ja.js"></script>
+    <script src="js/i18n/templates-zh-Hant.js"></script>
+    <script src="js/i18n/dict-zh-Hans.js"></script>
+    <script src="js/i18n/dict-en.js"></script>
+    <script src="js/i18n/dict-ja.js"></script>
+    <script src="js/i18n/dict-zh-Hant.js"></script>
+    <script src="js/i18n/engine.js"></script>
+    <script src="js/core/host.js"></script>
+    <script src="js/core/dom.js"></script>
+    <script src="js/core/state.js"></script>
+    <script src="js/core/modal.js"></script>
+    <script src="js/core/router.js"></script>
+    <script src="js/core/dispatcher.js"></script>
     <script src="js/version.js"></script>
     <script src="js/gamelib.js"></script>
-<script src="js/profiles.js"></script>
+    <script src="js/profiles.js"></script>
     <script src="js/home.js"></script>
-    <script src="js/replay.js"></script>
+    <script src="js/replay/helpers.js"></script>
+    <script src="js/replay/state.js"></script>
+    <script src="js/replay/lifecycle.js"></script>
+    <script src="js/replay/library.js"></script>
+    <script src="js/replay/download.js"></script>
+    <script src="js/replay/report.js"></script>
+    <script src="js/replay/performance.js"></script>
+    <script src="js/replay/timeline.js"></script>
+    <script src="js/replay/shops.js"></script>
+    <script src="js/replay/index.js"></script>
     <script src="js/wiki.js"></script>
     <script src="js/settings.js"></script>
-    <script src="js/utilities.js"></script>
-    <script src="js/mods.js"></script>
+    <script src="js/utilities/keys.js"></script>
+    <script src="js/utilities/status.js"></script>
+    <script src="js/utilities/editor.js"></script>
+    <script src="js/utilities/index.js"></script>
+    <script src="js/mods/helpers.js"></script>
+    <script src="js/mods/state.js"></script>
+    <script src="js/mods/lifecycle.js"></script>
+    <script src="js/mods/package.js"></script>
+    <script src="js/mods/status.js"></script>
+    <script src="js/mods/list.js"></script>
+    <script src="js/mods/speedhack.js"></script>
+    <script src="js/mods/config.js"></script>
+    <script src="js/mods/index.js"></script>
     <script src="vendor/marked.umd.js"></script>
     <script src="vendor/purify.min.js"></script>
     <script src="vendor/highlight.min.js"></script>
     <script src="js/markdown.js"></script>
-    <script src="js/stickers.js"></script>
-    <script src="js/workshop.js"></script>
-    <link rel="stylesheet" href="css/character-skins.css" />
-    <script src="js/character-schemes.js"></script>
+    <script src="js/stickers/module.js"></script>
+    <script src="js/workshop/module.js"></script>
+    <script src="js/character-schemes/helpers.js"></script>
+    <script src="js/character-schemes/state.js"></script>
+    <script src="js/character-schemes/schemes.js"></script>
+    <script src="js/character-schemes/binding.js"></script>
+    <script src="js/character-schemes/index.js"></script>
     <script src="js/character-skins.js"></script>
     <script src="js/character-crop.js"></script>
-    <script src="js/skins.js"></script>
-    <script src="js/audio-skins.js"></script>
+    <script src="js/skins/playback.js"></script>
+    <script src="js/skins/state.js"></script>
+    <script src="js/skins/profiles.js"></script>
+    <script src="js/skins/cards.js"></script>
+    <script src="js/skins/dialogs.js"></script>
+    <script src="js/skins/index.js"></script>
+    <script src="js/audio-skins/helpers.js"></script>
+    <script src="js/audio-skins/state.js"></script>
+    <script src="js/audio-skins/schemes.js"></script>
+    <script src="js/audio-skins/items.js"></script>
+    <script src="js/audio-skins/index.js"></script>
     <script src="js/resource-mods.js"></script>
     <script src="js/skin-crop.js"></script>
     <script src="js/app.js"></script>
-    <script src="js/v2-shell.js"></script>
-    <script src="js/v2-replays.js"></script>
-    <script src="js/v2-mods.js"></script>
-    <script src="js/v2-skins.js"></script>
-    <script src="js/v2-characters.js"></script>
-    <script src="js/v2-settings.js"></script>
-    <script src="js/v2-background.js"></script>
+    <script src="js/v2/shell.js"></script>
+    <script src="js/v2/replays.js"></script>
+    <script src="js/v2/mods.js"></script>
+    <script src="js/v2/skins.js"></script>
+    <script src="js/v2/characters.js"></script>
+    <script src="js/v2/settings.js"></script>
+    <script src="js/v2/background.js"></script>
   </body>
 </html>

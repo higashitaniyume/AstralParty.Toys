@@ -56,7 +56,7 @@ public sealed class EmbeddedWebUiTests
     [Theory]
     [InlineData("index.html", "text/html")]
     [InlineData("css/base.css", "text/css")]
-    [InlineData("js/core.js", "application/javascript")]
+    [InlineData("js/core/dispatcher.js", "application/javascript")]
     [InlineData("data/game-version-announcement.json", "application/json")]
     [InlineData("images/astral-party-logo.png", "image/png")]
     public void ContentTypes_MatchExtension(string relativePath, string expected)
@@ -150,7 +150,7 @@ public sealed class EmbeddedWebUiTests
         Assert.Contains("id=\"modSearchInput\"", html);
         Assert.Contains("data-i18n-placeholder=\"mods.search_placeholder\"", html);
 
-        using var jsStream = EmbeddedWebStore.Open("js/mods.js");
+        using var jsStream = EmbeddedWebStore.Open("js/mods/lifecycle.js");
         Assert.NotNull(jsStream);
         using var jsReader = new StreamReader(jsStream!);
         var js = jsReader.ReadToEnd();
@@ -178,7 +178,7 @@ public sealed class EmbeddedWebUiTests
         Assert.Contains("id=\"audioImportOriginalZipBtn\"", html);
         Assert.Contains("id=\"audioImportOriginalZipBtnBar\"", html);
 
-        using var jsStream = EmbeddedWebStore.Open("js/audio-skins.js");
+        using var jsStream = EmbeddedWebStore.Open("js/audio-skins/schemes.js");
         Assert.NotNull(jsStream);
         using var jsReader = new StreamReader(jsStream!);
         var js = jsReader.ReadToEnd();

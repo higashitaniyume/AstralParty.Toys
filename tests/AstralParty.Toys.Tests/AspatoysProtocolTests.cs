@@ -150,13 +150,13 @@ public sealed class AspatoysProtocolTests
     [Fact]
     public void WebUi_OpensExternalModDetailFromProtocolMessage()
     {
-        using var stream = EmbeddedWebStore.Open("js/core.js");
+        using var stream = EmbeddedWebStore.Open("js/core/dispatcher.js");
         Assert.NotNull(stream);
         var core = new StreamReader(stream!).ReadToEnd();
         Assert.Contains("case 'workshopOpenMod':", core);
         Assert.Contains("openExternalMod", core);
 
-        using var workshopStream = EmbeddedWebStore.Open("js/workshop.js");
+        using var workshopStream = EmbeddedWebStore.Open("js/workshop/module.js");
         Assert.NotNull(workshopStream);
         var workshop = new StreamReader(workshopStream!).ReadToEnd();
         Assert.Contains("openExternalMod", workshop);
