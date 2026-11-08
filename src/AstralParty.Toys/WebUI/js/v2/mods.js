@@ -117,7 +117,7 @@
     const enabled = mods().filter(m => m.enabled !== false).length;
     const q = M.q.trim().toLowerCase();
     const list = mods().filter(m => !q || [m.displayName, m.name, m.fileName, m.description, m.author].some(v => String(v ?? '').toLowerCase().includes(q)))
-      .sort((a, b) => isBuiltIn(a) - isBuiltIn(b));   // 自己装的排前面：内置有 20 个，从市场新装的混在中间很难找
+      .sort((a, b) => isBuiltIn(a) - isBuiltIn(b));   // 自己装的排前面：内置有 21 个，从市场新装的混在中间很难找
     // 清理已不存在的勾选（解密后列表已删 / 换游戏目录）
     if (M.sel.size) {
       const valid = new Set(mods().map(m => m.fileName));
