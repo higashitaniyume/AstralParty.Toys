@@ -65,19 +65,23 @@ public partial class HybridWindow
 
     private void HandleSpeedhackBrowse()
     {
-        var current = _speedhackManager.ResolveGameDirectory();
-        var dialog = new OpenFolderDialog
+        string? current = null;
+        try
         {
-            Title = "选择吉星派对游戏目录（AstralParty exe 所在文件夹）",
-            InitialDirectory = current is { Length: > 0 } && Directory.Exists(current) ? current : null
-        };
-        if (dialog.ShowDialog(this) == true && dialog.FolderName is { Length: > 0 })
-        {
-            _gameLibrary.AddDirectory(dialog.FolderName, activate: true);
+            current = _speedhackManager.ResolveGameDirectory();
+            var folder = PickFolderWithFallback(
+                "选择吉星派对游戏目录（AstralParty exe 所在文件夹）",
+                current);
+            if (folder is not { Length: > 0 }) return;
+            _gameLibrary.AddDirectory(folder, activate: true);
             SyncActiveGameToManagers();
-            Post(new { type = "toast", message = $"已选择游戏目录：{dialog.FolderName}" });
+            Post(new { type = "toast", message = $"已选择游戏目录：{folder}" });
             _ = PushGameProfilesAsync();
             _ = PushSpeedhackStatusAsync();
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = $"打开文件夹选择框失败：{ex.Message}（起始目录：{current ?? "（无）"}）" });
         }
     }
 
@@ -225,19 +229,23 @@ public partial class HybridWindow
 
     private void HandleModBrowse()
     {
-        var current = _modManager.ResolveGameDirectory();
-        var dialog = new OpenFolderDialog
+        string? current = null;
+        try
         {
-            Title = "选择吉星派对游戏目录（AstralParty exe 所在文件夹）",
-            InitialDirectory = current is { Length: > 0 } && Directory.Exists(current) ? current : null
-        };
-        if (dialog.ShowDialog(this) == true && dialog.FolderName is { Length: > 0 })
-        {
-            _gameLibrary.AddDirectory(dialog.FolderName, activate: true);
+            current = _modManager.ResolveGameDirectory();
+            var folder = PickFolderWithFallback(
+                "选择吉星派对游戏目录（AstralParty exe 所在文件夹）",
+                current);
+            if (folder is not { Length: > 0 }) return;
+            _gameLibrary.AddDirectory(folder, activate: true);
             SyncActiveGameToManagers();
-            Post(new { type = "toast", message = $"已选择游戏目录：{dialog.FolderName}" });
+            Post(new { type = "toast", message = $"已选择游戏目录：{folder}" });
             _ = PushGameProfilesAsync();
             _ = PushModStatusAsync();
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = $"打开文件夹选择框失败：{ex.Message}（起始目录：{current ?? "（无）"}）" });
         }
     }
 

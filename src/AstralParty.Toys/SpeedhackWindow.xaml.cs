@@ -194,15 +194,92 @@ public partial class SpeedhackWindow : Window
 
     private void BrowseDirButton_Click(object sender, RoutedEventArgs e)
     {
-        var current = _manager.ResolveGameDirectory();
-        var dialog = new OpenFolderDialog
+        string? current = null;
+        try
         {
-            Title = "选择吉星派对游戏目录（AstralParty exe 所在文件夹）",
-            InitialDirectory = current is { Length: > 0 } && Directory.Exists(current) ? current : null
-        };
-        if (dialog.ShowDialog(this) != true || dialog.FolderName is not { Length: > 0 }) return;
-        _manager.SaveStoredGameDirectory(dialog.FolderName);
-        RefreshStatusUi();
+            current = _manager.ResolveGameDirectory();
+            var folder = PickFolderWithFallback(
+                "选择吉星派对游戏目录（AstralParty exe 所在文件夹）",
+                current);
+            if (folder is not { Length: > 0 }) return;
+            _manager.SaveStoredGameDirectory(folder);
+            RefreshStatusUi();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, $"{ex.Message}\n起始目录：{current ?? "（无）"}", "打开文件夹选择框失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private static string? SafeFolderInitialDirectory(string? candidate)
+    {
+        if (string.IsNullOrWhiteSpace(candidate)) return null;
+        try
+        {
+            var full = Path.GetFullPath(candidate.Trim());
+            if (!Directory.Exists(full)) return null;
+            var root = Path.GetPathRoot(full);
+            if (!string.IsNullOrEmpty(root) && string.Equals(full.TrimEnd('\\', '/'), root.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase))
+                return null;
+            if (full.Length > 3 && full.EndsWith("\\", StringComparison.Ordinal))
+                full = full.TrimEnd('\\', '/');
+            return full;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private string? PickFolderWithFallback(string title, string? initialCandidate)
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            string? result = null;
+            Dispatcher.Invoke(() => result = PickFolderWithFallback(title, initialCandidate));
+            return result;
+        }
+        try
+        {
+            var cwd = Environment.CurrentDirectory;
+            if (string.IsNullOrEmpty(cwd) || !Directory.Exists(cwd))
+            {
+                try { Environment.CurrentDirectory = AppContext.BaseDirectory; } catch { }
+            }
+        }
+        catch { }
+        var safeInitial = SafeFolderInitialDirectory(initialCandidate);
+        try
+        {
+            var dialog = new OpenFolderDialog { Title = title };
+            if (!string.IsNullOrEmpty(safeInitial))
+            {
+                try { dialog.InitialDirectory = safeInitial; } catch { }
+            }
+            try
+            {
+                var shown = IsVisible ? dialog.ShowDialog(this) : dialog.ShowDialog();
+                if (shown != true) return null;
+                return dialog.FolderName is { Length: > 0 } folder ? folder : null;
+            }
+            catch (Exception ex) when (ex is System.Runtime.InteropServices.COMException or ArgumentOutOfRangeException)
+            {
+            }
+        }
+        catch { }
+        var fallback = new OpenFolderDialog { Title = title };
+        try
+        {
+            var shown2 = IsVisible ? fallback.ShowDialog(this) : fallback.ShowDialog();
+            if (shown2 != true) return null;
+            return fallback.FolderName is { Length: > 0 } folder2 ? folder2 : null;
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                $"打开文件夹选择框失败：{ex.GetType().Name}（HRESULT 0x{ex.HResult:X8}）：{ex.Message}；起始目录：{initialCandidate ?? "(无)"}",
+                ex);
+        }
     }
 
     private void OpenDirButton_Click(object sender, RoutedEventArgs e)

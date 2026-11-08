@@ -52,27 +52,114 @@ public partial class HybridWindow
         }
     }
 
+    /// <summary>给文件夹对话框准备安全的起始目录。
+    /// WPF 的 OpenFolderDialog 对盘根、尾斜杠或 Shell 解析不了的路径会直接抛
+    /// COM E_INVALIDARG（“Value does not fall within the expected range.”），用户表现为一点按钮、对话框还没弹出来就报错。
+    /// 这里先规范化、拦掉盘根（F:\ 这类根路径交给系统默认位置），其余才作为起始目录。</summary>
+    private static string? SafeFolderInitialDirectory(string? candidate)
+    {
+        if (string.IsNullOrWhiteSpace(candidate)) return null;
+        try
+        {
+            var full = Path.GetFullPath(candidate.Trim());
+            if (!Directory.Exists(full)) return null;
+            var root = Path.GetPathRoot(full);
+            // 盘根（如 F:\）不传给对话框，避免 COM E_INVALIDARG
+            if (!string.IsNullOrEmpty(root) && string.Equals(full.TrimEnd('\\', '/'), root.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase))
+                return null;
+            // 非盘根去掉尾斜杠，框架内部更稳定
+            if (full.Length > 3 && full.EndsWith("\\", StringComparison.Ordinal))
+                full = full.TrimEnd('\\', '/');
+            return full;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>弹文件夹选择框，带一次“去掉起始目录重试”的兜底，避免 InitialDirectory 被 Shell 拒掉时整个功能无响应。
+    /// 同时确保进程当前目录有效（它指向已删/无效目录时 COM 对话框也会报 E_INVALIDARG）。</summary>
+    private string? PickFolderWithFallback(string title, string? initialCandidate)
+    {
+        // COM 文件夹对话框必须在 UI 线程弹
+        if (!Dispatcher.CheckAccess())
+        {
+            string? result = null;
+            Dispatcher.Invoke(() => result = PickFolderWithFallback(title, initialCandidate));
+            return result;
+        }
+        try
+        {
+            var cwd = Environment.CurrentDirectory;
+            if (string.IsNullOrEmpty(cwd) || !Directory.Exists(cwd))
+            {
+                try { Environment.CurrentDirectory = AppContext.BaseDirectory; } catch { }
+            }
+        }
+        catch { }
+        var safeInitial = SafeFolderInitialDirectory(initialCandidate);
+        try
+        {
+            var dialog = new OpenFolderDialog { Title = title };
+            if (!string.IsNullOrEmpty(safeInitial))
+            {
+                try { dialog.InitialDirectory = safeInitial; } catch { /* 保持无起始目录 */ }
+            }
+            try
+            {
+                var shown = IsVisible ? dialog.ShowDialog(this) : dialog.ShowDialog();
+                if (shown != true) return null;
+                return dialog.FolderName is { Length: > 0 } folder ? folder : null;
+            }
+            catch (Exception ex) when (ex is System.Runtime.InteropServices.COMException or ArgumentOutOfRangeException)
+            {
+                // 起始目录被 Shell 拒了，落到兜底重试
+            }
+        }
+        catch { /* 落到兜底 */ }
+        var fallback = new OpenFolderDialog { Title = title };
+        try
+        {
+            var shown2 = IsVisible ? fallback.ShowDialog(this) : fallback.ShowDialog();
+            if (shown2 != true) return null;
+            return fallback.FolderName is { Length: > 0 } folder2 ? folder2 : null;
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                $"打开文件夹选择框失败：{ex.GetType().Name}（HRESULT 0x{ex.HResult:X8}）：{ex.Message}；起始目录：{initialCandidate ?? "(无)"}",
+                ex);
+        }
+    }
+
     private void HandleGameProfileBrowse()
     {
-        var current = _gameLibrary.GetActiveDirectory();
-        var dialog = new OpenFolderDialog
+        string? current = null;
+        try
         {
-            Title = "选择吉星派对游戏目录（AstralParty exe 所在文件夹）",
-            InitialDirectory = current is { Length: > 0 } && Directory.Exists(current) ? current : null
-        };
-        if (dialog.ShowDialog(this) != true || dialog.FolderName is not { Length: > 0 } folder) return;
+            current = _gameLibrary.GetActiveDirectory();
+            var folder = PickFolderWithFallback(
+                "选择吉星派对游戏目录（AstralParty exe 所在文件夹）",
+                current);
+            if (folder is not { Length: > 0 }) return;
 
-        if (GameLibraryService.DetectExe(folder) is null)
-        {
-            Post(new { type = "toast", message = "这个目录里没有检测到游戏主程序。请确认所选目录包含游戏 exe、UnityPlayer.dll 和 *_Data 文件夹。" });
-            return;
+            if (GameLibraryService.DetectExe(folder) is null)
+            {
+                Post(new { type = "toast", message = "这个目录里没有检测到游戏主程序。请确认所选目录包含游戏 exe、UnityPlayer.dll 和 *_Data 文件夹。" });
+                return;
+            }
+            var view = _gameLibrary.AddDirectory(folder, activate: true);
+            SyncActiveGameToManagers();
+            Post(new { type = "toast", message = $"已添加并切换到：{view.Label}" });
+            _ = PushGameProfilesAsync();
+            _ = PushModStatusAsync();
+            _ = PushSpeedhackStatusAsync();
         }
-        var view = _gameLibrary.AddDirectory(folder, activate: true);
-        SyncActiveGameToManagers();
-        Post(new { type = "toast", message = $"已添加并切换到：{view.Label}" });
-        _ = PushGameProfilesAsync();
-        _ = PushModStatusAsync();
-        _ = PushSpeedhackStatusAsync();
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = $"打开文件夹选择框失败：{ex.Message}（起始目录：{current ?? "（无）"}）" });
+        }
     }
 
     private void HandleGameProfileAddPath(string directory, bool activate)

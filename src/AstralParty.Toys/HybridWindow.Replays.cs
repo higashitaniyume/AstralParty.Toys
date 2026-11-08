@@ -281,12 +281,21 @@ public partial class HybridWindow
 
     private void HandleLibraryBrowseRoot()
     {
-        var dialog = new OpenFolderDialog
+        string? current = null;
+        string? folder;
+        try
         {
-            Title = "选择回放库目录（不要和游戏的 Temp\\Replay 选成同一个）",
-            InitialDirectory = Directory.Exists(_libraryService.LibraryRoot) ? _libraryService.LibraryRoot : null
-        };
-        if (dialog.ShowDialog(this) != true || dialog.FolderName is not { Length: > 0 } folder) return;
+            current = _libraryService.LibraryRoot;
+            folder = PickFolderWithFallback(
+                "选择回放库目录（不要和游戏的 Temp\\Replay 选成同一个）",
+                current);
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = $"打开文件夹选择框失败：{ex.Message}（起始目录：{current ?? "（无）"}）" });
+            return;
+        }
+        if (folder is not { Length: > 0 }) return;
         _libraryService.SaveSettings(new ReplayLibrarySettings
         {
             LibraryRoot = folder,
