@@ -14,15 +14,15 @@ public partial class HybridWindow
     private void EmbeddedRequested(object? sender, CoreWebView2WebResourceRequestedEventArgs e)
     {
         var uri = new Uri(e.Request.Uri);
-        if (_webRootIsEmbedded && uri.Host.Equals("app.astral.local", StringComparison.OrdinalIgnoreCase))
+        if (_webRootIsEmbedded && uri.Host.Equals("app.aspatoys.hiynet.localhost", StringComparison.OrdinalIgnoreCase))
             e.Response = CreatePageResponse(uri);
-        else if (uri.Host.Equals("assets.astral.local", StringComparison.OrdinalIgnoreCase))
+        else if (uri.Host.Equals("assets.aspatoys.hiynet.localhost", StringComparison.OrdinalIgnoreCase))
             e.Response = CreateAssetResponse(uri);
-        else if (uri.Host.Equals("characters.astral.local", StringComparison.OrdinalIgnoreCase))
+        else if (uri.Host.Equals("characters.aspatoys.hiynet.localhost", StringComparison.OrdinalIgnoreCase))
             e.Response = CreateCharacterSkinResponse(uri);
-        else if (uri.Host.Equals("skins.astral.local", StringComparison.OrdinalIgnoreCase))
+        else if (uri.Host.Equals("skins.aspatoys.hiynet.localhost", StringComparison.OrdinalIgnoreCase))
             e.Response = CreateSkinResponse(uri);
-        else if (uri.Host.Equals("audio.astral.local", StringComparison.OrdinalIgnoreCase))
+        else if (uri.Host.Equals("audio.aspatoys.hiynet.localhost", StringComparison.OrdinalIgnoreCase))
             e.Response = CreateAudioResponse(uri);
     }
 
@@ -115,18 +115,18 @@ public partial class HybridWindow
     private string AssetUrl(string path)
     {
         if (EmbeddedAssetStore.TryGetRelativePath(path, out var embeddedPath))
-            return "https://assets.astral.local/" + EncodePath(embeddedPath);
+            return "https://assets.aspatoys.hiynet.localhost/" + EncodePath(embeddedPath);
 
         if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return "";
         var relative = Path.GetRelativePath(_assetDirectory, path).Replace('\\', '/');
         if (!relative.StartsWith("../", StringComparison.Ordinal))
-            return "https://assets.astral.local/" + EncodePath(relative);
+            return "https://assets.aspatoys.hiynet.localhost/" + EncodePath(relative);
 
         for (var index = 0; index < _materialDirectories.Count; index++)
         {
             relative = Path.GetRelativePath(_materialDirectories[index], path).Replace('\\', '/');
             if (!relative.StartsWith("../", StringComparison.Ordinal))
-                return $"https://materials{index}.astral.local/" + EncodePath(relative);
+                return $"https://materials{index}.aspatoys.hiynet.localhost/" + EncodePath(relative);
         }
         return "";
     }

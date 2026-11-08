@@ -1,7 +1,7 @@
 ﻿// stickers.js — 贴纸回应：选择器（与网页版一致的行为与外观）+ 模组上的回应药丸
 //
 // 资源从市场下载后本地缓存（宿主 WorkshopService 调 /api/stickers 并缓存 64×64 无损 WebP，
-// 图片经 workshop.astral.local 虚拟域名提供），不再内嵌在程序集里。
+// 图片经 workshop.aspatoys.hiynet.localhost 虚拟域名提供），不再内嵌在程序集里。
 // 计数与点选切换同样走宿主（WorkshopService 调 /api/mod-stickers），
 // 匿名身份与网页版共用 localStorage 键名（ forge.voter / forge.sticker.* ），
 // 两边各自独立（WebView 与浏览器 localStorage 不互通，符合匿名计数）。

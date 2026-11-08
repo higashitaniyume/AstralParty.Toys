@@ -288,7 +288,7 @@ public sealed partial class SkinManager
         card.AnimationFrameCount = animation.FrameCount;
         var firstFrame = animation.Binding + ".frames/000000.png";
         card.PreviewUrl = GetPreviewUrl(skinName, firstFrame, Path.Combine(targetDir, firstFrame));
-        card.AnimationFrameUrlPrefix = $"https://skins.astral.local/{Uri.EscapeDataString(skinName)}/{Uri.EscapeDataString(animation.Binding + ".frames")}/";
+        card.AnimationFrameUrlPrefix = $"https://skins.aspatoys.hiynet.localhost/{Uri.EscapeDataString(skinName)}/{Uri.EscapeDataString(animation.Binding + ".frames")}/";
         card.FileSizeBytes = new FileInfo(manifest).Length + Directory.GetFiles(Path.Combine(targetDir, animation.Binding + ".frames"), "*.png").Sum(f => new FileInfo(f).Length);
         card.LastModified = File.GetLastWriteTime(manifest);
         card.CanRestore = DefaultSkinPackage.Contains(card.FileName);
@@ -300,7 +300,7 @@ public sealed partial class SkinManager
     private static string GetPreviewUrl(string skinName, string fileName, string filePath)
     {
         var encodedFile = string.Join('/', fileName.Replace('\\', '/').Split('/').Select(Uri.EscapeDataString));
-        var url = $"https://skins.astral.local/{Uri.EscapeDataString(skinName)}/{encodedFile}";
+        var url = $"https://skins.aspatoys.hiynet.localhost/{Uri.EscapeDataString(skinName)}/{encodedFile}";
         if (!File.Exists(filePath)) return url;
         // File.Copy 可保留源文件时间；用内容版本避免同尺寸/同时间的新图复用旧地址。
         using var stream = File.OpenRead(filePath);

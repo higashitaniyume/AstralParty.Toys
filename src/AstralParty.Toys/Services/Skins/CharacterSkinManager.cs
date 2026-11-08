@@ -249,7 +249,7 @@ public sealed class CharacterSkinManager
         RemoveActionMappings(m, action);
         Save(game, id, m);
     }
-    public static string Preview(string id, string path) => "https://characters.astral.local/" + Uri.EscapeDataString(id) + "/" + string.Join('/', path.Replace('\\', '/').Split('/').Select(Uri.EscapeDataString));
+    public static string Preview(string id, string path) => "https://characters.aspatoys.hiynet.localhost/" + Uri.EscapeDataString(id) + "/" + string.Join('/', path.Replace('\\', '/').Split('/').Select(Uri.EscapeDataString));
     private static void Atomic(string path, string text)
     {
         string temp = path + ".tmp";

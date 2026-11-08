@@ -56,7 +56,7 @@ winget upgrade Hiynet.AstralParty.Toys
 | 自包含单文件版 | `win-x64-self-contained-single-file.exe` | 自带 .NET 8，单个 EXE 分发 |
 | 框架依赖单文件版 | `win-x64-framework-dependent-single-file.exe` | 单个 EXE 分发，需要 .NET 8 Desktop Runtime |
 
-运行环境：Windows 10/11 x64、Microsoft Edge WebView2 Evergreen Runtime。框架依赖版本还需 [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)。安装器说明见 [安装文档](installer/README.md)。
+运行环境：Windows 10/11 x64、Microsoft Edge WebView2 Evergreen Runtime。框架依赖版本还需 [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)。安装时所选目录必须为空（升级已有安装除外）。安装器说明见 [安装文档](installer/README.md)。
 
 ## 功能
 
@@ -79,7 +79,7 @@ CesiumLoader 随附 20 个内置模组：行为日志、自由相机、变速热
 
 「游戏多开」按档案管理账号数据：每个档案是一套独立的本地账号缓存、存档与回放，切换后由加载器在游戏进程内重定向目录，游戏文件不复制。档案名只支持英文字母、数字和下划线（最多 32 个字符），输入时会实时提示是否合法或重名；每个档案可以写一条备注（保存在档案目录的 `.profile.json` 里）。启动方式上，**默认档案**可选「从 Steam 启动」或「绕过 Steam 启动」，其它档案固定用**绕过 Steam 启动**（换档案就是换账号，不再让 Steam 决定用哪个会话），启动时会同步加载器的 Steam 绕过开关。切换在下次启动游戏时生效；首次使用某个档案时会自动把下载缓存硬链接过去，不必重新下载。PlayerPrefs（分辨率、自动登录标记）与 `Player.log` 不随档案隔离；同时运行多个实例需要不同的 exe 路径，同一账号不能同时在线。
 
-市场默认连接 `https://forge.hiynet.com`，可在「系统设置 → 市场」换成其它部署地址。首次进入会展示第三方模组说明，同意后才会连接市场服务；关闭说明只对本次生效，下次进入会再次询问。模组包可能由作者托管、也可能由市场直接保存，工具箱只负责下载、校验 SHA-256 并安装；随附的内置模组不能从市场安装或覆盖。
+市场默认连接 `https://forge.hiynet.com`，可在「系统设置 → 市场」换成其它部署地址。首次进入会展示第三方模组说明，同意后才会连接市场服务；关闭说明只对本次生效，下次进入会再次询问。模组包可能由作者托管、也可能由市场直接保存，工具箱只负责下载、校验 SHA-256 并安装；随附的内置模组不能从市场安装或覆盖。安装时勾选注册 `aspatoys://` 协议后，网页可通过 `aspatoys://install-mod?id=<模组ID>&version=<版本>`（版本可省略）唤起工具箱打开对应模组详情，由用户确认后再安装；单文件版和便携版不注册该协议。工具箱对外打开的网页链接会带上 `?from=app.aspatoys.hiynet.localhost` 标识来源。
 
 ### 动态卡面
 

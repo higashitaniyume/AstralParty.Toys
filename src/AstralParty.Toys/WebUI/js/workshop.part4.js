@@ -119,6 +119,8 @@
 
       toast(t('workshop.consent_granted'));
       load(1);
+      // 网页唤起时还没同意的：同意完直接续跑到模组详情，不用用户再点一次
+      openExternalModNow();
     },
 
     renderList(payload) {
@@ -169,6 +171,9 @@
       }
 
       if (pendingPage) load(pendingPage);
+
+      // 网页唤起探同意状态的：列表回来且已同意时，续跑到模组详情
+      openExternalModNow();
     },
 
     renderDetail(payload) {

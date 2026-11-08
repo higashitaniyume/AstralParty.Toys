@@ -388,7 +388,7 @@ public sealed partial class AudioSkinSchemeManager
             if (hasOriginal)
             {
                 item.HasOriginal = true;
-                item.OriginalPreviewUrl = $"https://audio.astral.local/original/{c.Id}";
+                item.OriginalPreviewUrl = $"https://audio.aspatoys.hiynet.localhost/original/{c.Id}";
             }
 
             // Check active rule
@@ -404,7 +404,7 @@ public sealed partial class AudioSkinSchemeManager
                 item.RedirectId = matched.RedirectId;
                 if (item.Action == "replace" && !string.IsNullOrEmpty(matched.File))
                 {
-                    item.PreviewUrl = $"https://audio.astral.local/scheme/{Uri.EscapeDataString(schemeId)}/{Uri.EscapeDataString(matched.File)}";
+                    item.PreviewUrl = $"https://audio.aspatoys.hiynet.localhost/scheme/{Uri.EscapeDataString(schemeId)}/{Uri.EscapeDataString(matched.File)}";
                 }
             }
 

@@ -4,9 +4,9 @@ Releases provide two English Inno Setup installers (`...-win-x64-self-contained-
 
 ## Installation and upgrades
 
-Setup installs for the current user without requesting administrator privileges by default (`PrivilegesRequired=lowest`). The default folder is `%LocalAppData%\Programs\AstralParty.Toys`; users can select another writable folder. The interactive directory page probes file creation, writing, and deletion. Protected folders require choosing another folder or explicitly launching Setup with suitable permissions.
+Setup installs for the current user without requesting administrator privileges by default (`PrivilegesRequired=lowest`). The default folder is `%LocalAppData%\Programs\AstralParty.Toys`; users can select another writable folder. The selected folder must be empty; a non-empty folder is rejected unless it already holds a previous Toys install (upgrade). The interactive directory page probes file creation, writing, and deletion. Protected folders require choosing another folder or explicitly launching Setup with suitable permissions.
 
-The Start menu shortcut is selected by default; the desktop shortcut is not. Both are independently selectable. Inno upgrades remember the folder and tasks. Disabling a previously selected task removes only the corresponding Toys shortcut. Downgrades are blocked. The wizard language is English regardless of the Windows display language.
+The Start menu shortcut is selected by default; the desktop shortcut is not. Both are independently selectable. The `aspatoys://` protocol registration (`protocolregistration` task) is also selected by default and can be turned off; Inno upgrades remember the folder and tasks. Disabling a previously selected task removes only the corresponding Toys shortcut. Downgrades are blocked. The wizard language is English regardless of the Windows display language.
 
 The fixed AppId is `{8E9C6C61-5A60-4EF0-AD84-8F59E877A663}`. No legacy installer detection, migration, or removal is performed.
 
@@ -17,6 +17,8 @@ The generated uninstaller displays an English warning before interactive removal
 > Uninstalling AstralParty.Toys will NOT remove CesiumLoader (the Mod loader) or mods from your game folder. To remove the Mod loader, cancel now and remove it from the Mods page in Toys first. Your settings, replays, and skins will also be kept.
 
 The default response is cancellation. Silent uninstall skips interaction. The uninstaller only removes installed files and its shortcuts; it does not search or modify game folders or delete `Documents\AstralPartyReplays`. Avoid wildcard recursive uninstall deletion rules.
+
+When the `protocolregistration` task is selected (the default), the installer registers the `aspatoys://` URL protocol for the current user (`HKCU\Software\Classes\aspatoys`, pointing at the installed exe) so webpages can open Toys at a workshop mod's detail page; uninstalling removes that registration. The portable ZIPs and single-file EXEs do not register the protocol.
 
 ## Local build (PowerShell 7)
 
@@ -31,7 +33,7 @@ Without `-ProductVersion`, the build script reads the application project's `Ver
 
 ```powershell
 # Fresh installation / upgrade, without UAC for writable folders:
-.\AstralParty.Toys-installer.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR="D:\Apps\AstralParty.Toys" /TASKS="startmenuicon,desktopicon" /LOG="install.log"
+.\AstralParty.Toys-installer.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR="D:\Apps\AstralParty.Toys" /TASKS="startmenuicon,desktopicon,protocolregistration" /LOG="install.log"
 # No shortcuts: /TASKS=""
 # Silent uninstall:
 & 'D:\Apps\AstralParty.Toys\unins000.exe' /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /LOG="uninstall.log"

@@ -33,6 +33,7 @@
     progress: null,
     pendingPage: 0,
     consent: 'unknown',
+    externalMod: null,
     details: new Map()
   };
 

@@ -31,7 +31,7 @@
   const schemeOf = id => schemes().find(p => field(p, 'id') === id);
   const rulesOf = p => field(field(p, 'scheme'), 'rules') || [];
   const peopleCount = p => new Set(rulesOf(p).map(r => field(r, 'heroId'))).size;
-  const imageUrl = (pkgId, path) => 'https://characters.astral.local/' + encodeURIComponent(pkgId) + '/' + String(path).split(/[\\/]/).map(encodeURIComponent).join('/');
+  const imageUrl = (pkgId, path) => 'https://characters.aspatoys.hiynet.localhost/' + encodeURIComponent(pkgId) + '/' + String(path).split(/[\\/]/).map(encodeURIComponent).join('/');
   const sendPkg = (type, extra = {}) => { if (CSK()) CSK().selected = C.pkg; post({ type, id: C.pkg, ...extra }); };
 
   /* ---------- 方案列表 ---------- */

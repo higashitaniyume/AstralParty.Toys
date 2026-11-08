@@ -24,9 +24,9 @@ public partial class HybridWindow
         catch (IOException) { /* 清不掉就留到下次，不能影响启动 */ }
         catch (UnauthorizedAccessException) { }
         Directory.CreateDirectory(BackgroundPendingDirectory);
-        // 要用 Allow：页面在 app.astral.local，把视频画到画布再导出 PNG 需要跨域许可
+        // 要用 Allow：页面在 app.aspatoys.hiynet.localhost，把视频画到画布再导出 PNG 需要跨域许可
         WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
-            "backgrounds.astral.local", BackgroundDirectory, CoreWebView2HostResourceAccessKind.Allow);
+            "backgrounds.aspatoys.hiynet.localhost", BackgroundDirectory, CoreWebView2HostResourceAccessKind.Allow);
     }
 
     private bool HandleBackgroundMessage(string? type, JsonElement root)

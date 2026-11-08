@@ -40,6 +40,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Tasks]
 Name: "startmenuicon"; Description: "Create a Start menu shortcut"; GroupDescription: "Shortcuts:"
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Shortcuts:"; Flags: unchecked
+Name: "protocolregistration"; Description: "Register aspatoys:// protocol (let webpages open Toys)"; GroupDescription: "Additional:"
 
 [Files]
 Source: "{#PublishDirectory}\*"; DestDir: "{app}"; Excludes: "LICENSE.txt"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -48,6 +49,13 @@ Source: "{#RepoRoot}\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags:
 [Icons]
 Name: "{userprograms}\AstralParty.Toys\AstralParty.Toys"; Filename: "{app}\AstralParty.Toys.exe"; WorkingDir: "{app}"; Tasks: startmenuicon
 Name: "{userdesktop}\AstralParty.Toys"; Filename: "{app}\AstralParty.Toys.exe"; WorkingDir: "{app}"; Tasks: desktopicon
+
+[Registry]
+; aspatoys:// 协议：网页点安装链接时唤起工具箱（当前用户，不需要管理员）。只在安装时勾选了
+; protocolregistration 任务才注册；卸载时随安装器一起删除。单文件版和便携版不走安装器，不注册。
+Root: HKCU; Subkey: "Software\Classes\aspatoys"; ValueType: string; ValueName: ""; ValueData: "URL:AstralParty.Toys Protocol"; Flags: uninsdeletekey; Check: RegisterProtocol
+Root: HKCU; Subkey: "Software\Classes\aspatoys"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""; Flags: uninsdeletekey; Check: RegisterProtocol
+Root: HKCU; Subkey: "Software\Classes\aspatoys\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AstralParty.Toys.exe"" ""%1"""; Flags: uninsdeletekey; Check: RegisterProtocol
 
 [InstallDelete]
 Type: files; Name: "{userprograms}\AstralParty.Toys\AstralParty.Toys.lnk"; Check: RemoveStartMenuShortcut
@@ -100,6 +108,40 @@ end;
 function RemoveDesktopShortcut(): Boolean;
 begin
   Result := not WizardIsTaskSelected('desktopicon');
+end
+
+function RegisterProtocol(): Boolean;
+begin
+  Result := WizardIsTaskSelected('protocolregistration');
+end;
+
+function IsDirectoryEmpty(const Directory: String): Boolean;
+var
+  FindRec: TFindRec;
+begin
+  Result := True;
+  if FindFirst(AddBackslash(Directory) + '*', FindRec) then
+  begin
+    try
+      repeat
+        if (FindRec.Name <> '.') and (FindRec.Name <> '..') then
+        begin
+          Result := False;
+          Exit;
+        end;
+      until not FindNext(FindRec);
+    finally
+      FindClose(FindRec);
+    end;
+  end;
+end
+
+function IsExistingToysInstall(const Directory: String): Boolean;
+begin
+  { Only a folder that already holds a previous installer-made install
+    (it contains the uninstaller) may be non-empty; any other non-empty
+    folder (Downloads, Documents, a game folder, a portable copy, ...) is rejected. }
+  Result := FileExists(AddBackslash(Directory) + 'unins000.exe');
 end;
 
 function NextButtonClick(CurPageID: Integer): Boolean;
@@ -111,6 +153,10 @@ begin
   if CurPageID <> wpSelectDir then Exit;
   Directory := WizardDirValue;
   WasPresent := DirExists(Directory);
+  if WasPresent and not IsDirectoryEmpty(Directory) and not IsExistingToysInstall(Directory) then begin
+    MsgBox('The selected folder is not empty. Choose an empty folder to install AstralParty.Toys.', mbError, MB_OK);
+    Result := False; Exit;
+  end;
   if not ForceDirectories(Directory) then begin
     MsgBox('This folder cannot be created with your current permissions. Choose another folder, or run Setup with the appropriate permissions.', mbError, MB_OK);
     Result := False; Exit;
@@ -121,6 +167,18 @@ begin
   if not WasPresent then RemoveDir(Directory);
   if not Result then
     MsgBox('This folder cannot be written to or cleaned up with your current permissions. Choose another folder.', mbError, MB_OK);
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  Directory: String;
+begin
+  { Silent installs skip the wizard page above, so check again here: the target
+    folder must be empty unless it already holds a previous Toys install. }
+  Result := '';
+  Directory := WizardDirValue;
+  if DirExists(Directory) and not IsDirectoryEmpty(Directory) and not IsExistingToysInstall(Directory) then
+    Result := 'The selected folder is not empty. Choose an empty folder to install AstralParty.Toys.';
 end;
 
 function InitializeUninstall(): Boolean;

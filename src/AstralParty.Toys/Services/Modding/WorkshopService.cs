@@ -11,7 +11,7 @@ namespace AstralParty.Toys.Services.Modding;
 /// 市场客户端：拉取 Forge 的模组目录、缓存封面、下载作者托管的模组包。
 ///
 /// 所有网络访问都留在 WPF 宿主里（页面只收到已经整理好的数据），封面通过
-/// <c>https://workshop.astral.local/{name}.webp</c> 虚拟域名提供给页面。
+/// <c>https://workshop.aspatoys.hiynet.localhost/{name}.webp</c> 虚拟域名提供给页面。
 /// </summary>
 public sealed partial class WorkshopService
 {
@@ -19,7 +19,7 @@ public sealed partial class WorkshopService
     public const string DefaultBaseUrl = "https://forge.hiynet.com";
 
     /// <summary>封面的虚拟域名（页面用 &lt;img&gt; 直接引用）。</summary>
-    public const string CoverOrigin = "https://workshop.astral.local/";
+    public const string CoverOrigin = "https://workshop.aspatoys.hiynet.localhost/";
 
     /// <summary>单张封面上限，与 Forge 的管理端限制一致。</summary>
     public const int MaxCoverBytes = 8 * 1024 * 1024;
@@ -68,7 +68,7 @@ public sealed partial class WorkshopService
 
     private string CoverRoot => CoverDirectoryOverride ?? CoverDirectory;
 
-    /// <summary>贴纸图片缓存根：虚拟域名 <c>workshop.astral.local</c> 下的 <c>stickers/</c> 子目录。</summary>
+    /// <summary>贴纸图片缓存根：虚拟域名 <c>workshop.aspatoys.hiynet.localhost</c> 下的 <c>stickers/</c> 子目录。</summary>
     private string StickerRoot => Path.Combine(CoverRoot, "stickers");
 
     /// <summary>贴纸目录的离线缓存文件（原始 JSON，图片仍走文件缓存）。</summary>
@@ -230,7 +230,7 @@ public sealed partial class WorkshopService
 
     /// <summary>
     /// 读取贴纸目录，并把每张贴纸的图片下载到本地缓存，返回的 <see cref="StickerCatalogItem.ImageUrl"/>
-    /// 是 <c>https://workshop.astral.local/stickers/…</c> 本地缓存地址（失败的为空，页面显示占位）。
+    /// 是 <c>https://workshop.aspatoys.hiynet.localhost/stickers/…</c> 本地缓存地址（失败的为空，页面显示占位）。
     /// 网络失败时回退到上次成功下载的目录缓存。
     /// </summary>
     public async Task<StickerCatalogResponse> GetStickerCatalogAsync(

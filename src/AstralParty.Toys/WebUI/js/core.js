@@ -395,6 +395,11 @@ host?.addEventListener('message', event => {
       window.WorkshopModule?.renderDetail(msg.payload);
       break;
 
+    case 'workshopOpenMod':
+      // 网页点 aspatoys://install-mod 唤起：打开模组详情，由用户确认安装
+      window.WorkshopModule?.openExternalMod?.(msg.payload);
+      break;
+
     case 'workshopProgress':
       window.WorkshopModule?.renderProgress(msg.payload);
       break;

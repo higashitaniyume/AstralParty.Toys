@@ -156,8 +156,8 @@
       const portraits = AppState.homeData?.portraits;
       if (!portraits?.length) {
         const fallbackPortraits = [
-          { id: 'UT_Hero_Card_306', heroId: 306, heroName: '橘雪莉', url: 'https://assets.astral.local/Portraits/UT_Hero_Card_306.png' },
-          { id: 'UT_Hero_Card_305', heroId: 305, heroName: '远野汉娜', url: 'https://assets.astral.local/Portraits/UT_Hero_Card_305.png' }
+          { id: 'UT_Hero_Card_306', heroId: 306, heroName: '橘雪莉', url: 'https://assets.aspatoys.hiynet.localhost/Portraits/UT_Hero_Card_306.png' },
+          { id: 'UT_Hero_Card_305', heroId: 305, heroName: '远野汉娜', url: 'https://assets.aspatoys.hiynet.localhost/Portraits/UT_Hero_Card_305.png' }
         ];
         const portrait = fallbackPortraits[Math.floor(Math.random() * fallbackPortraits.length)];
         AppState.currentPortrait = portrait;
@@ -195,7 +195,7 @@
         img.alt = item.heroName;
         img.onload = () => { img.style.opacity = '1'; };
         img.onerror = () => {
-          img.src = `https://assets.astral.local/Characters/${item.heroId}.webp`;
+          img.src = `https://assets.aspatoys.hiynet.localhost/Characters/${item.heroId}.webp`;
           img.style.opacity = '1';
         };
       }, 120);

@@ -90,13 +90,13 @@ public partial class HybridWindow : Window
                 // 注意：被 SetVirtualHostNameToFolderMapping 映射过的域名不会触发 WebResourceRequested，
                 // 所以磁盘映射与内嵌拦截这两条路是互斥的，按上面判定二选一。
                 WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
-                    "app.astral.local", webRoot, CoreWebView2HostResourceAccessKind.DenyCors);
+                    "app.aspatoys.hiynet.localhost", webRoot, CoreWebView2HostResourceAccessKind.DenyCors);
             }
             else
             {
                 _webRootIsEmbedded = true;
                 WebView.CoreWebView2.AddWebResourceRequestedFilter(
-                    "https://app.astral.local/*", CoreWebView2WebResourceContext.All);
+                    "https://app.aspatoys.hiynet.localhost/*", CoreWebView2WebResourceContext.All);
             }
 
             // 内嵌素材（PackedAssets）始终走拦截。
@@ -105,21 +105,21 @@ public partial class HybridWindow : Window
             // 处理器按 host 分派——分成两个处理器的话，后一个会把前一个的响应覆盖成 404（实测：主文档被覆盖成 404，
             // 导航直接失败并落到 Chromium 错误页）。
             WebView.CoreWebView2.AddWebResourceRequestedFilter(
-                "https://assets.astral.local/*", CoreWebView2WebResourceContext.Image);
+                "https://assets.aspatoys.hiynet.localhost/*", CoreWebView2WebResourceContext.Image);
             WebView.CoreWebView2.AddWebResourceRequestedFilter(
-                "https://skins.astral.local/*", CoreWebView2WebResourceContext.Image);
+                "https://skins.aspatoys.hiynet.localhost/*", CoreWebView2WebResourceContext.Image);
             WebView.CoreWebView2.AddWebResourceRequestedFilter(
-                "https://characters.astral.local/*", CoreWebView2WebResourceContext.Image);
+                "https://characters.aspatoys.hiynet.localhost/*", CoreWebView2WebResourceContext.Image);
             WebView.CoreWebView2.AddWebResourceRequestedFilter(
-                "https://audio.astral.local/*", CoreWebView2WebResourceContext.All);
+                "https://audio.aspatoys.hiynet.localhost/*", CoreWebView2WebResourceContext.All);
             WebView.CoreWebView2.WebResourceRequested += EmbeddedRequested;
             for (var index = 0; index < _materialDirectories.Count; index++)
                 WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
-                    $"materials{index}.astral.local", _materialDirectories[index], CoreWebView2HostResourceAccessKind.Allow);
+                    $"materials{index}.aspatoys.hiynet.localhost", _materialDirectories[index], CoreWebView2HostResourceAccessKind.Allow);
             // 市场封面：宿主下载到本地缓存目录，页面只读这个虚拟域名。
             WorkshopService.EnsureCoverDirectory();
             WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
-                "workshop.astral.local", WorkshopService.CoverDirectory, CoreWebView2HostResourceAccessKind.DenyCors);
+                "workshop.aspatoys.hiynet.localhost", WorkshopService.CoverDirectory, CoreWebView2HostResourceAccessKind.DenyCors);
             MapBackgroundHost();
             WebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
             WebView.CoreWebView2.Settings.IsStatusBarEnabled = false;
@@ -131,13 +131,13 @@ public partial class HybridWindow : Window
             };
             WebView.CoreWebView2.NavigationStarting += (_, args) =>
             {
-                if (!args.Uri.StartsWith("https://app.astral.local/", StringComparison.OrdinalIgnoreCase))
+                if (!args.Uri.StartsWith("https://app.aspatoys.hiynet.localhost/", StringComparison.OrdinalIgnoreCase))
                 {
                     args.Cancel = true;
                     TryOpenExternal(args.Uri);
                 }
             };
-            WebView.Source = new Uri("https://app.astral.local/index.html");
+            WebView.Source = new Uri("https://app.aspatoys.hiynet.localhost/index.html");
         }
         catch (Exception ex)
         {

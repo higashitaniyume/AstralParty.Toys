@@ -6,6 +6,7 @@ using System.Windows;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
 using AstralParty.Toys.Models;
+using AstralParty.Toys.Services.App;
 
 namespace AstralParty.Toys;
 
@@ -13,7 +14,7 @@ public partial class HybridWindow
 {
     private async void WebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
-        if (!e.Source.StartsWith("https://app.astral.local/", StringComparison.OrdinalIgnoreCase)) return;
+        if (!e.Source.StartsWith("https://app.aspatoys.hiynet.localhost/", StringComparison.OrdinalIgnoreCase)) return;
         try
         {
             using var document = JsonDocument.Parse(e.WebMessageAsJson);
@@ -63,6 +64,7 @@ public partial class HybridWindow
                     ScheduleStartupUpdateCheck();
                     var args = Environment.GetCommandLineArgs();
                     if (args.Length > 1 && File.Exists(args[1])) await LoadReplayAsync(args[1]);
+                    HandleProtocolArguments(args);
                     break;
                 case "getHomeData":
                     Post(new { type = "homeData", payload = _homeDataService.GetHomeData() });
@@ -846,6 +848,26 @@ public partial class HybridWindow
         }
     }
 
+    /// <summary>
+    /// 处理网页点 <c>aspatoys://install-mod?id=…</c> 唤起时传进来的命令行参数。
+    /// 只打开工坊详情页，由用户在详情页点安装才真正安装；链接格式不对时提示一句，不静默吞掉。
+    /// </summary>
+    private void HandleProtocolArguments(string[] args)
+    {
+        foreach (var arg in args.Skip(1))
+        {
+            if (!AspatoysProtocol.IsProtocolUrl(arg)) continue;
+            if (AspatoysProtocol.TryParseInstallMod(arg, out var modId, out var version))
+            {
+                Post(new { type = "workshopOpenMod", payload = new { id = modId, version = version ?? "" } });
+            }
+            else
+            {
+                Post(new { type = "toast", message = "这个 aspatoys 链接格式不对，打不开模组详情。" });
+            }
+        }
+    }
+
     private void TryOpenExternal(string? url)
     {
         if (string.IsNullOrWhiteSpace(url)) return;
@@ -854,7 +876,10 @@ public partial class HybridWindow
             if (Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
                 (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
             {
-                Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
+                // 对外跳转统一带上工具箱内部域名（?from=app.aspatoys.hiynet.localhost）标识来源；
+                // steam://、taptap:// 这类游戏启动协议不走这里，不受影响。
+                var target = AspatoysProtocol.WithInternalOrigin(uri.AbsoluteUri) ?? uri.AbsoluteUri;
+                Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
             }
         }
         catch (Exception ex)

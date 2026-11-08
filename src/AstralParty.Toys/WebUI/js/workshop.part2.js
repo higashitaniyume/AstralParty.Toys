@@ -145,7 +145,7 @@
     return /^https?:\/\//i.test(text) ? text : '';
   }
 
-  function openDetail(id) {
+  function openDetail(id, tab) {
     if (state.consent !== 'granted') {
       openConsentModal();
       return;
@@ -155,7 +155,7 @@
     const listScroll = document.querySelector('#workshopView .workshop-scroll');
     state.listScrollTop = listScroll ? listScroll.scrollTop : 0;
     state.detailId = id;
-    state.detailTab = 'details';
+    state.detailTab = tab || 'details';
     state.detailError = '';
 
     const cached = state.details.get(id);
@@ -165,6 +165,37 @@
     renderDetailPage();
 
     if (!cached) post({ type: 'workshopDetail', id });
+  }
+
+  // 网页点 aspatoys://install-mod 唤起：只打开详情页，由用户在详情页确认安装。
+  // 指定了版本时直接停在「版本」页签，方便找到那个版本的安装按钮；没指定就停在「详情」。
+  function openExternalModRequest(payload) {
+    const id = String(payload?.id || '').trim();
+    const version = String(payload?.version || '').trim();
+    if (!id) {
+      toast('这个 aspatoys 链接里没有模组 ID，打不开模组详情。');
+      return;
+    }
+    state.externalMod = { id, version };
+
+    if (state.consent === 'granted') {
+      openExternalModNow();
+      return;
+    }
+    if (state.consent === 'required') {
+      openConsentModal();
+      return;
+    }
+    // 还不知道同意状态：拉一次列表探一下，宿主会回列表（已同意）或同意要求（未同意），
+    // 两种回复都会续跑下面的详情打开。
+    load(1);
+  }
+
+  function openExternalModNow() {
+    const pending = state.externalMod;
+    if (!pending?.id || state.consent !== 'granted') return;
+    state.externalMod = null;
+    openDetail(pending.id, pending.version ? 'versions' : 'details');
   }
 
   function backToList() {

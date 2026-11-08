@@ -260,6 +260,10 @@
   }
 
   const WorkshopModule = {
+    openExternalMod(payload) {
+      openExternalModRequest(payload);
+    },
+
     init() {
       if (this.initialized) return;
       this.initialized = true;
