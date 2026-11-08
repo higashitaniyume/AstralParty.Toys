@@ -81,6 +81,7 @@ public static class GitHubMirrorHelper
     {
         if (string.IsNullOrWhiteSpace(url)) return false;
         return url.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase)
+            || url.StartsWith("https://api.github.com/", StringComparison.OrdinalIgnoreCase)
             || url.StartsWith("https://raw.githubusercontent.com/", StringComparison.OrdinalIgnoreCase)
             || url.StartsWith("https://objects.githubusercontent.com/", StringComparison.OrdinalIgnoreCase);
     }

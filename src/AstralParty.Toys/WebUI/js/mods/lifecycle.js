@@ -87,7 +87,7 @@
       });
 
       $('modCheckUpdateBtn')?.addEventListener('click', () => {
-        this.updateInfo = { state: 'checking', latest: this.updateInfo.latest, error: '' };
+        this.updateInfo = { ...(this.updateInfo || {}), state: 'checking', error: '' };
         this.setBusy('modCheckUpdateBtn', '检查中…');
         this.renderUpdateInfo();
         post({

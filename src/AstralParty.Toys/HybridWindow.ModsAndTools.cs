@@ -622,7 +622,8 @@ public partial class HybridWindow
     // ============================== Mod 加载器：联网更新 ==============================
 
     /// <summary>只把「最新版本号」回推给界面 —— 版本三栏的「GitHub 最新」栏与结论都由前端自己算，
-    /// 这里不再拼一句 toast 文案（同一个结论说两遍，用户反而要自己对齐两个说法）。</summary>
+    /// 这里不再拼一句 toast 文案（同一个结论说两遍，用户反而要自己对齐两个说法）。
+    /// 轻量走 GitHub API（不下载整个发布包）；API 失败才下载发布包读清单兜底。</summary>
     private async Task HandleModCheckUpdateAsync(string? mirrorType = null, string? customMirrorUrl = null)
     {
         try
@@ -630,9 +631,18 @@ public partial class HybridWindow
             var settings = _libraryService.Settings;
             var mirror = !string.IsNullOrEmpty(mirrorType) ? mirrorType : settings.GitHubMirrorType;
             var custom = customMirrorUrl ?? settings.CustomGitHubMirrorUrl;
-            var bytes = await _modManager.DownloadLatestPackageAsync(mirror, custom).ConfigureAwait(true);
-            var manifest = ModManager.ParsePackageManifest(bytes);
-            Post(new { type = "modUpdateCheck", payload = new { latest = manifest?.Version ?? "" } });
+            var info = await _modManager.GetLatestVersionAsync(mirror, custom).ConfigureAwait(true);
+            Post(new
+            {
+                type = "modUpdateCheck",
+                payload = new
+                {
+                    latest = info.Version ?? "",
+                    tag = info.Tag ?? "",
+                    publishedAt = info.PublishedAt ?? "",
+                    htmlUrl = info.HtmlUrl ?? ""
+                }
+            });
             _ = PushModStatusAsync();
         }
         catch (Exception ex)

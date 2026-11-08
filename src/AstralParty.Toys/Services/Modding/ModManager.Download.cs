@@ -22,6 +22,17 @@ public sealed partial class ModManager
     public const string LatestPackageUrl =
         "https://github.com/higashitaniyume/CesiumLoader/releases/latest/download/cesium-loader.zip";
 
+    /// <summary>CesiumLoader 最新 Release 的 API 地址（轻量检查：只取 tag_name，不下载整个 ZIP）。</summary>
+    public const string LatestReleaseApiUrl =
+        "https://api.github.com/repos/higashitaniyume/CesiumLoader/releases/latest";
+
+    /// <summary>CesiumLoader 最新 Release 的页面地址（界面「打开 GitHub Release」用）。</summary>
+    public const string LatestReleaseUrl =
+        "https://github.com/higashitaniyume/CesiumLoader/releases/latest";
+
+    /// <summary>CesiumLoader 发布 tag 前缀（<c>modloader-&lt;版本&gt;</c>，见加载器 CHANGELOG）。</summary>
+    public const string ReleaseTagPrefix = "modloader-";
+
     /// <summary>Toys 仓库（取仓库根 CHANGELOG.md 当作工具箱更新日志）。</summary>
     public const string AppRepo = "higashitaniyume/AstralParty.Toys";
 
@@ -115,6 +126,136 @@ public sealed partial class ModManager
             return "";
         }
     }
+
+    /// <summary>把 Release tag（如 <c>modloader-3.3.2</c>）转成版本号（<c>3.3.2</c>）。
+    /// 认 <c>modloader-</c> 前缀大小写与可选的 <c>v</c> 前缀；空 / null → 空串。</summary>
+    public static string ParseReleaseVersion(string? tag)
+    {
+        var text = (tag ?? "").Trim();
+        if (text.StartsWith(ReleaseTagPrefix, StringComparison.OrdinalIgnoreCase))
+            text = text.Substring(ReleaseTagPrefix.Length);
+        text = text.TrimStart('v', 'V').Trim();
+        return text;
+    }
+
+    /// <summary>解析 GitHub API 的 Release JSON（<c>tag_name</c> / <c>html_url</c> / <c>published_at</c>）。
+    /// 解析失败 → null；没有可用 tag_name 也 → null（调用方再兜底下载发布包）。</summary>
+    public static LoaderLatestReleaseInfo? ParseLatestReleaseJson(string json)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            var root = document.RootElement;
+            var tag = root.TryGetProperty("tag_name", out var tagElement) ? tagElement.GetString() ?? "" : "";
+            var version = ParseReleaseVersion(tag);
+            if (string.IsNullOrEmpty(version)) return null;
+            return new LoaderLatestReleaseInfo
+            {
+                Version = version,
+                Tag = string.IsNullOrWhiteSpace(tag) ? ReleaseTagPrefix + version : tag.Trim(),
+                PublishedAt = root.TryGetProperty("published_at", out var publishedElement) ? publishedElement.GetString() ?? "" : "",
+                HtmlUrl = root.TryGetProperty("html_url", out var urlElement) ? urlElement.GetString() ?? "" : ""
+            };
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>轻量查询 GitHub 最新 Release 版本（不下载整个发布包；client 仅供测试注入）。
+    /// 先走 GitHub API（按所选镜像优先、直连兜底），失败再下载发布包读清单兜底。
+    /// 全部失败时抛 <see cref="InvalidOperationException"/>（含各通道的错误摘要）。</summary>
+    public async Task<LoaderLatestReleaseInfo> GetLatestVersionAsync(
+        string? mirrorType = null,
+        string? customMirrorUrl = null,
+        HttpClient? client = null,
+        CancellationToken cancellationToken = default)
+    {
+        var http = client ?? Http;
+        var errors = new List<string>();
+
+        var mirrored = string.IsNullOrEmpty(mirrorType)
+            ? LatestReleaseApiUrl
+            : GitHubMirrorHelper.ApplyMirror(LatestReleaseApiUrl, mirrorType, customMirrorUrl);
+        var candidates = new List<string>();
+        // 用户选了镜像就先走镜像（尊重设置），再直连兜底；选了直连就只走直连。
+        if (!string.Equals(mirrored, LatestReleaseApiUrl, StringComparison.OrdinalIgnoreCase))
+        {
+            candidates.Add(mirrored);
+            candidates.Add(LatestReleaseApiUrl);
+        }
+        else
+        {
+            candidates.Add(LatestReleaseApiUrl);
+        }
+
+        foreach (var url in candidates)
+        {
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Accept.ParseAdd("application/vnd.github+json");
+                if (!request.Headers.Contains("User-Agent"))
+                    request.Headers.TryAddWithoutValidation("User-Agent", "AstralParty.Toys/" + Assembly.GetName().Version);
+                using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                if (!response.IsSuccessStatusCode)
+                {
+                    errors.Add($"{ShortUrl(url)}：HTTP {(int)response.StatusCode}");
+                    continue;
+                }
+                var text = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                var info = ParseLatestReleaseJson(text);
+                if (info is not null && !string.IsNullOrEmpty(info.Version))
+                    return info;
+                errors.Add($"{ShortUrl(url)}：响应里没有可用的 tag_name");
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"{ShortUrl(url)}：{ex.Message}");
+            }
+        }
+
+        // API 配额 / 临时故障时的兜底：下载发布包读清单（体积小，约数 MB）。
+        try
+        {
+            var bytes = await DownloadLatestPackageAsync(mirrorType, customMirrorUrl, client, cancellationToken).ConfigureAwait(false);
+            var manifest = ParsePackageManifest(bytes);
+            if (manifest is not null && !string.IsNullOrEmpty(manifest.Version))
+            {
+                var version = ParseReleaseVersion(manifest.Version);
+                if (!string.IsNullOrEmpty(version))
+                {
+                    return new LoaderLatestReleaseInfo
+                    {
+                        Version = version,
+                        Tag = ReleaseTagPrefix + version,
+                        PublishedAt = "",
+                        HtmlUrl = LatestReleaseUrl
+                    };
+                }
+            }
+            errors.Add("发布包回退：清单里没有可用的 version");
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            errors.Add($"发布包回退：{ex.Message}");
+        }
+
+        throw new InvalidOperationException("无法确认 GitHub 最新版本：" + string.Join("；", errors));
+    }
+
+    /// <summary>错误归因用的短名称：api.github.com 与其镜像代理地址统一叫「GitHub API」。</summary>
+    private static string ShortUrl(string url)
+        => url.Contains("api.github.com", StringComparison.OrdinalIgnoreCase) ? "GitHub API" : "GitHub";
 
     /// <summary>下载最新发布包到字节数组（不落盘）。网络异常/无 Release 时抛异常。</summary>
     public Task<byte[]> DownloadLatestPackageAsync(CancellationToken cancellationToken)

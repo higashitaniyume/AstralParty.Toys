@@ -13,6 +13,24 @@
   const busy = () => !!(MM()?.busy || MM()?.recoveryBusy || MM()?.packageImportPending);
   const latest = () => MM()?.updateInfo?.latest || '';
   const checking = () => MM()?.updateInfo?.state === 'checking';
+  const updateInfo = () => MM()?.updateInfo || {};
+  const ghError = () => updateInfo().error || '';
+  const ghCheckedAt = () => updateInfo().checkedAt || 0;
+  const ghHtmlUrl = () => updateInfo().htmlUrl || 'https://github.com/higashitaniyume/CesiumLoader/releases/latest';
+  const ghPublishedAt = () => updateInfo().publishedAt || '';
+  const githubPillText = () => {
+    if (checking()) return '检查中…';
+    if (latest()) return 'v' + latest();
+    if (ghError()) return '检查失败';
+    return '未检查';
+  };
+  const checkedAtLabel = () => {
+    const ts = ghCheckedAt();
+    if (!ts) return '';
+    const d = new Date(ts);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
 
   function cmpVer(a, b) {
     const pa = String(a).replace(/^v/i, '').split(/[.-]/).map(n => parseInt(n, 10) || 0);
@@ -56,7 +74,14 @@
     const head = (primary) => {
       const open = s?.gameDirectory;
       const bNow = busy();
+      const canReinstall = open && !bNow && s?.bundleLoaderPresent !== false;
+      const embeddedSuffix = s?.embeddedVersion ? ` v${esc(s.embeddedVersion)}` : '';
+      const chk = checking();
+      const checkLabel = chk ? '检查中…' : (latest() ? `GitHub 最新 v${esc(latest())}` : '检查 GitHub 更新');
+      const checkTitle = latest() ? `GitHub 最新 v${latest()}${checkedAtLabel() ? `（${checkedAtLabel()} 检查）` : ''}，点按重新检查` : '向 GitHub 查询 CesiumLoader 最新版本';
       return `<div class="v2-head"><h1>模组</h1><span class="v2-top-spacer"></span>
+      <button class="v2-btn primary" data-v2m="reinstallTop" ${canReinstall ? '' : 'disabled'} title="安装本程序内置的 CesiumLoader${embeddedSuffix}（含内置模组）">${I().download}重新安装内置版本</button>
+      <button class="v2-btn line" data-v2m="checkTop" ${bNow || chk ? 'disabled' : ''} title="${esc(checkTitle)}">${I().refresh}${checkLabel}</button>
       <button class="v2-btn line" data-v2m="openMods" ${open ? '' : 'disabled'}>${I().folder}打开 Mod 文件夹</button>
       <button class="v2-btn line" data-v2m="openLogs" ${open ? '' : 'disabled'}>${I().folder}打开日志文件夹</button>
       <button class="v2-btn line" data-v2m="openGame" ${open ? '' : 'disabled'}>${I().folder}打开游戏文件夹</button>
@@ -119,6 +144,7 @@
             <div class="v2-version-pills" aria-label="当前安装的加载器与 SDK 版本">
               <span class="v2-version-pill" title="当前游戏目录安装的 CesiumLoader 版本"><span class="k">加载器</span><b>v${esc(loaderVersionText)}</b></span>
               <span class="v2-version-pill" title="加载器随包 SDK / doorstop_config 中的 sdkVersion"><span class="k">SDK</span><b>v${esc(sdkVersionText)}</b>${embeddedSdkText ? `<span class="v2-muted">${esc(embeddedSdkText)}</span>` : ''}</span>
+              <span class="v2-version-pill" title="GitHub 最新 Release（点「检查 GitHub 更新」获取）"><span class="k">GitHub 最新</span><b>${esc(githubPillText())}</b>${latest() && checkedAtLabel() ? `<span class="v2-muted">${esc(checkedAtLabel())} 检查</span>` : ''}</span>
             </div>
           </div>
           ${btn}
@@ -177,8 +203,8 @@
         <summary><div class="t"><b>高级操作</b><small>版本、目录、发布包、停用与卸载</small></div>${I().down}</summary>
         <div class="v2-adv">
           ${s.installed && !s.loaderManaged ? `<div class="v2-notice" style="margin:0 18px 12px">${I().info}<span>游戏目录里的 version.dll 不是本工具装的。要换成 CesiumLoader，用下面的「覆盖安装」；只想清掉就用「强制卸载」。</span></div>` : ''}
-          <div class="v2-row"><span class="n">版本</span><span class="d">已装 ${esc(s.installedVersion || '—')} · 程序内置 ${esc(s.embeddedVersion || '—')} · GitHub ${esc(latest() || '未检查')}</span>
-            <button class="v2-btn line" data-v2m="changelog">更新日志</button></div>
+          <div class="v2-row"><span class="n">版本</span><span class="d">已装 ${esc(s.installedVersion || '—')} · 程序内置 ${esc(s.embeddedVersion || '—')} · GitHub <b>${esc(latest() ? 'v' + latest() : (checking() ? '检查中…' : (ghError() ? '检查失败' : '未检查')))}</b>${latest() && checkedAtLabel() ? ` <span class="v2-muted">${esc(checkedAtLabel())} 检查</span>` : ''}${latest() && ghPublishedAt() ? ` <span class="v2-muted">· 发布于 ${esc(ghPublishedAt().slice(0, 10))}</span>` : ''}${ghError() ? ` <span class="v2-muted" title="${esc(ghError())}">（点重新检查）</span>` : ''}</span>
+            <button class="v2-btn line" data-v2m="checkTop" ${b || checking() ? 'disabled' : ''}>检查 GitHub 更新</button><button class="v2-btn line" data-v2m="changelog">更新日志</button><a class="v2-btn line" href="${esc(ghHtmlUrl())}" target="_blank" rel="noopener" title="${esc(ghHtmlUrl())}" style="text-decoration:none">GitHub ↗</a></div>
           <div class="v2-row"><span class="n">游戏目录</span><span class="d" style="font-family:var(--v2-mono);font-size:12px">${esc(s.gameDirectory || '未找到')}</span>
             <button class="v2-btn line" data-v2m="dirMenu" data-v2menu>更改…</button></div>
           <div class="v2-row"><span class="n">打开文件夹</span><span class="d">mods / SDK / 日志</span><button class="v2-btn line" data-v2m="openMenu" data-v2menu>选择…</button></div>
@@ -316,10 +342,12 @@
     update: () => { const st = status(), foreign = st?.installed && !st?.loaderManaged; post({ type: 'modDownloadUpdate', overwriteDll: !!foreign, allowDowngrade: false }); },
     check: () => {
       const mm = MM(); if (!mm) return;
-      mm.updateInfo = { state: 'checking', latest: mm.updateInfo.latest, error: '' };
+      mm.updateInfo = { ...(mm.updateInfo || {}), state: 'checking', error: '' };
       post({ type: 'modCheckUpdate' });
       render();
     },
+    checkTop: () => actions.check(),
+    reinstallTop: () => actions.reinstall(),
     manageGames: () => showPage('settings'),
     adv: () => { const d = $('v2ModsAdv'); if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth' }); } },
     loaderSettings: () => MM()?.openLoaderSettings(),

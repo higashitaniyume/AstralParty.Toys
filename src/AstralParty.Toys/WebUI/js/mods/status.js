@@ -239,10 +239,18 @@
       this.clearBusy();
       if (!payload) return;
       if (payload.error) {
-        this.updateInfo = { state: 'done', latest: '', error: `检查失败：${payload.error}` };
+        this.updateInfo = { state: 'done', latest: '', tag: '', publishedAt: '', htmlUrl: '', checkedAt: Date.now(), error: `检查失败：${payload.error}` };
         toast(`检查更新失败：${payload.error}`);
       } else {
-        this.updateInfo = { state: 'done', latest: payload.latest || '', error: '' };
+        this.updateInfo = {
+          state: 'done',
+          latest: payload.latest || '',
+          tag: payload.tag || '',
+          publishedAt: payload.publishedAt || '',
+          htmlUrl: payload.htmlUrl || '',
+          checkedAt: Date.now(),
+          error: ''
+        };
       }
       this.renderUpdateInfo();
     },
