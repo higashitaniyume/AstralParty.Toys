@@ -66,7 +66,24 @@ jobs:
         run: |
           $zipUrl = "https://github.com/higashitaniyume/CesiumLoader/releases/latest/download/cesium-loader.zip"
           $zipPath = "$env:TEMP/cesium-loader-latest.zip"
-          Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing
+          # GitHub /releases/latest/download may intermittently return 504 (observed across parallel matrix jobs).
+          # Retry with backoff instead of failing the whole release on one thundering-herd download.
+          $attempt = 0
+          $maxAttempts = 5
+          $downloaded = $false
+          while (-not $downloaded -and $attempt -lt $maxAttempts) {
+            $attempt++
+            try {
+              Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing
+              $downloaded = $true
+            } catch {
+              if ($attempt -ge $maxAttempts) { throw }
+              $delaySeconds = 10 * $attempt + (Get-Random -Minimum 0 -Maximum 10)
+              Write-Host "Download attempt $attempt failed ($($_.Exception.Message)), retry in ${delaySeconds}s"
+              Start-Sleep -Seconds $delaySeconds
+            }
+          }
+          if (-not $downloaded) { throw "Failed to download CesiumLoader package." }
           $extract = "$env:TEMP/cesium-loader-latest"
           if (Test-Path $extract) { Remove-Item $extract -Recurse -Force }
           Expand-Archive -Path $zipPath -DestinationPath $extract -Force
@@ -137,7 +154,24 @@ jobs:
         run: |
           $destination = "src/AstralParty.Toys/Resources/Skins/default-skins.zip"
           New-Item -ItemType Directory -Path (Split-Path $destination) -Force | Out-Null
-          Invoke-WebRequest -Uri "https://github.com/higashitaniyume/CesiumLoader/releases/latest/download/cesium-default-skins.zip" -OutFile $destination
+          # Same 504 retry as the loader package above.
+          $skinsUrl = "https://github.com/higashitaniyume/CesiumLoader/releases/latest/download/cesium-default-skins.zip"
+          $attempt = 0
+          $maxAttempts = 5
+          $downloaded = $false
+          while (-not $downloaded -and $attempt -lt $maxAttempts) {
+            $attempt++
+            try {
+              Invoke-WebRequest -Uri $skinsUrl -OutFile $destination
+              $downloaded = $true
+            } catch {
+              if ($attempt -ge $maxAttempts) { throw }
+              $delaySeconds = 10 * $attempt + (Get-Random -Minimum 0 -Maximum 10)
+              Write-Host "Download attempt $attempt failed ($($_.Exception.Message)), retry in ${delaySeconds}s"
+              Start-Sleep -Seconds $delaySeconds
+            }
+          }
+          if (-not $downloaded) { throw "Failed to download default skins." }
           Add-Type -AssemblyName System.IO.Compression.FileSystem
           $archive = [IO.Compression.ZipFile]::OpenRead((Resolve-Path $destination))
           try {
