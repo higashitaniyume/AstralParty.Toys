@@ -88,6 +88,53 @@ public sealed class LoaderLatestVersionTests
     }
 
     [Fact]
+    public void ParseLoaderVersionManifestJson_ExtractsVersionTagAndDate()
+    {
+        var json = """{"version":"3.5.2","releaseTag":"modloader-3.5.2","releaseDate":"2026-11-09T00:00:00Z","packages":{"loaderZip":{"fileName":"cesium-loader-3.5.2.zip","url":"https://github.com/higashitaniyume/CesiumLoader/releases/download/modloader-3.5.2/cesium-loader-3.5.2.zip","sha256":"abc","size":123}}}""";
+        var info = ModManager.ParseLoaderVersionManifestJson(json);
+        Assert.NotNull(info);
+        Assert.Equal("3.5.2", info!.Version);
+        Assert.Equal("modloader-3.5.2", info.Tag);
+        Assert.Equal("2026-11-09T00:00:00Z", info.PublishedAt);
+        Assert.Equal(ModManager.LatestReleaseUrl, info.HtmlUrl);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("{ 这不是 JSON !!!")]
+    [InlineData("{}")]
+    [InlineData("{\"version\":\"\"}")]
+    public void ParseLoaderVersionManifestJson_Invalid_ReturnsNull(string json)
+    {
+        Assert.Null(ModManager.ParseLoaderVersionManifestJson(json));
+    }
+
+    [Fact]
+    public async Task GetLatestVersionAsync_UsesVersionManifestFirst()
+    {
+        using var sandbox = new TestSandbox("loader-latest-manifest");
+        var manager = new ModManager(sandbox.Root, sandbox.EnsureDirectory("profile"));
+        var handler = new FakeHandler(req =>
+        {
+            var url = req.RequestUri!.AbsoluteUri;
+            if (url.Contains("version.json", StringComparison.Ordinal))
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("""{"version":"3.5.2","releaseTag":"modloader-3.5.2","releaseDate":"2026-11-09T00:00:00Z"}""", Encoding.UTF8, "application/json")
+                };
+            return new HttpResponseMessage(HttpStatusCode.InternalServerError);
+        });
+        using var http = new HttpClient(handler);
+
+        var info = await manager.GetLatestVersionAsync("direct", null, http);
+
+        Assert.Equal("3.5.2", info.Version);
+        Assert.Equal("modloader-3.5.2", info.Tag);
+        Assert.Single(handler.RequestedUrls);
+        Assert.Contains("releases/latest/download/version.json", handler.RequestedUrls[0], StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task GetLatestVersionAsync_UsesApiAndDoesNotDownloadPackage()
     {
         using var sandbox = new TestSandbox("loader-latest-api");
@@ -95,6 +142,11 @@ public sealed class LoaderLatestVersionTests
         var handler = new FakeHandler(req =>
         {
             var url = req.RequestUri!.AbsoluteUri;
+            if (url.Contains("version.json", StringComparison.Ordinal))
+                return new HttpResponseMessage(HttpStatusCode.NotFound)
+                {
+                    Content = new StringContent("not found", Encoding.UTF8, "text/plain")
+                };
             if (url.Contains("api.github.com", StringComparison.Ordinal))
                 return new HttpResponseMessage(HttpStatusCode.OK)
                 {
@@ -109,8 +161,9 @@ public sealed class LoaderLatestVersionTests
 
         Assert.Equal("3.3.2", info.Version);
         Assert.Equal("modloader-3.3.2", info.Tag);
-        Assert.Single(handler.RequestedUrls);
-        Assert.Contains("api.github.com/repos/higashitaniyume/CesiumLoader/releases/latest", handler.RequestedUrls[0], StringComparison.Ordinal);
+        Assert.Equal(2, handler.RequestedUrls.Count);
+        Assert.Contains("version.json", handler.RequestedUrls[0], StringComparison.Ordinal);
+        Assert.Contains("api.github.com/repos/higashitaniyume/CesiumLoader/releases/latest", handler.RequestedUrls[1], StringComparison.Ordinal);
     }
 
     [Fact]
@@ -118,16 +171,25 @@ public sealed class LoaderLatestVersionTests
     {
         using var sandbox = new TestSandbox("loader-latest-mirror");
         var manager = new ModManager(sandbox.Root, sandbox.EnsureDirectory("profile"));
-        var handler = new FakeHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        var handler = new FakeHandler(req =>
         {
-            Content = new StringContent(ReleaseJson("modloader-3.3.2"), Encoding.UTF8, "application/json")
+            var url = req.RequestUri!.AbsoluteUri;
+            if (url.Contains("version.json", StringComparison.Ordinal))
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("""{"version":"3.3.2","releaseTag":"modloader-3.3.2","releaseDate":"2026-11-06T08:40:27Z"}""", Encoding.UTF8, "application/json")
+                };
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(ReleaseJson("modloader-3.3.2"), Encoding.UTF8, "application/json")
+            };
         });
         using var http = new HttpClient(handler);
 
         var info = await manager.GetLatestVersionAsync("gh-proxy", null, http);
 
         Assert.Equal("3.3.2", info.Version);
-        Assert.Equal("https://gh-proxy.com/https://api.github.com/repos/higashitaniyume/CesiumLoader/releases/latest", handler.RequestedUrls[0]);
+        Assert.Equal("https://gh-proxy.com/https://github.com/higashitaniyume/CesiumLoader/releases/latest/download/version.json", handler.RequestedUrls[0]);
     }
 
     [Fact]

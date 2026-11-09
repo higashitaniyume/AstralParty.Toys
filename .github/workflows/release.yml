@@ -132,20 +132,26 @@ jobs:
           Set-Content -Path "src/AstralParty.Toys/Resources/ModLoader/loader-version.json" -Value ($version | ConvertTo-Json) -Encoding UTF8
           Write-Host "内嵌加载器版本: $version"
 
-          # 加载器更新日志：取 CesiumLoader 仓库根的 CHANGELOG.md 内嵌进程序集，
-          # 供「关于 → 更新日志 → 加载器」离线兜底展示；取不到就写占位符（运行时会经镜像去拉根 CHANGELOG.md）。
+          # 加载器更新日志：优先用发布包内 CHANGELOG.md（版本对版），包里没有时退回仓库根拉，
+          # 都取不到写占位符（运行时会经镜像去拉根 CHANGELOG.md）。
           $changelogPath = "src/AstralParty.Toys/Resources/ModLoader/loader-changelog.md"
-          try {
-            $rawUrl = "https://raw.githubusercontent.com/higashitaniyume/CesiumLoader/master/CHANGELOG.md"
-            $md = Invoke-WebRequest -Uri $rawUrl -UseBasicParsing -OutFile temp-loader-changelog.md -PassThru
-            if (-not (Test-Path temp-loader-changelog.md) -or (Get-Item temp-loader-changelog.md).Length -eq 0) { throw "仓库根 CHANGELOG.md 为空" }
-            Copy-Item temp-loader-changelog.md $changelogPath -Force
-            Write-Host "加载器更新日志: 已写入仓库根 CHANGELOG.md"
-          } catch {
-            Set-Content -Path $changelogPath -Value "<!-- placeholder: 取仓库根 CHANGELOG.md 失败，运行时改为经镜像拉取。 -->`n" -Encoding UTF8
-            Write-Host "加载器更新日志: 取仓库根 CHANGELOG.md 失败（$($_.Exception.Message)），已写占位符"
+          $packagedChangelog = "$extract/CHANGELOG.md"
+          if (Test-Path $packagedChangelog -and (Get-Item $packagedChangelog).Length -gt 0) {
+            Copy-Item $packagedChangelog $changelogPath -Force
+            Write-Host "加载器更新日志: 已从发布包内 CHANGELOG.md 同步"
+          } else {
+            try {
+              $rawUrl = "https://raw.githubusercontent.com/higashitaniyume/CesiumLoader/master/CHANGELOG.md"
+              $md = Invoke-WebRequest -Uri $rawUrl -UseBasicParsing -OutFile temp-loader-changelog.md -PassThru
+              if (-not (Test-Path temp-loader-changelog.md) -or (Get-Item temp-loader-changelog.md).Length -eq 0) { throw "仓库根 CHANGELOG.md 为空" }
+              Copy-Item temp-loader-changelog.md $changelogPath -Force
+              Write-Host "加载器更新日志: 发布包内无 CHANGELOG.md，已写入仓库根 CHANGELOG.md"
+            } catch {
+              Set-Content -Path $changelogPath -Value "<!-- placeholder: 取发布包内 CHANGELOG.md 与仓库根 CHANGELOG.md 均失败，运行时改为经镜像拉取。 -->`n" -Encoding UTF8
+              Write-Host "加载器更新日志: 取包内与仓库根 CHANGELOG.md 均失败（$($_.Exception.Message)），已写占位符"
+            }
+            if (Test-Path temp-loader-changelog.md) { Remove-Item temp-loader-changelog.md -Force }
           }
-          if (Test-Path temp-loader-changelog.md) { Remove-Item temp-loader-changelog.md -Force }
 
           Get-ChildItem "src/AstralParty.Toys/Resources/ModLoader" | Select-Object Name, Length
 

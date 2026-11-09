@@ -26,6 +26,10 @@ public sealed partial class ModManager
     public const string LatestReleaseApiUrl =
         "https://api.github.com/repos/higashitaniyume/CesiumLoader/releases/latest";
 
+    /// <summary>CesiumLoader 静态版本清单地址（与 Toys 自身 version.json 同格式，免 API 配额）。</summary>
+    public const string LatestLoaderVersionManifestUrl =
+        "https://github.com/higashitaniyume/CesiumLoader/releases/latest/download/version.json";
+
     /// <summary>CesiumLoader 最新 Release 的页面地址（界面「打开 GitHub Release」用）。</summary>
     public const string LatestReleaseUrl =
         "https://github.com/higashitaniyume/CesiumLoader/releases/latest";
@@ -163,8 +167,36 @@ public sealed partial class ModManager
         }
     }
 
+    /// <summary>解析静态 version.json（<c>version</c> / <c>releaseTag</c> / <c>releaseDate</c>）。
+    /// 与 GitHub API 字段不同名，单独解析；失败或没有可用版本 → null。</summary>
+    public static LoaderLatestReleaseInfo? ParseLoaderVersionManifestJson(string json)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            var root = document.RootElement;
+            var version = root.TryGetProperty("version", out var versionElement) ? (versionElement.GetString() ?? "").Trim() : "";
+            version = version.TrimStart('v', 'V').Trim();
+            if (string.IsNullOrEmpty(version)) return null;
+            var tag = root.TryGetProperty("releaseTag", out var tagElement) ? (tagElement.GetString() ?? "").Trim() : "";
+            if (string.IsNullOrWhiteSpace(tag)) tag = ReleaseTagPrefix + version;
+            var date = root.TryGetProperty("releaseDate", out var dateElement) ? dateElement.GetString() ?? "" : "";
+            return new LoaderLatestReleaseInfo
+            {
+                Version = version,
+                Tag = tag,
+                PublishedAt = date,
+                HtmlUrl = LatestReleaseUrl
+            };
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     /// <summary>轻量查询 GitHub 最新 Release 版本（不下载整个发布包；client 仅供测试注入）。
-    /// 先走 GitHub API（按所选镜像优先、直连兜底），失败再下载发布包读清单兜底。
+    /// 优先走静态 version.json（免 API 配额），失败再走 GitHub API，最后下载发布包读清单兜底。
     /// 全部失败时抛 <see cref="InvalidOperationException"/>（含各通道的错误摘要）。</summary>
     public async Task<LoaderLatestReleaseInfo> GetLatestVersionAsync(
         string? mirrorType = null,
@@ -174,6 +206,51 @@ public sealed partial class ModManager
     {
         var http = client ?? Http;
         var errors = new List<string>();
+
+        // 先走静态 version.json（与 Toys 自身同款清单，免 API 配额）
+        var mirroredManifest = string.IsNullOrEmpty(mirrorType)
+            ? LatestLoaderVersionManifestUrl
+            : GitHubMirrorHelper.ApplyMirror(LatestLoaderVersionManifestUrl, mirrorType, customMirrorUrl);
+        var manifestCandidates = new List<string>();
+        if (!string.Equals(mirroredManifest, LatestLoaderVersionManifestUrl, StringComparison.OrdinalIgnoreCase))
+        {
+            manifestCandidates.Add(mirroredManifest);
+            manifestCandidates.Add(LatestLoaderVersionManifestUrl);
+        }
+        else
+        {
+            manifestCandidates.Add(LatestLoaderVersionManifestUrl);
+        }
+
+        foreach (var url in manifestCandidates)
+        {
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Accept.ParseAdd("application/json");
+                if (!request.Headers.Contains("User-Agent"))
+                    request.Headers.TryAddWithoutValidation("User-Agent", "AstralParty.Toys/" + Assembly.GetName().Version);
+                using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                if (!response.IsSuccessStatusCode)
+                {
+                    errors.Add($"静态清单：HTTP {(int)response.StatusCode}");
+                    continue;
+                }
+                var text = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                var info = ParseLoaderVersionManifestJson(text);
+                if (info is not null && !string.IsNullOrEmpty(info.Version))
+                    return info;
+                errors.Add("静态清单：响应里没有可用的 version");
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"静态清单：{ex.Message}");
+            }
+        }
 
         var mirrored = string.IsNullOrEmpty(mirrorType)
             ? LatestReleaseApiUrl
