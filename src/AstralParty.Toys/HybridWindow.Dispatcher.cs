@@ -51,6 +51,7 @@ public partial class HybridWindow
                                 _speedhackManager.GetStoredGameDirectory()
                             }.Concat(SpeedhackManager.EnumerateGameDirectories())));
                         SyncActiveGameToManagers();
+                        _ = PostAppVersionAsync();   // 带上当前游戏目录里已装的加载器版本，异步补齐「关于」详情
                         Post(new { type = "homeData", payload = _homeDataService.GetHomeData() });
                         _ = PostSteamBypassSyncAsync();
                         _ = PushGameProfilesAsync();
@@ -71,10 +72,10 @@ public partial class HybridWindow
                     _ = PostSteamBypassSyncAsync();
                     break;
                 case "getAppVersion":
-                    PostAppVersion();
+                    _ = PostAppVersionAsync();
                     break;
                 case "copyVersionInfo":
-                    CopyVersionInfo();
+                    _ = CopyVersionInfoAsync();
                     break;
                 case "changelogGet":
                     _ = PostChangelogAsync();

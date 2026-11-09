@@ -58,17 +58,46 @@
         set('aboutCommit', '未知');
         set('aboutRuntime', '未知');
         set('aboutLoader', '未知');
+        set('aboutInstalledLoader', '未知');
+        set('aboutLoaderSdk', '未知');
         return;
       }
       set('aboutVersion', (info.version ? `v${info.version}` : '未知') + (info.isLocalBuild ? '（本地构建）' : ''));
       set('aboutCommit', info.commitFull || '无 —— 不是从 git 仓库构建的');
       set('aboutRuntime', [info.runtime, info.architecture].filter(Boolean).join(' · ') || '未知');
       set('aboutLoader', this.loaderLabel(info.embeddedLoaderVersion) || '没有内嵌发布包');
+      set('aboutInstalledLoader', this.installedLoaderText(info));
+      set('aboutLoaderSdk', this.installedSdkText(info));
     },
 
     /// 内置加载器版本：本地开发构建没内嵌发布包时返回空串（界面上就不显示这一段）
     loaderLabel(value) {
       return /^[0-9]/.test(String(value || '')) ? String(value) : '';
+    },
+
+    /// 当前游戏目录里已安装的加载器：版本 + 来源 / 停用 / 未安装，都如实显示。
+    installedLoaderText(info) {
+      if (!info) return '未知';
+      if (!info.loaderStatusKnown) return '未读取到';
+      const version = this.loaderLabel(info.installedLoaderVersion);
+      const disabled = !!info.loaderDisabled;
+      if (!version) {
+        if (disabled) return '已停用（版本未知）';
+        if (info.loaderPresent) return '版本未知（安装清单缺失）';
+        return info.gameDirectory ? '未安装' : '未找到游戏目录';
+      }
+      const origin = info.loaderOrigin === 'bundle'
+        ? '随本程序安装'
+        : (info.loaderOrigin === 'installed' ? '通过本程序更新' : '来源不明');
+      const state = disabled ? '已停用' : (info.loaderPresent ? origin : '文件缺失');
+      return `CesiumLoader v${version}（${state}）`;
+    },
+
+    /// 当前游戏目录里的 SDK 版本。
+    installedSdkText(info) {
+      if (!info || !info.loaderStatusKnown) return '未读取到';
+      const version = this.loaderLabel(info.installedSdkVersion);
+      return version ? `v${version}` : '未读取到';
     },
 
     showDetails() {
@@ -91,6 +120,12 @@
         ['源码提交', info.commitFull || '无 —— 不是从 git 仓库构建的'],
         ['构建配置', info.configuration + (info.isLocalBuild ? '（本地构建）' : '')],
         ['内置加载器', loader ? loader : '没有内嵌发布包（本地开发构建）'],
+        ['内置 SDK', info.embeddedSdkVersion || ''],
+        ['已安装加载器', info.loaderStatusKnown ? this.installedLoaderText(info) : ''],
+        ['加载器 SDK', info.loaderStatusKnown ? this.installedSdkText(info) : ''],
+        ['游戏目录', info.gameDirectory],
+        ['已装模组', info.loaderStatusKnown ? `${info.installedModCount || 0} 个` : ''],
+        ['游戏进程', info.loaderStatusKnown ? (info.gameRunning ? '运行中' : '未运行') : ''],
         ['运行时', [info.runtime, info.architecture].filter(Boolean).join(' · ')],
         ['操作系统', info.operatingSystem],
         ['程序集文件时间', info.assemblyTime],

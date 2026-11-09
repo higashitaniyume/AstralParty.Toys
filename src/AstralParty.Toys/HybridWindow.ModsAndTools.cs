@@ -194,6 +194,8 @@ public partial class HybridWindow
                         customMirrorUrl = _libraryService.Settings.CustomGitHubMirrorUrl
                     }
                 });
+            if (request == _modStatusRequest)
+                PostAppVersion(status);   // 关于页的「已安装加载器」跟着安装 / 更新 / 停用一起刷新
         }
         catch (Exception ex)
         {

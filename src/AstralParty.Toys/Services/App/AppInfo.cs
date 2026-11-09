@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using AstralParty.Toys.Models;
 
 namespace AstralParty.Toys.Services.App;
 
@@ -18,7 +19,8 @@ namespace AstralParty.Toys.Services.App;
 public static class AppInfo
 {
     /// <summary>采集一次版本信息（都是只读的静态事实，可反复调用）。</summary>
-    public static AppVersionInfo Get()
+    /// <param name="loaderStatus">当前游戏目录的加载器状态；传 null 时只报程序自身与内置版本。</param>
+    public static AppVersionInfo Get(ModStatus? loaderStatus = null)
     {
         var assembly = typeof(AppInfo).Assembly;
         var informational = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "";
@@ -52,9 +54,23 @@ public static class AppInfo
             Architecture = RuntimeInformation.ProcessArchitecture.ToString(),
             OperatingSystem = RuntimeInformation.OSDescription,
             EmbeddedLoaderVersion = ModManager.BundleLoaderVersion,
+            EmbeddedSdkVersion = ModManager.BundleSdkVersion,
             AssemblyTime = GetAssemblyFileTime(assembly),
             AppDirectory = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar)
         };
+        if (loaderStatus is not null)
+        {
+            info.GameDirectory = loaderStatus.GameDirectory;
+            info.GameRunning = loaderStatus.GameRunning;
+            info.LoaderPresent = loaderStatus.LoaderPresent;
+            info.LoaderDisabled = loaderStatus.LoaderDisabled;
+            info.LoaderManaged = loaderStatus.LoaderManaged;
+            info.LoaderOrigin = loaderStatus.LoaderOrigin;
+            info.InstalledLoaderVersion = loaderStatus.InstalledVersion;
+            info.InstalledSdkVersion = loaderStatus.InstalledSdkVersion;
+            info.InstalledModCount = loaderStatus.Mods.Count;
+            info.LoaderStatusKnown = true;
+        }
         info.ShortLabel = BuildShortLabel(info);
         info.DetailText = BuildDetailText(info);
         return info;
@@ -77,6 +93,15 @@ public static class AppInfo
         Append(text, "源码提交", info.CommitFull.Length > 0 ? info.CommitFull : "（无：不是从 git 仓库构建的）");
         Append(text, "构建配置", info.IsLocalBuild ? $"{info.Configuration}（本地构建）" : info.Configuration);
         Append(text, "内置加载器", info.EmbeddedLoaderVersion.Length > 0 ? info.EmbeddedLoaderVersion : "（未内嵌发布包）");
+        Append(text, "内置 SDK", info.EmbeddedSdkVersion.Length > 0 ? info.EmbeddedSdkVersion : "（未内嵌发布包）");
+        if (info.LoaderStatusKnown)
+        {
+            Append(text, "已安装加载器", DescribeInstalledLoader(info));
+            Append(text, "加载器 SDK", info.InstalledSdkVersion.Length > 0 ? info.InstalledSdkVersion : "（未读取到）");
+            Append(text, "游戏目录", info.GameDirectory);
+            Append(text, "已装模组", $"{info.InstalledModCount} 个");
+            Append(text, "游戏进程", info.GameRunning ? "运行中" : "未运行");
+        }
         Append(text, "运行时", $"{info.Runtime} · {info.Architecture}");
         Append(text, "操作系统", info.OperatingSystem);
         Append(text, "程序集文件时间", info.AssemblyTime);
@@ -87,6 +112,26 @@ public static class AppInfo
         {
             if (!string.IsNullOrWhiteSpace(value)) builder.Append(name).Append(": ").Append(value).AppendLine();
         }
+    }
+
+    /// <summary>「已安装加载器」这一行：版本 + 来源；没装/停用/版本未知都如实说。</summary>
+    private static string DescribeInstalledLoader(AppVersionInfo info)
+    {
+        if (info.InstalledLoaderVersion.Length == 0)
+        {
+            if (info.LoaderDisabled) return "已停用（版本未知）";
+            if (info.LoaderPresent) return "版本未知（安装清单缺失）";
+            return info.GameDirectory.Length > 0 ? "未安装" : "未找到游戏目录";
+        }
+
+        var origin = info.LoaderOrigin switch
+        {
+            "bundle" => "随本程序安装",
+            "installed" => "通过本程序更新",
+            _ => "来源不明"
+        };
+        var state = info.LoaderDisabled ? "已停用" : info.LoaderPresent ? origin : "文件缺失";
+        return $"v{info.InstalledLoaderVersion}（{state}）";
     }
 
     /// <summary>
@@ -157,6 +202,39 @@ public sealed class AppVersionInfo
 
     /// <summary>随程序内置的加载器版本，如 2.2.1（本地开发构建可能是 dev-local）。</summary>
     public string EmbeddedLoaderVersion { get; set; } = "";
+
+    /// <summary>随程序内置的 SDK 版本（doorstop_config 的 sdkVersion）。</summary>
+    public string EmbeddedSdkVersion { get; set; } = "";
+
+    /// <summary>是否成功读取了当前游戏目录的加载器状态；false 时下面的安装信息不可信。</summary>
+    public bool LoaderStatusKnown { get; set; }
+
+    /// <summary>当前游戏目录。</summary>
+    public string GameDirectory { get; set; } = "";
+
+    /// <summary>游戏进程是否正在运行。</summary>
+    public bool GameRunning { get; set; }
+
+    /// <summary>游戏目录里是否存在 version.dll。</summary>
+    public bool LoaderPresent { get; set; }
+
+    /// <summary>加载器是否已停用（version.dll 被移除但模组目录保留）。</summary>
+    public bool LoaderDisabled { get; set; }
+
+    /// <summary>加载器是否由本程序安装 / 更新（bundle 或 installed）。</summary>
+    public bool LoaderManaged { get; set; }
+
+    /// <summary>加载器来源："bundle"（随本程序安装）/ "installed"（通过本程序更新）/ ""（来源不明）。</summary>
+    public string LoaderOrigin { get; set; } = "";
+
+    /// <summary>当前游戏目录里已安装的加载器版本；读不到就是空串。</summary>
+    public string InstalledLoaderVersion { get; set; } = "";
+
+    /// <summary>当前游戏目录里已安装的 SDK 版本；读不到就是空串。</summary>
+    public string InstalledSdkVersion { get; set; } = "";
+
+    /// <summary>当前游戏目录里已安装的模组数量。</summary>
+    public int InstalledModCount { get; set; }
 
     /// <summary>程序集文件时间（yyyy-MM-dd HH:mm）。</summary>
     public string AssemblyTime { get; set; } = "";

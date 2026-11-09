@@ -20,6 +20,9 @@
   const SOURCES = { steam: 'Steam 库', registry: '注册表', common: '常见位置', deep: '深度扫描' };
   const motionOn = () => { try { return localStorage.getItem('motionEnabled') !== 'false'; } catch { return true; } };
   const REPO_URL = 'https://github.com/higashitaniyume/AstralParty.Toys';
+  // 关于页的加载器安装信息：显示逻辑与「版本详情」弹窗共用（js/version.js）
+  const installedLoader = info => window.VersionModule?.installedLoaderText?.(info) || '未读取到';
+  const installedSdk = info => window.VersionModule?.installedSdkText?.(info) || '未读取到';
   // 软件更新：状态和消息都是原版的（AppState.appUpdateState、SettingsModule.renderUpdateState）
   const updateState = () => window.AppState?.appUpdateState || {};
   const updateStatus = () => String(updateState().status || 'idle').toLowerCase();
@@ -158,6 +161,11 @@
           <button class="v2-btn ghost" data-v2g="changelog">更新日志</button></div>
         <div class="v2-row"><span class="k">运行环境</span><span class="v v2-muted">${esc([info?.runtime, info?.architecture].filter(Boolean).join(' · ') || '—')}</span></div>
         <div class="v2-row"><span class="k">内置加载器</span><span class="v v2-muted">${esc(info?.embeddedLoaderVersion ? 'CesiumLoader v' + String(info.embeddedLoaderVersion).replace(/^v/i, '') : '没有内嵌发布包')}</span></div>
+        <div class="v2-row"><span class="k">已安装加载器</span><span class="v" style="white-space:normal">${esc(installedLoader(info))}</span></div>
+        <div class="v2-row"><span class="k">加载器 SDK</span><span class="v v2-muted">${esc(installedSdk(info))}</span></div>
+        <div class="v2-row"><span class="k">游戏目录</span><span class="v v2-muted" style="white-space:normal;font-family:var(--v2-mono);font-size:12px" title="${esc(info?.gameDirectory || '')}">${esc(info?.gameDirectory || (info?.loaderStatusKnown ? '未设置' : '读取中…'))}</span></div>
+        <div class="v2-row"><span class="k">已装模组</span><span class="v v2-muted">${info?.loaderStatusKnown ? `${info.installedModCount || 0} 个` : '—'}</span></div>
+        <div class="v2-row"><span class="k">游戏进程</span><span class="v v2-muted">${info?.loaderStatusKnown ? (info.gameRunning ? '运行中' : '未运行') : '—'}</span></div>
         <div class="v2-row"><span class="k">项目主页</span><span class="v" style="white-space:normal;font-family:var(--v2-mono);font-size:13px">${esc(REPO_URL)}</span>
           <button class="v2-btn ghost" data-v2g="copyUrl" data-url="${esc(REPO_URL)}">${I().copy}复制</button></div>
       </div>

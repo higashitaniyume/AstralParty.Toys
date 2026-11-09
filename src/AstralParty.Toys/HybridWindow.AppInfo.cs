@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Windows;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
+using AstralParty.Toys.Models;
 using AstralParty.Toys.Services;
 
 namespace AstralParty.Toys;
@@ -12,17 +13,32 @@ namespace AstralParty.Toys;
 public partial class HybridWindow
 {
     /// 自建构建也会带上提交号、构建配置、运行时等信息，不会只给一个孤零零的版本号。</summary>
-    private void PostAppVersion()
+    private void PostAppVersion(ModStatus? loaderStatus = null)
     {
         try
         {
-            Post(new { type = "appVersion", payload = AppInfo.Get() });
+            Post(new { type = "appVersion", payload = AppInfo.Get(loaderStatus) });
         }
         catch (Exception ex)
         {
             // 取版本信息失败不该影响任何功能，界面上就显示"版本未知"
             Debug.WriteLine($"PostAppVersion failed: {ex.Message}");
         }
+    }
+
+    /// <summary>读取加载器安装状态后再推版本信息（文件 IO 放后台，避免阻塞界面启动）。</summary>
+    private async Task PostAppVersionAsync()
+    {
+        ModStatus? status = null;
+        try
+        {
+            status = await Task.Run(() => _modManager.GetStatus());
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"PostAppVersion loader status failed: {ex.Message}");
+        }
+        PostAppVersion(status);
     }
 
     /// <summary>内嵌的工具箱 CHANGELOG.md（离线兜底；随程序集编译进来的版本）。</summary>
@@ -85,11 +101,20 @@ public partial class HybridWindow
     }
 
     /// <summary>复制版本信息到剪贴板（用 WPF 的剪贴板，比网页的 navigator.clipboard 在 file:// 下可靠）。</summary>
-    private void CopyVersionInfo()
+    private async Task CopyVersionInfoAsync()
     {
         try
         {
-            Clipboard.SetText(AppInfo.Get().DetailText);
+            ModStatus? status = null;
+            try
+            {
+                status = await Task.Run(() => _modManager.GetStatus());
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"CopyVersionInfo loader status failed: {ex.Message}");
+            }
+            Clipboard.SetText(AppInfo.Get(status).DetailText);
             Post(new { type = "toast", message = "版本信息已复制到剪贴板" });
         }
         catch (Exception ex)
