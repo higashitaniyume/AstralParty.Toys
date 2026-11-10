@@ -170,6 +170,7 @@
           <button class="v2-btn ghost" data-v2g="copyUrl" data-url="${esc(REPO_URL)}">${I().copy}复制</button></div>
       </div>
       <div class="v2-card" style="margin-top:14px"><div class="v2-card-title"><span>反馈</span></div>
+        <p class="v2-muted" style="margin:0 0 12px;line-height:1.6">${esc(window.i18n?.t('settings.feedback_thanks') || '感谢您的反馈、建议与意见～')}</p>
         <div class="v2-row"><span class="k">QQ 群</span><span class="v" style="white-space:normal"><a target="_blank" href="${QQ_JOIN_URL}"><img border="0" src="//pub.idqqimg.com/wpa/images/group.png" alt="Astral Party Toys" title="Astral Party Toys"></a></span>
           <a class="v2-btn line" target="_blank" href="${QQ_JOIN_URL}">加入 QQ 群</a></div>
         <div class="v2-row"><span class="k">Discord</span><span class="v" style="white-space:normal;font-family:var(--v2-mono);font-size:13px">${DISCORD_URL}</span>

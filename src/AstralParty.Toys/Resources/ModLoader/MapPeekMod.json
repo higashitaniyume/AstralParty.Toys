@@ -1,1 +1,1 @@
-{"id":"MapPeekMod","name":"选人地图预览","version":"1.0.0","author":"CesiumLoader","description":"选人阶段显示本局地图名、模式、难度与人数（左上角浮窗），便于选角前确认地图","permissions":1,"sdkVersion":"2.8.6","dependencies":[]}
+{"id":"MapPeekMod","name":"选人地图预览","version":"1.0.1","author":"CesiumLoader","description":"选人阶段显示本局地图名、模式、难度与人数（左上角浮窗），便于选角前确认地图","permissions":1,"sdkVersion":"2.8.6","dependencies":[]}

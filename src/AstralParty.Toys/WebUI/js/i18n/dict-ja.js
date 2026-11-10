@@ -3,6 +3,7 @@
   'use strict';
   window.I18N_DICTS = window.I18N_DICTS || {};
   window.I18N_DICTS['ja'] = {
+      'settings.feedback_thanks': 'ご意見・ご提案をお寄せいただき、ありがとうございます！',
       'nav.account': 'マイアカウント',
       'account.subtitle': 'ローカル接続 · キャラクター、フレンド、最近の対戦',
       'account.recent': '最近の対戦',

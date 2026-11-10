@@ -2,6 +2,19 @@
   // Doorstop 式配置 —— 加载器(version.dll)启动时读取
   // 所有字段可选, 缺失/损坏时使用默认值, 不会阻止游戏启动
   "enabled": true,
+  // 多 profile: 把游戏读写账号/存档/回放的目录重定向到独立目录, 一份安装记多套账号。
+  //   ""          = 不重定向, 游戏写自己的 LocalLow\<公司>\<产品>(默认)
+  //   "P2"        = 重定向到 <同一父目录>\<产品>_profiles\P2
+  //   "D:\\AP\\P2" = 绝对路径 = 直接把 profile 放到指定目录(可以在别的盘)
+  // 环境变量 CESIUM_PROFILE 优先于本字段。首次使用会自动建目录, 并把下载缓存
+  // (com.unity.addressables, 约 7 GB)硬链接过去, 不必重新下载。
+  // 注意: PlayerPrefs(分辨率等)在注册表, 各 profile 共用; Player.log 是进程启动
+  // 瞬间写的, 仍会落在主目录(只有它)。
+  "profile": "",
+  // 多 profile 窗口标题: 在游戏窗口标题后追加 " · <profile 名>"(例如 "吉星派对 · P2"),
+  // 方便同时开多个实例时从任务栏 / Alt+Tab 分辨。默认开; 只在选了 profile 时生效,
+  // 关掉只影响标题显示, 目录隔离照常。
+  "profileWindowTitle": true,
   // 编排层: false=原生加载 sdk/mods(默认,可靠); true=托管 Bootstrap 编排(实验,
   // HybridCLR 会裁剪部分反射 API 如 Assembly.GetType, 托管编排可能不可用)
   "useManagedBootstrap": false,
@@ -30,6 +43,11 @@
   // mod 通过它请求把游戏窗口切到前台(热更程序集无法 P/Invoke user32)。
   // false = 关闭该通道, 只影响"回合置前"类 mod, 不影响游戏与其它 mod。
   "windowControlEnabled": true,
+  // 原生音频控制通道(UDP 端口 + <audio>\request.txt / state.txt):
+  // 游戏裁剪了 AudioSource 方法且热更程序集无法 P/Invoke，由加载器提供底层音频播放。
+  // 注意: 该通道目前在加载器代码里硬编码关闭(kEnableAudioControl=false)，本键只保留读写，
+  // 不再决定是否启动；关闭后自定义音效/BGM 替换不可用，游戏本体音效不受影响。
+  "audioControlEnabled": true,
   // Steam 自杀门绕过: 国服客户端在非 Steam 客户端启动时, AOT 类 SteamManager 的
   // Awake() 会打印 "[ERROR] 非Steam客户端启动, 退出游戏" 并退出。true=把 Awake()
   // 换成 no-op(原生 inline hook), 让游戏继续启动; false=恢复原版行为(会退出游戏)。
@@ -95,20 +113,15 @@
   // 独立开关: 与 steamBypassEnabled/steamBypassMatchmaking/steamBypassLobbyHasValue/
   // steamBypassLobbyMethods 互不影响。false = 恢复原版行为(退房/解散/被踢时 await 之后仍被跳过)。
   "steamBypassLobbyQuery": true,
-  // TapTap 版绕过(默认关闭, Dice App「吉星派对」测试版专用): TapTap 自杀门在 AOT 类
-  // TapClientStandalone.IsLaunchedFromTapTapPC, 不是 SteamManager.Awake(), Steam 绕过装了也没用。
+  // TapTap 版绕过(默认关闭): TapTap 自杀门在 AOT 类 TapClientStandalone.IsLaunchedFromTapTapPC,
+  // 不是 SteamManager.Awake(), Steam 绕过装了也没用。true=hook 拦截恒通过(当前版本只枚举不真正
+  // 下 hook, 等 MethodInfo/返回类型/实测命中钉死后再装, 避免把 async 状态机打崩)。
   "tapTapBypassEnabled": false,
   // TapTap 附加保险: 让 taptap_api.dll 的 TapSDK_RestartAppIfNecessary 恒返回 0。
   "tapTapBypassRestartCheck": false,
   // TapTap 登录链 stub: TapSDK_Init / TapUser_AsyncAuthorize / TapSDK_GetClientID / TapUser_GetOpenID。
   "tapTapBypassLogin": false,
-  // 多 profile: 把游戏读写账号/存档/回放的目录重定向到独立目录; 托管的「游戏多开」页写入。
-  // 空 = 不重定向, 游戏写自己的 LocalLow\<公司>\<产品>。
-  "profile": "",
-  // 多 profile 窗口标题: 在游戏窗口标题后追加 " · <profile 名>", 方便区分多开实例。
-  // 默认开; 只在选了 profile 时生效, 关掉只影响标题显示。
-  "profileWindowTitle": true,
   // 当前分发的 SDK 版本(SemVer): 加载器用它校验 mod 声明的 SdkVersion,
   // 不兼容时拒绝加载该 mod。升级 SDK 时同步更新此字段。
-  "sdkVersion": "2.8.1"
+  "sdkVersion": "3.6.0"
 }

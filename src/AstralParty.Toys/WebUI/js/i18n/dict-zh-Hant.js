@@ -3,6 +3,7 @@
   'use strict';
   window.I18N_DICTS = window.I18N_DICTS || {};
   window.I18N_DICTS['zh-Hant'] = {
+      'settings.feedback_thanks': '感謝您的回饋、建議與意見～',
       'nav.account': '我的帳號',
       'account.subtitle': '本機直連 · 角色使用、好友狀態與最近對局',
       'account.recent': '最近對局',

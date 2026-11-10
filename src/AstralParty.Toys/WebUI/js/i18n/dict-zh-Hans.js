@@ -3,6 +3,7 @@
   'use strict';
   window.I18N_DICTS = window.I18N_DICTS || {};
   window.I18N_DICTS['zh-Hans'] = {
+      'settings.feedback_thanks': '感谢您的反馈、建议与意见～',
       'nav.account': '我的账号',
       'account.subtitle': '本机直连 · 角色使用、好友状态与最近对局',
       'account.recent': '最近对局',
