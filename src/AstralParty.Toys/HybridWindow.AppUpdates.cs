@@ -13,6 +13,17 @@ public partial class HybridWindow
     private AppAssetPackageInfo? _targetUpdatePackage;
     private string? _downloadedUpdateInstallerPath;
     private AppUpdateStatus _currentUpdateStatus = AppUpdateStatus.Idle;
+    private AppUpdatePlan? _updatePlan;
+    /// <summary>便携版：新版本解压出来的文件夹。</summary>
+    private string? _updateStagingDirectory;
+    /// <summary>单文件版 / 便携版的用户选了「改用安装版」。</summary>
+    private bool _updateSwitchToInstaller;
+    /// <summary>上次检查的结果里有没有比当前新的版本（切换更新方式后要回到同一个状态）。</summary>
+    private bool _latestHasUpdate;
+    /// <summary>这份程序已经被安装版取代了（用户选了「改用安装版」并装好了），不再提示更新。</summary>
+    private bool _supersededByInstaller;
+    /// <summary>换了更新方式，之前下好的包作废了，需要重新下载。</summary>
+    private bool _needsRedownload;
 
     /// <summary>
     /// 构建当前应用程序更新状态载荷。
@@ -39,6 +50,26 @@ public partial class HybridWindow
                 _ => "framework-dependent"
             },
             IsInstaller = env.IsInstaller,
+            PackageForm = env.PackageForm switch
+            {
+                AppPackageForm.Installer => "installer",
+                AppPackageForm.SingleFile => "single-file",
+                AppPackageForm.Portable => "portable",
+                _ => "development"
+            },
+            UpdateMode = (_updatePlan?.Mode ?? AppUpdateMode.Manual) switch
+            {
+                AppUpdateMode.Installer => "installer",
+                AppUpdateMode.ReplaceExe => "replace-exe",
+                AppUpdateMode.ReplaceFolder => "replace-folder",
+                _ => "manual"
+            },
+            ManualReason = _updatePlan?.ManualReason ?? "",
+            SwitchToInstaller = _updateSwitchToInstaller,
+            Superseded = _supersededByInstaller,
+            NeedsRedownload = _needsRedownload,
+            TargetLocation = env.PackageForm == AppPackageForm.SingleFile ? env.ExePath : Path.GetDirectoryName(env.ExePath) ?? "",
+            ReleaseUrl = AppUpdateService.ReleasePageUrl(_latestUpdateManifest),
             TargetFileName = _targetUpdatePackage?.FileName ?? "",
             DownloadedFilePath = _downloadedUpdateInstallerPath,
             Percent = percent,
@@ -80,6 +111,16 @@ public partial class HybridWindow
             return;
         }
 
+        // 已经改装成安装版的这份旧程序不再提示更新：再更新也是装到「本机应用」目录，和用户手里这份无关
+        if (_supersededByInstaller)
+        {
+            if (userInitiated)
+            {
+                Post(new { type = "toast", message = "这份程序已经被安装版取代了，请从开始菜单或桌面快捷方式打开新版本。" });
+            }
+            return;
+        }
+
         PostUpdateState(AppUpdateStatus.Checking);
 
         var settings = _libraryService.Settings;
@@ -104,18 +145,20 @@ public partial class HybridWindow
             }
 
             _latestUpdateManifest = result.Manifest;
-            _targetUpdatePackage = result.TargetPackage;
+            _latestHasUpdate = result.HasUpdate && result.Manifest != null;
+            RefreshUpdatePlan();
 
-            if (result.HasUpdate && _targetUpdatePackage != null)
+            if (result.HasUpdate && result.Manifest != null)
             {
+                // 不能自动装（Manual）也要报告有新版本：界面会让用户选「改用安装版」或自己下载
                 PostUpdateState(AppUpdateStatus.UpdateAvailable);
                 if (userInitiated)
                 {
                     Post(new { type = "toast", message = $"发现新版本 v{result.Manifest?.Version}" });
                 }
 
-                // 若开启了自动下载，后台静默拉取安装包
-                if (settings.AutoDownloadUpdates)
+                // 若开启了自动下载，后台静默拉取安装包（不会替用户「改用安装版」）
+                if (settings.AutoDownloadUpdates && _targetUpdatePackage != null)
                 {
                     _ = StartAppUpdateDownloadAsync();
                 }
@@ -139,6 +182,42 @@ public partial class HybridWindow
         }
     }
 
+    /// <summary>按当前形态和用户的选择重新决定更新方式；换了方式，之前下好的包就不能用了。</summary>
+    private void RefreshUpdatePlan()
+    {
+        var previous = _targetUpdatePackage;
+        _updatePlan = _latestUpdateManifest == null
+            ? null
+            : AppUpdateService.PlanUpdate(_latestUpdateManifest, _appUpdateService.GetEnvironment(), _updateSwitchToInstaller);
+        _targetUpdatePackage = _updatePlan?.Package;
+        if (!ReferenceEquals(previous, _targetUpdatePackage))
+        {
+            // 换方式后之前下的包不能用了：告诉用户要重新下载
+            if (_downloadedUpdateInstallerPath != null)
+            {
+                _needsRedownload = true;
+                Post(new { type = "toast", message = "更新方式换了，之前下载的包不能用了，请重新下载。" });
+            }
+            _downloadedUpdateInstallerPath = null;
+            _updateStagingDirectory = null;
+        }
+    }
+
+    /// <summary>
+    /// 单文件版 / 便携版：用户选择改用安装版（或改回原地替换）。
+    /// </summary>
+    private void SetAppUpdateSwitchToInstaller(bool on)
+    {
+        if (_currentUpdateStatus is AppUpdateStatus.Checking or AppUpdateStatus.Downloading or AppUpdateStatus.Installing) return;
+        if (_appUpdateService.GetEnvironment().PackageForm == AppPackageForm.Installer) return;
+        _updateSwitchToInstaller = on;
+        RefreshUpdatePlan();
+        PostUpdateState(_latestUpdateManifest == null ? AppUpdateStatus.Idle
+            : !_latestHasUpdate ? AppUpdateStatus.UpToDate
+            : _downloadedUpdateInstallerPath != null ? AppUpdateStatus.ReadyToInstall
+            : AppUpdateStatus.UpdateAvailable);
+    }
+
     /// <summary>
     /// 开始下载目标安装包。
     /// </summary>
@@ -146,7 +225,8 @@ public partial class HybridWindow
     {
         if (_targetUpdatePackage == null)
         {
-            Post(new { type = "toast", message = "没有可下载的更新安装包。" });
+            var reason = _updatePlan?.ManualReason;
+            Post(new { type = "toast", message = string.IsNullOrEmpty(reason) ? "没有可下载的更新安装包。" : $"不能自动更新：{reason}" });
             return;
         }
 
@@ -182,9 +262,15 @@ public partial class HybridWindow
                 progress,
                 ct).ConfigureAwait(true);
 
+            if (_updatePlan?.Mode == AppUpdateMode.ReplaceFolder)
+            {
+                // 便携版：先解压、确认是完整的便携版，再算「已就绪」
+                _updateStagingDirectory = await Task.Run(() => AppUpdateService.ExtractPortablePackage(downloadedFile), ct).ConfigureAwait(true);
+            }
             _downloadedUpdateInstallerPath = downloadedFile;
+            _needsRedownload = false;
             PostUpdateState(AppUpdateStatus.ReadyToInstall, percent: 100);
-            Post(new { type = "toast", message = $"新版本 v{_latestUpdateManifest?.Version} 安装包已下载就绪。" });
+            Post(new { type = "toast", message = $"新版本 v{_latestUpdateManifest?.Version} 已下载就绪。" });
 
             // 若开启了自动安装：拉起安装器并退出当前 Toys
             if (settings.AutoInstallUpdates)
@@ -223,15 +309,100 @@ public partial class HybridWindow
             return;
         }
 
+        var mode = _updatePlan?.Mode ?? AppUpdateMode.Installer;
         try
         {
-            AppUpdateService.LaunchInstaller(_downloadedUpdateInstallerPath, silent);
+            switch (mode)
+            {
+                case AppUpdateMode.ReplaceExe:
+                case AppUpdateMode.ReplaceFolder:
+                    LaunchSelfReplace(mode);
+                    break;
+                default:
+                    AppUpdateService.LaunchInstaller(_downloadedUpdateInstallerPath, silent, addDesktopShortcut: _updateSwitchToInstaller);
+                    if (_updateSwitchToInstaller)
+                    {
+                        // 装好之后，用户手里这份就旧了：记个标记，下次启动这份时告诉他新版本在哪
+                        AppInstallerSwitch.WriteMarker(_appUpdateService.GetEnvironment().ExePath);
+                    }
+                    break;
+            }
             Application.Current.Dispatcher.Invoke(() => Application.Current.Shutdown());
         }
         catch (Exception ex)
         {
-            Post(new { type = "toast", message = $"启动安装器失败：{ex.Message}" });
+            if (_currentUpdateStatus == AppUpdateStatus.Installing) PostUpdateState(AppUpdateStatus.ReadyToInstall);
+            Post(new { type = "toast", message = mode == AppUpdateMode.Installer ? $"启动安装器失败：{ex.Message}" : $"没能开始替换，程序没有改动：{ex.Message}" });
         }
+    }
+
+    /// <summary>单文件版换 exe、便携版覆盖文件夹：都交给退出后运行的脚本。抛异常时什么都还没改。</summary>
+    private void LaunchSelfReplace(AppUpdateMode mode)
+    {
+        var env = _appUpdateService.GetEnvironment();
+        var exe = env.ExePath;
+        if (string.IsNullOrWhiteSpace(exe) || !File.Exists(exe)) throw new InvalidOperationException("找不到正在运行的程序文件。");
+        var plan = new AppReplacePlan
+        {
+            ProcessId = Environment.ProcessId,
+            Mode = mode,
+            CurrentExe = exe,
+            NewExe = mode == AppUpdateMode.ReplaceExe ? _downloadedUpdateInstallerPath! : "",
+            StagingDirectory = mode == AppUpdateMode.ReplaceFolder ? _updateStagingDirectory ?? throw new InvalidOperationException("新版本还没解压好，请重新下载。") : "",
+            AppDirectory = mode == AppUpdateMode.ReplaceFolder ? Path.GetDirectoryName(exe)! : "",
+            BackupDirectory = mode == AppUpdateMode.ReplaceFolder ? Path.Combine(AppSelfUpdater.UpdateTempDirectory, $"backup-{Guid.NewGuid():N}") : "",
+            DownloadedFile = mode == AppUpdateMode.ReplaceFolder ? _downloadedUpdateInstallerPath! : "",
+            ResultFile = AppSelfUpdater.DefaultResultFile,
+            NewVersion = _latestUpdateManifest?.Version ?? ""
+        };
+        if (mode == AppUpdateMode.ReplaceFolder)
+            AppSelfUpdater.BackupOverwrittenFiles(plan.StagingDirectory, plan.AppDirectory, plan.BackupDirectory);
+        PostUpdateState(AppUpdateStatus.Installing);
+        AppSelfUpdater.Launch(plan);
+    }
+
+    /// <summary>上一次原地更新的结果（脚本在重新打开程序前写下），启动后告诉用户一次。</summary>
+    private void ReportLastSelfUpdate()
+    {
+        var result = AppSelfUpdater.TakeLastResult();
+        if (result == null) return;
+        var outcome = result;
+        var v = string.IsNullOrEmpty(outcome.Version) ? "新版本" : $"v{outcome.Version}";
+        if (outcome.Ok)
+        {
+            Post(new { type = "toast", message = $"已更新到 {v}。" });
+        }
+        else if (outcome.Busy)
+        {
+            // 程序一直没退出，替换根本没开始，文件没动过
+            Post(new { type = "toast", message = $"更新到 {v} 没有开始：程序没有正常关闭，文件没有改动。请关掉程序再试一次。" });
+        }
+        else
+        {
+            Post(new { type = "toast", message = $"更新到 {v} 没有完成，已还原成原来的版本。可以稍后再试，或者到发布页手动下载。" });
+        }
+    }
+
+    /// <summary>
+    /// 用户选了「改用安装版」之后的收尾：新版装到了「本机应用」目录，
+    /// 用户手里这份旧的还在，启动它时告诉他新版本在哪，并不再反复提示更新。
+    /// </summary>
+    private void ReportInstallerSwitch()
+    {
+        var marked = AppInstallerSwitch.ReadMarker();
+        if (marked == null) return;
+        var currentExe = _appUpdateService.GetEnvironment().ExePath;
+        // 标记是给「那份旧程序」看的：别的程序启动时不消费它
+        if (!string.Equals(marked, currentExe, StringComparison.OrdinalIgnoreCase)) return;
+        AppInstallerSwitch.ClearMarker();
+
+        var installed = AppInstallerSwitch.InstalledExecutablePath();
+        if (installed == null) return;   // 安装器没装成功，标记作废
+        if (string.Equals(installed, currentExe, StringComparison.OrdinalIgnoreCase)) return;
+
+        _supersededByInstaller = true;
+        var folder = Path.GetDirectoryName(installed) ?? installed;
+        Post(new { type = "toast", message = $"已经改装成安装版，新版本在 {folder}，以后从开始菜单或桌面快捷方式打开就行，这份旧程序可以删掉了。" });
     }
 
     /// <summary>
@@ -239,6 +410,9 @@ public partial class HybridWindow
     /// </summary>
     private void ScheduleStartupUpdateCheck()
     {
+        ReportLastSelfUpdate();
+        ReportInstallerSwitch();
+        if (_supersededByInstaller) return;
         if (!_libraryService.Settings.AutoCheckUpdates) return;
 
         _ = Task.Run(async () =>

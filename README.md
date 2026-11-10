@@ -58,6 +58,8 @@ winget upgrade Hiynet.AstralParty.Toys
 
 运行环境：Windows 10/11 x64、Microsoft Edge WebView2 Evergreen Runtime。框架依赖版本还需 [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)。安装时所选目录必须为空（升级已有安装除外）。安装器说明见 [安装文档](installer/README.md)。
 
+软件更新按当前这份程序的形式来：安装版运行安装程序；单文件版替换手头的 EXE；便携版把新文件覆盖进程序文件夹（你自己放进去的文件不动）。后两种会先关闭程序、替换完成后自动重新打开，替换失败会还原成原来的版本。也可以选「改用安装版」，把程序装到「本机应用」目录并加一个桌面快捷方式，以后按安装版更新。没法原地替换时（例如程序所在目录没有写入权限），设置页会说明原因并给出下载页地址，不会另外装一份。
+
 ## 功能
 
 | 模块 | 能力 |
