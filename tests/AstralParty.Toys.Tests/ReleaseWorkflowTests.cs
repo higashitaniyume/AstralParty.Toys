@@ -32,6 +32,17 @@ public sealed class ReleaseWorkflowTests
         Assert.Contains("if ((Test-Path $packagedChangelog) -and", workflow);
     }
 
+    [Fact]
+    public void Release_ManifestListsEveryPackageForm()
+    {
+        // 单文件版和便携版的原地更新靠 version.json 里的这几项
+        var workflow = ReadWorkflow();
+        foreach (var key in new[] { "frameworkDependentInstaller", "selfContainedInstaller", "frameworkDependentSingleFile", "selfContainedSingleFile", "frameworkDependentPortable", "selfContainedPortable" })
+            Assert.Contains(key, workflow);
+        Assert.Contains("*-self-contained-single-file.exe", workflow);
+        Assert.Contains("*-framework-dependent-portable.zip", workflow);
+    }
+
     private static string ReadWorkflow() => File.ReadAllText(Path.GetFullPath(Path.Combine(
         TestPaths.AppSourceDirectory, "..", "..", ".github", "workflows", "release.yml")));
 }

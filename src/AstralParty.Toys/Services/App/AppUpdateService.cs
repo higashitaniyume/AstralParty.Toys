@@ -103,6 +103,75 @@ public sealed class AppUpdateService
     }
 
     /// <summary>
+    /// 按当前发布形态决定这次怎么更新：安装版跑安装程序，单文件版换 exe，便携版覆盖文件夹。
+    /// 做不到（调试版、新版本没有对应的包、没有写入权限）时返回 Manual 和原因，由用户选择改用安装版或自己下载。
+    /// switchToInstaller：用户主动选了「改用安装版」。
+    /// </summary>
+    public static AppUpdatePlan PlanUpdate(AppVersionManifest manifest, AppEnvironmentInfo env, bool switchToInstaller, Func<string, bool>? canWrite = null)
+    {
+        var installer = SelectTargetPackage(manifest, env.RuntimeKind);
+        if (env.PackageForm == AppPackageForm.Development)
+            return AppUpdatePlan.Manual("这是调试版或编译输出，不会自动更新。");
+        if (env.PackageForm == AppPackageForm.Installer || switchToInstaller)
+            return installer != null
+                ? new AppUpdatePlan(installer, AppUpdateMode.Installer, "")
+                : AppUpdatePlan.Manual("这个版本的发布信息里没有安装包。");
+
+        var p = manifest.Packages;
+        var selfContained = env.RuntimeKind == AppRuntimeKind.SelfContained;
+        var (package, mode, name) = env.PackageForm == AppPackageForm.SingleFile
+            ? (selfContained ? p?.SelfContainedSingleFile : p?.FrameworkDependentSingleFile, AppUpdateMode.ReplaceExe, "单文件版")
+            : (selfContained ? p?.SelfContainedPortable : p?.FrameworkDependentPortable, AppUpdateMode.ReplaceFolder, "便携版");
+        if (package == null || string.IsNullOrWhiteSpace(package.Url))
+            return AppUpdatePlan.Manual($"这个版本的发布信息里没有{name}的下载包，不能原地替换。");
+
+        var directory = Path.GetDirectoryName(env.ExePath) ?? "";
+        if (!(canWrite ?? CanWriteDirectory)(directory))
+            return AppUpdatePlan.Manual("程序所在的文件夹没有写入权限（比如放在 Program Files 里），不能原地替换。");
+        return new AppUpdatePlan(package, mode, "");
+    }
+
+    /// <summary>新版本的发布页（手动下载用）。</summary>
+    public static string ReleasePageUrl(AppVersionManifest? manifest, string repo = DefaultRepo) =>
+        string.IsNullOrWhiteSpace(manifest?.ReleaseTag)
+            ? $"https://github.com/{repo}/releases/latest"
+            : $"https://github.com/{repo}/releases/tag/{Uri.EscapeDataString(manifest.ReleaseTag)}";
+
+    /// <summary>试着在目录里建一个临时文件，能建就算有写入权限。</summary>
+    public static bool CanWriteDirectory(string directory)
+    {
+        if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory)) return false;
+        var probe = Path.Combine(directory, $".astralparty-toys-write-test-{Guid.NewGuid():N}");
+        try
+        {
+            using (File.Create(probe, 1, FileOptions.DeleteOnClose)) { }
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 把下载好的便携版 zip 解压到临时文件夹，并确认里面真是便携版（有主程序 exe 和 dll），返回解压目录。
+    /// </summary>
+    public static string ExtractPortablePackage(string zipPath, string? stagingDirectory = null)
+    {
+        var staging = stagingDirectory ?? Path.Combine(Path.GetTempPath(), "AstralPartyToysUpdate", "portable-" + Path.GetFileNameWithoutExtension(zipPath));
+        if (Directory.Exists(staging)) Directory.Delete(staging, recursive: true);
+        Directory.CreateDirectory(staging);
+        // .NET 的 ExtractToDirectory 会拒绝跳出目标目录的条目（../ 之类）
+        System.IO.Compression.ZipFile.ExtractToDirectory(zipPath, staging);
+        if (!File.Exists(Path.Combine(staging, "AstralParty.Toys.exe")) || !File.Exists(Path.Combine(staging, "AstralParty.Toys.dll")))
+        {
+            Directory.Delete(staging, recursive: true);
+            throw new InvalidOperationException("便携版压缩包里没有找到 AstralParty.Toys.exe 和 AstralParty.Toys.dll。");
+        }
+        return staging;
+    }
+
+    /// <summary>
     /// 下载指定的安装包，并实时报告下载进度。下载完成后自动核对 SHA-256 哈希值。
     /// </summary>
     public async Task<string> DownloadPackageAsync(
@@ -175,14 +244,14 @@ public sealed class AppUpdateService
     /// <summary>
     /// 启动安装程序。支持静默安装参数。
     /// </summary>
-    public static Process? LaunchInstaller(string installerPath, bool silent = true)
+    public static Process? LaunchInstaller(string installerPath, bool silent = true, bool addDesktopShortcut = false)
     {
         if (!File.Exists(installerPath))
         {
             throw new FileNotFoundException("找不到安装程序文件", installerPath);
         }
 
-        var arguments = silent ? "/SILENT /SP- /CLOSEAPPLICATIONS" : "";
+        var arguments = InstallerArguments(silent, addDesktopShortcut);
         var psi = new ProcessStartInfo
         {
             FileName = installerPath,
@@ -191,6 +260,18 @@ public sealed class AppUpdateService
         };
 
         return Process.Start(psi);
+    }
+
+    /// <summary>
+    /// 安装程序参数。从单文件版 / 便携版改用安装版时是第一次安装，没有可以沿用的选项，
+    /// 而桌面快捷方式默认不勾：不加上的话，用户桌面上什么都没有，会以为没更新。
+    /// MERGETASKS 只在默认选项上追加，不会关掉别的。
+    /// </summary>
+    public static string InstallerArguments(bool silent, bool addDesktopShortcut)
+    {
+        var args = silent ? "/SILENT /SP- /CLOSEAPPLICATIONS" : "";
+        if (addDesktopShortcut) args = (args + " /MERGETASKS=\"desktopicon\"").Trim();
+        return args;
     }
 
     /// <summary>

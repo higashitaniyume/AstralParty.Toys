@@ -26,19 +26,46 @@
   // 软件更新：状态和消息都是原版的（AppState.appUpdateState、SettingsModule.renderUpdateState）
   const updateState = () => window.AppState?.appUpdateState || {};
   const updateStatus = () => String(updateState().status || 'idle').toLowerCase();
+  // 发布形态（宿主 AppRuntimeDetector 判断）和这次的更新方式：先讲清楚点了会发生什么
+  const FORMS = { installer: '安装版', 'single-file': '单文件版', portable: '便携版', development: '调试版' };
+  function updateFormRow(u, busy) {
+    const form = String(u.packageForm || ''), mode = String(u.updateMode || ''), where = esc(u.targetLocation || '');
+    if (!FORMS[form]) return '';
+    const portableLike = form === 'single-file' || form === 'portable';
+    let text;
+    if (form === 'installer') text = '更新会运行安装程序，原地升级，快捷方式不用变';
+    else if (form === 'development') text = '调试版或编译输出，不会自动更新';
+    else if (u.switchToInstaller) text = '已选择改用安装版：会装到「本机应用」目录（%LocalAppData%\\Programs），并在桌面放一个新的快捷方式。以后点更新就能原地升级；原来的文件不会自动删掉，确认新版能用后可以自己删';
+    else if (mode === 'replace-exe') text = `更新时程序会先关闭，替换 <code>${where}</code>，再自动重新打开。替换失败会还原旧文件`;
+    else if (mode === 'replace-folder') text = `更新时程序会先关闭，把新文件覆盖进 <code>${where}</code>（文件夹里你自己放的文件不动），再自动重新打开。失败会还原`;
+    const manual = mode === 'manual' && u.manualReason && st2avail(u);
+    if (!text) text = manual ? '这次不能原地替换，原因见下一行' : `检查到新版本后，会告诉你能不能原地替换这个${FORMS[form]}`;
+    const actions = !portableLike || busy ? ''
+      : u.switchToInstaller ? `<button class="v2-btn ghost" data-v2g="updateSwitch" data-on="0">不改了</button>`
+      : `<button class="v2-btn ghost" data-v2g="updateSwitch" data-on="1">改用安装版</button>`;
+    return `
+      <div class="v2-row"><span class="k">你的版本</span><span class="v v2-muted" style="white-space:normal">${FORMS[form]}：${text}</span>${actions}</div>
+      ${manual ? `<div class="v2-row"><span class="k">不能自动更新</span><span class="v v2-muted" style="white-space:normal">${esc(u.manualReason)}可以点「改用安装版」，或者到发布页手动下载新的${FORMS[form]}替换。</span>
+        <button class="v2-btn ghost" data-v2g="copyUrl" data-url="${esc(u.releaseUrl || REPO_URL + '/releases/latest')}">${I().copy}复制下载页地址</button></div>` : ''}`;
+  }
+  const st2avail = u => ['updateavailable', 'readytoinstall'].includes(String(u.status || '').toLowerCase());
   function updateSteps() {
     const st = updateStatus(), u = updateState(), v = esc(u.latestVersion || '');
     const checking = st === 'checking', downloading = st === 'downloading', installing = st === 'installing';
     const busy = checking || downloading || installing;
+    const mode = String(u.updateMode || ''), canAuto = mode !== 'manual';
+    const replace = mode === 'replace-exe' || mode === 'replace-folder';
     const avail = st === 'updateavailable', ready = st === 'readytoinstall';
-    const checkState = checking ? '正在查询 GitHub 最新发布…' : avail ? `发现可更新到 v${v}，点「下载更新」手动下载` : ready ? `v${v} 已下载，点「安装更新」手动安装` : st === 'uptodate' ? '已是最新，无需下载或安装' : st === 'error' ? `出错：${esc(u.error || '网络连接失败')}` : '点「检查更新」手动查询一次';
+    const applyLabel = replace ? '替换并重启' : '安装更新';
+    const checkState = checking ? '正在查询 GitHub 最新发布…' : avail ? (canAuto ? `发现可更新到 v${v}，点「下载更新」手动下载` : `发现新版本 v${v}`) : ready ? `v${v} 已下载，点「${applyLabel}」` : st === 'uptodate' ? '已是最新，无需下载或安装' : st === 'error' ? `出错：${esc(u.error || '网络连接失败')}` : '点「检查更新」手动查询一次';
     return `
+      ${updateFormRow(u, busy)}
       <div class="v2-row"><span class="k">1 · 检查</span><span class="v v2-muted" style="white-space:normal">${checkState}</span>
         <button class="v2-btn line" data-v2g="checkUpdate" ${busy ? 'disabled' : ''}>${checking ? '检查中…' : '检查更新'}</button></div>
-      <div class="v2-row"><span class="k">2 · 下载</span><span class="v v2-muted" style="white-space:normal">${downloading ? `正在下载 v${v}… ${u.percent ?? 0}%` : ready ? `v${v} 已下载就绪` : avail ? `可下载 v${v}` : '检查到新版本后手动选择下载'}</span>
-        ${downloading ? `<button class="v2-btn ghost" data-v2g="updateCancel">取消</button>` : `<button class="v2-btn line" data-v2g="updateDownload" ${avail ? '' : 'disabled'}>下载更新</button>`}</div>
-      <div class="v2-row"><span class="k">3 · 安装</span><span class="v v2-muted" style="white-space:normal">${installing ? '正在启动安装器…' : ready ? `点「安装更新」手动安装 v${v}` : '下载完成后手动选择安装'}</span>
-        <button class="v2-btn line" data-v2g="updateApply" ${ready ? '' : 'disabled'}>${installing ? '安装中…' : '安装更新'}</button></div>`;
+      <div class="v2-row"><span class="k">2 · 下载</span><span class="v v2-muted" style="white-space:normal">${downloading ? `正在下载 v${v}… ${u.percent ?? 0}%` : ready ? `v${v} 已下载就绪` : avail ? (canAuto ? `可下载 v${v}` : '现在不能自动下载，见上面') : '检查到新版本后手动选择下载'}</span>
+        ${downloading ? `<button class="v2-btn ghost" data-v2g="updateCancel">取消</button>` : `<button class="v2-btn line" data-v2g="updateDownload" ${avail && canAuto ? '' : 'disabled'}>下载更新</button>`}</div>
+      <div class="v2-row"><span class="k">3 · ${replace ? '替换' : '安装'}</span><span class="v v2-muted" style="white-space:normal">${installing ? (replace ? '程序即将关闭，替换完成后会自动重新打开…' : '正在启动安装器…') : ready ? `点「${applyLabel}」${replace ? '，程序会关闭，替换完成后自动重新打开' : `手动安装 v${v}`}` : `下载完成后手动选择${replace ? '替换' : '安装'}`}</span>
+        <button class="v2-btn line" data-v2g="updateApply" ${ready ? '' : 'disabled'}>${installing ? (replace ? '替换中…' : '安装中…') : applyLabel}</button></div>`;
   }
   const MIRRORS = [['direct', '直连 GitHub'], ['gh-proxy', 'GH-Proxy 镜像'], ['ghfast', 'GHFast 镜像'], ['custom', '自定义镜像']];
 
@@ -288,6 +315,7 @@
     updateDownload: () => post({ type: 'startAppUpdateDownload' }),
     updateCancel: () => post({ type: 'cancelAppUpdateDownload' }),
     updateApply: () => post({ type: 'applyAppUpdate' }),
+    updateSwitch: el => post({ type: 'setAppUpdateSwitchToInstaller', enabled: el.dataset.on === '1' }),
     versionDetail: () => window.VersionModule?.showDetails(),
     changelog: () => window.VersionModule?.requestChangelog('app'),
     uninstall: () => post({ type: 'appUninstallInfo' }),

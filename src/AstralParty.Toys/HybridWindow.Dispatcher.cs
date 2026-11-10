@@ -101,6 +101,9 @@ public partial class HybridWindow
                 case "applyAppUpdate":
                     ApplyAppUpdate(silent: true);
                     break;
+                case "setAppUpdateSwitchToInstaller":
+                    SetAppUpdateSwitchToInstaller(root.TryGetProperty("enabled", out var switchElement) && switchElement.ValueKind == JsonValueKind.True);
+                    break;
                 case "openReplay":
                     await PickAndLoadReplayAsync();
                     break;

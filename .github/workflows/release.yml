@@ -304,35 +304,35 @@ jobs:
           $date = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
           $repo = "${{ github.repository }}"
 
-          $fwInstaller = Get-ChildItem artifacts -Filter "*-framework-dependent-installer.exe" | Select-Object -First 1
-          $scInstaller = Get-ChildItem artifacts -Filter "*-self-contained-installer.exe" | Select-Object -First 1
-
-          if (-not $fwInstaller -or -not $scInstaller) {
-            throw "Could not find installer executables in artifacts"
+          # 每种发布形态一项：安装版跑安装程序，单文件版和便携版由程序在退出后原地替换（AppSelfUpdater）
+          $kinds = [ordered]@{
+            frameworkDependentInstaller  = "*-framework-dependent-installer.exe"
+            selfContainedInstaller       = "*-self-contained-installer.exe"
+            frameworkDependentSingleFile = "*-framework-dependent-single-file.exe"
+            selfContainedSingleFile      = "*-self-contained-single-file.exe"
+            frameworkDependentPortable   = "*-framework-dependent-portable.zip"
+            selfContainedPortable        = "*-self-contained-portable.zip"
           }
-
-          $fwHash = (Get-FileHash -Path $fwInstaller.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
-          $scHash = (Get-FileHash -Path $scInstaller.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          $packages = [ordered]@{}
+          foreach ($key in $kinds.Keys) {
+            $file = @(Get-ChildItem artifacts -Filter $kinds[$key])
+            if ($file.Count -ne 1) {
+              throw "Expected exactly one $($kinds[$key]) in artifacts, found $($file.Count)"
+            }
+            $packages[$key] = [ordered]@{
+              fileName = $file[0].Name
+              url = "https://github.com/$repo/releases/download/$tag/$($file[0].Name)"
+              sha256 = (Get-FileHash -Path $file[0].FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+              size = $file[0].Length
+            }
+          }
 
           $manifest = [ordered]@{
             version = $version
             releaseTag = $tag
             releaseDate = $date
             releaseNotes = ""
-            packages = [ordered]@{
-              frameworkDependentInstaller = [ordered]@{
-                fileName = $fwInstaller.Name
-                url = "https://github.com/$repo/releases/download/$tag/$($fwInstaller.Name)"
-                sha256 = $fwHash
-                size = $fwInstaller.Length
-              }
-              selfContainedInstaller = [ordered]@{
-                fileName = $scInstaller.Name
-                url = "https://github.com/$repo/releases/download/$tag/$($scInstaller.Name)"
-                sha256 = $scHash
-                size = $scInstaller.Length
-              }
-            }
+            packages = $packages
           }
 
           $json = $manifest | ConvertTo-Json -Depth 5
