@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="css/v2-light.css" />
     <!-- 新界面（重做）：放最后，覆盖外壳布局 -->
     <link rel="stylesheet" href="css/v2.css" />
+    <link rel="stylesheet" href="css/account.css" />
   </head>
   <body>
     <div class="app-shell">
@@ -61,6 +62,9 @@
                 d="M40-160v-112q0-34 17.5-62.5T104-378q62-31 126-46.5T360-440q66 0 130 15.5T616-378q29 15 46.5 43.5T680-272v112H40Zm720 0v-120q0-44-24.5-84.5T666-434q51 6 96 20.5t84 35.5q36 20 55 44.5t19 53.5v120H760ZM247-527q-47-47-47-113t47-113q47-47 113-47t113 47q47 47 47 113t-47 113q-47 47-113 47t-113-47Zm466 0q-47 47-113 47-11 0-28-2.5t-28-5.5q27-32 41.5-71t14.5-81q0-42-14.5-81T544-792q14-5 28-6.5t28-1.5q66 0 113 47t47 113q0 66-47 113ZM120-240h480v-32q0-11-5.5-20T580-306q-54-27-109-40.5T360-360q-56 0-111 13.5T140-306q-9 5-14.5 14t-5.5 20v32Zm240-320Zm0-80Z"
               /></svg
             ><span data-i18n="nav.profiles">游戏多开</span>
+          </button>
+          <button class="nav-crumb-btn" data-page="account">
+            <svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 12c-5 0-9 3-9 6v2h18v-2c0-3-4-6-9-6Z" /></svg><span data-i18n="nav.account">我的账号</span>
           </button>
           <button class="nav-crumb-btn" data-page="tools">
             <svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true">
@@ -149,6 +153,7 @@
         <!-- @include view-replays.html -->
         <!-- @include view-utilities.html -->
         <!-- @include view-mods.html -->
+        <!-- @include view-account.html -->
         <!-- @include view-workshop.html -->
         <!-- @include view-skins.html -->
         <!-- @include view-wiki-profiles.html -->
@@ -182,6 +187,7 @@
     <script src="js/version.js"></script>
     <script src="js/gamelib.js"></script>
     <script src="js/profiles.js"></script>
+    <script src="js/account.js"></script>
     <script src="js/home.js"></script>
     <script src="js/replay/helpers.js"></script>
     <script src="js/replay/state.js"></script>

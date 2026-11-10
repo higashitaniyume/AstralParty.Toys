@@ -1,0 +1,45 @@
+<section id="accountView" class="page-view hidden">
+  <div class="account-page">
+    <header class="account-heading">
+      <div><h2 data-i18n="nav.account">我的账号</h2><p data-i18n="account.subtitle">本机直连 · 角色参战次数与好友状态</p></div>
+      <div class="account-heading-actions">
+        <button class="v2-btn ghost" id="accountPrivacyBtn" data-i18n="account.privacy">隐私与凭据安全</button>
+        <button class="v2-btn" id="accountTutorialBtn" data-i18n="account.tutorial">使用教程</button>
+      </div>
+    </header>
+    <section class="account-panel account-safety" id="accountSafety" aria-labelledby="accountSafetyTitle">
+      <h3 id="accountSafetyTitle" data-i18n="account.warning">请妥善保管你的账号凭据</h3>
+      <button class="v2-btn" id="accountReviewBtn" data-i18n="account.privacy"></button>
+    </section>
+    <div id="accountContent" hidden>
+      <section class="account-panel">
+        <div class="account-toolbar">
+          <label><span class="sr-only" data-i18n="account.select"></span><select id="accountUid" class="v2-select" data-i18n-title="account.select"></select></label>
+          <button class="v2-btn ghost" id="accountScanBtn" data-i18n="account.scan"></button>
+          <button class="v2-btn primary" id="accountConnectBtn" data-i18n="account.connect"></button>
+          <button class="v2-btn ghost" id="accountDisconnectBtn" data-i18n="account.disconnect" disabled></button>
+          <button class="v2-btn account-danger" id="accountDeleteBtn" data-i18n="account.delete" disabled></button>
+        </div>
+        <p id="accountPrerequisite" class="account-notice"></p>
+        <div class="account-actions"><button class="v2-btn" id="accountInstallBtn" data-i18n="account.install" hidden></button><button class="v2-btn" id="accountModsBtn" data-i18n="account.enable" hidden></button></div>
+        <p class="account-path" id="accountCredentialPath" data-i18n-skip></p>
+        <div id="accountConnectionStatus" role="status" aria-live="polite" class="account-status"></div>
+      </section>
+      <section id="accountOverview" class="account-panel account-overview" data-i18n-skip hidden></section>
+      <div class="account-tabs" role="tablist" aria-label="Account data">
+        <button id="accountCharactersTab" role="tab" aria-selected="true" aria-controls="accountCharactersPanel" data-i18n="account.characters"></button>
+        <button id="accountFriendsTab" role="tab" aria-selected="false" aria-controls="accountFriendsPanel" tabindex="-1" data-i18n="account.friends"></button>
+      </div>
+      <section id="accountCharactersPanel" class="account-panel" role="tabpanel" aria-labelledby="accountCharactersTab">
+        <div class="account-toolbar"><input id="accountCharacterSearch" class="v2-input" data-i18n-placeholder="account.search" data-i18n-title="account.search" /><label><input id="accountPlayedOnly" type="checkbox" /> <span data-i18n="account.playedOnly"></span></label></div>
+        <div id="accountCharacters" class="account-character-grid" data-i18n-skip></div>
+      </section>
+      <section id="accountFriendsPanel" class="account-panel" role="tabpanel" aria-labelledby="accountFriendsTab" hidden>
+        <div class="account-toolbar"><input id="accountFriendSearch" class="v2-input" data-i18n-placeholder="account.search" data-i18n-title="account.search" /><label><input id="accountOnlineOnly" type="checkbox" /> <span data-i18n="account.onlineOnly"></span></label><button class="v2-btn" id="accountRefreshBtn" data-i18n="account.refresh" disabled></button></div>
+        <p class="account-muted" data-i18n="account.manual"></p>
+        <div id="accountFriendFreshness" class="account-muted" role="status" data-i18n-skip></div>
+        <div id="accountFriends" class="account-friends" data-i18n-skip></div>
+      </section>
+    </div>
+  </div>
+</section>

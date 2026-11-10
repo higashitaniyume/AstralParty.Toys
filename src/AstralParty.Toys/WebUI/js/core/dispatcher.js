@@ -3,6 +3,7 @@
 host?.addEventListener('message', event => {
   const msg = event.data;
   if (!msg?.type) return;
+  if (msg.type.startsWith('myAccount')) { window.MyAccountModule?.receive(msg); return; }
 
   switch (msg.type) {
     case 'modRecoveryDone':

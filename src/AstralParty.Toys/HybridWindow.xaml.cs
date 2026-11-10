@@ -131,12 +131,15 @@ public partial class HybridWindow : Window
             };
             WebView.CoreWebView2.NavigationStarting += (_, args) =>
             {
+                _myAccountPageVisible = false;
+                StopMyAccount();
                 if (!args.Uri.StartsWith("https://app.aspatoys.hiynet.localhost/", StringComparison.OrdinalIgnoreCase))
                 {
                     args.Cancel = true;
                     TryOpenExternal(args.Uri);
                 }
             };
+            WebView.CoreWebView2.ProcessFailed += (_, _) => { _webReady = false; _myAccountPageVisible = false; StopMyAccount(); };
             WebView.Source = new Uri("https://app.aspatoys.hiynet.localhost/index.html");
         }
         catch (Exception ex)

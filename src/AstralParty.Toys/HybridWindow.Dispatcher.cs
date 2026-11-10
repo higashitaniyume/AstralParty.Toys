@@ -20,6 +20,9 @@ public partial class HybridWindow
             using var document = JsonDocument.Parse(e.WebMessageAsJson);
             var root = document.RootElement;
             var type = root.TryGetProperty("type", out var typeElement) ? typeElement.GetString() : null;
+            if (await HandleMyAccountMessageAsync(type, root)) return;
+            if (type is "launchGame" or "accountProfileLaunch") StopMyAccount("game_running");
+            if (type is "gameProfileSetActive" or "gameProfileRemove" or "accountProfileActivate") StopMyAccount("game_changed");
             if (HandleUiThemeMessage(type, root)) return;   // 新界面：深浅色
             if (HandleBackgroundMessage(type, root)) return;   // 新界面：自定义 → 背景
             if (HandleWindowChromeMessage(type, root)) return;   // 新界面自绘标题栏：拖动 / 最小化 / 最大化 / 关闭

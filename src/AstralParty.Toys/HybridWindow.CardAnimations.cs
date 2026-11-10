@@ -14,6 +14,8 @@ public partial class HybridWindow
     protected override void OnClosed(EventArgs e)
     {
         _webReady = false;
+        _myAccountPageVisible = false;
+        StopMyAccount();
         _cardAnimationConversion?.Cancel();
         _pendingCardAnimation = null;
         base.OnClosed(e);

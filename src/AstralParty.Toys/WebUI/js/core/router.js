@@ -5,6 +5,8 @@ function runPageHook(pageName) {
     if (window.HomeModule && AppState.homeData) window.HomeModule.onShowHome();
   } else if (pageName === 'profiles') {
     window.AccountProfilesModule?.onShow();
+  } else if (pageName === 'account') {
+    window.MyAccountModule?.onShow();
   } else if (pageName === 'tools') {
     window.ReplayModule?.onShowTools();
   } else if (pageName === 'wiki') {
@@ -68,6 +70,7 @@ function showPage(pageName, options = {}) {
     return;
   }
 
+  if (current?.id === 'accountView') window.MyAccountModule?.onHide();
   updateNavigation(pageName);
   if (!current || immediate) {
     target.classList.remove('hidden', 'page-entering', 'page-leaving');
