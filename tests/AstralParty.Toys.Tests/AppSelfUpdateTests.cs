@@ -148,6 +148,10 @@ public sealed class AppSelfUpdateTests
         Assert.Equal("old dll", File.ReadAllText(Path.Combine(backup, "AstralParty.Toys.dll")));
         Assert.False(File.Exists(Path.Combine(backup, "我的笔记.txt")));
         Assert.False(File.Exists(Path.Combine(backup, "new-only.dll")));
+
+        // 新版本才有的文件记在清单里，回滚时按清单删掉
+        var list = File.ReadAllLines(AppSelfUpdater.AddedFilesListPath(backup));
+        Assert.Equal(new[] { Path.Combine(app, "new-only.dll") }, list);
     }
 
     // ============================== 脚本 ==============================
@@ -196,7 +200,7 @@ public sealed class AppSelfUpdateTests
         Assert.Equal("new", File.ReadAllText(exe));
         Assert.False(File.Exists(exe + ".update-old"));
         Assert.False(File.Exists(downloaded));
-        Assert.Equal((true, "2.3.0"), AppSelfUpdater.TakeLastResult(result));
+        Assert.Equal(new SelfUpdateOutcome("ok", "2.3.0"), AppSelfUpdater.TakeLastResult(result));
         Assert.False(File.Exists(result));   // 读一次就删
         Assert.Empty(Directory.GetFiles(sandbox.Root, "astralparty-toys-update-*.cmd"));   // 脚本删掉了自己
     }
@@ -217,7 +221,7 @@ public sealed class AppSelfUpdateTests
 
         Assert.Equal("old", File.ReadAllText(exe));
         Assert.False(File.Exists(exe + ".update-old"));
-        Assert.Equal((false, "2.3.0"), AppSelfUpdater.TakeLastResult(result));
+        Assert.Equal(new SelfUpdateOutcome("restored", "2.3.0"), AppSelfUpdater.TakeLastResult(result));
     }
 
     [Fact]
@@ -253,7 +257,84 @@ public sealed class AppSelfUpdateTests
         Assert.False(Directory.Exists(staging));
         Assert.False(Directory.Exists(backup));
         Assert.False(File.Exists(zip));
-        Assert.Equal((true, "2.3.0"), AppSelfUpdater.TakeLastResult(result));
+        Assert.Equal(new SelfUpdateOutcome("ok", "2.3.0"), AppSelfUpdater.TakeLastResult(result));
+    }
+
+    /// <summary>覆盖到一半失败时要能回到更新前的样子：新引入的文件删掉，被覆盖的旧文件还原。</summary>
+    [Fact]
+    public void Script_RollsBackTheFolder_WhenTheOverlayFails()
+    {
+        using var sandbox = new TestSandbox("update-replace-folder-rollback");
+        var app = sandbox.EnsureDirectory("便携 50% & 版");
+        File.WriteAllText(Path.Combine(app, "AstralParty.Toys.exe"), "old exe");
+        File.WriteAllText(Path.Combine(app, "AstralParty.Toys.dll"), "old dll");
+        File.WriteAllText(Path.Combine(app, "我的笔记.txt"), "user file");
+        var staging = sandbox.EnsureDirectory("AstralPartyToysUpdate", "portable");
+        File.WriteAllText(Path.Combine(staging, "AstralParty.Toys.exe"), "new exe");
+        File.WriteAllText(Path.Combine(staging, "AstralParty.Toys.dll"), "new dll");
+        Directory.CreateDirectory(Path.Combine(staging, "zh"));
+        File.WriteAllText(Path.Combine(staging, "zh", "res.dll"), "new res");
+        // 独占锁住 staging 里的一个文件：robocopy 复制不了它，整次覆盖就算失败
+        var locked = Path.Combine(staging, "locked.bin");
+        File.WriteAllText(locked, "locked");
+        var backup = sandbox.Combine("AstralPartyToysUpdate", "backup");
+        var added = AppSelfUpdater.BackupOverwrittenFiles(staging, app, backup);
+        var result = sandbox.Combine("result.txt");
+
+        Assert.Contains(Path.Combine(app, "zh", "res.dll"), added);
+        Assert.Contains(Path.Combine(app, "locked.bin"), added);
+        Assert.DoesNotContain(Path.Combine(app, "AstralParty.Toys.dll"), added);
+
+        using (new FileStream(locked, FileMode.Open, FileAccess.Read, FileShare.None))
+        using (var script = AppSelfUpdater.Launch(new AppReplacePlan
+        {
+            ProcessId = ExitedProcessId(), Mode = AppUpdateMode.ReplaceFolder, CurrentExe = Path.Combine(app, "AstralParty.Toys.exe"),
+            StagingDirectory = staging, AppDirectory = app, BackupDirectory = backup,
+            ResultFile = result, NewVersion = "2.3.0", Restart = false
+        }, sandbox.Root))
+        {
+            Assert.True(script.WaitForExit(120000));
+        }
+
+        // 回到更新前：旧文件还原，新引入的文件删掉，用户自己的文件留着
+        Assert.Equal("old exe", File.ReadAllText(Path.Combine(app, "AstralParty.Toys.exe")));
+        Assert.Equal("old dll", File.ReadAllText(Path.Combine(app, "AstralParty.Toys.dll")));
+        Assert.False(File.Exists(Path.Combine(app, "zh", "res.dll")));
+        Assert.False(File.Exists(Path.Combine(app, "locked.bin")));
+        Assert.Equal("user file", File.ReadAllText(Path.Combine(app, "我的笔记.txt")));
+        // 备份和清单清掉了；解压目录里被锁住的那个文件删不掉，其余都清掉了
+        Assert.False(Directory.Exists(backup));
+        Assert.False(File.Exists(AppSelfUpdater.AddedFilesListPath(backup)));
+        Assert.False(File.Exists(Path.Combine(staging, "AstralParty.Toys.exe")));
+        Assert.True(File.Exists(Path.Combine(staging, "locked.bin")));
+        Assert.Equal(new SelfUpdateOutcome("restored", "2.3.0"), AppSelfUpdater.TakeLastResult(result));
+    }
+
+    /// <summary>程序一直没退出时不动任何文件，只记下「没有开始」。</summary>
+    [Fact]
+    public void Script_DoesNotTouchAnything_WhenTheProgramIsStillRunning()
+    {
+        using var sandbox = new TestSandbox("update-replace-exe-busy");
+        var exe = sandbox.WriteFile("Desktop/AstralParty.Toys-.exe", "old");
+        var downloaded = sandbox.WriteFile("AstralPartyToysUpdate/new.exe", "new");
+        var result = sandbox.Combine("result.txt");
+
+        using var running = Process.Start(new ProcessStartInfo("ping.exe", "-n 30 127.0.0.1") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true })!;
+        using (var script = AppSelfUpdater.Launch(new AppReplacePlan
+        {
+            ProcessId = running.Id, Mode = AppUpdateMode.ReplaceExe, CurrentExe = exe, NewExe = downloaded,
+            ResultFile = result, NewVersion = "2.3.0", Restart = false, WaitAttempts = 2
+        }, sandbox.Root))
+        {
+            Assert.True(script.WaitForExit(60000));
+        }
+
+        Assert.Equal("old", File.ReadAllText(exe));
+        Assert.False(File.Exists(exe + ".update-old"));
+        var outcome = AppSelfUpdater.TakeLastResult(result);
+        Assert.NotNull(outcome);
+        Assert.True(outcome!.Busy);
+        Assert.Equal("2.3.0", outcome.Version);
     }
 
     private static int ExitedProcessId()

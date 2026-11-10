@@ -136,6 +136,12 @@ public sealed class AppUpdateState
     /// <summary>用户选了「改用安装版」。</summary>
     public bool SwitchToInstaller { get; set; }
 
+    /// <summary>这份程序已经被安装版取代，不再提示更新。</summary>
+    public bool Superseded { get; set; }
+
+    /// <summary>换了更新方式，之前下载的包作废了，需要重新下载。</summary>
+    public bool NeedsRedownload { get; set; }
+
     /// <summary>当前程序所在位置（单文件版是 exe，便携版是文件夹），给界面说明「会替换哪里」。</summary>
     public string TargetLocation { get; set; } = "";
 

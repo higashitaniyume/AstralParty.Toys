@@ -10,6 +10,10 @@ The Start menu shortcut is selected by default; the desktop shortcut is not. Bot
 
 The fixed AppId is `{8E9C6C61-5A60-4EF0-AD84-8F59E877A663}`. No legacy installer detection, migration, or removal is performed.
 
+## In-app updates
+
+Installer builds keep updating through the installer. The single-file and portable builds update in place instead (the running program is closed, the new files replace the old ones, and the program starts again); they can also switch to the installer form from the settings page. That switch is a first-time install with no remembered options, so the updater adds `/MERGETASKS="desktopicon"` to the silent arguments: `MERGETASKS` only appends to the selected tasks and never clears the others, which keeps the default Start menu shortcut and adds a desktop shortcut.
+
 ## Uninstall
 
 The generated uninstaller displays an English warning before interactive removal, including when launched using its registered uninstall command from Windows Settings or Control Panel:
@@ -35,6 +39,8 @@ Without `-ProductVersion`, the build script reads the application project's `Ver
 # Fresh installation / upgrade, without UAC for writable folders:
 .\AstralParty.Toys-installer.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR="D:\Apps\AstralParty.Toys" /TASKS="startmenuicon,desktopicon,protocolregistration" /LOG="install.log"
 # No shortcuts: /TASKS=""
+# Keep the remembered tasks and add the desktop shortcut (what the in-app updater uses):
+.\AstralParty.Toys-installer.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /MERGETASKS="desktopicon" /LOG="install.log"
 # Silent uninstall:
 & 'D:\Apps\AstralParty.Toys\unins000.exe' /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /LOG="uninstall.log"
 ```

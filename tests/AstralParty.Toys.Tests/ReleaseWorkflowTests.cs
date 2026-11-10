@@ -1,4 +1,8 @@
+using System.Reflection;
+using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using AstralParty.Toys.Services.App;
 using AstralParty.Toys.Tests.Support;
 
 namespace AstralParty.Toys.Tests;
@@ -41,6 +45,28 @@ public sealed class ReleaseWorkflowTests
             Assert.Contains(key, workflow);
         Assert.Contains("*-self-contained-single-file.exe", workflow);
         Assert.Contains("*-framework-dependent-portable.zip", workflow);
+    }
+
+    /// <summary>
+    /// version.json 里的字段名必须和客户端读它的属性名一致：写错一个，
+    /// 旧客户端会忽略、新客户端拿到空值，所有单文件版/便携版用户就都只能手动下载了。
+    /// </summary>
+    [Fact]
+    public void Release_ManifestKeysMatchTheClientPackageFields()
+    {
+        var workflow = ReadWorkflow();
+        var workflowKeys = Regex.Matches(workflow, @"^\s*([A-Za-z][A-Za-z0-9]*)\s*=\s*""\*-", RegexOptions.Multiline)
+            .Select(m => m.Groups[1].Value)
+            .ToArray();
+        var clientKeys = typeof(AppPackageAssets)
+            .GetProperties()
+            .Select(p => p.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name)
+            .Where(n => !string.IsNullOrEmpty(n))
+            .Select(n => n!)
+            .ToArray();
+
+        Assert.NotEmpty(workflowKeys);
+        Assert.Equal(clientKeys.OrderBy(k => k), workflowKeys.OrderBy(k => k));
     }
 
     private static string ReadWorkflow() => File.ReadAllText(Path.GetFullPath(Path.Combine(
