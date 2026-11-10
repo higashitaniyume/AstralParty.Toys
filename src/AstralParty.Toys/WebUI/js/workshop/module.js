@@ -452,6 +452,7 @@
     syncCards();
     window.Icons?.hydrate(grid);
     window.StickerModule?.syncAfterRender();
+    window.Motion?.content(grid, JSON.stringify([state.viewMode, filtered.map(item => item.id)]));
   }
 
   // 按当前安装状态刷新所有卡片的按钮/进度条（不重建节点）。
@@ -936,6 +937,7 @@
     }
 
     host.innerHTML = `${detailHeroMarkup(state.detail)}${detailTabsMarkup(state.detail)}`;
+    window.Motion?.content(host, state.detail.id);
     window.Icons?.hydrate(host);
     window.StickerModule?.syncAfterRender();
     window.StickerModule?.requestCounts([state.detail.id]);
@@ -960,6 +962,7 @@
 
     document.querySelectorAll('#workshopDetailContent .workshop-tab-panel').forEach(panel => {
       panel.hidden = panel.id !== `workshopPanel-${tab}`;
+      if (!panel.hidden) window.Motion?.reveal(panel);
     });
   }
 

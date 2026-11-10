@@ -59,7 +59,7 @@ function showPage(pageName, options = {}) {
   if (!target) return;
 
   const current = document.querySelector('.page-view:not(.hidden)');
-  const immediate = options.immediate || document.body.classList.contains('reduce-motion');
+  const immediate = options.immediate || window.Motion?.reduced();
   if (AppState.isPageTransitioning) {
     AppState.pendingPage = pageName;
     return;
@@ -91,8 +91,8 @@ function showPage(pageName, options = {}) {
     target.removeAttribute('aria-hidden');
     void target.offsetWidth;
     requestAnimationFrame(() => target.classList.remove('page-entering'));
-    window.setTimeout(() => finishPageTransition(target, pageName), 390);
-  }, 180);
+    window.setTimeout(() => finishPageTransition(target, pageName), window.Motion?.duration('--motion-page-in', 180) ?? 180);
+  }, window.Motion?.duration('--motion-page-out', 100) ?? 100);
 }
 
 // Setup Global Listeners

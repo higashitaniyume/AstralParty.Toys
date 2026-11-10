@@ -337,6 +337,9 @@
       : window.V2Chars ? window.V2Chars.html()
       : frameHead();
     root.innerHTML = `<div class="v2-page ${t === 'characters' && !window.V2Chars ? 'v2-frame-only' : ''}"><div class="v2-settings-layout">${sideNav()}<div class="v2-settings-main">${inner}</div></div></div>`;
+    const motionKey = JSON.stringify([t, K.cardScheme, K.cardCat, K.audioScheme,
+      K.aCat, K.aStatus, K.aChar, t === 'characters' ? window.V2Chars?.motionKey() : null]);
+    window.Motion?.content(root, motionKey, '.v2-settings-main');
     // 搜索框：重画后把焦点和光标放回去
     U().bindSearch('v2sCardQ', v => { K.cardQ = v; render(); });
     U().bindSearch('v2sAQ', v => { K.aQ = v; K.aLimit = 200; render(); });

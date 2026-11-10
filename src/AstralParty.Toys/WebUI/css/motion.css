@@ -1,0 +1,191 @@
+/* Interaction motion for both the new shell and legacy content still used within it.
+   Keep transforms composited, controls immediately usable, and busy renderers untouched. */
+:root {
+  --ui-motion-fast: 120ms;
+  --ui-motion-normal: 180ms;
+  --ui-motion-enter: 220ms;
+  --ui-motion-exit: 140ms;
+  --ui-motion-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --motion-page-out: 100ms;
+  --motion-page-in: 180ms;
+}
+
+/* Independent scale/translate leave existing transforms (switch thumbs, centered buttons) intact. */
+html body :is(button, a[href], [role="button"], summary) {
+  transition: color var(--ui-motion-fast) ease, background-color var(--ui-motion-fast) ease,
+    border-color var(--ui-motion-fast) ease, box-shadow var(--ui-motion-normal) ease,
+    opacity var(--ui-motion-fast) ease, transform var(--ui-motion-normal) var(--ui-motion-ease), scale var(--ui-motion-fast) var(--ui-motion-ease),
+    translate var(--ui-motion-normal) var(--ui-motion-ease);
+}
+html body :is(.v2-btn, .v2-icon-btn, .v2-tb-btn, .v2-theme-btn, .primary-btn, .secondary-btn,
+  .danger-btn, .link-btn, .back-btn, .nav-crumb-btn, .v2-choice, .v2-chip, .v2-slot,
+  .workshop-pager-btn, .profiles-launch-btn):not(:disabled, [aria-disabled="true"]):active {
+  scale: .97;
+}
+html body :is(.v2-win, .v2-winbtns button) { scale: none; translate: none; }
+html body :is(button, [role="button"], a[href], summary):focus-visible {
+  outline: 2px solid var(--gp-pink);
+  outline-offset: 3px;
+}
+
+/* Local hover feedback rather than moving a whole page or a text/input-heavy row. */
+@media (hover: hover) {
+  html body :is(.v2-scheme, .v2-tcard, .v2-slot, .v2-choice):not(:disabled):hover {
+    translate: 0 -2px;
+  }
+  html body :is(.nav-crumb-btn, .v2-theme-btn):not(:disabled):hover > svg {
+    translate: 0 -1px;
+  }
+  html body .v2-row.link:hover > .chev { translate: 2px 0; }
+}
+html body :is(.v2-scheme, .v2-tcard, .v2-slot, .v2-choice):not(:disabled):active {
+  translate: 0 0;
+}
+html body :is(.nav-crumb-btn, .v2-theme-btn) > svg, html body .v2-row.link > .chev {
+  transition: translate var(--ui-motion-normal) var(--ui-motion-ease);
+}
+html body :is(.v2-row, .v2-mod, .v2-replay, .profiles-card, .workshop-card, .workshop-row,
+  .account-character, .account-friend) {
+  transition: background-color var(--ui-motion-fast) ease, border-color var(--ui-motion-fast) ease,
+    box-shadow var(--ui-motion-normal) ease;
+}
+
+/* Tabs, selections and form focus retain their own backgrounds/checked-state logic. */
+html body :is(.v2-side-tab, .v2-seg button, .v2-tabs button, .account-tabs button,
+  .workshop-tab, .changelog-tab, .subnav-tab, .forge-sticker-tab) {
+  transition: color var(--ui-motion-normal) ease, background-color var(--ui-motion-normal) ease,
+    border-color var(--ui-motion-normal) ease, box-shadow var(--ui-motion-normal) ease;
+}
+html body :is(.v2-search, .v2-field input, .v2-field textarea, .v2-select, .v2-num,
+  .v2-input, .search-input, .cfg-input, .cfg-textarea) {
+  transition: border-color var(--ui-motion-normal) ease, box-shadow var(--ui-motion-normal) ease;
+}
+html body .v2-search:focus-within { border-color: var(--gp-pink); }
+html body .v2-switch input:focus-visible + span { outline: 2px solid var(--gp-pink); outline-offset: 3px; }
+html body :is(.v2-switch > span, .cfg-toggle-track, .settings-toggle-track) {
+  transition: background-color var(--ui-motion-normal) ease, border-color var(--ui-motion-normal) ease;
+}
+html body .v2-switch > span::after {
+  transition: transform var(--ui-motion-normal) var(--ui-motion-ease);
+}
+html body :is(input[type="checkbox"], input[type="radio"], input[type="range"]) {
+  transition: accent-color var(--ui-motion-fast) ease, opacity var(--ui-motion-fast) ease;
+}
+
+/* Shared overlays: logical close is immediate; inert prevents clicks/focus during the visual exit. */
+/* Legacy transition:all must not delay an inherited visibility change or keyboard focus. */
+html body :is(#globalModal, .v2-modal, .v2-menu) :is(button, input, select, textarea, a[href], [tabindex]) {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform, scale, translate;
+}
+html body :is(#globalModal.modal-backdrop, .v2-modal) {
+  display: grid;
+  place-items: center;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--ui-motion-exit) ease-in, visibility 0s var(--ui-motion-exit);
+}
+html body :is(#globalModal.modal-backdrop.open, .v2-modal.show) {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity var(--ui-motion-normal) ease-out, visibility 0s;
+}
+html body :is(#globalModal .modal-content, .v2-modal .v2-modal-box) {
+  animation: none;
+  transform: translateY(6px) scale(.985);
+  transition: transform var(--ui-motion-exit) ease-in;
+}
+html body :is(#globalModal.open .modal-content, .v2-modal.show .v2-modal-box) {
+  transform: translateY(0) scale(1);
+  transition: transform var(--ui-motion-enter) var(--ui-motion-ease);
+}
+html body .v2-menu {
+  display: block;
+  visibility: hidden;
+  opacity: 0;
+  translate: 0 -4px;
+  pointer-events: none;
+  transition: opacity var(--ui-motion-fast) ease, translate var(--ui-motion-fast) var(--ui-motion-ease),
+    visibility 0s var(--ui-motion-fast);
+}
+html body .v2-menu.show {
+  visibility: visible;
+  opacity: 1;
+  translate: 0 0;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+/* Native dialogs use discrete display transitions where supported; older WebView2 simply closes. */
+html body dialog {
+  opacity: 0;
+  translate: 0 6px;
+  transition: opacity var(--ui-motion-normal) ease, translate var(--ui-motion-normal) var(--ui-motion-ease),
+    display var(--ui-motion-normal) allow-discrete, overlay var(--ui-motion-normal) allow-discrete;
+}
+html body dialog[open] { opacity: 1; translate: 0 0; }
+html body dialog::backdrop {
+  opacity: 0;
+  transition: opacity var(--ui-motion-normal) ease, display var(--ui-motion-normal) allow-discrete,
+    overlay var(--ui-motion-normal) allow-discrete;
+}
+html body dialog[open]::backdrop { opacity: 1; }
+@starting-style {
+  html body :is(#globalModal.modal-backdrop.open, .v2-modal.show, .v2-menu.show) { opacity: 0; }
+  html body :is(#globalModal.open .modal-content, .v2-modal.show .v2-modal-box) { transform: translateY(6px) scale(.985); }
+  html body dialog[open] { opacity: 0; translate: 0 6px; }
+  html body dialog[open]::backdrop { opacity: 0; }
+}
+
+/* Native details preserve browser keyboard/search behavior. Animate only their disclosure area. */
+html body details > summary { transition: color var(--ui-motion-fast) ease, background-color var(--ui-motion-fast) ease; }
+@supports (interpolate-size: allow-keywords) {
+  html body details::details-content {
+    interpolate-size: allow-keywords;
+    block-size: 0;
+    overflow: clip;
+    opacity: 0;
+    transition: block-size var(--ui-motion-enter) var(--ui-motion-ease), opacity var(--ui-motion-normal) ease,
+      content-visibility var(--ui-motion-enter) allow-discrete;
+  }
+  html body details[open]::details-content { block-size: auto; opacity: 1; }
+}
+
+/* Notices and empty states are one-shot on insertion, not pulsing decorations. */
+@keyframes ui-notice-enter { from { opacity: .35; translate: 0 4px; } to { opacity: 1; translate: 0 0; } }
+html body :is(.v2-menu.show, .forge-sticker-picker) { transform-origin: top right; }
+html body :is(.account-notice:not(:empty), .v2-err:not(:empty), .skin-crop-error:not(:empty)) {
+  animation: ui-notice-enter var(--ui-motion-normal) ease-out;
+}
+
+/* Never delay navigation, overlay removal, focus or disclosure when motion is disabled. */
+body.reduce-motion {
+  --ui-motion-fast: 0s;
+  --ui-motion-normal: 0s;
+  --ui-motion-enter: 0s;
+  --ui-motion-exit: 0s;
+}
+body.reduce-motion *, body.reduce-motion *::before, body.reduce-motion *::after {
+  animation-delay: 0s !important;
+  animation-duration: 0s !important;
+  transition-delay: 0s !important;
+  transition-duration: 0s !important;
+  scroll-behavior: auto !important;
+}
+body.reduce-motion :is(.v2-scheme, .v2-tcard, .v2-slot, .v2-choice, .nav-crumb-btn > svg,
+  .v2-theme-btn > svg, .v2-row.link > .chev) { translate: none !important; scale: none !important; }
+body.reduce-motion :is(button, [role="button"]) { translate: none !important; scale: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  body { --ui-motion-fast: 0s; --ui-motion-normal: 0s; --ui-motion-enter: 0s; --ui-motion-exit: 0s; }
+  *, *::before, *::after {
+    animation-delay: 0s !important;
+    animation-duration: 0s !important;
+    transition-delay: 0s !important;
+    transition-duration: 0s !important;
+    scroll-behavior: auto !important;
+  }
+  html body :is(.v2-scheme, .v2-tcard, .v2-slot, .v2-choice, .nav-crumb-btn > svg,
+    .v2-theme-btn > svg, .v2-row.link > .chev) { translate: none !important; scale: none !important; }
+  html body :is(button, [role="button"]) { translate: none !important; scale: none !important; }
+}

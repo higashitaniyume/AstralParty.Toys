@@ -106,6 +106,7 @@
     const query = (el('accountCharacterSearch').value || '').trim().toLowerCase();
     const items = (state.player?.characters || []).filter(c => (!el('accountPlayedOnly').checked || c.fightCount > 0) && `${c.name} ${c.id}`.toLowerCase().includes(query));
     el('accountCharacters').innerHTML = items.length ? items.map(c => `<article class="account-character">${c.image && /^https:\/\/(assets|materials\d+)\.aspatoys\.hiynet\.localhost\//.test(c.image) ? `<img src="${esc(c.image)}" alt="" loading="lazy" />` : '<div class="account-avatar" aria-hidden="true"></div>'}<div><strong>${esc(c.name || c.id)}</strong><span><b>${c.fightCount == null ? '—' : esc(c.fightCount)}</b>${esc(t('account.count'))}</span></div></article>`).join('') : `<p class="account-empty">${esc(t(state.player ? 'account.empty' : 'account.noSelection'))}</p>`;
+    window.Motion?.content(el('accountCharacters'), JSON.stringify([state.uid, state.player?.capturedAt, el('accountPlayedOnly').checked]));
   }
   function freshness() {
     const node = el('accountFriendFreshness');
@@ -122,11 +123,14 @@
       const image = f.image && /^https:\/\/(assets|materials\d+)\.aspatoys\.hiynet\.localhost\//.test(f.image) ? `<img class="account-avatar" src="${esc(f.image)}" alt="" loading="lazy" />` : '<div class="account-avatar" aria-hidden="true"></div>';
       return `<article class="account-friend">${image}<div class="account-friend-main"><strong>${esc(f.name)}</strong>${f.note ? `<small>${esc(f.note)}</small>` : ''}<small>UID ${esc(f.uid)} · ${esc(t('account.level'))} ${esc(f.level)}</small>${status === 'offline' && f.offlineAt ? `<small>${esc(t('account.lastOffline'))} · ${esc(date(f.offlineAt))}</small>` : ''}</div><span class="account-badge ${status}">${esc(t('account.friend.' + status))}</span></article>`;
     }).join('') : `<p class="account-empty">${esc(t(state.friends ? 'account.empty' : 'account.noSelection'))}</p>`;
+    window.Motion?.content(el('accountFriends'), JSON.stringify([state.uid, state.capturedAt, el('accountOnlineOnly').checked]));
     freshness();
   }
   function selectTab(friends) {
     for (const [id, selected] of [['accountCharacters', !friends], ['accountFriends', friends]]) {
+      const entering = selected && el(id + 'Panel').hidden;
       el(id + 'Tab').setAttribute('aria-selected', String(selected)); el(id + 'Tab').tabIndex = selected ? 0 : -1; el(id + 'Panel').hidden = !selected;
+      if (entering) window.Motion?.reveal(el(id + 'Panel'));
     }
   }
   function bind() {

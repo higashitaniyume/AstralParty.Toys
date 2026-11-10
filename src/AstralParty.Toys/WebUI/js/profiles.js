@@ -185,6 +185,7 @@
         return;
       }
       container.innerHTML = profiles.map(p => this.card(p)).join('');
+      window.Motion?.content(container, JSON.stringify(profiles.map(p => p.name)));
     },
 
     card(p) {

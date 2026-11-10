@@ -148,6 +148,7 @@
         ${W.step < 3 ? `<button class="v2-btn primary" data-v2c-wz="next" ${canNext ? '' : 'disabled'}>下一步</button>`
           : `<button class="v2-btn primary" data-v2c-wz="finish">${finish}</button>`}
       </div>`, 'wide');
+    window.Motion?.content($('v2Modal'), JSON.stringify([W.ruleId, W.step, W.mode]), '.v2-wz-body');
   }
 
   function wizardFinish() {
@@ -469,7 +470,10 @@
       return r;
     };
     csm.editPackage = function (id) { this.selected = C.scheme || this.selected; openPkg(id); };
-    window.V2Chars = { html: () => (C.pkg ? pkgHtml() : C.scheme ? schemeHtml() : listHtml()) };
+    window.V2Chars = {
+      html: () => (C.pkg ? pkgHtml() : C.scheme ? schemeHtml() : listHtml()),
+      motionKey: () => JSON.stringify([C.scheme, C.pkg, C.pkgTab]),
+    };
     VS().render();
   });
 })();

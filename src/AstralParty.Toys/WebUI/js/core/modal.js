@@ -25,9 +25,11 @@ function openModal(title, contentHtml, iconName, modalClass) {
     contentEl.classList.remove('modal-wide');
     if (modalClass) contentEl.classList.add(modalClass);
   }
+  const wasOpen = modal.classList.contains('open');
+  modal.inert = false;
   modal.classList.add('open');
   // 记下"打开弹窗之前焦点在哪"，关闭时还回去（键盘用户才不会丢掉位置）
-  modal._restoreFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  if (!wasOpen) modal._restoreFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   // 焦点进弹窗：否则键盘用户还在背后的页面上 Tab，弹窗里的按钮要绕一整圈才够得着
   $('modalCloseBtn')?.focus();
 }
@@ -40,13 +42,14 @@ function closeModal() {
   // 关闭回调（例如「导入降级确认」要在窗口被 X 关掉时告诉宿主：别等了）
   const onClose = modal._onClose;
   modal._onClose = null;
-  const wasOpen = modal.classList.contains('open');
-  modal.classList.remove('open');
-  if (!wasOpen) return;
-  onClose?.();
   const restore = modal._restoreFocus;
   modal._restoreFocus = null;
-  if (restore?.isConnected) restore.focus();
+  const wasOpen = modal.classList.contains('open');
+  modal.classList.remove('open');
+  modal.inert = true;
+  if (!wasOpen) return;
+  onClose?.();
+  if (!modal.classList.contains('open') && restore?.isConnected) restore.focus();
 }
 
 /** 弹窗里的可聚焦元素（Tab 循环用）。 */

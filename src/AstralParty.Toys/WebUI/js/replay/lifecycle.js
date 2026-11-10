@@ -107,16 +107,12 @@
       const current = document.querySelector('.replay-view:not(.hidden)');
       const next = $(`${tabName}View`);
       if (!next || current === next) return;
-      current?.classList.add('replay-view-leaving');
-      window.setTimeout(() => {
-        document.querySelectorAll('.replay-view').forEach(view => {
-          view.classList.add('hidden');
-          view.classList.remove('replay-view-leaving');
-        });
-        next.classList.remove('hidden');
-        next.classList.add('replay-view-entering');
-        requestAnimationFrame(() => next.classList.remove('replay-view-entering'));
-      }, document.body.classList.contains('reduce-motion') ? 0 : 120);
+      document.querySelectorAll('.replay-view').forEach(view => {
+        view.classList.add('hidden');
+        view.classList.remove('replay-view-leaving', 'replay-view-entering');
+      });
+      next.classList.remove('hidden');
+      window.Motion?.reveal(next);
     },
     switchTechPane(paneName) {
       const isStats = paneName === 'stats';
@@ -124,6 +120,7 @@
       $('techProtocolPane')?.classList.toggle('hidden', isStats);
       $('techTabStatistics')?.classList.toggle('active', isStats);
       $('techTabProtocol')?.classList.toggle('active', !isStats);
+      window.Motion?.reveal($(isStats ? 'techStatsPane' : 'techProtocolPane'));
     },
   });
 })();

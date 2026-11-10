@@ -251,6 +251,7 @@
   function render() {
     const root = $('v2Settings'); if (!root) return;
     root.innerHTML = html();
+    window.Motion?.content(root, G.tab, '.v2-settings-main');
   }
 
   function editProfile(g) {

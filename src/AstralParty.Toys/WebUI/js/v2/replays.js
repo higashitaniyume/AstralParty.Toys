@@ -206,6 +206,8 @@
     const detail = !!RM()?.detailOpen;
     tv.classList.toggle('v2-list-mode', !detail);
     root.innerHTML = detail ? detailHtml() : listHtml();
+    window.Motion?.content(root, JSON.stringify([detail, R.filter, R.sort]),
+      detail ? '.v2-detail-head' : '.v2-replay-list');
     U().bindSearch('v2rq', v => { R.q = v; render(); });
   }
 

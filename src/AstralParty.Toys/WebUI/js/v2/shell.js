@@ -65,17 +65,27 @@
       });
     }
     menuFns = [];
+    m._restoreFocus = anchor;
     m.innerHTML = items.map((it, i) => {
       if (it === '-') return '<hr>';
       menuFns[i] = it.fn;
       return `<button data-mi="${i}" ${it.disabled ? 'disabled' : ''}>${it.icon || ICON.dot}${esc(it.label)}</button>`;
     }).join('');
+    m.inert = false;
     m.classList.add('show');
     const r = anchor.getBoundingClientRect(), w = m.offsetWidth, h = m.offsetHeight;
     m.style.left = Math.max(8, Math.min(r.right - w, innerWidth - w - 8)) + 'px';
     m.style.top = (r.bottom + h + 6 > innerHeight ? r.top - h - 6 : r.bottom + 6) + 'px';
   }
-  function closeMenu() { $('v2Menu')?.classList.remove('show'); }
+  function closeMenu() {
+    const menu = $('v2Menu');
+    if (menu) {
+      const focused = menu.contains(document.activeElement);
+      menu.inert = true;
+      menu.classList.remove('show');
+      if (focused && menu._restoreFocus?.isConnected) menu._restoreFocus.focus();
+    }
+  }
   document.addEventListener('pointerdown', e => {
     if (!e.target.closest?.('#v2Menu') && !e.target.closest?.('[data-v2menu]')) closeMenu();
   });
@@ -94,11 +104,28 @@
       });
     }
     modalCancel = null;
+    if (!m.classList.contains('show')) m._restoreFocus = document.activeElement;
     m.innerHTML = `<div class="v2-modal-box ${cls}">${html}</div>`;
+    const box = m.querySelector('.v2-modal-box');
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-modal', 'true');
+    box.tabIndex = -1;
+    m.inert = false;
     m.classList.add('show');
+    (m.querySelector('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled)') || box).focus();
     return m;
   }
-  function closeModal() { modalCancel = null; $('v2Modal')?.classList.remove('show'); }
+  function closeModal() {
+    modalCancel = null;
+    const modal = $('v2Modal');
+    if (modal) {
+      modal.inert = true;
+      modal.classList.remove('show');
+      const restore = modal._restoreFocus;
+      modal._restoreFocus = null;
+      if (restore?.isConnected) restore.focus();
+    }
+  }
   // 弹窗里的按钮写 data-v2modal="名字"，由调用方注册处理函数
   const modalActions = { close: () => (modalCancel || closeModal)() };
 
@@ -118,7 +145,19 @@
     $('v2ConfirmNo')?.focus();
   }
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && $('v2Modal')?.classList.contains('show')) (modalCancel || closeModal)();
+    const modal = $('v2Modal');
+    if (!modal?.classList.contains('show')) return;
+    if (e.key === 'Escape') (modalCancel || closeModal)();
+    if (e.key !== 'Tab') return;
+    const items = [...modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+      .filter(item => !item.disabled && item.getClientRects().length);
+    const first = items[0], last = items.at(-1);
+    if (!first) { e.preventDefault(); modal.querySelector('.v2-modal-box')?.focus(); }
+    else if (e.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) {
+      e.preventDefault(); last.focus();
+    } else if (!e.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) {
+      e.preventDefault(); first.focus();
+    }
   });
 
   /* ---------- 顶栏外部跳转（WIKI / GitHub）：点一次直接打开 ---------- */
@@ -189,7 +228,7 @@
     $('v2ThemeBtn')?.classList.add('cooling');
     const light = !isLight();
     // 用整页淡入淡出，不用给每个元素加过渡；关了「界面动画」或内核不支持时直接切
-    const animate = document.startViewTransition && !document.body.classList.contains('reduce-motion');
+    const animate = document.startViewTransition && !window.Motion?.reduced();
     const finished = animate ? document.startViewTransition(() => applyTheme(light)).finished : (applyTheme(light), Promise.resolve());
     finished.catch(() => {}).finally(() => {
       setTimeout(() => { themeBusy = false; $('v2ThemeBtn')?.classList.remove('cooling'); }, THEME_COOLDOWN_MS);
