@@ -110,9 +110,10 @@ details.v2-mini summary { cursor: pointer; color: var(--gp-text-sub); font-size:
 .v2-modal-head b { flex: 1; font-size: 16px; }
 .v2-modal-foot { display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--v2-border); }
 .v2-confirm { display: flex; gap: 14px; padding: 20px 20px 8px; }
+.v2-confirm > :last-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .v2-confirm-icon { width: 40px; height: 40px; border-radius: 50%; flex: none; display: grid; place-items: center; background: rgba(244, 63, 94, .12); color: #f43f5e; }
 .v2-confirm-icon svg { width: 20px; height: 20px; }
-.v2-confirm-title { display: block; font-size: 16px; font-weight: 600; margin-top: 8px; }
+.v2-confirm-title { display: block; font-size: 16px; font-weight: 600; margin-top: 8px; white-space: normal; overflow-wrap: anywhere; }
 .v2-confirm-lines { margin: 10px 0 0; padding-left: 18px; color: var(--gp-text-sub); font-size: 13px; line-height: 1.7; }
 .v2-confirm-lines b { color: var(--v2-text); }
 .v2-btn.danger { color: #f43f5e; }
@@ -335,6 +336,7 @@ html body.v2-has-bg :is(.v2-modal-box, .v2-menu, dialog, #globalModal, .modal-co
 .v2-bg-tile .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .v2-bg-tile .info b { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .v2-bg-tile .v2-bg-del { position: absolute; top: 6px; right: 6px; background: rgba(18, 20, 32, .85); opacity: 0; }
+.v2-bg-tile .v2-bg-del svg { width: 18px; height: 18px; }
 .v2-bg-tile:hover .v2-bg-del, .v2-bg-tile:focus-within .v2-bg-del { opacity: 1; }
 
 /* ---------- 各页内容对齐：滚动条出现时内容不再左移；市场只有列表滚动，标题栏让出同样的宽度 ---------- */
