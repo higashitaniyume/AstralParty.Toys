@@ -38,7 +38,7 @@
 .account-status { padding-top: 12px; border-top: 1px solid var(--v2-border); }
 .account-overview { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
 .account-overview strong { font-size: 24px; }
-.account-tabs { display: flex; gap: 10px; margin: 20px 0 14px; }
+.account-tabs { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 14px; }
 .account-tabs button { padding: 10px 18px; color: var(--gp-text-sub); border: 1px solid color-mix(in srgb, var(--v2-text) 40%, transparent); border-radius: 8px; background: var(--v2-panel); cursor: pointer; }
 .account-tabs button:hover { border-color: var(--gp-pink); color: var(--v2-text); }
 .account-tabs button[aria-selected="true"] { border-color: var(--gp-pink); background: var(--v2-pink-soft); color: var(--gp-pink); }
@@ -58,6 +58,12 @@
 .account-badge.online, .account-badge.playing { color: var(--gp-pink); background: var(--v2-pink-soft); }
 .account-empty { padding: 35px 12px; color: var(--gp-text-muted); text-align: center; grid-column: 1 / -1; }
 .account-stale { color: var(--gp-text-muted); border-left: 2px solid var(--gp-pink); padding-left: 10px; }
+.account-recent { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 12px; margin-top: 18px; }
+.account-match { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; min-width: 0; padding: 18px; border: 1px solid var(--v2-border); border-radius: 10px; background: var(--v2-panel-2); }
+.account-match-main { display: grid; gap: 7px; min-width: 0; overflow-wrap: anywhere; }
+.account-match-main span { color: var(--gp-text-sub); font-size: 13px; }
+.account-match-main small { color: var(--gp-text-muted); font-size: 12px; }
+.account-replay-id { user-select: text; font-variant-numeric: tabular-nums; }
 .account-page [hidden] { display: none !important; }
 .account-page button:focus-visible, .account-page input:focus-visible, .account-page select:focus-visible { outline: 2px solid var(--gp-pink); outline-offset: 3px; }
 @media (max-width: 760px) { .account-page { padding: 20px 16px; } .account-panel { padding: 16px; } }

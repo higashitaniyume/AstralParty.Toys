@@ -13,6 +13,9 @@ public partial class HybridWindow
     private bool _myAccountPageVisible, _myAccountRefreshing;
     private string? _myAccountDirectory;
     private DateTimeOffset _myAccountRefreshAttempt;
+    private bool _myAccountMatchesRefreshing;
+    private DateTimeOffset _myAccountMatchesRefreshAttempt;
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, int> _myAccountMapIds = new(StringComparer.Ordinal);
     private AssetLocator? _myAccountAssets;
     private sealed record PendingCredentialDeletion(string Token, string Directory, string Uid);
     private PendingCredentialDeletion? _pendingCredentialDeletion;
@@ -47,6 +50,8 @@ public partial class HybridWindow
         _myAccountDirectory = null;
         _myAccountRefreshing = false;
         _myAccountRefreshAttempt = default;
+        _myAccountMatchesRefreshing = false;
+        _myAccountMatchesRefreshAttempt = default;
         Post(new { type = "myAccountState", payload = new { requestId = _myAccountRequestId, status, stale = true, reason = diagnostic?.Reason, command = diagnostic?.Command, serverError = diagnostic?.ServerError } });
     }
 
@@ -120,6 +125,10 @@ public partial class HybridWindow
                     if (!_myAccountPageVisible || !MyAccountConsent.Granted) break;
                     Post(new { type = "myAccountMarket", payload = new { id = CredentialModMarketId } });
                     break;
+                case "myAccountRecentRefresh":
+                    if (_myAccountPageVisible && _myAccountSession != null && _myAccountLifetime != null)
+                        await RefreshMyAccountMatchesAsync(_myAccountSession, _myAccountGeneration, _myAccountLifetime.Token);
+                    break;
             }
         }
         catch { Post(new { type = "myAccountState", payload = new { requestId = _myAccountRequestId, status = "unavailable", stale = true } }); }
@@ -181,6 +190,7 @@ public partial class HybridWindow
             Post(new { type = "myAccountPlayer", payload = display });
             Post(new { type = "myAccountState", payload = new { requestId, status = "connected", stale = true } });
             await RefreshMyAccountFriendsAsync(session, generation, lifetime.Token);
+            await RefreshMyAccountMatchesAsync(session, generation, lifetime.Token);
             // Keep the session alive for manual refreshes; monitoring and heartbeats run separately.
             await Task.Delay(Timeout.InfiniteTimeSpan, lifetime.Token);
         }
@@ -238,6 +248,74 @@ public partial class HybridWindow
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
         catch (Exception error) { if (generation == _myAccountGeneration) StopMyAccount("refresh_failed", error as AccountQueryException); }
         finally { if (generation == _myAccountGeneration) _myAccountRefreshing = false; }
+    }
+
+    private async Task RefreshMyAccountMatchesAsync(AccountSession session, int generation, CancellationToken ct)
+    {
+        if (_myAccountMatchesRefreshing || generation != _myAccountGeneration || ct.IsCancellationRequested) return;
+        if (DateTimeOffset.UtcNow - _myAccountMatchesRefreshAttempt < TimeSpan.FromSeconds(3)) return;
+        if (MyAccountGameRunning(_myAccountDirectory)) { StopMyAccount("game_running"); return; }
+        _myAccountMatchesRefreshing = true;
+        _myAccountMatchesRefreshAttempt = DateTimeOffset.UtcNow;
+        int requestId = _myAccountRequestId;
+        Post(new { type = "myAccountRecentState", payload = new { requestId, loading = true } });
+        try
+        {
+            var records = await session.RecentMatchesAsync(ct);
+            var display = await Task.Run(() => BuildMyAccountMatches(records), ct);
+            if (generation != _myAccountGeneration || ct.IsCancellationRequested) return;
+            Post(new { type = "myAccountRecent", payload = new { requestId, session.Uid, matches = display, capturedAt = DateTimeOffset.UtcNow } });
+            await ResolveMyAccountMatchMapsAsync(records, session.Uid, generation, requestId, ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
+        catch
+        {
+            if (generation == _myAccountGeneration)
+                Post(new { type = "myAccountRecentState", payload = new { requestId, loading = false, failed = true } });
+        }
+        finally
+        {
+            if (generation == _myAccountGeneration)
+            {
+                _myAccountMatchesRefreshing = false;
+                Post(new { type = "myAccountRecentState", payload = new { requestId, loading = false } });
+            }
+        }
+    }
+
+    private object[] BuildMyAccountMatches(IReadOnlyList<AccountMatch> matches)
+    {
+        var config = new ConfigCatalog(new GameProtocolContext(Path.Combine(_appDirectory, "Protocol")),
+            Path.Combine(_appDirectory, "GameData"), _libraryService.Settings.Language);
+        return matches.Select(m => (object)new
+        {
+            m.Index, m.Rank, m.HeroId, m.MapType, m.ReplayId, m.Version,
+            playedAt = m.Time is > 0 and <= 253402300799 ? (DateTimeOffset?)DateTimeOffset.FromUnixTimeSeconds(m.Time) : null,
+            character = config.Character(m.HeroId),
+            mapName = _myAccountMapIds.TryGetValue(m.ReplayId, out var mapId) ? config.Map(mapId) : null,
+            mapLoading = ReplayCdn.IsValidReplayId(m.ReplayId, out _) && !_myAccountMapIds.ContainsKey(m.ReplayId),
+            canDownload = ReplayCdn.IsValidReplayId(m.ReplayId, out _)
+        }).ToArray();
+    }
+
+    private async Task ResolveMyAccountMatchMapsAsync(IReadOnlyList<AccountMatch> records, string uid,
+        int generation, int requestId, CancellationToken ct)
+    {
+        using var protocol = new AccountProtocol(Path.Combine(_appDirectory, "Protocol"));
+        var config = await Task.Run(() => new ConfigCatalog(new GameProtocolContext(Path.Combine(_appDirectory, "Protocol")),
+            Path.Combine(_appDirectory, "GameData"), _libraryService.Settings.Language), ct);
+        await Parallel.ForEachAsync(records.Where(m => ReplayCdn.IsValidReplayId(m.ReplayId, out _)).DistinctBy(m => m.ReplayId),
+            new ParallelOptions { MaxDegreeOfParallelism = 3, CancellationToken = ct }, async (record, token) =>
+            {
+                int mapId = _myAccountMapIds.GetValueOrDefault(record.ReplayId);
+                if (mapId == 0) mapId = _libraryService.IndexedMapId(record.ReplayId);
+                if (mapId == 0)
+                    mapId = await ReplayMapLookup.FindMapIdAsync(record.ReplayId, payload =>
+                        (int)AccountProtocol.Number(AccountProtocol.Get(protocol.Parse("RunningGameS2C", payload), "Room"), "MapId"), token);
+                if (mapId > 0) _myAccountMapIds[record.ReplayId] = mapId;
+                if (generation != _myAccountGeneration || token.IsCancellationRequested) return;
+                Post(new { type = "myAccountRecentMap", payload = new { requestId, uid, record.ReplayId, mapName = mapId > 0 ? config.Map(mapId) : null } });
+            });
     }
 
     private async Task MonitorMyAccountAsync(int generation, string directory, CancellationToken ct)

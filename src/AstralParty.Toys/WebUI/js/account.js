@@ -3,10 +3,10 @@
   const t = key => window.i18n?.t(key) || key;
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const el = id => document.getElementById(id);
-  const state = { visible: false, consent: false, consentChecked: false, privacyOpen: false, tutorialChecking: false, requestId: 0, availability: {}, uid: '', player: null, friends: null, stale: true, status: 'disconnected', diagnostic: '', capturedAt: null, cooldownTimer: null, bound: false };
+  const state = { visible: false, consent: false, consentChecked: false, privacyOpen: false, tutorialChecking: false, requestId: 0, availability: {}, uid: '', player: null, friends: null, matches: null, matchesCapturedAt: null, matchesLoading: false, matchesFailed: false, matchesAttempt: 0, stale: true, status: 'disconnected', diagnostic: '', capturedAt: null, cooldownTimer: null, bound: false };
   const active = () => ['connected', 'refreshing', 'connecting'].includes(state.status);
   const date = value => value ? new Date(value).toLocaleString(window.i18n?.currentLocale?.()) : '—';
-  function clearData() { state.player = null; state.friends = null; state.capturedAt = null; state.stale = true; }
+  function clearData() { state.player = null; state.friends = null; state.matches = null; state.matchesCapturedAt = null; state.matchesLoading = false; state.matchesFailed = false; state.matchesAttempt = 0; state.capturedAt = null; state.stale = true; }
   function credentialLocation() {
     const root = state.availability.credentialRoot;
     return root ? `${root}\\${state.uid || '<UID>'}\\account.json` : t('account.credentialPath');
@@ -100,7 +100,7 @@
       const p = state.player;
       el('accountOverview').innerHTML = `<strong>${esc(p.name)}</strong><span>UID ${esc(p.uid)}</span><span>${esc(t('account.level'))} ${esc(p.level)}</span><small>${esc(t('account.updated'))} · ${esc(date(p.capturedAt))}</small>`;
     }
-    renderCharacters(); renderFriends();
+    renderCharacters(); renderFriends(); renderRecent();
   }
   function renderCharacters() {
     const query = (el('accountCharacterSearch').value || '').trim().toLowerCase();
@@ -113,6 +113,12 @@
     node.classList.toggle('account-stale', state.stale);
     el('accountRefreshBtn').disabled = state.status !== 'connected' || Date.now() - Date.parse(state.capturedAt) < 3000;
     node.textContent = `${state.stale ? t('account.stale') + ' ' : ''}${state.capturedAt ? t('account.updated') + ' · ' + date(state.capturedAt) : ''}`;
+    el('accountRecentRefreshBtn').disabled = state.status !== 'connected' || state.matchesLoading || Date.now() - state.matchesAttempt < 3000;
+    const recentNode = el('accountRecentFreshness');
+    recentNode.classList.toggle('account-stale', !active() || state.matchesFailed);
+    recentNode.textContent = [state.matchesLoading ? t('account.loading') : state.matchesFailed ? t('account.recentFailed') : '',
+      !active() && state.matchesCapturedAt ? t('account.stale') : '',
+      state.matchesCapturedAt ? t('account.updated') + ' · ' + date(state.matchesCapturedAt) : ''].filter(Boolean).join(' · ');
   }
   function renderFriends() {
     const query = (el('accountFriendSearch').value || '').trim().toLowerCase();
@@ -126,8 +132,19 @@
     window.Motion?.content(el('accountFriends'), JSON.stringify([state.uid, state.capturedAt, el('accountOnlineOnly').checked]));
     freshness();
   }
-  function selectTab(friends) {
-    for (const [id, selected] of [['accountCharacters', !friends], ['accountFriends', friends]]) {
+  function renderRecent() {
+    el('accountRecent').innerHTML = state.matches?.length ? state.matches.map(m => {
+      const downloadable = m.canDownload === true && /^\d{1,32}$/.test(m.replayId);
+      const mode = Number.isInteger(m.mapType) && m.mapType >= 1 && m.mapType <= 12 ? t('account.mode.' + m.mapType) : `${t('account.mode')} ${m.mapType ?? '—'}`;
+      return `<article class="account-match"><div class="account-match-main"><strong data-account-map="${esc(m.replayId)}">${esc(m.mapName || t(m.mapLoading ? 'account.mapLoading' : 'account.unknownMap'))}</strong><span>${esc(m.character)} · ${esc(t('account.rank'))} ${m.rank > 0 ? esc(m.rank) : '—'}</span><small>${esc(mode)} · ${esc(date(m.playedAt))}${m.version ? ' · ' + esc(m.version) : ''}</small><small class="account-replay-id">${esc(t('account.replayId'))} ${esc(m.replayId || '—')}</small></div>${downloadable ? `<button class="v2-btn" data-account-replay="${esc(m.replayId)}">${esc(t('account.download'))}</button>` : `<span class="account-muted">${esc(t('account.noReplay'))}</span>`}</article>`;
+    }).join('') : `<p class="account-empty">${esc(t(state.matchesLoading ? 'account.loading' : state.matches ? 'account.noRecent' : 'account.noSelection'))}</p>`;
+    window.Motion?.content(el('accountRecent'), JSON.stringify([state.uid, state.matchesCapturedAt]));
+    freshness();
+  }
+  const tabs = ['accountCharacters', 'accountFriends', 'accountRecent'];
+  function selectTab(tab) {
+    for (const id of tabs) {
+      const selected = id === tab;
       const entering = selected && el(id + 'Panel').hidden;
       el(id + 'Tab').setAttribute('aria-selected', String(selected)); el(id + 'Tab').tabIndex = selected ? 0 : -1; el(id + 'Panel').hidden = !selected;
       if (entering) window.Motion?.reveal(el(id + 'Panel'));
@@ -147,11 +164,22 @@
     el('accountRefreshBtn').onclick = () => post({ type: 'myAccountRefresh' });
     el('accountInstallBtn').onclick = () => post({ type: 'myAccountInstallMod' });
     el('accountModsBtn').onclick = () => showPage('mods');
-    el('accountCharactersTab').onclick = () => selectTab(false);
-    el('accountFriendsTab').onclick = () => selectTab(true);
-    for (const id of ['accountCharactersTab','accountFriendsTab']) el(id).onkeydown = e => {
+    el('accountRecentRefreshBtn').onclick = () => {
+      if (el('accountRecentRefreshBtn').disabled) return;
+      state.matchesAttempt = Date.now(); state.matchesLoading = true; state.matchesFailed = false; renderRecent();
+      post({ type: 'myAccountRecentRefresh' });
+    };
+    el('accountRecent').onclick = e => {
+      const id = e.target.closest('[data-account-replay]')?.dataset.accountReplay;
+      if (id && state.matches?.some(m => m.replayId === id && m.canDownload) && /^\d{1,32}$/.test(id))
+        window.ReplayModule?.openDownloadDialog({ replayId: id, cdn: 'CnProd', autoStart: true });
+    };
+    for (const id of tabs) el(id + 'Tab').onclick = () => selectTab(id);
+    for (const id of tabs) el(id + 'Tab').onkeydown = e => {
       if (!['ArrowLeft','ArrowRight','Home','End'].includes(e.key)) return;
-      e.preventDefault(); const friends = e.key === 'End' || (e.key !== 'Home' && id === 'accountCharactersTab'); selectTab(friends); el(friends ? 'accountFriendsTab' : 'accountCharactersTab').focus();
+      e.preventDefault();
+      const index = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : (tabs.indexOf(id) + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+      selectTab(tabs[index]); el(tabs[index] + 'Tab').focus();
     };
     ['accountCharacterSearch','accountPlayedOnly'].forEach(id => el(id).addEventListener('input', renderCharacters));
     ['accountFriendSearch','accountOnlineOnly'].forEach(id => el(id).addEventListener('input', renderFriends));
@@ -160,7 +188,7 @@
   window.MyAccountModule = {
     // The timer only updates the manual-refresh button cooldown; it never requests friend data.
     onShow() { bind(); if (state.visible) return; state.visible = true; state.consentChecked = false; state.status = 'disconnected'; state.stale = true; render(); post({ type: 'myAccountEnter' }); state.cooldownTimer = setInterval(freshness, 1000); },
-    onHide() { state.visible = false; closePrivacyModal(); if (el('accountDeleteConfirm') || tutorialOpen()) closeModal(); clearInterval(state.cooldownTimer); state.cooldownTimer = null; state.status = 'disconnected'; state.stale = true; post({ type: 'myAccountLeave', requestId: ++state.requestId }); },
+    onHide() { state.visible = false; closePrivacyModal(); if (el('accountDeleteConfirm') || tutorialOpen()) closeModal(); clearInterval(state.cooldownTimer); state.cooldownTimer = null; state.status = 'disconnected'; state.matchesLoading = false; state.stale = true; post({ type: 'myAccountLeave', requestId: ++state.requestId }); },
     receive(message) {
       if (!state.visible) return;
       const p = message.payload || {};
@@ -206,6 +234,7 @@
         if (tutorialOpen()) openTutorial(false);
       } else if (message.type === 'myAccountState') {
         state.status = p.status || 'disconnected'; if (typeof p.stale === 'boolean') state.stale = p.stale;
+        if (!active()) state.matchesLoading = false;
         if (state.status === 'game_changed') { clearData(); state.uid = ''; post({ type: 'myAccountDiscover' }); }
         const reasons = new Set(['server_kick','server_rejected','resource_version','rpc_timeout','transport_closed','repeated_friend_page','missing_friend_end','friend_page_limit']);
         state.diagnostic = reasons.has(p.reason) ? ` [${p.reason}${Number.isInteger(p.command) ? ' · RPC ' + p.command : ''}${Number.isInteger(p.serverError) ? ' · #' + p.serverError : ''}]` : '';
@@ -213,6 +242,20 @@
       }
       else if (message.type === 'myAccountPlayer') { if (p.uid !== state.uid || !active()) return; state.player = p; }
       else if (message.type === 'myAccountFriends') { if (p.uid !== state.uid || !active()) return; state.friends = p.friends || []; state.capturedAt = p.capturedAt; state.stale = false; }
+      else if (message.type === 'myAccountRecent') { if (p.uid !== state.uid || !active()) return; state.matches = p.matches || []; state.matchesCapturedAt = p.capturedAt; state.matchesFailed = false; }
+      else if (message.type === 'myAccountRecentMap') {
+        if (p.uid !== state.uid || !active()) return;
+        for (const match of state.matches || []) if (match.replayId === p.replayId) { match.mapName = p.mapName; match.mapLoading = false; }
+        for (const title of el('accountRecent').querySelectorAll('[data-account-map]'))
+          if (title.dataset.accountMap === p.replayId) title.textContent = p.mapName || t('account.unknownMap');
+        return;
+      }
+      else if (message.type === 'myAccountRecentState') {
+        if (!active()) return;
+        state.matchesLoading = p.loading === true;
+        if (p.loading) { state.matchesAttempt = Date.now(); state.matchesFailed = false; }
+        if (p.failed) state.matchesFailed = true;
+      }
       else if (message.type === 'myAccountMarket') {
         if (p.id) window.WorkshopModule?.openExternalMod({ id: p.id });
         else { toast(t('account.marketPending')); showPage('workshop'); }

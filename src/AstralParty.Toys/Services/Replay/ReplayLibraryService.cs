@@ -387,6 +387,10 @@ public sealed partial class ReplayLibraryService
         }
     }
 
+    /// <summary>Read an existing map index only; never scan, import or maintain the library.</summary>
+    public int IndexedMapId(string replayId) => ReplayCdn.IsValidReplayId(replayId, out _) &&
+        TryReadSidecar(replayId, out var meta) && meta?.ReplayId == replayId ? Math.Max(0, meta.MapId) : 0;
+
     private void WriteSidecar(ReplayMeta meta)
     {
         EnsureLibrary();

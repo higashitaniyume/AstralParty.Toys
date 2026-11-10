@@ -18,7 +18,7 @@
       const active = profiles.find(profile => profile.active);
       return active?.edition === 'global' ? 'JpProd' : 'CnProd';
     },
-    openDownloadDialog() {
+    openDownloadDialog(preset = {}) {
       const options = this.cdnOptions()
         .map(item => `<option value="${item.value}">${esc(item.label)}</option>`)
         .join('');
@@ -50,7 +50,8 @@
       `);
 
       const select = $('replayDownloadCdnSelect');
-      if (select) select.value = this.defaultCdn();
+      if (select) select.value = this.cdnOptions().some(item => item.value === preset.cdn) ? preset.cdn : this.defaultCdn();
+      if ($('replayDownloadIdInput')) $('replayDownloadIdInput').value = preset.replayId || '';
       this.downloadId = null;
 
       const start = () => this.startDownload();
@@ -65,6 +66,7 @@
         post({ type: 'replayDownloadCancel' });
       });
       $('replayDownloadIdInput')?.focus();
+      if (preset.autoStart === true) this.startDownload();
     },
     startDownload() {
       const replayId = ($('replayDownloadIdInput')?.value || '').trim();

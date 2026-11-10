@@ -5,6 +5,7 @@ namespace AstralParty.Toys.Services.Account;
 public sealed record AccountCharacter(int Id, long? FightCount);
 public sealed record AccountPlayer(string Uid, string Name, long Level, IReadOnlyList<AccountCharacter> Characters);
 public sealed record AccountFriend(string Uid, string Name, string Note, long Level, int HeadIcon, string Status, long OfflineTime);
+public sealed record AccountMatch(long Time, int Rank, int HeroId, int Index, int MapType, string ReplayId, string Version);
 
 public sealed class AccountSession : IAsyncDisposable
 {
@@ -96,6 +97,30 @@ public sealed class AccountSession : IAsyncDisposable
             if (batch.Length == 0) throw new AccountQueryException("missing_friend_end");
         }
         throw new AccountQueryException("friend_page_limit"); // Never publish a partial snapshot as complete.
+    }
+
+    // Account profile contains the short records; 5155 is per-match detail, not the recent list.
+    public async Task<IReadOnlyList<AccountMatch>> RecentMatchesAsync(CancellationToken ct)
+    {
+        await _operations.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var response = await _transport.CallAsync(5153,
+                _protocol.Create("GetShowPlayerC2S", ("PlayerId", long.Parse(Uid, System.Globalization.CultureInfo.InvariantCulture))), ct).ConfigureAwait(false);
+            return ProjectRecentMatches(_protocol.Parse("GetShowPlayerS2C", response.Payload), Uid);
+        }
+        finally { _operations.Release(); }
+    }
+
+    public static IReadOnlyList<AccountMatch> ProjectRecentMatches(object response, string expectedUid)
+    {
+        var data = Get(response, "ShowData");
+        if (data == null || Number(data, "PlayerId").ToString(System.Globalization.CultureInfo.InvariantCulture) != expectedUid)
+            throw new InvalidDataException("account_mismatch");
+        return Items(data, "Record").Select(record => new AccountMatch(
+            Number(record, "Time"), (int)Number(record, "Rank"), (int)Number(record, "HeroId"),
+            (int)Number(record, "Index"), (int)Number(record, "MapType"), Text(record, "ReplayId"), Text(record, "Version")))
+            .OrderByDescending(record => record.Time).ToArray();
     }
 
     private async Task HeartbeatAsync()

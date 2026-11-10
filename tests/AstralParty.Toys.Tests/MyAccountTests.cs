@@ -248,6 +248,96 @@ public sealed class MyAccountTests : IDisposable
     }
 
     [Fact]
+    public void RecentMatchQueryAndResponseRoundTripWithShippedSchema()
+    {
+        using var protocol = new AccountProtocol(Path.Combine(AppContext.BaseDirectory, "Protocol"));
+        var query = protocol.Parse("GetShowPlayerC2S", protocol.Create("GetShowPlayerC2S", ("PlayerId", 100L)));
+        Assert.Equal(100, AccountProtocol.Number(query, "PlayerId"));
+        var shortRecord = protocol.Parse("ShowPlayerShortFight", protocol.Create("ShowPlayerShortFight",
+            ("Time", 1794300000L), ("Rank", 2), ("HeroId", 7), ("Index", 3), ("MapType", 4), ("ReplayId", "12345678901234567890"), ("Version", "3.3.0")));
+        var show = protocol.Parse("ShowPlayer", protocol.Create("ShowPlayer", ("PlayerId", 100L)));
+        var records = AccountProtocol.Get(show, "Record")!;
+        records.GetType().GetMethod("Add", [shortRecord.GetType()])!.Invoke(records, [shortRecord]);
+        var response = protocol.Parse("GetShowPlayerS2C", protocol.Create("GetShowPlayerS2C", ("ShowData", show)));
+        var match = Assert.Single(AccountSession.ProjectRecentMatches(response, "100"));
+        Assert.Equal(new AccountMatch(1794300000L, 2, 7, 3, 4, "12345678901234567890", "3.3.0"), match);
+    }
+
+    [Fact]
+    public void RecentMatchProjectionSortsNewestFirstAndDoesNotExposeOtherProfileFields()
+    {
+        var response = new { ShowData = new { PlayerId = 100L, Token = "SECRET_SENTINEL", Record = new[] {
+            new { Time = 10L, ReplayId = "", Rank = 0, HeroId = 1, Index = 0, MapType = 4, Version = "" },
+            new { Time = 20L, ReplayId = "123", Rank = 1, HeroId = 2, Index = 1, MapType = 12, Version = "3.3.0" }
+        } } };
+        var matches = AccountSession.ProjectRecentMatches(response, "100");
+        Assert.Equal(new long[] { 20, 10 }, matches.Select(m => m.Time));
+        Assert.Equal("", matches[1].ReplayId);
+        Assert.DoesNotContain("SECRET_SENTINEL", JsonSerializer.Serialize(matches));
+    }
+
+    [Fact]
+    public void RecentMatchesRejectMissingOrOtherAccountProfile()
+    {
+        Assert.Throws<InvalidDataException>(() => AccountSession.ProjectRecentMatches(new { }, "100"));
+        Assert.Throws<InvalidDataException>(() => AccountSession.ProjectRecentMatches(new { ShowData = new { PlayerId = 200L } }, "100"));
+        Assert.Empty(AccountSession.ProjectRecentMatches(new { ShowData = new { PlayerId = 100L } }, "100"));
+    }
+
+    [Fact]
+    public void RecentMatchUiReusesDownloadWorkflowAndOnlyOffersValidReplayIds()
+    {
+        var account = Web("js/account.js");
+        Assert.Contains("id=\"accountRecentPanel\"", Web("index.html"));
+        Assert.Contains("const tabs = ['accountCharacters', 'accountFriends', 'accountRecent']", account);
+        Assert.Contains("m.canDownload === true && /^\\d{1,32}$/.test(m.replayId)", account);
+        Assert.Contains("openDownloadDialog({ replayId: id, cdn: 'CnProd', autoStart: true })", account);
+        Assert.Contains("p.uid !== state.uid || !active()", account);
+        Assert.Contains("p.requestId !== state.requestId", account);
+        Assert.Single(Regex.Matches(account, "type: 'myAccountRecentRefresh'").Cast<Match>());
+        Assert.Contains("Date.now() - state.matchesAttempt < 3000", account);
+        Assert.Contains("<strong data-account-map=", account);
+        Assert.Contains("m.mapName || t(m.mapLoading ? 'account.mapLoading' : 'account.unknownMap')", account);
+        Assert.Contains("title.textContent = p.mapName || t('account.unknownMap')", account);
+        var download = Web("js/replay/download.js");
+        Assert.Contains("openDownloadDialog(preset = {})", download);
+        Assert.Contains("preset.autoStart === true) this.startDownload()", download);
+        Assert.Contains("this.cdnOptions().some(item => item.value === preset.cdn)", download);
+    }
+
+    [Fact]
+    public void IndexedMapIdReadsOnlyMatchingIndexWithoutImportingReplay()
+    {
+        var service = new AstralParty.Toys.Services.Replay.ReplayLibraryService(AppContext.BaseDirectory, profileDirectory: _scratch);
+        var root = Path.Combine(_scratch, "library");
+        Directory.CreateDirectory(root);
+        service.SaveSettings(new AstralParty.Toys.Services.Replay.ReplayLibrarySettings { LibraryRoot = root });
+        Directory.CreateDirectory(service.IndexDirectory);
+        File.WriteAllText(Path.Combine(service.IndexDirectory, "123.json"), "{\"schemaVersion\":1,\"replayId\":\"123\",\"mapId\":101}");
+        Assert.Equal(101, service.IndexedMapId("123"));
+        Assert.Equal(0, service.IndexedMapId("124"));
+        Assert.Equal(0, service.IndexedMapId("../123"));
+        Assert.False(File.Exists(Path.Combine(root, "123", "123")));
+    }
+
+    [Fact]
+    public void AccountNavigationIsAlwaysVisibleWithoutAnInterfaceToggle()
+    {
+        Assert.Contains("class=\"nav-crumb-btn\" data-page=\"account\">", Web("index.html"));
+        Assert.DoesNotContain("data-page=\"account\" hidden", Web("index.html"));
+        var router = Web("js/core/router.js");
+        Assert.DoesNotContain("showMyAccount", router);
+        Assert.DoesNotContain("AccountNavigation", router);
+        Assert.Contains("window.MyAccountModule?.onShow()", router);
+        Assert.Contains("window.MyAccountModule?.onHide()", router);
+        var settings = Web("js/v2/settings.js");
+        Assert.DoesNotContain("v2gMyAccount", settings);
+        Assert.DoesNotContain("account.showNavigation", settings);
+        foreach (var lang in new[] { "zh-Hans", "zh-Hant", "en", "ja" })
+            Assert.DoesNotContain("account.showNavigation", Web($"js/i18n/dict-{lang}.js"));
+    }
+
+    [Fact]
     public void CredentialInstallationTargetsPublishedMarketDetail()
     {
         var marketId = typeof(HybridWindow).GetProperty("CredentialModMarketId",
@@ -272,6 +362,7 @@ public sealed class MyAccountTests : IDisposable
         Assert.DoesNotContain("nextRefreshAt", account);
         Assert.DoesNotContain("account.next", account);
         Assert.Contains("data-i18n=\"account.manual\"", Web("index.html"));
+        Assert.Contains("'account.refresh': '刷新'", Web("js/i18n/dict-zh-Hans.js"));
         foreach (var lang in new[] { "zh-Hans", "zh-Hant", "en", "ja" })
         {
             var dictionary = Web($"js/i18n/dict-{lang}.js");

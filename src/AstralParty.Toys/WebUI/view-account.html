@@ -1,7 +1,7 @@
 <section id="accountView" class="page-view hidden">
   <div class="account-page">
     <header class="account-heading">
-      <div><h2 data-i18n="nav.account">我的账号</h2><p data-i18n="account.subtitle">本机直连 · 角色参战次数与好友状态</p></div>
+      <div><h2 data-i18n="nav.account">我的账号</h2><p data-i18n="account.subtitle">本机直连 · 角色使用、好友状态与最近对局</p></div>
       <div class="account-heading-actions">
         <button class="v2-btn ghost" id="accountPrivacyBtn" data-i18n="account.privacy">隐私与凭据安全</button>
         <button class="v2-btn" id="accountTutorialBtn" data-i18n="account.tutorial">使用教程</button>
@@ -29,6 +29,7 @@
       <div class="account-tabs" role="tablist" aria-label="Account data">
         <button id="accountCharactersTab" role="tab" aria-selected="true" aria-controls="accountCharactersPanel" data-i18n="account.characters"></button>
         <button id="accountFriendsTab" role="tab" aria-selected="false" aria-controls="accountFriendsPanel" tabindex="-1" data-i18n="account.friends"></button>
+        <button id="accountRecentTab" role="tab" aria-selected="false" aria-controls="accountRecentPanel" tabindex="-1" data-i18n="account.recent"></button>
       </div>
       <section id="accountCharactersPanel" class="account-panel" role="tabpanel" aria-labelledby="accountCharactersTab">
         <div class="account-toolbar"><input id="accountCharacterSearch" class="v2-input" data-i18n-placeholder="account.search" data-i18n-title="account.search" /><label><input id="accountPlayedOnly" type="checkbox" /> <span data-i18n="account.playedOnly"></span></label></div>
@@ -39,6 +40,11 @@
         <p class="account-muted" data-i18n="account.manual"></p>
         <div id="accountFriendFreshness" class="account-muted" role="status" data-i18n-skip></div>
         <div id="accountFriends" class="account-friends" data-i18n-skip></div>
+      </section>
+      <section id="accountRecentPanel" class="account-panel" role="tabpanel" aria-labelledby="accountRecentTab" hidden>
+        <div class="account-toolbar"><p class="account-muted" data-i18n="account.recentHint"></p><button class="v2-btn" id="accountRecentRefreshBtn" data-i18n="account.refresh" disabled></button></div>
+        <div id="accountRecentFreshness" class="account-muted" role="status" aria-live="polite" data-i18n-skip></div>
+        <div id="accountRecent" class="account-recent" data-i18n-skip></div>
       </section>
     </div>
   </div>
