@@ -21,7 +21,7 @@
 
 ### 模组与加载器
 
-- 内嵌 CesiumLoader 与 SDK 更新至 3.6.0，包含进程独立 UDP 变速通道、Unity 加速与回合时钟适配。
+- 内嵌 CesiumLoader 与 SDK 随最新正式发布包更新。
 - 新增内置 MapPeekMod，更新 ShopRelicPeekMod 至 1.3.2。
 - 关于页面补充已安装加载器信息，加载器更新检查支持版本清单与随包更新日志。
 

@@ -15,21 +15,21 @@ public sealed class ReleaseWorkflowTests
     }
 
     [Fact]
-    public void Version220_IsPrereleaseWithoutNotesOrLatestPromotion()
+    public void Release_DoesNotGenerateNotesOrSpecialCaseVersion220()
     {
         var workflow = ReadWorkflow();
         Assert.Contains("generate_release_notes: false", workflow);
-        Assert.Contains("prerelease: ${{ github.ref_name == 'v2.2.0' || contains(github.ref_name, '-') }}", workflow);
-        Assert.Contains("make_latest: ${{ github.ref_name == 'v2.2.0' && 'false' || 'legacy' }}", workflow);
+        Assert.Contains("prerelease: ${{ contains(github.ref_name, '-') }}", workflow);
+        Assert.DoesNotContain("github.ref_name == 'v2.2.0'", workflow);
     }
 
     [Fact]
-    public void Version220_PinsBothLoaderAndSkinsToMatchingCandidate()
+    public void Release_UsesLatestLoaderAndSkins()
     {
         var workflow = ReadWorkflow();
-        Assert.Contains("CESIUM_RELEASE_PATH: ${{ github.ref_name == 'v2.2.0' && 'download/modloader-3.6.0' || 'latest/download' }}", workflow);
-        Assert.Contains("releases/$env:CESIUM_RELEASE_PATH/cesium-loader.zip", workflow);
-        Assert.Contains("releases/$env:CESIUM_RELEASE_PATH/cesium-default-skins.zip", workflow);
+        Assert.Contains("releases/latest/download/cesium-loader.zip", workflow);
+        Assert.Contains("releases/latest/download/cesium-default-skins.zip", workflow);
+        Assert.Contains("if ((Test-Path $packagedChangelog) -and", workflow);
     }
 
     private static string ReadWorkflow() => File.ReadAllText(Path.GetFullPath(Path.Combine(

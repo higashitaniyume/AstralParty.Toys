@@ -14,8 +14,6 @@ env:
   TEST_PROJECT: tests/AstralParty.Toys.Tests/AstralParty.Toys.Tests.csproj
   APP_NAME: AstralParty.Toys
   DOTNET_VERSION: 8.0.x
-  # v2.2.0 uses the matching loader candidate without changing its stable Latest.
-  CESIUM_RELEASE_PATH: ${{ github.ref_name == 'v2.2.0' && 'download/modloader-3.6.0' || 'latest/download' }}
 
 jobs:
   test:
@@ -61,12 +59,12 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      # 内嵌 Mod 加载器默认取自 Latest；候选版可通过 CESIUM_RELEASE_PATH 固定版本。
+      # 内嵌 Mod 加载器始终取自 CesiumLoader 最新 Release（github.com/higashitaniyume/CesiumLoader）
       # 下载 cesium-loader.zip → 解压 → 覆盖 Resources\ModLoader\ 后构建，无需手动同步。
       - name: Fetch latest CesiumLoader package
         shell: pwsh
         run: |
-          $zipUrl = "https://github.com/higashitaniyume/CesiumLoader/releases/$env:CESIUM_RELEASE_PATH/cesium-loader.zip"
+          $zipUrl = "https://github.com/higashitaniyume/CesiumLoader/releases/latest/download/cesium-loader.zip"
           $zipPath = "$env:TEMP/cesium-loader-latest.zip"
           # GitHub /releases/latest/download may intermittently return 504 (observed across parallel matrix jobs).
           # Retry with backoff instead of failing the whole release on one thundering-herd download.
@@ -138,7 +136,7 @@ jobs:
           # 都取不到写占位符（运行时会经镜像去拉根 CHANGELOG.md）。
           $changelogPath = "src/AstralParty.Toys/Resources/ModLoader/loader-changelog.md"
           $packagedChangelog = "$extract/CHANGELOG.md"
-          if (Test-Path $packagedChangelog -and (Get-Item $packagedChangelog).Length -gt 0) {
+          if ((Test-Path $packagedChangelog) -and (Get-Item $packagedChangelog).Length -gt 0) {
             Copy-Item $packagedChangelog $changelogPath -Force
             Write-Host "加载器更新日志: 已从发布包内 CHANGELOG.md 同步"
           } else {
@@ -163,7 +161,7 @@ jobs:
           $destination = "src/AstralParty.Toys/Resources/Skins/default-skins.zip"
           New-Item -ItemType Directory -Path (Split-Path $destination) -Force | Out-Null
           # Same 504 retry as the loader package above.
-          $skinsUrl = "https://github.com/higashitaniyume/CesiumLoader/releases/$env:CESIUM_RELEASE_PATH/cesium-default-skins.zip"
+          $skinsUrl = "https://github.com/higashitaniyume/CesiumLoader/releases/latest/download/cesium-default-skins.zip"
           $attempt = 0
           $maxAttempts = 5
           $downloaded = $false
@@ -360,6 +358,5 @@ jobs:
         with:
           files: artifacts/*
           generate_release_notes: false
-          prerelease: ${{ github.ref_name == 'v2.2.0' || contains(github.ref_name, '-') }}
-          make_latest: ${{ github.ref_name == 'v2.2.0' && 'false' || 'legacy' }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
           fail_on_unmatched_files: true
