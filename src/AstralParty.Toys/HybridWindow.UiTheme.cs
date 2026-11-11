@@ -4,15 +4,15 @@ using AstralParty.Toys.Services;
 
 namespace AstralParty.Toys;
 
-// 深浅色的选择由网页保存（localStorage），但启动画面在网页加载之前就要显示，所以这里再记一份。
+// 深浅色的选择由网页保存（localStorage），但启动画面在网页加载之前就要显示，所以这里再记一份到统一配置。
 public partial class HybridWindow
 {
-    private static string UiThemeFile => Path.Combine(SpeedhackManager.ResolveProfileDirectory(), "ui-theme.txt");
+    private static ToysConfigStore AppConfigStore => ToysConfigStore.ForRoot(ToysPaths.Root);
 
     private void ApplyStartupTheme()
     {
         bool light;
-        try { light = File.Exists(UiThemeFile) && File.ReadAllText(UiThemeFile).Trim() == "light"; }
+        try { light = AppConfigStore.Load().App.Theme == "light"; }
         catch (IOException) { return; }
         catch (UnauthorizedAccessException) { return; }
         if (!light) return;
@@ -39,8 +39,7 @@ public partial class HybridWindow
         ApplyWindowBackground(light);
         try
         {
-            if (light) File.WriteAllText(UiThemeFile, "light");
-            else if (File.Exists(UiThemeFile)) File.Delete(UiThemeFile);
+            AppConfigStore.Update(config => config.App.Theme = light ? "light" : "dark");
         }
         catch (IOException) { /* 只影响下次启动画面的颜色 */ }
         catch (UnauthorizedAccessException) { }

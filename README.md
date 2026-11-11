@@ -74,6 +74,7 @@ winget upgrade Hiynet.AstralParty.Toys
 | 市场 | 浏览社区模组目录：搜索、标签筛选、排序与分页；点开模组进入独立详情页，按「详情 / 版本 / README / 许可证」分区查看简介、封面（完整比例展示）、下载地址、许可信息、开源仓库与各版本更新说明（README 与更新说明按 GitHub 风格排版）；下载后校验哈希再安装，更新与降级都有确认，保留配置与停用状态；安装时右下角显示步骤与进度；首次使用需阅读并同意第三方内容说明 |
 | 启动与变速 | 管理多个游戏版本，选择 Steam 或绕过 Steam 启动，设置基础倍率与游戏内变速热键，支持控制台 Debug Shell 开关 |
 | 游戏多开 | 管理多套账号档案（profile）：新建、改名、删除（进回收站）、打开目录，切换后由加载器把账号 / 存档 / 回放目录重定向过去，可直接用选中的档案启动游戏 |
+| 数据与日志 | 配置、缓存、日志与回放集中在同一个可自定义的数据文件夹；运行日志按天保存，可切换级别并一键打开日志文件夹 |
 
 CesiumLoader 随附 21 个内置模组：行为日志、自由相机、变速热键、回合倒计时、战斗胜率助手、卡牌皮肤、音频替换、自动感谢、岔路标记、回合置前、隐藏 HUD、快捷短语、消息停留、主页底栏、帧率解锁、多语言支持、PVE 波次预告、星币商店一键购买、角色半透明、商店与筹码看板与选人地图预览。功能与配置详见 [加载器文档](https://github.com/higashitaniyume/CesiumLoader#内置模组)。模组加载支持启动门机制，就绪后立刻启动；安装与模组配置变更通常需要重启游戏。
 
@@ -93,17 +94,18 @@ CesiumLoader 随附 21 个内置模组：行为日志、自由相机、变速热
 
 | 内容 | 默认位置 |
 | --- | --- |
-| 回放库与工具配置 | `%USERPROFILE%\Documents\AstralPartyReplays` |
+| 数据文件夹（配置、缓存、日志、回放） | `%USERPROFILE%\Documents\AstralParty.Toys` |
 | 游戏回放缓存（国服） | `%USERPROFILE%\AppData\LocalLow\feimo\AstralParty_CN\Temp\Replay` |
 | 账号档案（游戏多开） | `%USERPROFILE%\AppData\LocalLow\feimo\AstralParty_CN_profiles\<档案名>` |
 | WebView2 数据 | `%LOCALAPPDATA%\AstralParty.Toys\WebView2` |
-| 市场封面缓存 | `%LOCALAPPDATA%\AstralParty.Toys\workshop-covers` |
 | 加载器、模组与日志 | 游戏目录下的 `version.dll` 与 `AstralParty_ModLoader\` |
 | 资源模组与备份 | 游戏目录下的 `AstralParty_ResourceMods\` |
 
+数据文件夹里包含统一配置 `AstralParty.Toys.Config.json`、回放归档 `replays\`、可随时删除的缓存 `cache\`、运行日志 `logs\`（按天分文件，默认保留 7 天，单文件上限 10 MB）以及安装历史 `install-history\`。设置页可以把整个数据文件夹换到任意空目录，现有内容会先复制校验、再删除源目录，搬完立刻生效。
+
 **归档会移动回放，放回游戏会复制并保留库内副本。** 自动整理需要在设置中开启；安装器卸载不会删除回放库或游戏目录中的模组。
 
-文档目录不可写时，配置回退到 `%APPDATA%\AstralParty.Toys`；首次运行会复制旧配置，不覆盖已有设置。更改回放库位置不会改变工具配置目录。
+数据文件夹不可写时会回退到 `%LOCALAPPDATA%\AstralParty.Toys\data`；首次运行会把旧的 `文档\AstralPartyReplays` 与 `%APPDATA%\AstralParty.Toys` 配置迁移进来，不覆盖已有设置。
 
 ## 开发
 

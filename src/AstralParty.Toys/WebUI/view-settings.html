@@ -184,14 +184,13 @@
             <div class="settings-col">
               <article class="settings-card">
                 <div class="settings-card-head">
-                  <h3><span class="mi" data-icon="inventory_2"></span> <span data-i18n="settings.group_library">回放库托管</span></h3>
+                  <h3><span class="mi" data-icon="folder_open"></span> <span data-i18n="settings.group_data">数据文件夹</span></h3>
                 </div>
-                <p class="settings-card-note">
-                  游戏自带的「本地回放」只有
-                  <strong>10 个席位</strong>——这是客户端写死的上限，和服务器无关：超了只是游戏拒绝保存新回放。把回放归档到下面的库目录即可腾出席位，需要时再一键放回游戏。
+                <p class="settings-card-note" data-i18n-html="settings.data_root_note">
+                  设置、缓存、日志和回放都放在同一个文件夹里。游戏自带的「本地回放」只有 <strong>10 个席位</strong>——这是客户端写死的上限，和服务器无关：超了只是游戏拒绝保存新回放。把回放归档到这里的 <code>replays</code> 目录即可腾出席位，需要时再一键放回游戏。
                 </p>
                 <div class="settings-field">
-                  <label for="libraryRootInput" data-i18n="settings.library_root">回放存储目录</label>
+                  <label for="libraryRootInput" data-i18n="settings.data_root">数据文件夹</label>
                   <div class="settings-field-row">
                     <input
                       type="text"
@@ -207,10 +206,8 @@
                       打开目录
                     </button>
                   </div>
-                  <p class="settings-field-hint">
-                    默认目录
-                    <code>文档\AstralPartyReplays</code>
-                    同时也是工具箱的<strong>配置文件夹</strong>：游戏库（多游戏目录 / 当前游戏）、变速器与加载器状态、回放库设置都存在这里。把库目录改到别处只会移动回放归档，上述配置文件仍留在默认目录。
+                  <p class="settings-field-hint" data-i18n-html="settings.data_root_hint">
+                    默认 <code>文档\AstralParty.Toys</code>。更改后会先把现有数据整体搬到新位置，搬完立刻生效。
                   </p>
                 </div>
                 <div class="toggle-switch-row">
@@ -310,6 +307,35 @@
                     aria-labelledby="animToggleLabel"
                     aria-describedby="animToggleDesc"
                   />
+                </div>
+              </article>
+
+              <article class="settings-card">
+                <div class="settings-card-head">
+                  <h3><span class="mi" data-icon="description"></span> <span data-i18n="settings.group_logs">日志</span></h3>
+                </div>
+                <p class="settings-card-note" data-i18n="settings.logs_note">
+                  运行日志按天写入数据文件夹的 logs 目录，默认保留 7 天，单个文件超过 10 MB 会自动分卷。
+                </p>
+                <div class="settings-select-row">
+                  <div class="toggle-info">
+                    <h4 data-i18n="settings.log_level">日志级别</h4>
+                    <p data-i18n="settings.log_level_desc">排查问题时切到 Debug，平时保持 Info 即可。</p>
+                  </div>
+                  <select id="logLevelSelect" class="settings-select">
+                    <option value="debug">Debug</option>
+                    <option value="info">Info</option>
+                    <option value="warn">Warn</option>
+                    <option value="error">Error</option>
+                  </select>
+                </div>
+                <div class="settings-field">
+                  <div class="settings-field-row">
+                    <button class="secondary-btn" id="openLogsFolderBtn" data-i18n="settings.open_logs">
+                      打开日志文件夹
+                    </button>
+                  </div>
+                  <p class="settings-field-hint" id="logsPathHint"></p>
                 </div>
               </article>
 

@@ -35,7 +35,7 @@ public static class CardAnimationConverter
         var configured = Environment.GetEnvironmentVariable("ASTRAL_FFMPEG_PATH");
         if (!string.IsNullOrWhiteSpace(configured)) candidates.Add(configured);
         candidates.Add(Path.Combine(AppContext.BaseDirectory, "tools", "ffmpeg.exe"));
-        candidates.Add(Path.Combine(SpeedhackManager.ResolveProfileDirectory(), "tools", "ffmpeg.exe"));
+        candidates.Add(ToysPaths.ToolsDirectory + Path.DirectorySeparatorChar + "ffmpeg.exe");
         foreach (var dir in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator))
             if (!string.IsNullOrWhiteSpace(dir)) candidates.Add(Path.Combine(dir.Trim('"'), "ffmpeg.exe"));
         return candidates.FirstOrDefault(File.Exists);
@@ -46,7 +46,7 @@ public static class CardAnimationConverter
         if (FindFfmpeg() is { } existing) return existing;
         if (!Environment.Is64BitOperatingSystem) throw new InvalidOperationException("请将适合本机的 ffmpeg.exe 放到程序旁 tools 目录，或设置 ASTRAL_FFMPEG_PATH 后重试。");
         progress?.Report("首次使用：正在下载 FFmpeg 转换工具…");
-        var tools = Path.Combine(SpeedhackManager.ResolveProfileDirectory(), "tools");
+        var tools = ToysPaths.ToolsDirectory;
         Directory.CreateDirectory(tools);
         var temporary = Path.Combine(tools, Guid.NewGuid().ToString("N") + ".zip.partial");
         var target = Path.Combine(tools, "ffmpeg.exe");

@@ -240,7 +240,7 @@
       text.textContent = status.message || '';
       if ($('utilsConfigPathText')) $('utilsConfigPathText').textContent =
         status.profileConfigPath
-          ? `主配置：${status.profileConfigPath}${status.profileLocationDocuments ? '（文档目录）' : '（回退 AppData）'}`
+          ? `主配置：${status.profileConfigPath}${status.profileLocationDocuments ? '（文档目录）' : '（自定义数据文件夹）'}`
           : '';
 
       // 游戏目录

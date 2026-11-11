@@ -1,15 +1,23 @@
 namespace AstralParty.Toys.Services.Account;
 
-public sealed class AccountConsent(string profileDirectory)
+/// <summary>
+/// 「我的账号」免责说明的同意记录。存在统一配置 <c>AstralParty.Toys.Config.json</c> 的
+/// <c>app.myAccountConsent</c> 里，不再单独维护一个 txt。
+/// </summary>
+public sealed class AccountConsent
 {
-    private string PathName => Path.Combine(profileDirectory, "account-consent.txt");
+    private readonly ToysConfigStore _store;
+
+    public AccountConsent(string profileDirectory) => _store = ToysConfigStore.ForRoot(profileDirectory);
+
     public bool Granted
     {
-        get { try { return File.ReadAllText(PathName) == "1"; } catch { return false; } }
+        get
+        {
+            try { return _store.Load().App.MyAccountConsent; }
+            catch { return false; }
+        }
     }
-    public void Accept()
-    {
-        Directory.CreateDirectory(profileDirectory);
-        File.WriteAllText(PathName, "1");
-    }
+
+    public void Accept() => _store.Update(config => config.App.MyAccountConsent = true);
 }

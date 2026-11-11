@@ -170,15 +170,21 @@ public sealed partial class ModManager
         return memory.ToArray();
     }
 
-    private readonly string _profileDirectory;
+    private readonly string? _profileDirectoryOverride;
 
     /// <param name="appDirectory">工具目录；只用于提示信息。</param>
     /// <param name="profileDirectory">配置根目录（游戏目录记忆等），显式指定供测试。</param>
     public ModManager(string appDirectory, string? profileDirectory = null)
     {
         _ = appDirectory;
-        _profileDirectory = profileDirectory ?? SpeedhackManager.ResolveProfileDirectory();
+        _profileDirectoryOverride = profileDirectory is { Length: > 0 } ? Path.GetFullPath(profileDirectory) : null;
     }
+
+    /// <summary>
+    /// 数据根目录。没显式指定时跟随 <see cref="ToysPaths.Root"/>：换了数据文件夹本次运行就跟着走。
+    /// </summary>
+    public string ProfileDirectory =>
+        _profileDirectoryOverride ?? SpeedhackManager.ResolveProfileDirectory();
 
     public static bool HasEmbeddedLoader => EmbeddedLoaderDll is not null;
     public static bool HasEmbeddedConfig => EmbeddedConfig is not null;
@@ -196,7 +202,7 @@ public sealed partial class ModManager
     /// <summary>随程序集内置的加载器版本号（界面显示"内置版本"用；空 = 本地开发构建没内嵌发布包）。</summary>
     public static string BundleLoaderVersion => EmbeddedVersion;
 
-    private string StateFilePath => Path.Combine(_profileDirectory, "modloader-state.json");
+    private string StateFilePath => Path.Combine(ProfileDirectory, ToysPaths.StateFolderName, "modloader-state.json");
 
     // ============================== 游戏目录 ==============================
 
@@ -220,8 +226,9 @@ public sealed partial class ModManager
 
     public void SaveStoredGameDirectory(string? directory)
     {
-        Directory.CreateDirectory(_profileDirectory);
-        File.WriteAllText(StateFilePath, JsonSerializer.Serialize(new { gameDirectory = directory }));
+        var path = StateFilePath;
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, JsonSerializer.Serialize(new { gameDirectory = directory }));
     }
 
     // ============================== 工具 ==============================

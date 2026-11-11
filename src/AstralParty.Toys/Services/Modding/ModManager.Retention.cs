@@ -9,7 +9,7 @@ namespace AstralParty.Toys.Services.Modding;
 
 public sealed partial class ModManager
 {
-    private string HistoryRoot => Path.Combine(_profileDirectory, "modloader-history");
+    private string HistoryRoot => Path.Combine(ProfileDirectory, ToysPaths.InstallHistoryFolderName);
     private static readonly JsonSerializerOptions HistoryJson = new() { WriteIndented = true };
 
     public sealed class InstallationRecord

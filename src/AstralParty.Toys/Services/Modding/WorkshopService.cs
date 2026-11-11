@@ -45,9 +45,8 @@ public sealed partial class WorkshopService
 
     private static readonly JsonSerializerOptions Json = new() { PropertyNameCaseInsensitive = true };
 
-    public static string CoverDirectory { get; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "AstralParty.Toys", "workshop-covers");
+    /// <summary>市场封面与贴纸缓存：数据根下的 cache\workshop（可随时删除）。</summary>
+    public static string CoverDirectory => ToysPaths.WorkshopCacheDirectory;
 
     /// <summary>目录用的 HTTP 管道。只有测试会替换它，生产路径永远是下面那份真实客户端。</summary>
     internal HttpMessageHandler? ApiHandlerOverride { get; set; }

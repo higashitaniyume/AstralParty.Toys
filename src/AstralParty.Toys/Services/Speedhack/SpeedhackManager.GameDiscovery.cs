@@ -29,7 +29,7 @@ public sealed partial class SpeedhackManager
 
     public void SaveStoredGameDirectory(string? directory)
     {
-        Directory.CreateDirectory(_profileDirectory);
+        Directory.CreateDirectory(Path.GetDirectoryName(StateFilePath)!);
         File.WriteAllText(StateFilePath, JsonSerializer.Serialize(new { gameDirectory = directory }));
     }
 

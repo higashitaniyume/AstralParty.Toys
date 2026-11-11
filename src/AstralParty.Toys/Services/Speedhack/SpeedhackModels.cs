@@ -55,13 +55,13 @@ public sealed class SpeedhackStatus
     public string BundleHash { get; set; } = "";
     public string Message { get; set; } = "";
 
-    /// <summary>配置根目录（主配置、speedhack-state、回放库设置都在这下面）。</summary>
+    /// <summary>数据文件夹根目录（统一配置、state\、replays\、logs\ 都在这下面）。</summary>
     public string ProfileDirectory { get; set; } = "";
 
-    /// <summary>配置是否保存在用户「文档」目录（正常情况都是 true）。</summary>
+    /// <summary>数据文件夹是否就是默认的「文档\AstralParty.Toys」。</summary>
     public bool ProfileLocationDocuments { get; set; }
 
-    /// <summary>配置位置的人话说明（便携 / 回退 AppData / 沿用旧位置）。</summary>
+    /// <summary>数据文件夹位置的人话说明（回退到本地 AppData 等情况会写明原因）。</summary>
     public string ProfileLocationNote { get; set; } = "";
 
     /// <summary>游戏正在运行时，安装会发生什么（两个界面共用同一套文案）。</summary>

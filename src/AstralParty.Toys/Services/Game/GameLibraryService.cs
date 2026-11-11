@@ -9,15 +9,19 @@ namespace AstralParty.Toys.Services.Game;
 /// </summary>
 public sealed class GameLibraryService
 {
-    private readonly string _profileDirectory;
+    private readonly string? _profileDirectoryOverride;
     private readonly object _gate = new();
 
     public GameLibraryService(string? profileDirectory = null)
     {
-        _profileDirectory = profileDirectory ?? SpeedhackManager.ResolveProfileDirectory();
+        _profileDirectoryOverride = profileDirectory is { Length: > 0 } ? Path.GetFullPath(profileDirectory) : null;
     }
 
-    private string StorePath => Path.Combine(_profileDirectory, "game-profiles.json");
+    /// <summary>数据根目录；没显式指定时跟随 <see cref="ToysPaths.Root"/>。</summary>
+    public string ProfileDirectory =>
+        _profileDirectoryOverride ?? SpeedhackManager.ResolveProfileDirectory();
+
+    private string StorePath => Path.Combine(ProfileDirectory, ToysPaths.StateFolderName, "game-profiles.json");
 
     // ============================== 读写 ==============================
 
@@ -42,7 +46,7 @@ public sealed class GameLibraryService
     {
         lock (_gate)
         {
-            Directory.CreateDirectory(_profileDirectory);
+            Directory.CreateDirectory(Path.GetDirectoryName(StorePath)!);
             File.WriteAllText(StorePath, JsonSerializer.Serialize(Sanitize(data),
                 new JsonSerializerOptions { WriteIndented = true }));
         }

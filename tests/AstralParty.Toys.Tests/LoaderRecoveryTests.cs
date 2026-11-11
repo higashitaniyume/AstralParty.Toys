@@ -26,7 +26,7 @@ public sealed class LoaderRecoveryTests
             Manager.SaveStoredGameDirectory(Game);
         }
         public string Dll => Path.Combine(Game, "version.dll");
-        public string Files => Path.Combine(Profile, "modloader-history", "files");
+        public string Files => Path.Combine(Profile, "install-history", "files");
         public void Install(string version = "9.1.0") => Manager.InstallPackage(Game, Package(version), false);
         public void Dispose() => Sandbox.Dispose();
     }
@@ -119,7 +119,7 @@ public sealed class LoaderRecoveryTests
     {
         using var h = new Harness(); h.Install();
         // No history at all, as with an installation from an older Toys.
-        Directory.Delete(Path.Combine(h.Profile, "modloader-history"), true);
+        Directory.Delete(Path.Combine(h.Profile, "install-history"), true);
         File.Delete(h.Dll);
         var before = Snapshot(h.Game);
         Assert.True(h.Manager.GetStatus().CanRestoreLoader);
@@ -176,7 +176,7 @@ public sealed class LoaderRecoveryTests
         h.Manager.ImportMod(h.Game, source);
         Assert.Equal(new byte[] { 1, 4 }, File.ReadAllBytes(Path.Combine(h.Files, Hash([1, 4]))));
         Assert.Equal(new byte[] { 5, 8 }, File.ReadAllBytes(Path.Combine(h.Files, Hash([5, 8]))));
-        var operations = Directory.GetFiles(Path.Combine(h.Profile, "modloader-history", "games"), "*.json", SearchOption.AllDirectories)
+        var operations = Directory.GetFiles(Path.Combine(h.Profile, "install-history", "games"), "*.json", SearchOption.AllDirectories)
             .Where(p => Path.GetFileName(p) != "current.json").Select(File.ReadAllText).ToArray();
         Assert.Equal(3, operations.Length);
         Assert.All(operations, text => Assert.Contains("\"done\"", text));
@@ -257,7 +257,7 @@ public sealed class LoaderRecoveryTests
         var manifest = Path.Combine(h.Game, ModManager.LoaderFolderName, ModManager.InstalledManifestFileName);
         File.Delete(manifest); Directory.CreateDirectory(manifest);
         Assert.Throws<IOException>(() => h.Manager.Install(h.Game, false, false, allowDowngrade: true));
-        var failed = Directory.GetFiles(Path.Combine(h.Profile, "modloader-history", "games"), "*.json", SearchOption.AllDirectories)
+        var failed = Directory.GetFiles(Path.Combine(h.Profile, "install-history", "games"), "*.json", SearchOption.AllDirectories)
             .Select(File.ReadAllText).Where(s => s.Contains("\"failed\""));
         Assert.Single(failed);
     }
@@ -270,7 +270,7 @@ public sealed class LoaderRecoveryTests
         File.Delete(sdkDll); Directory.CreateDirectory(sdkDll);
         Assert.Throws<IOException>(() => h.Manager.InstallPackage(h.Game, Package("9.2.0"), false));
         Assert.True(File.Exists(Path.Combine(h.Files, Hash(Encoding.UTF8.GetBytes("loader 9.2.0")))));
-        var failed = Directory.GetFiles(Path.Combine(h.Profile, "modloader-history", "games"), "*.json", SearchOption.AllDirectories)
+        var failed = Directory.GetFiles(Path.Combine(h.Profile, "install-history", "games"), "*.json", SearchOption.AllDirectories)
             .Select(File.ReadAllText).Where(s => s.Contains("\"failed\""));
         Assert.Single(failed);
     }

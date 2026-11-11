@@ -43,48 +43,45 @@ public sealed partial class SpeedhackManager
         return memory.ToArray();
     }
 
-    /// <summary>配置与回放库共用的数据文件夹名（位于用户「文档」下）。</summary>
-    public const string DataFolderName = "AstralPartyReplays";
+    /// <summary>数据文件夹名（用户「文档」下的默认位置）。</summary>
+    public const string DataFolderName = ToysPaths.DefaultFolderName;
 
     private readonly string _documentsDirectory;
-    private readonly string _profileDirectory;
-    private readonly string _profileLocationNote;
+    private readonly string? _profileDirectoryOverride;
+    private readonly string? _localDataRootOverride;
+    private readonly string? _documentsDirectoryOverride;
 
-    /// <param name="appDirectory">工具目录；现在只用于提示信息，配置不再放在 exe 旁边。</param>
-    /// <param name="profileDirectory">显式指定配置根目录（测试用）。</param>
-    /// <param name="appDataDirectory">%AppData% 位置覆盖（测试用）。</param>
+    /// <param name="appDirectory">工具目录；只用于提示信息，配置不跟 exe 走。</param>
+    /// <param name="profileDirectory">显式指定数据根目录（测试用）。</param>
+    /// <param name="localDataRoot">引导指针所在的本地目录（测试用）。</param>
     /// <param name="documentsDirectory">「文档」数据目录覆盖（测试用）。</param>
     public SpeedhackManager(string appDirectory, string? profileDirectory = null,
-        string? appDataDirectory = null, string? documentsDirectory = null)
+        string? localDataRoot = null, string? documentsDirectory = null)
     {
-        _ = appDirectory; // 配置统一放文档目录，不跟 exe 走
-        _documentsDirectory = documentsDirectory ?? ResolveDocumentsDataDirectory();
-
-        if (profileDirectory is { Length: > 0 })
-        {
-            _profileDirectory = profileDirectory;
-            _profileLocationNote = "";
-        }
-        else
-        {
-            var (directory, note) = ChooseProfileDirectory(
-                _documentsDirectory,
-                appDataDirectory ?? ResolveAppDataDirectory());
-            _profileDirectory = directory;
-            _profileLocationNote = note;
-        }
+        _ = appDirectory;
+        _documentsDirectory = documentsDirectory ?? ToysPaths.DefaultRoot;
+        _profileDirectoryOverride = profileDirectory is { Length: > 0 } ? Path.GetFullPath(profileDirectory) : null;
+        _localDataRootOverride = localDataRoot;
+        _documentsDirectoryOverride = documentsDirectory;
     }
 
-    /// <summary>用户「文档」下的 AstralPartyReplays（回放库默认也用这个文件夹）。</summary>
-    public static string ResolveDocumentsDataDirectory()
-    {
-        var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        if (string.IsNullOrWhiteSpace(documents))
-            documents = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        return Path.Combine(documents, DataFolderName);
-    }
+    /// <summary>
+    /// 数据根目录。没显式指定时跟随 <see cref="ToysPaths.Root"/>：用户在设置里换了数据文件夹，
+    /// 本次运行就能跟着走，不必重启。
+    /// </summary>
+    public string ProfileDirectory =>
+        _profileDirectoryOverride ?? (_localDataRootOverride is null && _documentsDirectoryOverride is null
+            ? ToysPaths.Root
+            : ResolveProfileDirectory(_localDataRootOverride, _documentsDirectoryOverride));
 
-    /// <summary>%AppData%\AstralParty.Toys（含旧名 AstralParty.ReplayTool 的一次性迁移）。</summary>
+    /// <summary>数据文件夹位置的人话说明（回退到本地 AppData 等情况会写明原因）。</summary>
+    private string ProfileLocationNote =>
+        _profileDirectoryOverride is null ? ToysPaths.RootNote : "";
+
+    /// <summary>默认数据根：用户「文档」下的 AstralParty.Toys。</summary>
+    public static string ResolveDocumentsDataDirectory() => ToysPaths.DefaultRoot;
+
+    /// <summary>旧配置位置 %AppData%\AstralParty.Toys（含旧名 AstralParty.ReplayTool 的一次性迁移）。</summary>
     public static string ResolveAppDataDirectory()
     {
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -105,86 +102,25 @@ public sealed partial class SpeedhackManager
     }
 
     /// <summary>
-    /// 配置根目录：统一放在用户「文档」下的 AstralPartyReplays（主配置、游戏目录记忆、回放库设置都在这一个文件夹里）。
-    /// 首次运行会把 %AppData% 里的旧配置复制过去，玩家的设置不会丢；文档目录实在不可写时才回退 %AppData%。
+    /// 数据根目录：默认「文档\AstralParty.Toys」，用户可在设置里改到任意位置（位置记在 %LOCALAPPDATA% 的引导指针里）。
     /// 两个 override 参数仅供测试注入。
     /// </summary>
-    public static string ResolveProfileDirectory(string? appDataDirectoryOverride = null, string? documentsDirectoryOverride = null)
+    public static string ResolveProfileDirectory(string? localDataRootOverride = null,
+        string? documentsDirectoryOverride = null)
     {
-        var documents = documentsDirectoryOverride ?? ResolveDocumentsDataDirectory();
-        var appData = appDataDirectoryOverride ?? ResolveAppDataDirectory();
-        return ChooseProfileDirectory(documents, appData).Directory;
-    }
-
-    private static (string Directory, string Note) ChooseProfileDirectory(string documentsDirectory, string appDataDirectory)
-    {
-        if (!TryEnsureWritable(documentsDirectory))
-        {
-            return (appDataDirectory,
-                $"文档目录不可写（{documentsDirectory}），配置暂时保存在 {appDataDirectory}。");
-        }
-
-        var migrated = MigrateLegacyConfig(appDataDirectory, documentsDirectory);
-        var note = $"配置保存在「文档\\{DataFolderName}」（和回放库同一个文件夹）：主配置、游戏目录记忆、回放库设置都在这里。";
-        if (migrated.Count > 0)
-            note += $"\n已把 %AppData% 里的旧配置复制过来：{string.Join("、", migrated)}。";
-        return (documentsDirectory, note);
-    }
-
-    /// <summary>把 %AppData% 里已有的配置复制到文档目录（只在目标不存在时复制，不覆盖、不删除源文件）。</summary>
-    private static List<string> MigrateLegacyConfig(string appDataDirectory, string documentsDirectory)
-    {
-        var migrated = new List<string>();
-        if (SamePath(appDataDirectory, documentsDirectory) || !Directory.Exists(appDataDirectory)) return migrated;
-
-        foreach (var relative in new[]
-                 {
-                     Path.Combine("speedhack", ConfigName),
-                     "speedhack-state.json",
-                     "replay-library.json"
-                 })
-        {
-            try
-            {
-                var source = Path.Combine(appDataDirectory, relative);
-                var target = Path.Combine(documentsDirectory, relative);
-                if (!File.Exists(source) || File.Exists(target)) continue;
-                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-                File.Copy(source, target);
-                migrated.Add(relative);
-            }
-            catch
-            {
-                // 复制不动就当没有旧配置，工具会生成默认值
-            }
-        }
-        return migrated;
-    }
-
-    /// <summary>真的往目录里写一个临时文件来探测可写性（目录不存在会先创建）。</summary>
-    private static bool TryEnsureWritable(string directory)
-    {
-        try
-        {
-            Directory.CreateDirectory(directory);
-            var probe = Path.Combine(directory, $".astral-write-probe-{Guid.NewGuid():N}.tmp");
-            using var stream = new FileStream(probe, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1,
-                FileOptions.DeleteOnClose);
-            stream.WriteByte(0);
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
+        // 生产路径直接用已经解析好的根（用户改了数据文件夹后这里立刻跟着变）；
+        // 测试注入时走一遍完整解析。
+        if (localDataRootOverride is null && documentsDirectoryOverride is null) return ToysPaths.Root;
+        var documents = documentsDirectoryOverride ?? ToysPaths.DefaultRoot;
+        return ToysPaths.ResolveRoot(localDataRootOverride, documents);
     }
 
     public static bool HasEmbeddedResources => EmbeddedDll is not null && EmbeddedConfigTemplate is not null;
     public static bool HasEmbeddedDll => EmbeddedDll is not null;
     public static bool HasEmbeddedConfigTemplate => EmbeddedConfigTemplate is not null;
 
-    /// <summary>可编辑的主配置；默认在工具目录 portable 形态下，或回退到 %AppData%\AstralParty.Toys。</summary>
-    public string ProfileConfigPath => Path.Combine(_profileDirectory, "speedhack", ConfigName);
+    /// <summary>可编辑的主配置（数据根下的 speedhack\speedhack_config.json）。</summary>
+    public string ProfileConfigPath => Path.Combine(ProfileDirectory, ToysPaths.SpeedhackFolderName, ConfigName);
 
     private static bool SamePath(string left, string right)
     {
@@ -201,7 +137,7 @@ public sealed partial class SpeedhackManager
         }
     }
 
-    private string StateFilePath => Path.Combine(_profileDirectory, "speedhack-state.json");
+    private string StateFilePath => Path.Combine(ProfileDirectory, ToysPaths.StateFolderName, "speedhack-state.json");
 
     // ============================== 状态 ==============================
 
@@ -214,9 +150,11 @@ public sealed partial class SpeedhackManager
             status.TemplateConfigPresent = HasEmbeddedConfigTemplate;
             status.ProfileConfigPath = ProfileConfigPath;
             status.ProfileConfigPresent = File.Exists(ProfileConfigPath);
-            status.ProfileDirectory = _profileDirectory;
-            status.ProfileLocationDocuments = SamePath(_profileDirectory, _documentsDirectory);
-            status.ProfileLocationNote = _profileLocationNote;
+            status.ProfileDirectory = ProfileDirectory;
+            status.ProfileLocationDocuments = SamePath(ProfileDirectory, _documentsDirectory);
+            status.ProfileLocationNote = ProfileLocationNote.Length > 0
+                ? ProfileLocationNote
+                : $"数据文件夹：{ProfileDirectory}";
 
             var directory = GetStoredGameDirectory();
             if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))

@@ -1093,7 +1093,7 @@ public sealed class ModManagerTests
 
         // 模拟旧安装：既没有游戏清单，也没有本地安装历史。
         // 即使日志有版本行也不回读，缺少可靠记录时如实显示未知。
-        Directory.Delete(harness.Sandbox.Combine("profile", "modloader-history"), recursive: true);
+        Directory.Delete(harness.Sandbox.Combine("profile", "install-history"), recursive: true);
         var loaderRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
         File.Delete(Path.Combine(loaderRoot, "cesium-loader.json"));
         Directory.CreateDirectory(Path.Combine(loaderRoot, "logs"));
@@ -1160,7 +1160,7 @@ public sealed class ModManagerTests
         using var harness = new ModHarness("ap-mod-version-config-ignored");
         harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
 
-        Directory.Delete(harness.Sandbox.Combine("profile", "modloader-history"), recursive: true);
+        Directory.Delete(harness.Sandbox.Combine("profile", "install-history"), recursive: true);
         // 老安装（没有清单和历史）+ 配置里手写着另一个 sdkVersion：
         // 它是**另一个字段**（用户还能手改），不能拿来当「已装版本」显示
         var loaderRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);

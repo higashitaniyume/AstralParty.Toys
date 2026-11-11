@@ -496,7 +496,7 @@ public sealed partial class ReplayLibraryService
     {
         try
         {
-            EnsureLibrary();
+            Directory.CreateDirectory(Path.GetDirectoryName(OperationsLogPath)!);
             var line = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}\t{action}\t{replayIds}\t{detail}{Environment.NewLine}";
             File.AppendAllText(OperationsLogPath, line, Encoding.UTF8);
         }

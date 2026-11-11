@@ -286,15 +286,12 @@ public sealed class ReplayDownloadTests
     public async Task DownloadAsync_LibraryRootEqualToGameRoot_IsRefused()
     {
         using var harness = new DownloadHarness();
-        harness.Service.SaveSettings(new ReplayLibrarySettings
-        {
-            LibraryRoot = harness.GameDirectory,
-            KeepInGame = ReplayLibraryService.GameSlotCapacity
-        });
+        // 回放库固定为「数据根\replays」；把游戏目录也指到这里，模拟两者相同
+        var service = new ReplayLibraryService(TestPaths.AppDirectory, harness.LibraryDirectory, harness.ProfileDirectory);
         var handler = new StubHandler([1, 2, 3]);
-        harness.Service.DownloadHandlerOverride = handler;
+        service.DownloadHandlerOverride = handler;
 
-        var result = await harness.Service.DownloadAsync(SampleReplayId, ReplayCdnEndpoint.CnProd);
+        var result = await service.DownloadAsync(SampleReplayId, ReplayCdnEndpoint.CnProd);
 
         Assert.False(result.Ok);
         Assert.Contains("不能是同一个路径", string.Join(" | ", result.Messages));
@@ -331,12 +328,11 @@ public sealed class ReplayDownloadTests
         {
             Sandbox = new TestSandbox("ap-download");
             GameDirectory = Sandbox.EnsureDirectory("game");
-            LibraryDirectory = Sandbox.EnsureDirectory("library");
             ProfileDirectory = Sandbox.EnsureDirectory("profile");
+            LibraryDirectory = Sandbox.EnsureDirectory("profile", ToysPaths.ReplaysFolderName);
             Service = new ReplayLibraryService(TestPaths.AppDirectory, GameDirectory, ProfileDirectory);
             Service.SaveSettings(new ReplayLibrarySettings
             {
-                LibraryRoot = LibraryDirectory,
                 AutoMaintain = false,
                 KeepInGame = ReplayLibraryService.GameSlotCapacity
             });
@@ -351,7 +347,7 @@ public sealed class ReplayDownloadTests
 
         /// <summary>按游戏的目录约定预置一份库内回放（<c>&lt;库&gt;\&lt;id&gt;\&lt;id&gt;</c>）。</summary>
         public void SeedLibraryReplay(string replayId, byte[] bytes)
-            => Sandbox.WriteFile(Path.Combine("library", replayId, replayId), bytes);
+            => Sandbox.WriteFile(Path.Combine("profile", ToysPaths.ReplaysFolderName, replayId, replayId), bytes);
 
         public void Dispose() => Sandbox.Dispose();
     }

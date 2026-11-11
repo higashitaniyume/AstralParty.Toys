@@ -281,38 +281,88 @@ public partial class HybridWindow
 
     private void HandleLibraryBrowseRoot()
     {
-        string? current = null;
+        var current = ToysPaths.Root;
         string? folder;
         try
         {
-            current = _libraryService.LibraryRoot;
             folder = PickFolderWithFallback(
-                "选择回放库目录（不要和游戏的 Temp\\Replay 选成同一个）",
+                "选择数据文件夹（配置、缓存、日志、回放都会放在这里）",
                 current);
         }
         catch (Exception ex)
         {
-            Post(new { type = "toast", message = $"打开文件夹选择框失败：{ex.Message}（起始目录：{current ?? "（无）"}）" });
+            Post(new { type = "toast", message = $"打开文件夹选择框失败：{ex.Message}（起始目录：{current}）" });
             return;
         }
         if (folder is not { Length: > 0 }) return;
-        _libraryService.SaveSettings(new ReplayLibrarySettings
+        ChangeDataRoot(folder);
+    }
+
+    /// <summary>
+    /// 切换数据文件夹：先把现有内容搬过去（复制 → 校验 → 删除源），再更新引导指针。
+    /// 搬完之后本次运行立刻跟着走（各服务都在用 <see cref="ToysPaths.Root"/>），不用重启。
+    /// </summary>
+    private void ChangeDataRoot(string folder)
+    {
+        var target = folder.Trim();
+        if (ToysMigration.IsSamePath(target, ToysPaths.Root)) return;
+
+        var source = ToysPaths.Root;
+        var result = DataRootMover.Move(source, target);
+        if (!result.Ok)
         {
-            LibraryRoot = folder,
-            AutoMaintain = _libraryService.Settings.AutoMaintain,
-            KeepInGame = _libraryService.Settings.KeepInGame,
-            Language = _libraryService.Settings.Language,
-            WorkshopUrl = _libraryService.Settings.WorkshopUrl
-        });
-        Post(new { type = "toast", message = $"回放库已切换到：{folder}" });
+            Post(new { type = "toast", message = $"切换数据文件夹失败：{result.Message}" });
+            ToysLog.Error("config", $"切换数据文件夹失败：{result.Message}");
+            return;
+        }
+
+        ToysPaths.SwitchRoot(target);
+        ToysPaths.EnsureDirectories();
+
+        // 日志目录跟着换：写日志的位置由配置里的级别决定，目录由数据根决定
+        var config = ToysConfigStore.ForRoot(target).Load();
+        ToysLog.Apply(config.Logging, ToysPaths.LogsDirectory);
+        ToysLog.Info("config", $"数据文件夹已切换到 {target}");
+
+        // 配置也跟着换了根，重新读一遍（语言、自动托管等以新目录里的那份为准）
+        _libraryService.ReloadSettings();
+
+        // 旧目录搬空后顺手删掉，免得留下一个空壳文件夹
+        TryRemoveEmptyDirectory(source);
+
+        // 市场封面与背景的虚拟域名映射指向旧目录，重新映射一次
+        RemapDataHosts();
+
+        Post(new { type = "toast", message = $"数据已迁移到 {target}。" });
         Post(new { type = "librarySettings", payload = BuildLibrarySettingsPayload() });
+    }
+
+    /// <summary>目录已经空了才删；里面有东西就留着，别误删用户数据。</summary>
+    private static void TryRemoveEmptyDirectory(string directory)
+    {
+        try
+        {
+            if (!Directory.Exists(directory)) return;
+            if (Directory.EnumerateFileSystemEntries(directory).Any()) return;
+            Directory.Delete(directory);
+        }
+        catch (Exception ex)
+        {
+            ToysLog.Warn("config", $"没能删掉空的数据目录 {directory}：{ex.Message}");
+        }
     }
 
     private void HandleLibrarySaveSettings(JsonElement root)
     {
-        var root_ = root.TryGetProperty("libraryRoot", out var rootElement)
+        // 界面里的「数据文件夹」和设置一起提交；只有真的换了路径才触发迁移。
+        var requestedRoot = root.TryGetProperty("libraryRoot", out var rootElement)
             ? rootElement.GetString()
-            : _libraryService.Settings.LibraryRoot;
+            : null;
+        if (!string.IsNullOrWhiteSpace(requestedRoot) && !ToysMigration.IsSamePath(requestedRoot, ToysPaths.Root))
+        {
+            ChangeDataRoot(requestedRoot);
+        }
+
         var autoMaintain = root.TryGetProperty("autoMaintain", out var autoElement)
             ? autoElement.GetBoolean()
             : _libraryService.Settings.AutoMaintain;
@@ -344,7 +394,6 @@ public partial class HybridWindow
 
         _libraryService.SaveSettings(new ReplayLibrarySettings
         {
-            LibraryRoot = string.IsNullOrWhiteSpace(root_) ? null : root_,
             AutoMaintain = autoMaintain,
             KeepInGame = Math.Clamp(keepInGame, 1, ReplayLibraryService.GameSlotCapacity),
             Language = AppLanguage.Normalize(lang),
@@ -359,10 +408,35 @@ public partial class HybridWindow
         Post(new { type = "toast", message = "设置已保存。" });
     }
 
+    /// <summary>切换日志级别（debug / info / warn / error），立即生效并写进配置。</summary>
+    private void HandleLoggingLevelChange(JsonElement root)
+    {
+        var requested = root.TryGetProperty("level", out var levelElement) ? levelElement.GetString() : null;
+        var normalized = ToysLog.NormalizeLevel(requested);
+        try
+        {
+            var store = ToysConfigStore.ForRoot(ToysPaths.Root);
+            var config = store.Update(current => current.Logging.Level = normalized);
+            ToysLog.Apply(config.Logging, ToysPaths.LogsDirectory);
+            ToysLog.Info("config", $"日志级别切换为 {normalized}");
+            Post(new { type = "toast", message = $"日志级别：{normalized}" });
+            Post(new { type = "librarySettings", payload = BuildLibrarySettingsPayload() });
+        }
+        catch (Exception ex)
+        {
+            ToysLog.Error("config", "切换日志级别失败", ex);
+            Post(new { type = "toast", message = "切换日志级别失败：" + ex.Message });
+        }
+    }
+
     private object BuildLibrarySettingsPayload() => new
     {
-        libraryRoot = _libraryService.LibraryRoot,
-        defaultLibraryRoot = ReplayLibraryService.DefaultLibraryRoot(),
+        // libraryRoot / defaultLibraryRoot 保留旧字段名：界面把它们当成「数据文件夹」显示与修改。
+        libraryRoot = ToysPaths.Root,
+        defaultLibraryRoot = ToysPaths.DefaultRoot,
+        replaysRoot = _libraryService.LibraryRoot,
+        logsRoot = ToysPaths.LogsDirectory,
+        loggingLevel = ToysLog.Level.ToString().ToLowerInvariant(),
         autoMaintain = _libraryService.Settings.AutoMaintain,
         keepInGame = _libraryService.Settings.KeepInGame,
         capacity = ReplayLibraryService.GameSlotCapacity,

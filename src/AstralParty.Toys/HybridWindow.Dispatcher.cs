@@ -158,6 +158,17 @@ public partial class HybridWindow
                 case "libraryOpenFolder":
                     HandleLibraryOpenFolder();
                     break;
+                case "openDataRoot":
+                    try
+                    {
+                        Directory.CreateDirectory(ToysPaths.Root);
+                        SpeedhackManager.OpenInExplorer(ToysPaths.Root);
+                    }
+                    catch (Exception ex)
+                    {
+                        Post(new { type = "toast", message = $"打开数据文件夹失败：{ex.Message}" });
+                    }
+                    break;
                 case "libraryBrowseRoot":
                     HandleLibraryBrowseRoot();
                     break;
@@ -167,6 +178,12 @@ public partial class HybridWindow
                 case "librarySaveSettings":
                     HandleLibrarySaveSettings(root);
                     break;
+                case "openLogsFolder":
+                    ToysLog.OpenFolder();
+                    break;
+                case "setLoggingLevel":
+                    HandleLoggingLevelChange(root);
+                    break;
                 case "setLanguage":
                     if (root.TryGetProperty("language", out var langProp))
                     {
@@ -175,7 +192,6 @@ public partial class HybridWindow
                         var curSettings = _libraryService.Settings;
                         _libraryService.SaveSettings(new ReplayLibrarySettings
                         {
-                            LibraryRoot = curSettings.LibraryRoot,
                             AutoMaintain = curSettings.AutoMaintain,
                             KeepInGame = curSettings.KeepInGame,
                             Language = normLang,

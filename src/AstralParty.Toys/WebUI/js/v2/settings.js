@@ -116,6 +116,7 @@
     ['game', '游戏目录', 'sports_esports'],
     ['lib', '回放库', 'inventory_2'],
     ['net', '网络', 'refresh'],
+    ['logs', '日志', 'description'],
     ['update', '软件更新', 'upgrade'],
     ['about', '关于', 'info'],
     ['uninstall', '卸载', 'delete'],
@@ -155,9 +156,12 @@
       </div>`;
     else if (tab === 'lib') main = `
       <div class="v2-card"><div class="v2-card-title"><span>回放库</span></div>
-        <div class="v2-row"><span class="k">存放位置</span>
-          <span class="v" style="font-family:var(--v2-mono);font-size:13px" title="${esc(LS().libraryRoot || LS().defaultLibraryRoot || '')}">${esc(LS().libraryRoot || LS().defaultLibraryRoot || '默认：文档\\AstralPartyReplays')}</span>
+        <div class="v2-row"><span class="k">数据文件夹</span>
+          <span class="v" style="font-family:var(--v2-mono);font-size:13px" title="${esc(LS().libraryRoot || LS().defaultLibraryRoot || '')}">${esc(LS().libraryRoot || LS().defaultLibraryRoot || '默认：文档\\AstralParty.Toys')}</span>
           <button class="v2-btn ghost" data-v2g="libBrowse">${I().folder}更改…</button>
+          <button class="v2-btn ghost" data-v2g="libDataOpen">打开</button></div>
+        <div class="v2-row"><span class="k">回放归档</span>
+          <span class="v v2-muted" style="font-family:var(--v2-mono);font-size:12px;white-space:normal">${esc(LS().replaysRoot || '数据文件夹\\replays')}</span>
           <button class="v2-btn ghost" data-v2g="libOpen">打开</button></div>
         <div class="v2-row"><span class="k">自动托管</span><span class="v v2-muted">每次打开 / 刷新时，把游戏内超出保留数的旧回放归档进库</span>
           <label class="v2-switch"><input type="checkbox" id="v2gAuto" ${LS().autoMaintain ? 'checked' : ''}><span></span></label></div>
@@ -165,6 +169,15 @@
           <input id="v2gKeep" class="v2-num" type="number" min="1" max="${cap}" value="${keep}"></div>
         <div class="v2-row"><span class="k">立即整理</span><span class="v v2-muted">现在就按上面的保留局数归档一次</span>
           <button class="v2-btn line" data-v2g="maintainNow">整理</button></div>
+      </div>`;
+    else if (tab === 'logs') main = `
+      <div class="v2-card"><div class="v2-card-title"><span>日志</span></div>
+        <div class="v2-row"><span class="k">日志文件夹</span>
+          <span class="v v2-muted" style="font-family:var(--v2-mono);font-size:12px;white-space:normal">${esc(LS().logsRoot || '数据文件夹\\logs')}</span>
+          <button class="v2-btn ghost" data-v2g="openLogs">打开</button></div>
+        <div class="v2-row"><span class="k">日志级别</span><span class="v v2-muted">排查问题时切到 Debug，平时保持 Info 即可</span>
+          <select id="v2gLogLevel" class="v2-select">${[['debug', 'Debug'], ['info', 'Info'], ['warn', 'Warn'], ['error', 'Error']].map(([v, l]) => `<option value="${v}" ${(LS().loggingLevel || 'info') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+        <div class="v2-row"><span class="k">保留策略</span><span class="v v2-muted" style="white-space:normal">按天分文件，默认保留 7 天；单个文件超过 10 MB 时自动分卷</span></div>
       </div>`;
     else if (tab === 'net') main = `
       <div class="v2-card"><div class="v2-card-title"><span>网络</span></div>
@@ -318,6 +331,8 @@
     browse: () => post({ type: 'gameProfileBrowse' }),
     libBrowse: () => post({ type: 'libraryBrowseRoot' }),
     libOpen: () => post({ type: 'libraryOpenFolder' }),
+    libDataOpen: () => post({ type: 'openDataRoot' }),
+    openLogs: () => post({ type: 'openLogsFolder' }),
     maintainNow: () => post({ type: 'libraryMaintain' }),
     checkUpdate: () => post({ type: 'checkAppUpdate' }),
     updateDownload: () => post({ type: 'startAppUpdateDownload' }),
@@ -372,6 +387,7 @@
     if (t.id === 'v2gMirror') return saveLibrary({ githubMirrorType: t.value });
     if (t.id === 'v2gMirrorUrl') return saveLibrary({ customGitHubMirrorUrl: t.value.trim() });
     if (t.id === 'v2gWorkshopUrl') return saveLibrary({ workshopUrl: t.value.trim() || null });
+    if (t.id === 'v2gLogLevel') return post({ type: 'setLoggingLevel', level: t.value });
   });
 
   // 原版这些数据回来时重画

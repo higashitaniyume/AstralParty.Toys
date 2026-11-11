@@ -6,6 +6,7 @@
       this.initialized = true;
 
       this.bindLibrary();
+      this.bindLogging();
       this.bindUpdates();
       window.GameLibModule?.init?.();
 
@@ -43,14 +44,14 @@
       });
     },
 
-    // ---------- 回放库 ----------
+    // ---------- 回放库 / 数据文件夹 ----------
     bindLibrary() {
       $('libraryRootBrowseBtn')?.addEventListener('click', () => post({ type: 'libraryBrowseRoot' }));
       $('libraryRootOpenBtn')?.addEventListener('click', () => {
         this.pushLibrarySettings();
-        post({ type: 'libraryOpenFolder' });
+        post({ type: 'openDataRoot' });
       });
-      // 手动输入的库目录也要落盘：以前只有点「浏览/打开」等按钮才保存，直接敲进去会被静默丢弃
+      // 手动输入的路径也要落盘：以前只有点「浏览/打开」等按钮才保存，直接敲进去会被静默丢弃
       $('libraryRootInput')?.addEventListener('change', () => this.pushLibrarySettings());
       $('libraryAutoMaintainToggle')?.addEventListener('change', event => {
         this.pushLibrarySettings();
@@ -65,6 +66,14 @@
 
       if (AppState.librarySettings) this.applyLibrarySettings(AppState.librarySettings);
       else post({ type: 'libraryGetSettings' });
+    },
+
+    // ---------- 日志 ----------
+    bindLogging() {
+      $('openLogsFolderBtn')?.addEventListener('click', () => post({ type: 'openLogsFolder' }));
+      $('logLevelSelect')?.addEventListener('change', event => {
+        post({ type: 'setLoggingLevel', level: event.target.value });
+      });
     },
 
     pushLibrarySettings() {
@@ -94,7 +103,7 @@
         rootInput.value = settings.libraryRoot || '';
         rootInput.placeholder = settings.defaultLibraryRoot
           ? `默认：${settings.defaultLibraryRoot}`
-          : '默认：文档\\AstralPartyReplays';
+          : '默认：文档\\AstralParty.Toys';
       }
       const autoToggle = $('libraryAutoMaintainToggle');
       if (autoToggle) autoToggle.checked = !!settings.autoMaintain;
@@ -141,6 +150,12 @@
 
       const customInput = $('customMirrorInput');
       if (customInput) customInput.value = settings.customGitHubMirrorUrl || '';
+
+      const logLevel = $('logLevelSelect');
+      if (logLevel && settings.loggingLevel) logLevel.value = settings.loggingLevel;
+
+      const logsHint = $('logsPathHint');
+      if (logsHint) logsHint.textContent = settings.logsRoot ? `日志保存在 ${settings.logsRoot}` : '';
     },
 
     bindUpdates() {

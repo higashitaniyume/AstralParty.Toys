@@ -1,9 +1,12 @@
 ﻿namespace AstralParty.Toys.Services.Replay;
 
-/// <summary>回放库设置，持久化在 %AppData%\AstralParty.Toys\replay-library.json。</summary>
+/// <summary>
+/// 回放库设置的运行时视图。真正的落盘位置是统一配置 <c>AstralParty.Toys.Config.json</c>，
+/// 这里只作为宿主/界面之间传递的一个投影。
+/// </summary>
 public sealed class ReplayLibrarySettings
 {
-    /// <summary>回放库根目录。为空时使用默认的「文档\AstralPartyReplays」。</summary>
+    /// <summary>旧版单独配置的回放库目录。现在回放固定放在「数据根\replays」，这个字段不再生效。</summary>
     public string? LibraryRoot { get; set; }
 
     /// <summary>开启后每次刷新列表都会自动把游戏目录里超出保留名额的旧回放归档进库。</summary>

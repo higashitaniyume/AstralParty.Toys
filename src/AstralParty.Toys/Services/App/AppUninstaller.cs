@@ -53,10 +53,25 @@ public static class AppUninstaller
     /// </summary>
     public static (IReadOnlyList<string> Files, IReadOnlyList<string> Directories) SettingsItems(string profileDirectory, bool keepLoaderHistory)
     {
-        var files = new[] { "game-profiles.json", "modloader-state.json", "speedhack-state.json", "replay-library.json", "ui-theme.txt" }
+        var files = new[]
+            {
+                ToysPaths.ConfigFileName,
+                ToysPaths.ConfigFileName + ".bak",
+                ToysPaths.ConfigFileName + ".tmp"
+            }
             .Select(name => Path.Combine(profileDirectory, name)).ToList();
-        var directories = new List<string> { Path.Combine(profileDirectory, "speedhack"), Path.Combine(profileDirectory, "tools"), Path.Combine(profileDirectory, "backgrounds") };
-        if (!keepLoaderHistory) directories.Add(Path.Combine(profileDirectory, "modloader-history"));
+
+        // 回放固定在 replays\ 里，绝不在这个清单里：卸载工具不能带走玩家的回放。
+        var directories = new List<string>
+        {
+            Path.Combine(profileDirectory, ToysPaths.SpeedhackFolderName),
+            Path.Combine(profileDirectory, ToysPaths.ToolsFolderName),
+            Path.Combine(profileDirectory, ToysPaths.BackgroundsFolderName),
+            Path.Combine(profileDirectory, ToysPaths.StateFolderName),
+            Path.Combine(profileDirectory, ToysPaths.LogsFolderName),
+            Path.Combine(profileDirectory, ToysPaths.CacheFolderName)
+        };
+        if (!keepLoaderHistory) directories.Add(Path.Combine(profileDirectory, ToysPaths.InstallHistoryFolderName));
         return (files, directories);
     }
 

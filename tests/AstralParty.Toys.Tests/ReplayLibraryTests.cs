@@ -97,7 +97,6 @@ public sealed class ReplayLibraryTests
         harness.Service.Restore([LibraryHarness.OldestId]);
         harness.Service.SaveSettings(new ReplayLibrarySettings
         {
-            LibraryRoot = harness.LibraryDirectory,
             AutoMaintain = true,
             KeepInGame = 2
         });
@@ -256,14 +255,11 @@ public sealed class ReplayLibraryTests
     public void LibraryRootEqualToGameRoot_RejectsEverything()
     {
         using var harness = new LibraryHarness("ap-library-same-folder");
-        harness.Service.SaveSettings(new ReplayLibrarySettings
-        {
-            LibraryRoot = harness.GameDirectory,
-            KeepInGame = ReplayLibraryService.GameSlotCapacity
-        });
+        // 回放库固定为「数据根\replays」；把游戏目录也指到这里，模拟两者相同
+        var service = new ReplayLibraryService(TestPaths.AppDirectory, harness.LibraryDirectory, harness.ProfileDirectory);
 
-        Assert.True(harness.Service.Snapshot().SameFolder, "同一个路径没有被识别出来");
-        Assert.False(harness.Service.Archive([LibraryHarness.NewestId]).Ok, "同一个路径时归档应当被拒绝");
+        Assert.True(service.Snapshot().SameFolder, "同一个路径没有被识别出来");
+        Assert.False(service.Archive([LibraryHarness.NewestId]).Ok, "同一个路径时归档应当被拒绝");
     }
 
     [Fact]
@@ -301,14 +297,13 @@ public sealed class ReplayLibraryTests
         {
             Sandbox = new TestSandbox(sandboxName);
             GameDirectory = Sandbox.EnsureDirectory("game");
-            LibraryDirectory = Sandbox.EnsureDirectory("library");
             ProfileDirectory = Sandbox.EnsureDirectory("profile");
+            LibraryDirectory = Sandbox.EnsureDirectory("profile", ToysPaths.ReplaysFolderName);
             Service = new ReplayLibraryService(TestPaths.AppDirectory, GameDirectory, ProfileDirectory);
 
             foreach (var seed in Seeds) SeedReplay(seed);
             Service.SaveSettings(new ReplayLibrarySettings
             {
-                LibraryRoot = LibraryDirectory,
                 AutoMaintain = false,
                 KeepInGame = ReplayLibraryService.GameSlotCapacity
             });

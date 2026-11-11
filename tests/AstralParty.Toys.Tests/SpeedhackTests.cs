@@ -162,11 +162,10 @@ public sealed class SpeedhackDiagnosticsTests
         foreach (var name in resources) _output.WriteLine($"  RESOURCE {name}");
         _output.WriteLine($"HasEmbeddedDll={SpeedhackManager.HasEmbeddedDll} HasEmbeddedConfigTemplate={SpeedhackManager.HasEmbeddedConfigTemplate}");
 
-        var profileDirectory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AstralParty.Toys");
-        _output.WriteLine($"PROFILE DIR: {profileDirectory} exists={Directory.Exists(profileDirectory)}");
-        _output.WriteLine($"STATE FILE: exists={File.Exists(Path.Combine(profileDirectory, "speedhack-state.json"))}");
-        _output.WriteLine($"PROFILE CONFIG: exists={File.Exists(Path.Combine(profileDirectory, "speedhack", "speedhack_config.json"))}");
+        var dataRoot = ToysPaths.DefaultRoot;
+        _output.WriteLine($"DATA ROOT: {dataRoot} exists={Directory.Exists(dataRoot)}");
+        _output.WriteLine($"STATE FILE: exists={File.Exists(Path.Combine(dataRoot, "state", "speedhack-state.json"))}");
+        _output.WriteLine($"PROFILE CONFIG: exists={File.Exists(Path.Combine(dataRoot, "speedhack", "speedhack_config.json"))}");
 
         var detected = SpeedhackManager.DetectGameDirectory();
         _output.WriteLine($"DETECTED GAME DIR: {detected ?? "(null)"}");

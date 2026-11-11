@@ -53,10 +53,12 @@ public class AppUninstallerTests
         var exe = Path.Combine(root, "AstralParty.Toys（副本）.exe");
         File.WriteAllText(exe, "MZ");
         var extract = Directory.CreateDirectory(Path.Combine(root, "extract", "sub")).Parent!.FullName;
-        var profile = Directory.CreateDirectory(Path.Combine(root, "AstralPartyReplays")).FullName;
-        File.WriteAllText(Path.Combine(profile, "game-profiles.json"), "{}");
-        var history = Directory.CreateDirectory(Path.Combine(profile, "modloader-history", "games")).Parent!.FullName;
-        var replay = Directory.CreateDirectory(Path.Combine(profile, "12345")).FullName;
+        var profile = Directory.CreateDirectory(Path.Combine(root, "AstralParty.Toys")).FullName;
+        File.WriteAllText(Path.Combine(profile, "AstralParty.Toys.Config.json"), "{}");
+        var state = Directory.CreateDirectory(Path.Combine(profile, "state")).FullName;
+        File.WriteAllText(Path.Combine(state, "game-profiles.json"), "{}");
+        var history = Directory.CreateDirectory(Path.Combine(profile, "install-history", "games")).Parent!.FullName;
+        var replay = Directory.CreateDirectory(Path.Combine(profile, "replays", "12345")).FullName;
         File.WriteAllText(Path.Combine(replay, "12345"), "replay");
         var emptyProfile = Directory.CreateDirectory(Path.Combine(root, "empty-after")).FullName;
         var unrelated = Path.Combine(root, "unrelated.txt");
@@ -74,11 +76,12 @@ public class AppUninstallerTests
 
         Assert.False(File.Exists(exe));
         Assert.False(Directory.Exists(extract));
-        Assert.False(File.Exists(Path.Combine(profile, "game-profiles.json")));
+        Assert.False(File.Exists(Path.Combine(profile, "AstralParty.Toys.Config.json")));
+        Assert.False(Directory.Exists(state));
         Assert.False(Directory.Exists(history));
         Assert.Contains(Path.Combine(profile, "backgrounds"), items.Directories);
         Assert.False(Directory.Exists(emptyProfile));
-        // 文件夹里还有回放：回放和文件夹都必须还在
+        // 文件夹里还有回放：replays 与里面的回放都必须还在
         Assert.Equal("replay", File.ReadAllText(Path.Combine(replay, "12345")));
         Assert.True(File.Exists(unrelated));
         Assert.Empty(Directory.GetFiles(sandbox.Root, "*.cmd"));   // 脚本删掉了自己
@@ -88,9 +91,9 @@ public class AppUninstallerTests
     public void SettingsItems_KeepsLoaderHistoryWhileALoaderRemains()
     {
         var keep = AppUninstaller.SettingsItems(@"C:\p", keepLoaderHistory: true);
-        Assert.DoesNotContain(keep.Directories, d => d.EndsWith("modloader-history"));
+        Assert.DoesNotContain(keep.Directories, d => d.EndsWith("install-history"));
         var remove = AppUninstaller.SettingsItems(@"C:\p", keepLoaderHistory: false);
-        Assert.Contains(remove.Directories, d => d.EndsWith("modloader-history"));
+        Assert.Contains(remove.Directories, d => d.EndsWith("install-history"));
     }
 
     [Fact]

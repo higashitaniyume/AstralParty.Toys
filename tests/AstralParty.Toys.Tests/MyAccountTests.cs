@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using AstralParty.Toys.Services;
 using AstralParty.Toys.Services.Account;
 using AstralParty.Toys.Services.Common;
 using Xunit;
@@ -131,7 +132,10 @@ public sealed class MyAccountTests : IDisposable
         Assert.Empty(Directory.GetFiles(_scratch));
         consent.Accept();
         Assert.True(new AccountConsent(_scratch).Granted);
-        Assert.Equal("1", File.ReadAllText(Path.Combine(_scratch, "account-consent.txt")));
+
+        // 同意记录并入统一配置，不再单独留一个 txt
+        using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(_scratch, ToysPaths.ConfigFileName)));
+        Assert.True(document.RootElement.GetProperty("app").GetProperty("myAccountConsent").GetBoolean());
     }
 
     [Theory]

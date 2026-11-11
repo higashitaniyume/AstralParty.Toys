@@ -14,7 +14,7 @@ public partial class HybridWindow
     private const string BackgroundNameSeparator = "__";
     private static readonly byte[] PngSignature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 
-    private static string BackgroundDirectory => Path.Combine(SpeedhackManager.ResolveProfileDirectory(), "backgrounds");
+    private static string BackgroundDirectory => ToysPaths.BackgroundsDirectory;
     private static string BackgroundPendingDirectory => Path.Combine(BackgroundDirectory, BackgroundPendingFolder);
 
     private void MapBackgroundHost()

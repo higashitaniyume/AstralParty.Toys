@@ -79,9 +79,8 @@ public partial class HybridWindow : Window
                     "找不到 WebUI/index.html（内嵌资源里也没有）。", Path.Combine(webRoot, "index.html"));
 
             StartupDetail.Text = "初始化本地界面";
-            var userDataDirectory = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "AstralParty.Toys", "WebView2");
+            // WebView2 的用户数据目录必须留在本地：里面有锁文件和缓存，不能跟着数据文件夹走。
+            var userDataDirectory = ToysPaths.WebView2Directory;
             Directory.CreateDirectory(userDataDirectory);
             _webEnvironment = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataDirectory);
             await WebView.EnsureCoreWebView2Async(_webEnvironment);
@@ -158,6 +157,26 @@ public partial class HybridWindow : Window
     }
 
     private static readonly JsonSerializerOptions WebReadOptions = new() { PropertyNameCaseInsensitive = true };
+
+    /// <summary>
+    /// 数据文件夹换了以后，把指向数据根的虚拟域名重新映射一次
+    /// （市场封面在 cache\workshop，背景图在 backgrounds\，都在数据根下面）。
+    /// </summary>
+    private void RemapDataHosts()
+    {
+        if (WebView.CoreWebView2 is null) return;
+        try
+        {
+            WorkshopService.EnsureCoverDirectory();
+            WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                "workshop.aspatoys.hiynet.localhost", WorkshopService.CoverDirectory, CoreWebView2HostResourceAccessKind.DenyCors);
+            MapBackgroundHost();
+        }
+        catch (Exception ex)
+        {
+            ToysLog.Error("web", "重新映射数据目录失败", ex);
+        }
+    }
 
     private void Post(object message)
     {

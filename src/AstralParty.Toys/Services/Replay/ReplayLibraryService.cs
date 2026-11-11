@@ -27,8 +27,6 @@ public sealed partial class ReplayLibraryService
     public const long MaxDownloadBytes = 512L * 1024 * 1024;
 
     private const string IndexFolderName = "_index";
-    private const string OperationsLogName = "operations.log";
-    private const string SettingsFileName = "replay-library.json";
     private const int CurrentSchemaVersion = 1;
 
     internal static readonly JsonSerializerOptions StoreJson = new()
@@ -41,7 +39,9 @@ public sealed partial class ReplayLibraryService
     private sealed record CacheEntry(long Size, long Ticks, ReplayMeta Meta);
 
     private readonly string _appDirectory;
-    private readonly string _profileDirectory;
+    private readonly string? _dataRootOverride;
+    private string? _configStoreRoot;
+    private ToysConfigStore? _configStore;
     private readonly string? _gameDirectoryOverride;
     private readonly Dictionary<string, CacheEntry> _cache = new(StringComparer.OrdinalIgnoreCase);
     private GameProtocolContext? _protocol;
@@ -54,24 +54,47 @@ public sealed partial class ReplayLibraryService
     public ReplayLibraryService(string appDirectory, string? gameReplayDirectory = null, string? profileDirectory = null)
     {
         _appDirectory = appDirectory;
-        _profileDirectory = profileDirectory ?? SpeedhackManager.ResolveProfileDirectory();
+        _dataRootOverride = profileDirectory is { Length: > 0 } ? Path.GetFullPath(profileDirectory) : null;
         _gameDirectoryOverride = gameReplayDirectory;
         Settings = LoadSettings();
-        LibraryRoot = ResolveLibraryRoot(Settings.LibraryRoot);
+    }
+
+    /// <summary>
+    /// 数据根目录。没显式指定时跟随 <see cref="ToysPaths.Root"/>：用户在设置里换了数据文件夹，
+    /// 回放库与统一配置会立刻跟着走。
+    /// </summary>
+    public string DataRoot => _dataRootOverride ?? SpeedhackManager.ResolveProfileDirectory();
+
+    /// <summary>统一配置句柄；数据根变了就换一个（同一把进程内锁，不会互相覆盖）。</summary>
+    private ToysConfigStore ConfigStore
+    {
+        get
+        {
+            var root = DataRoot;
+            if (_configStore is null || _configStoreRoot != root)
+            {
+                _configStoreRoot = root;
+                _configStore = ToysConfigStore.ForRoot(root);
+            }
+            return _configStore;
+        }
     }
 
     public ReplayLibrarySettings Settings { get; private set; }
 
-    /// <summary>库根目录（永远不是游戏目录）。</summary>
-    public string LibraryRoot { get; private set; }
+    /// <summary>库根目录：固定为「数据根\replays」，不再单独配置。</summary>
+    public string LibraryRoot => Path.Combine(DataRoot, ToysPaths.ReplaysFolderName);
 
     /// <summary>游戏的本地回放热位目录。</summary>
     public string GameDirectory
         => string.IsNullOrWhiteSpace(_gameDirectoryOverride) ? ResolveGameReplayDirectory() : _gameDirectoryOverride!;
 
-    public string SettingsPath => Path.Combine(_profileDirectory, SettingsFileName);
+    /// <summary>统一配置文件路径。</summary>
+    public string SettingsPath => ConfigStore.FilePath;
 
-    public string OperationsLogPath => Path.Combine(LibraryRoot, OperationsLogName);
+    /// <summary>回放操作流水（与应用程序日志同在 logs\，单独一份方便对照）。</summary>
+    public string OperationsLogPath =>
+        Path.Combine(DataRoot, ToysPaths.LogsFolderName, "replay-operations.log");
 
     public string IndexDirectory => Path.Combine(LibraryRoot, IndexFolderName);
 
@@ -146,11 +169,9 @@ public sealed partial class ReplayLibraryService
         return candidates.FirstOrDefault(Directory.Exists) ?? candidates[0];
     }
 
-    /// <summary>回放库默认就在「文档\AstralPartyReplays」——和工具配置同一个文件夹。</summary>
-    public static string DefaultLibraryRoot() => SpeedhackManager.ResolveDocumentsDataDirectory();
-
-    private static string ResolveLibraryRoot(string? configured)
-        => string.IsNullOrWhiteSpace(configured) ? DefaultLibraryRoot() : configured!;
+    /// <summary>默认回放库目录：数据根下的 replays\。</summary>
+    public static string DefaultLibraryRoot() =>
+        Path.Combine(SpeedhackManager.ResolveProfileDirectory(), ToysPaths.ReplaysFolderName);
 
     private string GameFile(string replayId) => Path.Combine(GameDirectory, replayId, replayId);
 
@@ -177,16 +198,21 @@ public sealed partial class ReplayLibraryService
 
     private ReplayLibrarySettings LoadSettings()
     {
-        try
+        var config = ConfigStore.Load();
+        return Normalize(new ReplayLibrarySettings
         {
-            if (!File.Exists(SettingsPath)) return new ReplayLibrarySettings();
-            var loaded = JsonSerializer.Deserialize<ReplayLibrarySettings>(File.ReadAllText(SettingsPath), StoreJson);
-            return Normalize(loaded ?? new ReplayLibrarySettings());
-        }
-        catch
-        {
-            return new ReplayLibrarySettings();
-        }
+            AutoMaintain = config.Replay.AutoMaintain,
+            KeepInGame = config.Replay.KeepInGame,
+            Language = config.App.Language,
+            WorkshopUrl = config.Workshop.Url,
+            WorkshopConsentVersion = config.Workshop.ConsentVersion,
+            WorkshopConsentAt = config.Workshop.ConsentAtUtc,
+            AutoCheckUpdates = config.Update.AutoCheck,
+            AutoDownloadUpdates = config.Update.AutoDownload,
+            AutoInstallUpdates = config.Update.AutoInstall,
+            GitHubMirrorType = config.Update.GitHubMirrorType,
+            CustomGitHubMirrorUrl = config.Update.CustomGitHubMirrorUrl
+        });
     }
 
     private static ReplayLibrarySettings Normalize(ReplayLibrarySettings settings)
@@ -210,7 +236,7 @@ public sealed partial class ReplayLibraryService
         var current = Settings;
         var prevLang = current.Language;
         var normalized = Normalize(settings);
-        // 同意记录没有撤销入口：普通设置保存（语言、库目录、市场地址）不能把它抹掉。
+        // 同意记录没有撤销入口：普通设置保存（语言、市场地址）不能把它抹掉。
         if (normalized.WorkshopConsentVersion < current.WorkshopConsentVersion)
         {
             normalized.WorkshopConsentVersion = current.WorkshopConsentVersion;
@@ -218,9 +244,21 @@ public sealed partial class ReplayLibraryService
         }
 
         Settings = normalized;
-        Directory.CreateDirectory(_profileDirectory);
-        WriteAtomic(SettingsPath, JsonSerializer.Serialize(Settings, StoreJson));
-        LibraryRoot = ResolveLibraryRoot(Settings.LibraryRoot);
+        ConfigStore.Update(config =>
+        {
+            config.App.Language = normalized.Language;
+            config.Replay.AutoMaintain = normalized.AutoMaintain;
+            config.Replay.KeepInGame = normalized.KeepInGame;
+            config.Workshop.Url = normalized.WorkshopUrl;
+            config.Workshop.ConsentVersion = normalized.WorkshopConsentVersion;
+            config.Workshop.ConsentAtUtc = normalized.WorkshopConsentAt;
+            config.Update.AutoCheck = normalized.AutoCheckUpdates;
+            config.Update.AutoDownload = normalized.AutoDownloadUpdates;
+            config.Update.AutoInstall = normalized.AutoInstallUpdates;
+            config.Update.GitHubMirrorType = normalized.GitHubMirrorType;
+            config.Update.CustomGitHubMirrorUrl = normalized.CustomGitHubMirrorUrl;
+        });
+
         if (prevLang != null && Settings.Language != prevLang && _config is not null)
         {
             _config.Reload(Settings.Language);
@@ -232,6 +270,9 @@ public sealed partial class ReplayLibraryService
         Directory.CreateDirectory(LibraryRoot);
         Directory.CreateDirectory(IndexDirectory);
     }
+
+    /// <summary>重新读一遍统一配置（数据文件夹换了以后调用）。</summary>
+    public void ReloadSettings() => Settings = LoadSettings();
 
     // ============================== 扫描 ==============================
 
