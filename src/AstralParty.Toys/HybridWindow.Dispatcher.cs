@@ -324,9 +324,6 @@ public partial class HybridWindow
                 case "exportShops":
                     await ExportShopsAsync("csv");
                     break;
-                case "openClassic":
-                    OpenClassicWindow();
-                    break;
                 case "openBrowser":
                     if (root.TryGetProperty("url", out var urlElement) &&
                         urlElement.GetString() is { Length: > 0 } targetUrl)

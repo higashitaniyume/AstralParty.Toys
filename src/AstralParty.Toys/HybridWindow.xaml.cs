@@ -42,6 +42,8 @@ public partial class HybridWindow : Window
     private CoreWebView2Environment? _webEnvironment;
     private bool _webReady;
     private bool _webRootIsEmbedded;
+    /// <summary>主界面启动失败的原始原因；打开引导页时显示给用户。</summary>
+    private string? _startupFailure;
     private readonly Dictionary<string, string> _replayLibrary = new(StringComparer.Ordinal);
     private CancellationTokenSource? _deepScanCts;
     /// <summary>回放下载的取消源：同一时刻只允许一个下载，见 <see cref="HandleReplayDownloadAsync"/>。</summary>
@@ -145,6 +147,7 @@ public partial class HybridWindow : Window
         {
             StartupDetail.Text = $"主界面启动失败：{ex.Message}";
             ClassicButton.Visibility = Visibility.Visible;
+            _startupFailure = ex.Message;
         }
     }
 
@@ -192,9 +195,13 @@ public partial class HybridWindow : Window
 
     private void ClassicButton_Click(object sender, RoutedEventArgs e) => OpenClassicWindow();
 
+    /// <summary>
+    /// 打开引导页。主界面起不来基本都是 WebView2 运行时的问题，那一页会告诉用户怎么装。
+    /// </summary>
     private void OpenClassicWindow()
     {
         var window = new MainWindow();
+        window.ShowFailure(_startupFailure);
         Application.Current.MainWindow = window;
         window.Show();
         Close();

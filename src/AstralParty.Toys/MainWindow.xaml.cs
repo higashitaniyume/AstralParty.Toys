@@ -1,237 +1,68 @@
-using System.ComponentModel;
-using System.Text.Json;
+using System.Diagnostics;
 using System.Windows;
-using System.Windows.Data;
-using Microsoft.Win32;
-using AstralParty.Toys.Services;
 
 namespace AstralParty.Toys;
 
+/// <summary>
+/// WebView2 运行时缺失时的引导窗口。
+///
+/// 走到这里就说明主界面没能起来——界面本身是靠 Microsoft Edge WebView2 渲染的，
+/// 运行时没装或版本太旧时就只能退到这页，提示用户去装运行时。
+/// </summary>
 public partial class MainWindow : Window
 {
-    private ReplayAnalyzer? _analyzer;
-    private ReplayReport? _report;
-    private ICollectionView? _eventsView;
-    private ICollectionView? _relicsView;
-    private ICollectionView? _shopsView;
-    private ICollectionView? _framesView;
+    /// <summary>微软官方的 WebView2 Runtime 下载页。</summary>
+    private const string DownloadUrl = "https://developer.microsoft.com/microsoft-edge/webview2/";
 
     public MainWindow()
     {
         InitializeComponent();
     }
 
-    private async void Window_Loaded(object sender, RoutedEventArgs e)
+    private void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        ShowHome();
-        var args = Environment.GetCommandLineArgs();
-        if (args.Length > 1 && File.Exists(args[1]))
-        {
-            ShowReplayManager();
-            await LoadReplayAsync(args[1]);
-        }
+        StatusText.Text = "等待安装 WebView2 运行时";
     }
 
-    private void ShowHome()
+    /// <summary>把启动失败的原因显示出来（由 <see cref="HybridWindow"/> 传进来）。</summary>
+    public void ShowFailure(string? detail)
     {
-        HomePanel.Visibility = Visibility.Visible;
-        ReplayPanel.Visibility = Visibility.Collapsed;
-        ReplayHeaderInfo.Visibility = Visibility.Collapsed;
-        ReplayHeaderActions.Visibility = Visibility.Collapsed;
-        StatusText.Text = "工具箱就绪";
+        if (string.IsNullOrWhiteSpace(detail)) return;
+        ErrorText.Text = $"启动失败的原因：{detail}";
+        ErrorText.Visibility = Visibility.Visible;
+        StatusText.Text = "缺少 WebView2 运行时，界面无法显示";
     }
 
-    private void ShowReplayManager()
+    private void DownloadButton_Click(object sender, RoutedEventArgs e)
     {
-        HomePanel.Visibility = Visibility.Collapsed;
-        ReplayPanel.Visibility = Visibility.Visible;
-        ReplayHeaderInfo.Visibility = Visibility.Visible;
-        ReplayHeaderActions.Visibility = Visibility.Visible;
-        StatusText.Text = _report is null ? "回放查看与管理 · 请选择或拖入回放文件" : $"回放已加载 · {_report.FrameCount:N0} 帧";
-    }
-
-    private void OpenReplayManagerButton_Click(object sender, RoutedEventArgs e) => ShowReplayManager();
-
-    private void BackHomeButton_Click(object sender, RoutedEventArgs e) => ShowHome();
-
-    private void OpenSpeedhackButton_Click(object sender, RoutedEventArgs e)
-    {
-        var window = new SpeedhackWindow { Owner = this };
-        window.ShowDialog();
-    }
-
-    private async void OpenReplay_Click(object sender, RoutedEventArgs e)
-    {
-        var dialog = new OpenFileDialog
-        {
-            Title = "选择吉星派对回放文件",
-            Filter = "回放文件|*|所有文件|*.*",
-            CheckFileExists = true
-        };
-        if (dialog.ShowDialog(this) == true) await LoadReplayAsync(dialog.FileName);
-    }
-
-    private async void Window_Drop(object sender, DragEventArgs e)
-    {
-        if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
-        if (e.Data.GetData(DataFormats.FileDrop) is not string[] files || files.Length == 0) return;
-        ShowReplayManager();
-        await LoadReplayAsync(files[0]);
-    }
-
-    private async Task LoadReplayAsync(string path)
-    {
-        BusyOverlay.Visibility = Visibility.Visible;
-        BusyText.Text = "正在准备协议和配置…";
-        StatusText.Text = "正在解析";
         try
         {
-            var progress = new Progress<string>(message =>
-            {
-                BusyText.Text = message;
-                StatusText.Text = message;
-            });
-
-            _report = await Task.Run(() =>
-            {
-                _analyzer ??= new ReplayAnalyzer(AppContext.BaseDirectory, useEmbeddedAssets: false);
-                return _analyzer.Analyze(path, progress);
-            });
-
-            DataContext = _report;
-            FileNameText.Text = $"{_report.FileName} · {_report.MapName}";
-            FilePathText.Text = _report.FilePath;
-            WelcomePanel.Visibility = Visibility.Collapsed;
-            ContentTabs.Visibility = Visibility.Visible;
-            ExportButton.IsEnabled = true;
-
-            _eventsView = CollectionViewSource.GetDefaultView(_report.Events);
-            _relicsView = CollectionViewSource.GetDefaultView(_report.Relics);
-            _shopsView = CollectionViewSource.GetDefaultView(_report.Shops);
-            _framesView = CollectionViewSource.GetDefaultView(_report.Frames);
-            EventsGrid.ItemsSource = _eventsView;
-            RelicsGrid.ItemsSource = _relicsView;
-            ShopsGrid.ItemsSource = _shopsView;
-            FramesGrid.ItemsSource = _framesView;
-            RawDetailText.Text = "选择一条协议帧查看内容。";
-            StatusText.Text = $"解析完成 · {_report.FrameCount:N0} 帧 · {_report.Events.Count:N0} 个时间线事件";
+            Process.Start(new ProcessStartInfo(DownloadUrl) { UseShellExecute = true });
+            StatusText.Text = "已在浏览器打开官方下载页，装完重新打开本程序即可";
         }
         catch (Exception ex)
         {
-            StatusText.Text = "解析失败";
-            MessageBox.Show(this, ex.Message, "无法读取回放", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-        finally
-        {
-            BusyOverlay.Visibility = Visibility.Collapsed;
+            StatusText.Text = $"打不开下载页：{ex.Message}";
+            ErrorText.Text = $"可以手动在浏览器里打开：{DownloadUrl}";
+            ErrorText.Visibility = Visibility.Visible;
         }
     }
 
-    private void EventFilterBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    /// <summary>重新打开本程序：装好运行时后不用自己去翻 exe。</summary>
+    private void RestartButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_eventsView is null) return;
-        var query = EventFilterBox.Text.Trim();
-        _eventsView.Filter = item => item is TimelineEvent value && Matches(query,
-            value.FrameIndex.ToString(), value.Round.ToString(), value.PlayerName, value.Type, value.Title, value.Description);
-    }
-
-    private void RelicFilterBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
-    {
-        if (_relicsView is null) return;
-        var query = RelicFilterBox.Text.Trim();
-        _relicsView.Filter = item => item is RelicRecord value && Matches(query,
-            value.FrameIndex.ToString(), value.Round.ToString(), value.PlayerName, value.HeroName, value.Kind,
-            value.RelicId.ToString(), value.RelicName, value.Quality, value.OptionsText);
-    }
-
-    private void ShopFilterBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
-    {
-        if (_shopsView is null) return;
-        var query = ShopFilterBox.Text.Trim();
-        _shopsView.Filter = item => item is ShopRecord value && Matches(query,
-            value.FrameIndex.ToString(), value.Round.ToString(), value.PlayerName, value.HeroName, value.ShopType,
-            value.OptionsText, value.PurchaseText, value.SoldOutText);
-    }
-
-    private void FrameFilterBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
-    {
-        if (_framesView is null) return;
-        var query = FrameFilterBox.Text.Trim();
-        _framesView.Filter = item => item is ProtocolFrame value && Matches(query,
-            value.Index.ToString(), value.OffsetText, value.CmdId.ToString(), value.MessageName, value.PayloadLength.ToString());
-    }
-
-    private async void FramesGrid_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
-    {
-        if (_analyzer is null || FramesGrid.SelectedItem is not ProtocolFrame frame) return;
-        RawDetailText.Text = "正在解码…";
         try
         {
-            var detail = await Task.Run(() => _analyzer.FormatFrame(frame));
-            if (FramesGrid.SelectedItem == frame)
-            {
-                RawDetailText.Text = $"帧 {frame.Index} · offset {frame.OffsetText}\nCMD {frame.CmdId} · {frame.MessageName}\n载荷 {frame.PayloadLength:N0} 字节\n\n{detail}";
-            }
+            var executable = Environment.ProcessPath;
+            if (string.IsNullOrEmpty(executable)) throw new InvalidOperationException("找不到当前程序的位置。");
+            Process.Start(new ProcessStartInfo(executable) { UseShellExecute = true });
+            Application.Current.Shutdown();
         }
         catch (Exception ex)
         {
-            RawDetailText.Text = $"解码失败：{ex.Message}\n\n原始载荷 Base64：\n{Convert.ToBase64String(frame.Payload)}";
+            StatusText.Text = $"重新启动失败：{ex.Message}";
         }
     }
 
-    private async void ExportButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (_report is null) return;
-        var dialog = new SaveFileDialog
-        {
-            Title = "导出回放数据",
-            Filter = "JSON 文件|*.json",
-            FileName = $"{Path.GetFileNameWithoutExtension(_report.FileName)}.report.json"
-        };
-        if (dialog.ShowDialog(this) != true) return;
-
-        try
-        {
-            var export = new
-            {
-                schemaVersion = 1,
-                source = new { _report.FileName, _report.FileSizeText, _report.Sha256 },
-                match = new
-                {
-                    _report.ReplayId, _report.GameVersion, _report.RoomId, _report.RoomServerId,
-                    _report.MapId, _report.MapName, _report.MapType, _report.Difficulty,
-                    _report.StartTimeText, _report.FinishTimeText, _report.DurationText,
-                    _report.ResultText, _report.WinnerText, _report.RoundCount, _report.TurnCount,
-                    _report.PlayerDeaths, _report.GameProgress, _report.GameMaxProgress,
-                    _report.BossName, _report.AwardsText
-                },
-                players = _report.Players,
-                timeline = _report.Events,
-                relics = _report.Relics,
-                shops = _report.Shops,
-                statistics = new
-                {
-                    commands = _report.CommandStats,
-                    actions = _report.ActionStats,
-                    relicQualities = _report.RelicQualityStats
-                },
-                frames = _report.Frames.Select(frame => new
-                {
-                    frame.Index, frame.Offset, frame.CmdId, frame.MessageName, frame.PayloadLength,
-                    payloadBase64 = Convert.ToBase64String(frame.Payload)
-                }),
-                warnings = _report.Warnings
-            };
-            var json = JsonSerializer.Serialize(export, new JsonSerializerOptions { WriteIndented = true });
-            await File.WriteAllTextAsync(dialog.FileName, json);
-            StatusText.Text = $"已导出：{dialog.FileName}";
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(this, ex.Message, "导出失败", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-
-    private static bool Matches(string query, params string[] values)
-        => string.IsNullOrWhiteSpace(query) || values.Any(value => value.Contains(query, StringComparison.OrdinalIgnoreCase));
+    private void ExitButton_Click(object sender, RoutedEventArgs e) => Application.Current.Shutdown();
 }

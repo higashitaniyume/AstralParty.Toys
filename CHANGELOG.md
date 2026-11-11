@@ -2,21 +2,6 @@
 
 本文件按版本记录 `AstralParty.Toys` 的功能变更。版本号与 GitHub 发布 tag 一一对应（如 `v0.2.0`），发布产物由 [release.yml](.github/workflows/release.yml) 在打 tag 时自动构建。
 
-## [未发布]
-
-### 数据文件夹
-
-- 设置、缓存、日志和回放集中到同一个数据文件夹，默认 `文档\AstralParty.Toys`；可在设置页把整个文件夹换到任意空目录，现有内容会先复制校验、再删除源目录，搬完立刻生效
-- 设置统一保存在数据文件夹下的 `AstralParty.Toys.Config.json`；回放固定放在 `replays\`，缓存放在 `cache\`，安装历史放在 `install-history\`，高频写入的运行状态放在 `state\`
-- 首次运行会把旧的 `文档\AstralPartyReplays` 与 `%APPDATA%\AstralParty.Toys` 配置迁移进来，不覆盖已有数据
-- WebView2 数据与游戏多开实例仍保留在 `%LOCALAPPDATA%`，不随数据文件夹移动
-
-### 日志
-
-- 新增运行日志，按天写入数据文件夹的 `logs\`，默认保留 7 天，单个文件超过 10 MB 时自动分卷
-- 设置页可切换日志级别（Debug / Info / Warn / Error），并一键打开日志文件夹
-- 未处理异常与启动初始化失败也会写入日志，回放库操作流水与程序日志同在 `logs\`
-
 ## [v2.2.0] - 2026-11-10
 
 ### 软件更新
