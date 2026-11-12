@@ -10,12 +10,12 @@ namespace AstralParty.Toys.Tests;
 public sealed class ReleaseWorkflowTests
 {
     [Fact]
-    public void Version220_UsesMatchingAppAndInstallerVersion()
+    public void Version230_UsesMatchingAppAndInstallerVersion()
     {
         var project = XDocument.Load(Path.Combine(TestPaths.AppSourceDirectory, "AstralParty.Toys.csproj"));
-        Assert.Equal("2.2.0", project.Descendants("Version").Single().Value);
-        Assert.Equal("2.2.0.0", project.Descendants("AssemblyVersion").Single().Value);
-        Assert.Equal("2.2.0.0", project.Descendants("FileVersion").Single().Value);
+        Assert.Equal("2.3.0", project.Descendants("Version").Single().Value);
+        Assert.Equal("2.3.0.0", project.Descendants("AssemblyVersion").Single().Value);
+        Assert.Equal("2.3.0.0", project.Descendants("FileVersion").Single().Value);
     }
 
     [Fact]

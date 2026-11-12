@@ -22,6 +22,16 @@ public sealed class Game330CompatibilityTests
         Assert.Equal("Build", ReflectionValue.Text(card, "CardType"));
     }
 
+    [Theory]
+    [InlineData(21030, "UT_HandCard_21030")]
+    [InlineData(21031, "UT_HandCard_21031")]
+    public void NewCards_AreExposedToCardSkinList(int id, string assetKey)
+    {
+        var config = TestPaths.CreateAnalyzer().Config;
+        Assert.Contains(id, config.CardIds);
+        Assert.Contains(assetKey, config.CardAssetKeys, StringComparer.OrdinalIgnoreCase);
+    }
+
     [Fact]
     public void UpdatedCatalog_LoadsNewMapCharactersAndMonster()
     {
@@ -33,7 +43,7 @@ public sealed class Game330CompatibilityTests
         Assert.Contains(307, config.CharacterIds);
         Assert.Contains(308, config.CharacterIds);
         Assert.Equal("海盗王嘎呜", config.Monster(100401));
-        Assert.Equal(90, config.RelicIds.Count());
+        Assert.Equal(93, config.RelicIds.Count());
     }
 
     [Theory]

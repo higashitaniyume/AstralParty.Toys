@@ -1,1 +1,1 @@
-{"id":"CombatOddsMod","name":"战斗胜率助手","version":"2.8.5","author":"CesiumLoader","description":"战斗时给出防御/闪避的被击倒概率、预计伤害与击杀率；头顶显示实时攻防（可选移速加成）与悬停详情，昵称上方显示技能 CD（新回合自动刷新，观战/回放不查询不显示）和剩余手牌，怪物信息条显示技能冷却，梅加斯技能按钮上方显示轨道轰炸理论伤害（均可调位置与字号）。只读，不发送对局操作。","permissions":1,"sdkVersion":"2.8.9","dependencies":[]}
+{"id":"CombatOddsMod","name":"战斗胜率助手","version":"2.8.6","author":"CesiumLoader","description":"战斗时给出防御/闪避的被击倒概率、预计伤害与击杀率；头顶显示实时攻防与悬停详情，昵称上方显示技能 CD（新回合自动刷新，观战/回放不查询不显示）和剩余手牌，怪物信息条显示技能冷却，梅加斯技能按钮上方显示轨道轰炸理论伤害（均可调位置与字号）。只读，不发送对局操作。","permissions":1,"sdkVersion":"2.8.9","dependencies":[]}

@@ -161,7 +161,7 @@ public sealed class SkinManagerTests : IDisposable
         Assert.NotNull(targetProfile);
         Assert.Equal("夏日主题", targetProfile!.DisplayName);
         Assert.Equal("AuthorTest", targetProfile.Author);
-        Assert.Equal(196, targetProfile.CardCount);
+        Assert.Equal(198, targetProfile.CardCount);
         Assert.False(File.Exists(Path.Combine(targetDir, "UT_HandCard_101.png")));
     }
 
@@ -325,7 +325,7 @@ public sealed class SkinManagerTests : IDisposable
     public void EmbeddedTemplate_RestoresDefaultAndCreatesPristineSchemeOffline()
     {
         var baseline = Path.Combine(_testRoot, "baseline");
-        Assert.Equal(197, DefaultSkinPackage.Install(baseline));
+        Assert.Equal(199, DefaultSkinPackage.Install(baseline));
         var expected = File.ReadAllBytes(Path.Combine(baseline, "UT_HandCard_10001.png"));
         _skinManager.RestoreDefaultProfile(_testRoot);
         var defaultDir = Path.Combine(_skinManager.GetSkinsDirectory(_testRoot), "default");
