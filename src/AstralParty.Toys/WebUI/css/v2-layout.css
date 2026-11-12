@@ -276,7 +276,8 @@ details.v2-card[open] > summary svg { transform: rotate(180deg); }
 #modsView { display: block; overflow-y: auto; }
 #modsView.hidden { display: none !important; }
 #modsView > :not(#v2Mods) { display: none !important; }
-#modsView .v2-head { padding: 10px 12px; border: 1px solid var(--v2-border); border-radius: 10px; background: rgba(26, 29, 46, 0.72); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); flex-wrap: wrap; }
+/* 底色用面板色变量，深浅色自动跟随：深色 = rgba(26,29,46,.72)，浅色 = 半透明白 */
+#modsView .v2-head { padding: 10px 12px; border: 1px solid var(--v2-border); border-radius: 10px; background: rgba(var(--v2-panel-rgb), 0.72); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); flex-wrap: wrap; }
 .v2-card-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px 6px; font-weight: 600; }
 .v2-mod { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--v2-border); }
 .v2-card-title + .v2-mod { border-top: 0; }
