@@ -33,6 +33,17 @@ public sealed partial class ModManager
         var versions = new List<RetainedVersionEntry>();
         if (string.IsNullOrWhiteSpace(gameDirectory)) return versions;
 
+        // 包内清单的版本号（按哈希缓存）：历史记录里的版本号和包哈希不一定对得上 ——
+        // 游戏侧 / 手动换过 version.dll 时，记录里会是「新版本号 + 旧发布包」。
+        var packageVersions = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        bool PackageMatches(string? packageHash, string version)
+        {
+            if (string.IsNullOrEmpty(packageHash) || !IsBlobAvailable(packageHash)) return false;
+            if (!packageVersions.TryGetValue(packageHash, out var manifestVersion))
+                packageVersions[packageHash] = manifestVersion = ReadPackageVersion(packageHash);
+            return string.Equals(manifestVersion, version, StringComparison.Ordinal);
+        }
+
         var seen = new Dictionary<string, RetainedVersionEntry>(StringComparer.OrdinalIgnoreCase);
         void Consider(string? version, string? packageHash, DateTime time)
         {
@@ -41,7 +52,7 @@ public sealed partial class ModManager
             if (!seen.TryGetValue(value, out var entry))
                 seen[value] = entry = new RetainedVersionEntry { Version = value };
 
-            var available = IsBlobAvailable(packageHash);
+            var available = PackageMatches(packageHash, value);
             // 同一个版本可能出现在多条记录里：保留「有整包」的那条，时间取最新
             if (available && !entry.PackageAvailable)
             {
@@ -94,7 +105,7 @@ public sealed partial class ModManager
         if (currentVersion.Length > 0)
         {
             var packageHash = record?.PackageHash ?? "";
-            if (packageHash.Length > 0 && IsBlobAvailable(packageHash))
+            if (PackageMatches(packageHash, currentVersion))
             {
                 if (!seen.TryGetValue(currentVersion, out var current))
                     seen[currentVersion] = current = new RetainedVersionEntry { Version = currentVersion };
@@ -154,6 +165,27 @@ public sealed partial class ModManager
         if (string.IsNullOrEmpty(hash) || !Regex.IsMatch(hash, "^[a-fA-F0-9]{64}$")) return false;
         try { return File.Exists(BlobPath(hash)); }
         catch { return false; }
+    }
+
+    /// <summary>只读发布包清单里的 version（不解压整包）。读不出来时返回 null。</summary>
+    private string? ReadPackageVersion(string hash)
+    {
+        try
+        {
+            using var stream = File.OpenRead(BlobPath(hash));
+            using var archive = new System.IO.Compression.ZipArchive(stream, System.IO.Compression.ZipArchiveMode.Read);
+            var entry = archive.GetEntry(InstalledManifestFileName);
+            if (entry is null || entry.Length > 1024 * 1024) return null;
+            using var reader = new StreamReader(entry.Open(), System.Text.Encoding.UTF8);
+            using var document = JsonDocument.Parse(reader.ReadToEnd());
+            return document.RootElement.TryGetProperty("version", out var value) && value.ValueKind == JsonValueKind.String
+                ? value.GetString()
+                : null;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static string GetString(JsonElement element, string name)

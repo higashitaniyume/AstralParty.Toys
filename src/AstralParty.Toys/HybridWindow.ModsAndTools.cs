@@ -325,12 +325,31 @@ public partial class HybridWindow
         try
         {
             var directory = RequireModGameDirectory();
-            var message = await Task.Run(() => _modManager.RollbackLoader(directory, version, reporter))
-                .ConfigureAwait(true);
+            // 异常在后台委托里就地接住：不让它穿过 Task 边界，调试器就不会把它当成未处理异常弹出来
+            var outcome = await Task.Run(() =>
+            {
+                try
+                {
+                    return (Message: _modManager.RollbackLoader(directory, version, reporter), Error: (Exception?)null);
+                }
+                catch (Exception ex)
+                {
+                    return (Message: (string?)null, Error: ex);
+                }
+            }).ConfigureAwait(true);
+
+            if (outcome.Error is not null)
+            {
+                ToysLog.Error("modloader", $"回滚到 v{version} 失败", outcome.Error);
+                Post(new { type = "modLoaderProgress", payload = new { phase = "error", percent = -1, message = outcome.Error.Message, active = false } });
+                Post(new { type = "error", message = $"回滚失败：{outcome.Error.Message}" });
+                return;
+            }
+
             Post(new
             {
                 type = "toast",
-                message = message + (SpeedhackManager.IsGameRunning() ? "。游戏正在运行，重启游戏后生效。" : "。")
+                message = outcome.Message + (SpeedhackManager.IsGameRunning() ? "。游戏正在运行，重启游戏后生效。" : "。")
             });
             _ = PostSteamBypassSyncAsync();
         }

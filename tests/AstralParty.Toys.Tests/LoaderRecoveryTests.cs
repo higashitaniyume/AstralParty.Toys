@@ -302,6 +302,31 @@ public sealed class LoaderRecoveryTests
     }
 
     [Fact]
+    public void RetainedVersions_IgnorePackagesWhoseManifestVersionDiffers()
+    {
+        using var h = new Harness(); h.Install("9.1.0");
+        h.Manager.InstallPackage(h.Game, Package("9.2.0"), false);
+
+        // 模拟「版本号被外部改过、但发布包哈希还是上一版」：把一条操作记录里的 9.2.0 改成 9.3.0
+        var historyGames = Path.Combine(h.Profile, "install-history", "games");
+        var operation = Directory.GetFiles(historyGames, "*.json", SearchOption.AllDirectories)
+            .Single(path => Path.GetFileName(path) != "current.json"
+                            && File.ReadAllText(path).Contains("\"Version\": \"9.2.0\""));
+        File.WriteAllText(operation,
+            File.ReadAllText(operation).Replace("\"Version\": \"9.2.0\"", "\"Version\": \"9.3.0\""));
+
+        var versions = h.Manager.GetRetainedVersions(h.Game);
+        var mismatched = versions.Single(v => v.Version == "9.3.0");
+        Assert.False(mismatched.Current);
+        Assert.False(mismatched.PackageAvailable, "发布包属于 9.2.0，不能拿来装 9.3.0");
+        Assert.Contains(versions, v => v.Version == "9.2.0" && v.Current && v.PackageAvailable);
+
+        // 不会走到 InvalidDataException（调试器里看到的「未处理异常」），而是明确的「没有完整发布包」
+        var failure = Assert.Throws<InvalidOperationException>(() => h.Manager.RollbackLoader(h.Game, "9.3.0"));
+        Assert.Contains("没有完整发布包", failure.Message);
+    }
+
+    [Fact]
     public async Task ExistingForeignDll_IsNeverOverwrittenByRecovery()
     {
         using var h = new Harness(); h.Install(); h.Manager.DisableLoader(h.Game);
