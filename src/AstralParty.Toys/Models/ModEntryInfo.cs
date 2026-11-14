@@ -27,6 +27,9 @@ public sealed class ModEntryInfo
     /// <summary>mod 是否启用（sidecar enabled 字段, 缺省 true; false = 加载器跳过）。</summary>
     public bool Enabled { get; set; } = true;
 
+    /// <summary>这个 mod 是不是放在 <c>disabled_mods</c> 里（停用的 mod 会被整个搬过去）。</summary>
+    public bool DisabledFolder { get; set; }
+
     /// <summary>权限位掩码（与 C# ModPermission 枚举一致: 1=ReadGameState 2=GameActions 4=SpeedHack 8=FileWrite）。</summary>
     public int Permissions { get; set; }
 

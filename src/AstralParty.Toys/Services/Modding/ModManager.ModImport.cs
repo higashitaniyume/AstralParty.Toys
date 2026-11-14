@@ -129,7 +129,7 @@ public sealed partial class ModManager
                 .ToList()))
             .ToList();
 
-        var modsDir = Path.Combine(gameDirectory, LoaderFolderName, ModsFolderName);
+        var modsDir = ModsRoot(gameDirectory);
         Directory.CreateDirectory(modsDir);
 
         var result = new ModImportResult();
@@ -138,7 +138,8 @@ public sealed partial class ModManager
         {
             foreach (var (plan, payloadFiles) in payloads)
             {
-                var modFolder = Path.Combine(modsDir, plan.FolderName);
+                // 停用的模组留在 disabled_mods 里升级，不因为一次导入被悄悄重新启用
+                var modFolder = Path.Combine(plan.ContainerRoot, plan.FolderName);
                 Directory.CreateDirectory(modFolder);
 
                 var sidecarName = plan.ModId + ".json";
@@ -189,6 +190,10 @@ public sealed partial class ModManager
         }
 
         result.Skipped.AddRange(prepared.Skipped);
+        var summary = result.Changes.Count > 0
+            ? string.Join("、", result.Changes.Select(change => $"{change.Name} {change.ToVersion}"))
+            : "没有需要安装的模组";
+        ToysLog.Info("mods", $"导入 mod 包 {Path.GetFileName(sourcePath)} 完成：{summary}");
         return result;
     }
 
@@ -242,17 +247,20 @@ public sealed partial class ModManager
     /// <summary>算每个模组的目标文件夹、已装/包内版本、配置与停用状态、要清理的旧文件。</summary>
     private void FillPackagePlanState(string gameDirectory, List<PackageModPlan> plans)
     {
-        var modsDir = Path.Combine(gameDirectory, LoaderFolderName, ModsFolderName);
+        var modsDir = ModsRoot(gameDirectory);
+        var disabledDir = DisabledModsRoot(gameDirectory);
         foreach (var plan in plans)
         {
-            // 已装的同名模组：沿用它的文件夹写法（大小写），并把版本 / 配置 / 停用状态读出来
-            plan.FolderName = ResolveModFolderName(modsDir, plan.ModId);
-            var modFolder = Path.Combine(modsDir, plan.FolderName);
+            // 已装的同名模组：沿用它的文件夹写法（大小写）和在哪个根（mods / disabled_mods）
+            plan.FolderName = ResolveModFolderName(modsDir, plan.ModId, disabledDir);
+            plan.ContainerRoot = Directory.Exists(Path.Combine(disabledDir, plan.FolderName)) ? disabledDir : modsDir;
+            var modFolder = Path.Combine(plan.ContainerRoot, plan.FolderName);
             var sidecarPath = Path.Combine(modFolder, plan.ModId + ".json");
             plan.Installed = File.Exists(Path.Combine(modFolder, plan.ModId + ".dll"));
             plan.InstalledVersion = ReadJsonString(ReadTextOrEmpty(sidecarPath), "version");
             plan.ConfigExisted = File.Exists(Path.Combine(modFolder, ModConfigFileName));
-            plan.DisabledBefore = ReadSidecarEnabled(sidecarPath) == false;
+            plan.DisabledBefore = ReadSidecarEnabled(sidecarPath) == false
+                                  || string.Equals(plan.ContainerRoot, disabledDir, StringComparison.OrdinalIgnoreCase);
             // 包内版本以包里的 sidecar 为准（不拿文件名或已装版本顶替）
             var sidecarEntry = plan.Files.FirstOrDefault(file =>
                 plan.RelativePathOf(file).Equals(plan.ModId + ".json", StringComparison.OrdinalIgnoreCase));
@@ -293,6 +301,9 @@ public sealed partial class ModManager
 
         /// <summary>实际写入的文件夹名（沿用已装模组的大小写写法）。</summary>
         public string FolderName { get; set; } = "";
+
+        /// <summary>这个模组该写进哪个根目录（mods 或 disabled_mods）。</summary>
+        public string ContainerRoot { get; set; } = "";
 
         /// <summary>模组在包内的目录前缀；根目录平铺的包为空（此时相对路径就是文件名）。</summary>
         public string[] FolderSegments { get; init; } = Array.Empty<string>();

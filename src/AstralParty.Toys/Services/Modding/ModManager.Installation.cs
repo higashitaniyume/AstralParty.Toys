@@ -34,7 +34,8 @@ public sealed partial class ModManager
     /// <summary>把内嵌文件写入游戏目录 + 创建目录结构。version.dll 目标已存在、且**不是本工具装的**
     /// （既不是内置那份、也没有记录在安装清单里）时，必须 overwriteDll 才会覆盖。
     /// 已装加载器比内置的更新时（降级）默认拒绝，需要 allowDowngrade 显式放行。</summary>
-    public void Install(string gameDirectory, bool overwriteDll, bool includeSampleMod, bool allowDowngrade = false)
+    public void Install(string gameDirectory, bool overwriteDll, bool includeSampleMod, bool allowDowngrade = false,
+        LoaderProgressCallback? progress = null)
     {
         if (!HasEmbeddedLoader)
             throw new InvalidOperationException("程序集缺少内置加载器资源（version.dll），无法安装。");
@@ -64,16 +65,20 @@ public sealed partial class ModManager
                 "如确定要覆盖，请勾选「允许覆盖其它 version.dll」。");
 
         var remainDisabled = IsRetainedDisabled(gameDirectory);
+        ToysLog.Info("modloader",
+            $"开始安装内置 CesiumLoader {EmbeddedVersion}（目标 {gameDirectory}，内置模组 {(includeSampleMod ? EmbeddedBuiltInMods.Count.ToString() : "0")} 个）");
         using var retained = BeginRetainedOperation(gameDirectory, "install-embedded",
             new[] { EmbeddedLoaderDll!, EmbeddedConfig ?? Array.Empty<byte>(), EmbeddedSdkDll ?? Array.Empty<byte>() }
                 .Concat(includeSampleMod ? EmbeddedBuiltInMods.SelectMany(m => new[] { m.Dll, m.Sidecar ?? Array.Empty<byte>() }) : Array.Empty<byte[]>()).ToArray());
         try
         {
+            progress?.Invoke("install", 15, "正在写入加载器文件…");
             if (!remainDisabled) WriteAllBytesProtected(targetDll, EmbeddedLoaderDll!);
 
             // 目录结构
             var loaderRoot = Path.Combine(gameDirectory, LoaderFolderName);
             Directory.CreateDirectory(Path.Combine(loaderRoot, ModsFolderName));
+            Directory.CreateDirectory(Path.Combine(loaderRoot, DisabledModsFolderName));
             Directory.CreateDirectory(Path.Combine(loaderRoot, SdkFolderName));
             Directory.CreateDirectory(Path.Combine(loaderRoot, LogsFolderName));
 
@@ -103,10 +108,12 @@ public sealed partial class ModManager
             // ★ 保留用户原先设置的 enabled 开关状态，避免更新加载器时把已禁用的内置 mod 重置为开启。
             if (includeSampleMod)
             {
+                progress?.Invoke("install", 45, "正在安装内置模组…");
                 var preservedEnabled = CaptureInstalledModsEnabled(loaderRoot);
                 foreach (var mod in EmbeddedBuiltInMods)
                 {
-                    var modDir = Path.Combine(loaderRoot, ModsFolderName, mod.Id);
+                    // 玩家已经把某个内置 mod 停用了（躺在 disabled_mods 里）就写回原处，不能因为重装而重新启用
+                    var modDir = Path.Combine(ResolveModRoot(loaderRoot, mod.Id), mod.Id);
                     Directory.CreateDirectory(modDir);
                     WriteAllBytesProtected(Path.Combine(modDir, mod.Id + ".dll"), mod.Dll);
                     if (mod.Sidecar is not null)
@@ -134,11 +141,13 @@ public sealed partial class ModManager
             // ★ 必须写 —— 否则「已安装版本」永远读不出（ReadInstalledVersion 读的就是这个文件），
             //   用户从旧版升级上来时界面无法显示"已装 2.1.7 / 随包 2.2.0"，也就无从判断需不需要更新。
             //   走内嵌资源安装与走 GitHub 发布包安装写的是同一份清单格式（见 tools\package-modloader.ps1）。
+            progress?.Invoke("install", 85, "正在写入安装清单…");
             WriteInstalledManifest(gameDirectory, loaderRoot);
             if (remainDisabled) SetInstalledLoaderHash(gameDirectory, EmbeddedLoaderHash!);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
+            ToysLog.Error("modloader", "安装内置加载器时写入游戏目录失败", ex);
             throw new IOException(
                 $"写入游戏目录失败：{ex.Message}。" +
                 (SpeedhackManager.IsGameRunning() ? "游戏正在运行时 version.dll 会被占用，无法覆盖——请完全退出游戏后再安装。" : ""), ex);
@@ -146,6 +155,8 @@ public sealed partial class ModManager
 
         SaveStoredGameDirectory(gameDirectory);
         retained.Complete(EmbeddedVersion, EmbeddedLoaderHash, remainDisabled, packageHash: "");
+        ToysLog.Info("modloader", $"内置 CesiumLoader {EmbeddedVersion} 安装完成" + (remainDisabled ? "（保留停用状态）" : ""));
+        progress?.Invoke("done", 100, "加载器安装完成");
     }
 
     /// <summary>写安装清单（AstralParty_ModLoader\cesium-loader.json）：版本 + 各文件 SHA256。
@@ -179,10 +190,11 @@ public sealed partial class ModManager
             foreach (var mod in EmbeddedBuiltInMods)
             {
                 var prefix = $"{LoaderFolderName}/{ModsFolderName}/{mod.Id}/";
-                Add(Path.Combine(loaderRoot, ModsFolderName, mod.Id, mod.Id + ".dll"), prefix + mod.Id + ".dll");
-                Add(Path.Combine(loaderRoot, ModsFolderName, mod.Id, mod.Id + ".json"), prefix + mod.Id + ".json");
+                var modFolder = Path.Combine(ResolveModRoot(loaderRoot, mod.Id), mod.Id);
+                Add(Path.Combine(modFolder, mod.Id + ".dll"), prefix + mod.Id + ".dll");
+                Add(Path.Combine(modFolder, mod.Id + ".json"), prefix + mod.Id + ".json");
                 foreach (var fileName in mod.Data.Keys)
-                    Add(Path.Combine(loaderRoot, ModsFolderName, mod.Id, "data", fileName), prefix + "data/" + fileName);
+                    Add(Path.Combine(modFolder, "data", fileName), prefix + "data/" + fileName);
             }
 
             var manifest = new Dictionary<string, object?>

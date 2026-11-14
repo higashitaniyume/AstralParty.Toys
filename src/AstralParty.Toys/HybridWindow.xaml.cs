@@ -60,6 +60,9 @@ public partial class HybridWindow : Window
         _skinManager = new SkinManager(_appDirectory);
         _libraryService = new ReplayLibraryService(_appDirectory);
         _gameLibrary = new GameLibraryService();
+        // 界面上的「运行日志」：每次写日志都转发一条给网页（Post 会自己切到 UI 线程）
+        Services.ToysLog.Written += OnToysLogWritten;
+        Closed += (_, _) => Services.ToysLog.Written -= OnToysLogWritten;
     }
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)

@@ -253,11 +253,76 @@ public partial class HybridWindow
 
     private void HandleModInstall(bool overwriteDll, bool includeSample, bool allowDowngrade)
     {
-        _modManager.Install(RequireModGameDirectory(), overwriteDll, includeSample, allowDowngrade);
-        Post(new { type = "toast", message = ModManager.DescribeInstalled() });
-        _ = PushModStatusAsync();
-        _ = PostSteamBypassSyncAsync();   // 刚装/更新完，首页的启动方式单选框跟上新配置
+        if (_modInstallRunning)
+        {
+            Post(new { type = "toast", message = "正在安装加载器，请稍候。" });
+            return;
+        }
+        _modInstallRunning = true;
+        _ = InstallModLoaderAsync(overwriteDll, includeSample, allowDowngrade);
     }
+
+    private bool _modInstallRunning;
+
+    /// <summary>安装内置加载器：写文件放到后台线程，进度经 <see cref="LoaderProgressReporter"/> 实时回给界面。</summary>
+    private async Task InstallModLoaderAsync(bool overwriteDll, bool includeSample, bool allowDowngrade)
+    {
+        try
+        {
+            var directory = RequireModGameDirectory();
+            var reporter = LoaderProgressReporter();
+            await Task.Run(() => _modManager.Install(directory, overwriteDll, includeSample, allowDowngrade, reporter))
+                .ConfigureAwait(true);
+            Post(new { type = "toast", message = ModManager.DescribeInstalled() });
+            _ = PostSteamBypassSyncAsync();   // 刚装/更新完，首页的启动方式单选框跟上新配置
+        }
+        catch (Exception ex)
+        {
+            ToysLog.Error("modloader", "安装内置加载器失败", ex);
+            Post(new { type = "error", message = $"安装加载器失败：{ex.Message}" });
+            Post(new { type = "modLoaderProgress", payload = new { phase = "error", percent = -1, message = ex.Message, active = false } });
+        }
+        finally
+        {
+            _modInstallRunning = false;
+            _ = PushModStatusAsync();
+        }
+    }
+
+    // ============================== 加载器进度 / 实时日志 ==============================
+
+    /// <summary>把 ModManager 的进度回调转成界面消息（modLoaderProgress）：下载、校验、安装各阶段一条。
+    /// 回调可能来自后台线程，Post 自己会切回 UI 线程。</summary>
+    private ModManager.LoaderProgressCallback LoaderProgressReporter() => (phase, percent, message) =>
+        Post(new { type = "modLoaderProgress", payload = new { phase, percent, message, active = phase != "done" } });
+
+    /// <summary>日志落盘的同时转发给界面上的「运行日志」面板（只转发到配置级别及以上的日志）。</summary>
+    private void OnToysLogWritten(DateTime time, ToysLogLevel level, string area, string message) =>
+        Post(new
+        {
+            type = "toysLog",
+            payload = LogPayload(time, level, area, message)
+        });
+
+    /// <summary>界面打开日志面板时补一次历史：窗口订阅 Written 之前的启动日志只有内存里还留着。
+    /// 不读日志文件——那里面还有上一次启动的记录，混在一起反而分不清哪条属于本次运行。</summary>
+    private void HandleModLogsRequest()
+    {
+        var lines = ToysLog.RecentEntries(200)
+            .Select(entry => LogPayload(entry.Time, entry.Level, entry.Area, entry.Message))
+            .ToArray();
+        Post(new { type = "toysLogHistory", payload = new { lines } });
+    }
+
+    private static object LogPayload(DateTime time, ToysLogLevel level, string area, string message) => new
+    {
+        time = time.ToString("HH:mm:ss"),
+        level = level.ToString().ToLowerInvariant(),
+        area,
+        message
+    };
+
+    // ============================== Mod 加载器：联网更新 ==============================
 
     private void HandleModUninstall(bool force)
     {
@@ -492,7 +557,7 @@ public partial class HybridWindow
             path = path.Trim().Trim('"');
             if (!Path.IsPathFullyQualified(path) || !File.Exists(path))
                 throw new InvalidOperationException("请填写存在的发布包完整路径。");
-            var description = await Task.Run(() => _modManager.ImportReleaseFile(directory, path, overwriteDll, allowDowngrade));
+            var description = await Task.Run(() => _modManager.ImportReleaseFile(directory, path, overwriteDll, allowDowngrade, LoaderProgressReporter()));
             var message = $"已导入 {description}，重启游戏后生效。";
             Post(new { type = "modPackageImportResult", payload = new { success = true, message } });
             Post(new { type = "toast", message });
@@ -659,6 +724,7 @@ public partial class HybridWindow
         if (_modUpdateRunning || _loaderRecoveryBusy || _modPackageImportRunning)
             throw new InvalidOperationException("加载器操作正在进行，请稍候。");
         _modUpdateRunning = true;
+        var reporter = LoaderProgressReporter();
         Post(new { type = "toast", message = "正在下载最新 CesiumLoader 并安装…" });
         try
         {
@@ -666,9 +732,12 @@ public partial class HybridWindow
             var settings = _libraryService.Settings;
             var mirror = !string.IsNullOrEmpty(mirrorType) ? mirrorType : settings.GitHubMirrorType;
             var custom = customMirrorUrl ?? settings.CustomGitHubMirrorUrl;
-            var bytes = await _modManager.DownloadLatestPackageAsync(mirror, custom).ConfigureAwait(true);
+            reporter("download", -1, "正在连接 GitHub 下载 CesiumLoader…");
+            var bytes = await _modManager.DownloadLatestPackageAsync(mirror, custom, cancellationToken: default, progress: reporter).ConfigureAwait(true);
             var manifest = ModManager.ParsePackageManifest(bytes);
-            _modManager.InstallPackage(directory, bytes, overwriteDll, allowDowngrade);
+            var installReporter = reporter;
+            await Task.Run(() => _modManager.InstallPackage(directory, bytes, overwriteDll, allowDowngrade, installReporter))
+                .ConfigureAwait(true);
 
             var versionText = string.IsNullOrEmpty(manifest?.Version) ? "" : $"（{manifest.Version}）";
             Post(new { type = "toast", message = $"加载器已更新{versionText}。" + (SpeedhackManager.IsGameRunning() ? "游戏正在运行，重启游戏后生效。" : "") });
@@ -677,6 +746,8 @@ public partial class HybridWindow
         }
         catch (Exception ex)
         {
+            ToysLog.Error("modloader", "从 GitHub 更新加载器失败", ex);
+            Post(new { type = "modLoaderProgress", payload = new { phase = "error", percent = -1, message = ex.Message, active = false } });
             Post(new { type = "error", message = $"更新失败：{ex.Message}" });
         }
         finally

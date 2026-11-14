@@ -349,19 +349,30 @@ public sealed class ModManagerTests
         harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
 
         // 放一个 mod + sidecar
-        var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
+        var modsDir = ModsDir(harness);
+        var disabledDir = DisabledModsDir(harness);
         harness.Sandbox.WriteFile(Path.Combine(modsDir, "MyMod.dll"), new byte[] { 0x4D, 0x5A });
-        var sidecarPath = Path.Combine(modsDir, "MyMod.json");
-        File.WriteAllText(sidecarPath, "{\"id\":\"MyMod\",\"name\":\"我的Mod\",\"version\":\"1.0.0\"}");
+        File.WriteAllText(Path.Combine(modsDir, "MyMod.json"),
+            "{\"id\":\"MyMod\",\"name\":\"我的Mod\",\"version\":\"1.0.0\"}");
 
         Assert.True(harness.Manager.GetStatus().Mods[0].Enabled, "初始 enabled=true");
 
         harness.Manager.ToggleMod(harness.GameDirectory, "MyMod.dll", enabled: false);
-        Assert.False(harness.Manager.GetStatus().Mods[0].Enabled, "禁用后 enabled=false");
+        // 停用 = 整个 mod 搬进 disabled_mods（加载器只扫 mods，等于彻底不加载）
+        Assert.False(File.Exists(Path.Combine(modsDir, "MyMod.dll")));
+        Assert.True(File.Exists(Path.Combine(disabledDir, "MyMod.dll")));
+        var sidecarPath = Path.Combine(disabledDir, "MyMod.json");
         Assert.Contains("\"enabled\": false", File.ReadAllText(sidecarPath));
+        var disabledEntry = Assert.Single(harness.Manager.GetStatus().Mods);
+        Assert.False(disabledEntry.Enabled, "禁用后 enabled=false");
+        Assert.True(disabledEntry.DisabledFolder, "禁用后应标记来自 disabled_mods");
 
         harness.Manager.ToggleMod(harness.GameDirectory, "MyMod.dll", enabled: true);
-        Assert.True(harness.Manager.GetStatus().Mods[0].Enabled, "重新启用后 enabled=true");
+        Assert.True(File.Exists(Path.Combine(modsDir, "MyMod.dll")), "启用后应搬回 mods");
+        Assert.False(File.Exists(Path.Combine(disabledDir, "MyMod.dll")));
+        var enabledEntry = Assert.Single(harness.Manager.GetStatus().Mods);
+        Assert.True(enabledEntry.Enabled, "重新启用后 enabled=true");
+        Assert.False(enabledEntry.DisabledFolder);
     }
 
     [Fact]
@@ -370,18 +381,57 @@ public sealed class ModManagerTests
         using var harness = new ModHarness("ap-mod-toggle-nosidecar");
         harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
 
-        var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
+        var modsDir = ModsDir(harness);
+        var disabledDir = DisabledModsDir(harness);
         harness.Sandbox.WriteFile(Path.Combine(modsDir, "Legacy.dll"), new byte[] { 0x4D, 0x5A });
 
         harness.Manager.ToggleMod(harness.GameDirectory, "Legacy.dll", enabled: false);
 
-        var sidecarPath = Path.Combine(modsDir, "Legacy.json");
-        Assert.True(File.Exists(sidecarPath), "无 sidecar 的 mod 禁用时应自动生成 sidecar");
+        var sidecarPath = Path.Combine(disabledDir, "Legacy.json");
+        Assert.True(File.Exists(sidecarPath), "无 sidecar 的 mod 禁用时应自动生成 sidecar 并一起搬走");
+        Assert.True(File.Exists(Path.Combine(disabledDir, "Legacy.dll")));
         var json = File.ReadAllText(sidecarPath);
         Assert.Contains("\"id\":\"Legacy\"", json);
         Assert.Contains("\"enabled\": false", json);
-        Assert.False(harness.Manager.GetStatus().Mods[0].Enabled);
+        var entry = Assert.Single(harness.Manager.GetStatus().Mods);
+        Assert.False(entry.Enabled);
+        Assert.True(entry.DisabledFolder);
     }
+
+    [Fact]
+    public void ToggleMod_FolderLayout_MovesWholeModFolderAndDeleteFindsIt()
+    {
+        using var harness = new ModHarness("ap-mod-toggle-folder");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+
+        var modsDir = ModsDir(harness);
+        var disabledDir = DisabledModsDir(harness);
+        var folder = Path.Combine(modsDir, "FolderMod");
+        Directory.CreateDirectory(folder);
+        harness.Sandbox.WriteFile(Path.Combine(folder, "FolderMod.dll"), new byte[] { 0x4D, 0x5A });
+        File.WriteAllText(Path.Combine(folder, "FolderMod.json"), "{\"id\":\"FolderMod\",\"version\":\"1.0.0\"}");
+        File.WriteAllText(Path.Combine(folder, "config.json"), "{\"enabled\":true}");
+
+        harness.Manager.ToggleMod(harness.GameDirectory, "FolderMod.dll", enabled: false);
+
+        // 整个文件夹一起搬走，配置和附属文件都跟着
+        Assert.False(Directory.Exists(folder));
+        Assert.True(File.Exists(Path.Combine(disabledDir, "FolderMod", "FolderMod.dll")));
+        Assert.True(File.Exists(Path.Combine(disabledDir, "FolderMod", "config.json")));
+
+        // 停用的 mod 也要能在界面上直接删除
+        var deleted = harness.Manager.DeleteMod(harness.GameDirectory, "FolderMod.dll");
+        Assert.NotNull(deleted);
+        Assert.True(deleted!.DisabledFolder);
+        Assert.False(Directory.Exists(Path.Combine(disabledDir, "FolderMod")));
+        Assert.Empty(harness.Manager.GetStatus().Mods);
+    }
+
+    private static string ModsDir(ModHarness harness) =>
+        Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
+
+    private static string DisabledModsDir(ModHarness harness) =>
+        Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.DisabledModsFolderName);
 
     [Fact]
     public void ToggleMods_BatchContinuesAfterFailure()

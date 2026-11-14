@@ -659,14 +659,34 @@
   const isComposing = () => !!composingBox && composingBox === document.activeElement;
   function bindSearch(id, apply) {
     const box = $(id); if (!box) return;
+    let lastValue = box.value;
     const run = () => {
-      apply(box.value);
+      const before = $(id);
+      lastValue = before ? before.value : '';
+      apply(lastValue);
+      // 页面把输入框整个重画时才需要重新聚焦；原地筛选时保持光标不动（否则在中间插字会被踢到末尾）
       const n = $(id);
-      if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); }
+      if (n && n !== before) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); }
     };
-    box.oninput = e => { if (!e.isComposing) run(); };
-    box.oncompositionstart = () => { composingBox = box; };
-    box.oncompositionend = () => { composingBox = null; run(); };
+    box.addEventListener('input', e => { if (e.isComposing) return; composingBox = null; run(); });
+    /* 必须用 addEventListener：Chromium / WebView2 没有 oncompositionstart、oncompositionend
+       这两个事件处理属性（设成函数也只是普通 expando，永远不会被调用）。
+       用属性注册时拼字状态跟踪整个失效 —— 表现就是「打完字不搜索，删掉一个字才搜」。 */
+    box.addEventListener('compositionstart', () => { composingBox = box; });
+    box.addEventListener('compositionend', () => {
+      composingBox = null;
+      // 有的输入法里 compositionend 早于最后一个 input 事件，直接读 value 会读到上屏前的旧值
+      //（表现：打完字没反应，删掉一个字才搜）。让事件先跑完再补读一次。
+      requestAnimationFrame(() => {
+        const n = $(id);
+        if (!n || n.value === lastValue || isComposing()) return;
+        lastValue = n.value;
+        apply(lastValue);
+        // 有的页面搜索会整页重画（输入框一起被换掉）：补回焦点，否则输完一个字就断了
+        const after = $(id);
+        if (after && after !== n) { after.focus(); after.setSelectionRange(after.value.length, after.value.length); }
+      });
+    });
   }
 
   // 「当前游戏」下拉：选中后由各页发 gameProfileSetActive。manageAttr 是调用方自己的 data 属性（如 data-v2m="manageGames"）

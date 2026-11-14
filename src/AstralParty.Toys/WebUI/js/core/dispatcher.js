@@ -131,6 +131,21 @@ host?.addEventListener('message', event => {
       if (window.ModsModule) window.ModsModule.renderModStatus(msg.payload);
       break;
 
+    case 'modLoaderProgress':
+      // 加载器下载 / 校验 / 安装进度（阶段 + 百分比），新界面自己画进度条
+      window.V2ModsModule?.progress?.(msg.payload);
+      break;
+
+    case 'toysLog':
+      // 日志落盘的同时转发到界面上的「运行日志」
+      window.V2ModsModule?.log?.(msg.payload);
+      break;
+
+    case 'toysLogHistory':
+      // 打开日志面板时补的历史（窗口订阅 Written 之前的启动日志在这里）
+      window.V2ModsModule?.history?.(msg.payload?.lines || []);
+      break;
+
     case 'resourceModsStatus':
       window.ResourceModsModule?.render(msg.payload);
       break;

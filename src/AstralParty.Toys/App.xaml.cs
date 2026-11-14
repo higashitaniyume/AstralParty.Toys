@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Threading;
 using AstralParty.Toys.Services;
+using AstralParty.Toys.Services.Common;
 
 namespace AstralParty.Toys;
 
@@ -35,6 +36,8 @@ public partial class App : Application
             ToysLog.Configure(ToysPaths.LogsDirectory, ToysLogLevel.Info);
             ToysLog.Info("app",
                 $"启动 AstralParty.Toys {AppInfo.Get().Version}；数据文件夹：{root}");
+            // 环境信息单独一条：出问题时不用再去问用户「系统版本 / .NET / 是不是管理员 / WebView2 版本」
+            ToysLog.Info("env", ToysEnvironment.Describe());
 
             var store = ToysConfigStore.ForRoot(root);
             var report = ToysMigration.Run(root, store);

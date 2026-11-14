@@ -2,7 +2,19 @@
 // 页面整体重做；模组配置表单、加载器设置、导入发布包这三个弹窗暂时沿用原版 ModsModule（按键捕获等逻辑较多）。
 // 字段与消息见 astralparty-redesign/模组与皮肤接口.md。
 (function () {
-  const M = { q: '', speedCfg: null, sel: new Set(), pendingBatch: null };
+  // 排序 / 分组 / 日志面板展开状态记在 localStorage：换页面回来还是上次的样子
+  const PREF = { sort: 'v2ModsSort', group: 'v2ModsGroup', log: 'v2ModsLogOpen' };
+  const readPref = (key, fallback) => { try { return localStorage.getItem(key) || fallback; } catch { return fallback; } };
+  const writePref = (key, value) => { try { localStorage.setItem(key, value); } catch { /* 存不了就只在本次会话生效 */ } };
+
+  const MAX_LOGS = 400;
+  const M = {
+    q: '', speedCfg: null, sel: new Set(), pendingBatch: null,
+    sort: readPref(PREF.sort, 'installed'),   // installed | name | status
+    group: readPref(PREF.group, 'kind'),      // kind | time | none
+    logOpen: readPref(PREF.log, '0') === '1',
+    progress: null, logs: [], historyAsked: false, historyLoaded: false,
+  };
   const U = () => window.V2UI;
   const I = () => window.V2UI.ICON;
   const MM = () => window.ModsModule;
@@ -47,6 +59,217 @@
     const raw = Number(M.speedCfg?.speedhackBaseSpeed ?? 1);
     return Number.isFinite(raw) && raw >= 1 ? raw : 1;
   };
+
+  // ---------- 排序 / 分组 / 搜索 ----------
+  const SORTS = [['installed', '最近安装'], ['name', '名称'], ['status', '启用状态']];
+  const GROUPS = [['kind', '来源'], ['time', '安装时间'], ['none', '不分组']];
+  const nameOf = m => String(m.displayName || m.name || m.fileName || '');
+  const modTime = m => { const t = Date.parse(m.modifiedUtc || ''); return Number.isFinite(t) ? t : 0; };
+  const haystack = m => [m.displayName, m.name, m.fileName, m.description, m.author, m.directoryName, m.id]
+    .map(v => String(v ?? '').toLowerCase()).join('\n');
+  const matches = m => { const q = M.q.trim().toLowerCase(); return !q || haystack(m).includes(q); };
+
+  const collator = (() => { try { return new Intl.Collator('zh-Hans-CN', { sensitivity: 'base' }); } catch { return { compare: (a, b) => a.localeCompare(b) }; } })();
+  function sortMods(list) {
+    const arr = list.slice();
+    if (M.sort === 'name') arr.sort((a, b) => collator.compare(nameOf(a), nameOf(b)));
+    else if (M.sort === 'status') arr.sort((a, b) => (a.enabled === false) - (b.enabled === false) || collator.compare(nameOf(a), nameOf(b)));
+    else arr.sort((a, b) => (modTime(b) - modTime(a)) || collator.compare(nameOf(a), nameOf(b)));
+    return arr;
+  }
+
+  const DAY = 86400000;
+  function timeBucket(m) {
+    const t = modTime(m);
+    if (!t) return { key: 'unknown', title: '时间未知', order: 9 };
+    const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
+    const dayStart = startOfToday.getTime();
+    if (Date.now() - t < 3600000) return { key: 'now', title: '刚刚', order: 0 };
+    if (t >= dayStart) return { key: 'today', title: '今天内', order: 1 };
+    if (t >= dayStart - DAY) return { key: 'yesterday', title: '昨天', order: 2 };
+    if (t >= dayStart - 6 * DAY) return { key: 'week', title: '一周内', order: 3 };
+    return { key: 'older', title: '更早', order: 4 };
+  }
+
+  /** 按当前分组方式把已排序列表切开；每组带 key / 标题 / 数量。 */
+  function groupMods(list) {
+    if (M.group === 'none') return [{ key: 'all', title: '', mods: list }];
+    if (M.group === 'time') {
+      const buckets = new Map();
+      list.forEach(m => {
+        const b = timeBucket(m);
+        if (!buckets.has(b.key)) buckets.set(b.key, { ...b, mods: [] });
+        buckets.get(b.key).mods.push(m);
+      });
+      return [...buckets.values()].sort((a, b) => a.order - b.order);
+    }
+    const third = list.filter(m => !isBuiltIn(m)), built = list.filter(m => isBuiltIn(m));
+    const out = [];
+    if (third.length) out.push({ key: 'third', title: '第三方模组', mods: third });
+    if (built.length) out.push({ key: 'builtin', title: '内置模组', mods: built });
+    return out;
+  }
+
+  const filteredList = () => sortMods(mods().filter(matches));
+
+  /** 一行模组。data-mod-file / data-mod-search 供原地搜索筛选，不重建 DOM。 */
+  function modRow(m, disableUi) {
+    const deps = (m.dependencies || []).map(d => `${d.id}${d.minVersion ? ' ≥ ' + d.minVersion : ''}`).join('、');
+    const off = m.enabled === false;
+    const selected = M.sel.has(m.fileName);
+    const title = off
+      ? '已停用：模组文件夹在 disabled_mods 里，加载器不会加载。打开开关会搬回 mods'
+      : '启用 / 停用（停用会把模组文件夹搬到 disabled_mods，重启游戏后生效）';
+    return `<div class="v2-mod ${off ? 'off' : ''} ${selected ? 'sel' : ''}" data-mod-file="${esc(m.fileName)}" data-mod-search="${esc(haystack(m))}">
+      <label class="v2-check" title="选中此模组"><input type="checkbox" data-v2m-sel="${esc(m.fileName)}" ${selected ? 'checked' : ''} ${disableUi ? 'disabled' : ''}><span></span></label>
+      <div class="body">
+        <div class="name">${esc(m.displayName || m.name || m.fileName)}${m.version ? `<span class="v2-tag">v${esc(m.version)}</span>` : ''}
+          ${isBuiltIn(m) ? '<span class="v2-tag" title="随加载器一起安装的内置模组">内置</span>' : '<span class="v2-tag" title="不是随加载器内置的：来自市场或手动导入">第三方</span>'}
+          ${m.disabledFolder ? '<span class="v2-tag" title="模组文件夹在 disabled_mods 里，加载器不会扫描这个目录">disabled_mods</span>' : ''}
+          ${(Number(m.permissions) & 2) ? '<span class="v2-badge warn" title="此模组声明可以操作游戏（模拟出牌 / 掷骰 / 移动等），请确认来源可信">可操作游戏</span>' : ''}</div>
+        <div class="desc" title="${esc(m.description || '')}">${esc(m.description || '')}${deps ? `　<span class="v2-muted">依赖：${esc(deps)}</span>` : ''}</div>
+      </div>
+      <button class="v2-icon-btn" data-v2m-cfg="${esc(m.fileName)}" title="配置">${I().sliders}</button>
+      <button class="v2-icon-btn" data-v2m-more="${esc(m.fileName)}" data-v2menu title="更多">${I().more}</button>
+      <label class="v2-switch" title="${esc(title)}"><input type="checkbox" data-v2m-toggle="${esc(m.fileName)}" ${off ? '' : 'checked'}><span></span></label>
+    </div>`;
+  }
+
+  // ---------- 加载器进度条 ----------
+  function progressHtml() {
+    const p = M.progress || {};
+    const show = !!M.progress && (p.active !== false || p.phase === 'done' || p.phase === 'error');
+    const pct = Number.isFinite(p.percent) && p.percent >= 0 ? p.percent : -1;
+    const cls = ['v2-card', 'v2-modp', p.phase === 'error' ? 'is-error' : p.phase === 'done' ? 'is-done' : '',
+      pct < 0 && p.active !== false && p.phase !== 'error' ? 'is-indeterminate' : ''].filter(Boolean).join(' ');
+    return `<div class="${cls}" id="v2mProgress" ${show ? '' : 'hidden'}>
+      <div class="v2-modp-head"><span class="msg" id="v2mProgressMsg">${esc(p.message || '')}</span><span class="pct" id="v2mProgressPct">${pct >= 0 ? pct + '%' : ''}</span></div>
+      <div class="v2-modp-bar"><i id="v2mProgressFill" style="width:${pct >= 0 ? pct : 0}%"></i></div>
+    </div>`;
+  }
+
+  let progressTimer = 0;
+  function applyProgress() {
+    const el = $('v2mProgress');
+    if (!el) { render(); return; }
+    const p = M.progress || {};
+    el.hidden = !(M.progress && (p.active !== false || p.phase === 'done' || p.phase === 'error'));
+    el.classList.toggle('is-error', p.phase === 'error');
+    el.classList.toggle('is-done', p.phase === 'done');
+    const pct = Number.isFinite(p.percent) && p.percent >= 0 ? p.percent : -1;
+    el.classList.toggle('is-indeterminate', pct < 0 && p.active !== false && p.phase !== 'error');
+    const msg = $('v2mProgressMsg'); if (msg) msg.textContent = p.message || '';
+    const pctEl = $('v2mProgressPct'); if (pctEl) pctEl.textContent = pct >= 0 ? pct + '%' : '';
+    const fill = $('v2mProgressFill'); if (fill) fill.style.width = pct >= 0 ? pct + '%' : '';
+  }
+
+  /** 宿主推来的下载 / 校验 / 安装进度。完成后停留几秒再收起，避免一闪而过。 */
+  function progress(payload) {
+    if (!payload) return;
+    progressTimer && clearTimeout(progressTimer);
+    M.progress = { ...payload };
+    applyProgress();
+    if (payload.phase === 'done') {
+      progressTimer = setTimeout(() => {
+        if (M.progress?.phase === 'done') { M.progress = null; applyProgress(); }
+      }, 4000);
+    }
+  }
+
+  // ---------- 运行日志 ----------
+  const LOG_LEVELS = { debug: '调试', info: '信息', warn: '警告', error: '错误' };
+  function logLineHtml(p) {
+    const lv = String(p?.level || 'info').toLowerCase();
+    return `<div class="v2-modlog-line lv-${esc(lv)}"><span class="t">${esc(p?.time || '')}</span><span class="lv">${esc(LOG_LEVELS[lv] || lv)}</span><span class="a">${esc(p?.area || 'app')}</span><span class="m">${esc(p?.message || '')}</span></div>`;
+  }
+
+  function updateLogBadge() {
+    const badge = $('v2mLogCount');
+    if (!badge) return;
+    badge.textContent = String(M.logs.length);
+    badge.hidden = M.logs.length === 0;
+  }
+
+  function appendLogLine(body, p) {
+    const empty = body.querySelector('.v2-modlog-empty');
+    if (empty) empty.remove();
+    const nearBottom = body.scrollHeight - body.scrollTop - body.clientHeight < 48;
+    const tpl = document.createElement('template');
+    tpl.innerHTML = logLineHtml(p);
+    body.appendChild(tpl.content.firstElementChild);
+    while (body.childElementCount > MAX_LOGS) body.firstElementChild?.remove();
+    if (nearBottom) body.scrollTop = body.scrollHeight;
+  }
+
+  function log(payload) {
+    if (!payload?.message) return;
+    M.logs.push(payload);
+    if (M.logs.length > MAX_LOGS) M.logs.splice(0, M.logs.length - MAX_LOGS);
+    const body = $('v2mLogBody');
+    if (body) appendLogLine(body, payload);
+    updateLogBadge();
+  }
+
+  const LOG_EMPTY_HTML = '<div class="v2-modlog-empty">还没有日志。启动环境、加载器下载 / 安装和模组改动会显示在这里。</div>';
+  function logBodyHtml() {
+    return M.logs.length ? M.logs.map(logLineHtml).join('') : LOG_EMPTY_HTML;
+  }
+
+  /** 宿主补的历史日志（本次运行内、面板打开之前写的，比如启动环境那条）。 */
+  function history(lines) {
+    if (M.historyLoaded) return;
+    M.historyLoaded = true;
+    if (!Array.isArray(lines) || lines.length === 0) return;
+    const known = new Set(M.logs.map(entry => entry.time + '\u0000' + entry.area + '\u0000' + entry.message));
+    const fresh = lines
+      .filter(entry => entry && entry.message)
+      .filter(entry => !known.has(entry.time + '\u0000' + entry.area + '\u0000' + entry.message));
+    if (fresh.length === 0) return;
+    M.logs = [...fresh, ...M.logs].slice(-MAX_LOGS);
+    const body = $('v2mLogBody');
+    if (body) {
+      body.innerHTML = logBodyHtml();
+      if (M.logOpen) body.scrollTop = body.scrollHeight;
+    }
+    updateLogBadge();
+  }
+
+  // ---------- 原地筛选（不重建输入框，输入法拼字不会被打断） ----------
+  function applyFilter() {
+    const listEl = $('v2mList');
+    if (!listEl) return;
+    const q = M.q.trim().toLowerCase();
+    let visible = 0;
+    listEl.querySelectorAll('[data-mod-file]').forEach(row => {
+      const show = !q || (row.dataset.modSearch || '').includes(q);
+      row.hidden = !show;
+      if (show) visible++;
+    });
+    listEl.querySelectorAll('[data-mod-group]').forEach(group => {
+      let n = 0;
+      group.querySelectorAll('[data-mod-file]').forEach(row => { if (!row.hidden) n++; });
+      group.hidden = n === 0;
+      const count = group.querySelector('[data-group-count]');
+      if (count) count.textContent = String(n);
+    });
+    const scope = $('v2mScope');
+    if (scope) scope.textContent = q ? `当前筛选 ${visible} 个` : `全部 ${visible} 个`;
+    const empty = $('v2mEmpty');
+    if (empty) {
+      empty.hidden = visible > 0;
+      empty.textContent = mods().length
+        ? '没有匹配的模组'
+        : '还没有模组。点「导入模组」添加 DLL 或 ZIP，或者安装加载器时一起装上内置模组。';
+    }
+    // 全选：只按当前可见的行算
+    const all = document.querySelector('#v2Mods [data-v2m-select-all]');
+    if (all) {
+      const boxes = [...listEl.querySelectorAll('[data-v2m-sel]')].filter(box => !box.closest('[data-mod-file]').hidden);
+      const checked = boxes.length > 0 && boxes.every(box => box.checked);
+      all.checked = checked;
+      all.indeterminate = !checked && boxes.some(box => box.checked);
+    }
+  }
 
   // 加载器状态（与原版 renderStatusHeader / renderVerdict 的分支一致）
   function loaderView(s) {
@@ -115,21 +338,24 @@
 
     const sp = baseSpeed(), on = sp > 1.0001, sm = speedMod(), hk = sm && sm.enabled !== false;
     const enabled = mods().filter(m => m.enabled !== false).length;
-    const q = M.q.trim().toLowerCase();
-    const list = mods().filter(m => !q || [m.displayName, m.name, m.fileName, m.description, m.author].some(v => String(v ?? '').toLowerCase().includes(q)))
-      .sort((a, b) => isBuiltIn(a) - isBuiltIn(b));   // 自己装的排前面：内置有 21 个，从市场新装的混在中间很难找
     // 清理已不存在的勾选（解密后列表已删 / 换游戏目录）
     if (M.sel.size) {
       const valid = new Set(mods().map(m => m.fileName));
       for (const f of [...M.sel]) if (!valid.has(f)) M.sel.delete(f);
     }
+    const list = filteredList();
+    const groups = groupMods(list);
     const selCount = M.sel.size;
     const inList = list.filter(m => M.sel.has(m.fileName)).length;
     const allSelected = list.length > 0 && inList === list.length;
     const someSelected = !allSelected && inList > 0;
     const needEnable = list.filter(m => m.enabled === false).length;   // 一键启用要打开的
     const needDisable = list.filter(m => m.enabled !== false).length;  // 一键禁用要关闭的
-    const scopeText = q ? `当前筛选 ${list.length} 个` : `全部 ${list.length} 个`;
+    const scopeText = M.q.trim() ? `当前筛选 ${list.length} 个` : `全部 ${list.length} 个`;
+    const listHtml = groups.map(g => `<section class="v2-mod-group" data-mod-group="${g.key}">
+      ${g.title ? `<div class="v2-mod-group-head"><span>${esc(g.title)}</span><span class="n" data-group-count>${g.mods.length}</span></div>` : ''}
+      ${g.mods.map(m => modRow(m, b)).join('')}
+    </section>`).join('');
 
     return `<div class="v2-page${selCount ? ' v2-has-float' : ''}">${head(!loaderIsPrimary)}
       ${U().gamePicker('v2mGame', 'data-v2m="manageGames"', b)}
@@ -163,32 +389,28 @@
           ${sm && !hk ? `<button class="v2-btn line" data-v2m="speedModOn">开启模组</button>` : ''}</div>
       </div>
 
+      ${progressHtml()}
+
       <div class="v2-card">
         <div class="v2-card-title"><span>已安装 <span class="v2-muted" style="font-weight:400">${enabled} / ${mods().length} 已启用</span>${selCount ? ` · <span class="v2-muted" style="font-weight:400">已选 ${selCount}</span>` : ''}</span>
-          ${mods().length > 6 ? `<label class="v2-search" style="max-width:240px;height:30px">${I().search}<input id="v2mq" placeholder="搜索模组" value="${esc(M.q)}"></label>` : ''}</div>
+          ${mods().length > 6 ? `<label class="v2-search" style="max-width:240px;height:30px">${I().search}<input id="v2mq" type="search" autocomplete="off" spellcheck="false" placeholder="搜索模组" value="${esc(M.q)}"></label>` : ''}</div>
+        <div class="v2-mod-tools v2-mod-view">
+          <label class="v2-mod-view-label" title="列表排序方式">排序
+            <select class="v2-select v2-mod-select" id="v2mSort">${SORTS.map(([v, t]) => `<option value="${v}" ${M.sort === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+          <label class="v2-mod-view-label" title="按来源或安装时间分组">分组
+            <select class="v2-select v2-mod-select" id="v2mGroup">${GROUPS.map(([v, t]) => `<option value="${v}" ${M.group === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+          <span class="v2-top-spacer"></span>
+          <span class="v2-muted" style="font-size:12px">停用的模组会搬进 <span style="font-family:var(--v2-mono)">disabled_mods</span></span>
+        </div>
         ${list.length ? `<div class="v2-mod-tools">
           <label class="v2-check" title="勾选当前筛选列表（${list.length} 个）"><input type="checkbox" data-v2m-select-all ${allSelected ? 'checked' : ''} ${someSelected ? 'data-indeterminate="1"' : ''} ${b ? 'disabled' : ''}><span></span>全选</label>
-          <span class="v2-muted" style="font-size:12px">${esc(scopeText)}</span>
+          <span class="v2-muted" style="font-size:12px" id="v2mScope">${esc(scopeText)}</span>
           <span class="v2-top-spacer"></span>
           <button class="v2-btn line" data-v2m="enableAll" ${b || !needEnable ? 'disabled' : ''} title="启用当前筛选列表里已禁用的模组（${needEnable} 个）">一键启用</button>
           <button class="v2-btn line" data-v2m="disableAll" ${b || !needDisable ? 'disabled' : ''} title="禁用当前筛选列表里已启用的模组（${needDisable} 个）">一键禁用</button>
         </div>` : ''}
-        ${list.map(m => {
-          const deps = (m.dependencies || []).map(d => `${d.id}${d.minVersion ? ' ≥ ' + d.minVersion : ''}`).join('、');
-          const checked = M.sel.has(m.fileName) ? 'checked' : '';
-          return `<div class="v2-mod ${m.enabled === false ? 'off' : ''} ${M.sel.has(m.fileName) ? 'sel' : ''}">
-            <label class="v2-check" title="选中此模组"><input type="checkbox" data-v2m-sel="${esc(m.fileName)}" ${checked} ${b ? 'disabled' : ''}><span></span></label>
-            <div class="body">
-              <div class="name">${esc(m.displayName || m.name || m.fileName)}${m.version ? `<span class="v2-tag">v${esc(m.version)}</span>` : ''}
-                ${isBuiltIn(m) ? '<span class="v2-tag" title="随加载器一起安装的内置模组">内置</span>' : '<span class="v2-tag" title="不是随加载器内置的：来自市场或手动导入">第三方</span>'}
-                ${(Number(m.permissions) & 2) ? '<span class="v2-badge warn" title="此模组声明可以操作游戏（模拟出牌 / 掷骰 / 移动等），请确认来源可信">可操作游戏</span>' : ''}</div>
-              <div class="desc" title="${esc(m.description || '')}">${esc(m.description || '')}${deps ? `　<span class="v2-muted">依赖：${esc(deps)}</span>` : ''}</div>
-            </div>
-            <button class="v2-icon-btn" data-v2m-cfg="${esc(m.fileName)}" title="配置">${I().sliders}</button>
-            <button class="v2-icon-btn" data-v2m-more="${esc(m.fileName)}" data-v2menu title="更多">${I().more}</button>
-            <label class="v2-switch" title="启用 / 停用（重启游戏后生效）"><input type="checkbox" data-v2m-toggle="${esc(m.fileName)}" ${m.enabled !== false ? 'checked' : ''}><span></span></label>
-          </div>`;
-        }).join('') || `<div class="v2-empty">${mods().length ? '没有匹配的模组' : '还没有模组。点「导入模组」添加 DLL 或 ZIP，或者安装加载器时一起装上内置模组。'}</div>`}
+        <div id="v2mList">${listHtml}</div>
+        <div class="v2-empty" id="v2mEmpty" ${list.length ? 'hidden' : ''}>${mods().length ? '没有匹配的模组' : '还没有模组。点「导入模组」添加 DLL 或 ZIP，或者安装加载器时一起装上内置模组。'}</div>
       </div>
 
       ${selCount ? `<div class="v2-floatbar" role="toolbar" aria-label="已选模组操作">
@@ -198,6 +420,17 @@
         <button class="v2-btn danger" data-v2m="deleteSel" ${b ? 'disabled' : ''}>删除已选</button>
         <button class="v2-btn ghost" data-v2m="clearSel" title="清空勾选"><span aria-hidden="true">✕</span></button>
       </div>` : ''}
+
+      <details class="v2-card v2-modlog-card" id="v2ModsLog" ${M.logOpen ? 'open' : ''}>
+        <summary><div class="t"><b>运行日志</b><small>Toys 运行日志：启动环境、加载器下载 / 校验 / 安装、模组改动</small></div><span class="v2-badge" id="v2mLogCount" ${M.logs.length ? '' : 'hidden'}>${M.logs.length}</span>${I().down}</summary>
+        <div class="v2-modlog-tools">
+          <span class="v2-muted">只显示达到日志级别的记录；完整文件日志在日志文件夹里</span>
+          <span class="v2-top-spacer"></span>
+          <button class="v2-btn ghost" data-v2m="clearLog" ${M.logs.length ? '' : 'disabled'}>清空</button>
+          <button class="v2-btn ghost" data-v2m="openLogs">打开日志目录</button>
+        </div>
+        <div class="v2-modlog" id="v2mLogBody" role="log" aria-live="polite">${logBodyHtml()}</div>
+      </details>
 
       <details class="v2-card" id="v2ModsAdv" ${M.advOpen ? 'open' : ''}>
         <summary><div class="t"><b>高级操作</b><small>版本、目录、发布包、停用与卸载</small></div>${I().down}</summary>
@@ -222,14 +455,36 @@
 
   function render() {
     const root = $('v2Mods'); if (!root || U().isComposing()) return;
+    // 日志历史只问一次（状态到了说明宿主已连通）；打开面板时若还没拿到再问一次
+    if (!M.historyAsked && status()) { M.historyAsked = true; post({ type: 'modLogsRequest' }); }
     const adv = $('v2ModsAdv'); if (adv) M.advOpen = adv.open;
     const focusSearch = document.activeElement?.id === 'v2mq';
+    const caret = focusSearch ? document.activeElement.selectionStart : 0;
     root.innerHTML = html();
-    U().bindSearch('v2mq', v => { M.q = v; render(); });
+    // 搜索只做原地筛选：输入框不重建，拼音拼字期间也不会被打断
+    U().bindSearch('v2mq', v => { M.q = v; applyFilter(); });
     const box = $('v2mq');
-    if (box && focusSearch) { box.focus(); box.setSelectionRange(box.value.length, box.value.length); }
+    if (box && focusSearch) {
+      box.focus();
+      const pos = Math.min(caret ?? box.value.length, box.value.length);
+      box.setSelectionRange(pos, pos);
+    }
     const all = root.querySelector('[data-v2m-select-all]');
     if (all && all.dataset.indeterminate) all.indeterminate = true;
+    const logDetails = $('v2ModsLog');
+    if (logDetails) {
+      logDetails.ontoggle = () => {
+        M.logOpen = logDetails.open;
+        writePref(PREF.log, logDetails.open ? '1' : '0');
+        const body = $('v2mLogBody');
+        if (body && logDetails.open) body.scrollTop = body.scrollHeight;
+      };
+      if (M.logOpen) {
+        const body = $('v2mLogBody');
+        if (body) body.scrollTop = body.scrollHeight;
+      }
+    }
+    applyFilter();
   }
 
   /* ---------- 操作 ---------- */
@@ -258,11 +513,6 @@
   }
 
   /* ---------- 批量操作（一键 / 多选） ---------- */
-  const filteredList = () => {
-    const q = M.q.trim().toLowerCase();
-    return mods().filter(m => !q || [m.displayName, m.name, m.fileName, m.description, m.author].some(v => String(v ?? '').toLowerCase().includes(q)))
-      .sort((a, b) => isBuiltIn(a) - isBuiltIn(b));
-  };
   const selectedTargets = () => mods().filter(m => M.sel.has(m.fileName)).map(m => m.fileName);
   const needsSpeedGuard = fileNames => {
     const sm = speedMod();
@@ -358,6 +608,7 @@
     disableSel: () => batchToggle(selectedTargets(), false),
     deleteSel: () => batchDelete(selectedTargets()),
     clearSel: () => { M.sel.clear(); render(); },
+    clearLog: () => { M.logs.length = 0; const body = $('v2mLogBody'); if (body) body.innerHTML = LOG_EMPTY_HTML; updateLogBadge(); },
     speedModOn: () => { const m = speedMod(); if (m) post({ type: 'modToggle', fileName: m.fileName, enabled: true }); },
     importPkg: () => MM()?.openPackageImport(),
     dirMenu: el => U().openMenu(el, [
@@ -410,7 +661,7 @@
       '-',
       { label: '删除…', icon: I().trash, fn: () => confirm({
         title: `删除模组「${esc(m.displayName || m.name || m.fileName)}」？`,
-        lines: [`会从游戏目录删除 <b>${esc(m.directoryName ? 'mods\\' + m.directoryName + '\\' : m.fileName)}</b>`,
+        lines: [`会从游戏目录删除 <b>${esc(m.directoryName ? (m.disabledFolder ? 'disabled_mods\\' : 'mods\\') + m.directoryName + '\\' : m.fileName)}</b>`,
           isBuiltIn(m) ? '这是内置模组，以后重新安装加载器时可以装回来' : '这不是内置模组，删除后只能重新导入 DLL 或 ZIP',
           '只想暂时不用的话，关掉开关就行，不必删除',
           status()?.gameRunning && '游戏正在运行，重启游戏后生效'],
@@ -445,6 +696,8 @@
       return;
     }
     if (t.dataset.v2mSpeed !== undefined) { saveSpeed(t.checked ? 2.0 : 1.0); return; }
+    if (t.id === 'v2mSort') { M.sort = t.value; writePref(PREF.sort, M.sort); render(); return; }
+    if (t.id === 'v2mGroup') { M.group = t.value; writePref(PREF.group, M.group); render(); return; }
     if (t.id === 'v2mSpeed') {
       const v = Number(t.value);
       if (!(v >= 1 && v <= 100)) { toast('倍速必须在 1.0 ~ 100 之间（加载器不支持减速）'); t.value = baseSpeed(); return; }
@@ -491,4 +744,7 @@
     });
     render();
   });
+
+  // 宿主消息（dispatcher）用：进度条 / 实时日志；render 供内部重画
+  window.V2ModsModule = { render, progress, log, history, applyFilter, get state() { return M; } };
 })();

@@ -61,11 +61,12 @@ public sealed class ModPackageImportTests
             ("HandViewerMod/config.json", Text("{\"showOpponentHand\":true}")));
         harness.Manager.ImportModPackage(harness.GameDirectory, first);
 
-        // 玩家改过配置、并且在界面里停用了这个模组
-        var modFolder = Path.Combine(harness.ModsDirectory, "HandViewerMod");
-        var configPath = Path.Combine(modFolder, "config.json");
+        // 玩家改过配置，然后在界面里停用了这个模组（停用 = 整个文件夹搬进 disabled_mods）
+        var configPath = Path.Combine(harness.ModsDirectory, "HandViewerMod", "config.json");
         File.WriteAllText(configPath, "{\"showOpponentHand\":false,\"myOwn\":1}");
         harness.Manager.ToggleMod(harness.GameDirectory, "HandViewerMod.dll", false);
+        var modFolder = Path.Combine(harness.DisabledModsDirectory, "HandViewerMod");
+        configPath = Path.Combine(modFolder, "config.json");
 
         var update = CreatePackage(harness, "v2.zip",
             ("HandViewerMod/HandViewerMod.dll", new byte[] { 0x4D, 0x5A, 0x99, 0x02 }),
@@ -87,7 +88,10 @@ public sealed class ModPackageImportTests
         }
         var scanned = Assert.Single(harness.Manager.GetStatus().Mods);
         Assert.False(scanned.Enabled);
+        Assert.True(scanned.DisabledFolder);
         Assert.Equal("2.0.0", scanned.Version);
+        // 升级后仍留在 disabled_mods，没被悄悄搬回 mods
+        Assert.False(Directory.Exists(Path.Combine(harness.ModsDirectory, "HandViewerMod")));
     }
 
     [Fact]
@@ -637,6 +641,9 @@ public sealed class ModPackageImportTests
 
         public string ModsDirectory =>
             Path.Combine(GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
+
+        public string DisabledModsDirectory =>
+            Path.Combine(GameDirectory, ModManager.LoaderFolderName, ModManager.DisabledModsFolderName);
 
         /// <summary>
         /// 接管「送进回收站」这一步，测试不往开发者真实回收站里塞临时文件。

@@ -334,32 +334,75 @@ public sealed partial class ModManager
     private static string ShortUrl(string url)
         => url.Contains("api.github.com", StringComparison.OrdinalIgnoreCase) ? "GitHub API" : "GitHub";
 
+    /// <summary>加载器下载 / 安装的进度回调：phase = download | verify | install | done，percent = 0..100（-1 = 未知）。</summary>
+    public delegate void LoaderProgressCallback(string phase, int percent, string message);
+
     /// <summary>下载最新发布包到字节数组（不落盘）。网络异常/无 Release 时抛异常。</summary>
     public Task<byte[]> DownloadLatestPackageAsync(CancellationToken cancellationToken)
         => DownloadLatestPackageAsync(mirrorType: null, customMirrorUrl: null, client: null, cancellationToken);
 
-    /// <summary>下载最新发布包到字节数组（不落盘），支持指定镜像加速源与测试客户端。网络异常/无 Release 时抛异常。</summary>
+    /// <summary>下载最新发布包到字节数组（不落盘），支持指定镜像加速源与测试客户端。网络异常/无 Release 时抛异常。
+    /// <paramref name="progress"/> 按已接收字节回报下载进度（不知道总大小时 percent = -1）。</summary>
     public async Task<byte[]> DownloadLatestPackageAsync(
         string? mirrorType = null,
         string? customMirrorUrl = null,
         HttpClient? client = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        LoaderProgressCallback? progress = null)
     {
         var url = string.IsNullOrEmpty(mirrorType)
             ? LatestPackageUrl
             : GitHubMirrorHelper.ApplyMirror(LatestPackageUrl, mirrorType, customMirrorUrl);
-        using var response = await (client ?? Http).GetAsync(url, HttpCompletionOption.ResponseContentRead, cancellationToken)
+        progress?.Invoke("download", -1, "正在连接 GitHub 下载 CesiumLoader…");
+        ToysLog.Info("modloader", $"开始下载 CesiumLoader 发布包：{url}");
+        using var response = await (client ?? Http).GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
             .ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
             var status = (int)response.StatusCode;
+            ToysLog.Warn("modloader", $"下载 CesiumLoader 发布包失败：HTTP {status}");
             throw new InvalidOperationException(
                 status == 404
                     ? "CesiumLoader 还没有发布过任何 Release（打 modloader-* tag 触发 GitHub Action 即可）。"
                     : $"下载失败：HTTP {(int)response.StatusCode}。");
         }
-        return await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+
+        var total = response.Content.Headers.ContentLength;
+        await using var source = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        using var memory = total is > 0 and < MaxPackageBytes ? new MemoryStream((int)total.Value) : new MemoryStream();
+        var buffer = new byte[81920];
+        long received = 0;
+        var lastPercent = -2;
+        int read;
+        while ((read = await source.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0)
+        {
+            memory.Write(buffer, 0, read);
+            received += read;
+            if (memory.Length > MaxPackageBytes) throw new InvalidDataException("发布包超过大小限制。");
+            var percent = total is > 0 ? (int)Math.Clamp(received * 100 / total.Value, 0, 100) : -1;
+            if (percent != lastPercent)
+            {
+                lastPercent = percent;
+                progress?.Invoke("download", percent, percent >= 0
+                    ? $"正在下载 CesiumLoader… {percent}%（{FormatBytes(received)} / {FormatBytes(total!.Value)}）"
+                    : $"正在下载 CesiumLoader… {FormatBytes(received)}");
+            }
+        }
+        progress?.Invoke("download", 100, $"下载完成（{FormatBytes(received)}）");
+        ToysLog.Info("modloader", $"下载完成：CesiumLoader 发布包 {FormatBytes(received)}");
+        return memory.ToArray();
     }
+
+    /// <summary>发布包大小上限（与发布包校验里的总量限制一致）。</summary>
+    private const long MaxPackageBytes = 128L * 1024 * 1024;
+
+    private static string FormatBytes(long bytes) => bytes switch
+    {
+        >= 1024L * 1024 * 1024 => $"{bytes / (1024d * 1024 * 1024):0.##} GB",
+        >= 1024L * 1024 => $"{bytes / (1024d * 1024):0.#} MB",
+        >= 1024 => $"{bytes / 1024d:0.#} KB",
+        _ => $"{bytes} B"
+    };
 
     /// <summary>解析发布包清单（zip 内的 cesium-loader.json）：版本 + 各文件 SHA256。</summary>
     public static LoaderPackageInfo? ParsePackageManifest(byte[] zipBytes)
@@ -440,7 +483,8 @@ public sealed partial class ModManager
 
     /// <summary>把发布包内容写入游戏目录（version.dll + doorstop_config + sdk + mods + sidecar + 清单）。游戏运行中覆盖 version.dll 会因占用失败。
     /// 包内版本比游戏目录已装的更旧时（降级）默认拒绝，需要 allowDowngrade 显式放行。</summary>
-    public void InstallPackage(string gameDirectory, byte[] zipBytes, bool overwriteDll, bool allowDowngrade = false)
+    public void InstallPackage(string gameDirectory, byte[] zipBytes, bool overwriteDll, bool allowDowngrade = false,
+        LoaderProgressCallback? progress = null)
     {
         if (string.IsNullOrWhiteSpace(gameDirectory))
             throw new ArgumentException("请先选择游戏目录。");
@@ -449,9 +493,12 @@ public sealed partial class ModManager
         if (string.IsNullOrEmpty(SpeedhackManager.ContainsGameExe(gameDirectory)))
             throw new InvalidOperationException("所选目录里没有找到游戏主程序（AstralParty*.exe），确认这是游戏 exe 所在的目录？");
 
+        progress?.Invoke("verify", 5, "正在校验发布包…");
         var manifest = ParsePackageManifest(zipBytes)
             ?? throw new InvalidDataException("发布包缺少清单（cesium-loader.json），已停止安装。");
         ValidatePackage(zipBytes, manifest);
+        ToysLog.Info("modloader",
+            $"开始安装 CesiumLoader {manifest.Version}（发布包 {FormatBytes(zipBytes.Length)}，目标 {gameDirectory}）");
 
         // 降级闸门（与 Install 同一条规则）：包内版本比游戏目录已装的更旧 → 默认拒绝。
         // 已装版本从安装清单读，老安装（没有清单）退回读加载器日志。
@@ -480,11 +527,13 @@ public sealed partial class ModManager
             }
         try
         {
+            progress?.Invoke("install", 20, "正在写入加载器文件…");
             using var stream = new MemoryStream(zipBytes);
             using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
 
             var loaderRoot = Path.Combine(gameDirectory, LoaderFolderName);
             Directory.CreateDirectory(Path.Combine(loaderRoot, ModsFolderName));
+            Directory.CreateDirectory(Path.Combine(loaderRoot, DisabledModsFolderName));
             Directory.CreateDirectory(Path.Combine(loaderRoot, SdkFolderName));
             Directory.CreateDirectory(Path.Combine(loaderRoot, LogsFolderName));
 
@@ -523,10 +572,12 @@ public sealed partial class ModManager
             // mod：每 mod 一个文件夹，发布包里有什么就装什么；
             // 同时拒绝含 ".." 的条目，避免 zip 路径穿越写出 mods\ 之外。
             // ★ 保留用户已有 mod 的 enabled 开关与 config.json，避免更新加载器时重置用户设置。
+            progress?.Invoke("install", 45, "正在安装随包模组…");
             var preservedModEnabled = CaptureInstalledModsEnabled(loaderRoot);
             ExtractModDirectoryEntries(archive, PackageModsPrefix, loaderRoot, preservedModEnabled);
 
             // 写入安装清单（记录版本，供 GetStatus 显示/对比）
+            progress?.Invoke("install", 85, "正在写入安装清单…");
             var manifestEntry = archive.GetEntry(InstalledManifestFileName);
             if (manifestEntry is not null)
             {
@@ -536,6 +587,7 @@ public sealed partial class ModManager
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
+            ToysLog.Error("modloader", "安装发布包时写入游戏目录失败", ex);
             throw new IOException(
                 $"写入游戏目录失败：{ex.Message}。" +
                 (SpeedhackManager.IsGameRunning() ? "游戏正在运行时 version.dll 会被占用，无法覆盖——请完全退出游戏后再更新。" : ""), ex);
@@ -544,6 +596,9 @@ public sealed partial class ModManager
         SaveStoredGameDirectory(gameDirectory);
         using var completedZip = new ZipArchive(new MemoryStream(zipBytes), ZipArchiveMode.Read);
         retained.Complete(manifest.Version, HashBytes(ReadEntryBytes(completedZip.GetEntry(LoaderDllName)!)), remainDisabled, packageHash: HashBytes(zipBytes));
+        ToysLog.Info("modloader",
+            $"CesiumLoader {manifest.Version} 安装完成" + (remainDisabled ? "（保留停用状态）" : ""));
+        progress?.Invoke("done", 100, "加载器安装完成");
     }
 
     private static void ExtractEntryToFile(ZipArchive archive, string entryName, string targetPath)
@@ -561,61 +616,76 @@ public sealed partial class ModManager
         WriteAllBytesProtected(targetPath, ReadEntryBytes(entry));
     }
 
-    /// <summary>收集 mods 目录下所有已装 mod 的用户启用状态（显式设置了 enabled 的）。
-    /// 键为 mod 标识符（文件夹名或文件名不含扩展名），不区分大小写。</summary>
+    /// <summary>收集两个 mod 目录下所有已装 mod 的用户启用状态（显式设置了 enabled 的）。
+    /// 键为 mod 标识符（文件夹名或文件名不含扩展名），不区分大小写。
+    /// <c>disabled_mods</c> 里的 mod 一律记成 false：更新加载器不能把它们悄悄搬回 mods。</summary>
     private static Dictionary<string, bool> CaptureInstalledModsEnabled(string loaderRoot)
     {
         var states = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-        var modsDir = Path.Combine(loaderRoot, ModsFolderName);
-        if (!Directory.Exists(modsDir)) return states;
+        CaptureRoot(Path.Combine(loaderRoot, ModsFolderName));
+        CaptureRoot(Path.Combine(loaderRoot, DisabledModsFolderName));
+        return states;
 
-        // 1. 旧布局平铺: mods/*.json
-        try
+        void CaptureRoot(string modsDir)
         {
-            foreach (var file in Directory.EnumerateFiles(modsDir, "*.json"))
-            {
-                var fileName = Path.GetFileName(file);
-                if (string.Equals(fileName, ModConfigFileName, StringComparison.OrdinalIgnoreCase)) continue;
-                var modId = Path.GetFileNameWithoutExtension(fileName);
-                var enabled = ReadSidecarEnabled(file);
-                if (enabled.HasValue) states[modId] = enabled.Value;
-            }
-        }
-        catch { }
+            if (!Directory.Exists(modsDir)) return;
+            var disabled = string.Equals(
+                Path.GetFileName(modsDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)),
+                DisabledModsFolderName, StringComparison.OrdinalIgnoreCase);
 
-        // 2. 新布局: mods/{folder}/{folder}.json (新布局优先覆盖平铺)
-        try
-        {
-            foreach (var subDir in Directory.EnumerateDirectories(modsDir))
+            // 1. 旧布局平铺: *.json
+            try
             {
-                var folderName = Path.GetFileName(subDir);
-                var sidecar = Path.Combine(subDir, folderName + ".json");
-                if (File.Exists(sidecar))
+                foreach (var file in Directory.EnumerateFiles(modsDir, "*.json"))
                 {
-                    var enabled = ReadSidecarEnabled(sidecar);
-                    if (enabled.HasValue) states[folderName] = enabled.Value;
+                    var fileName = Path.GetFileName(file);
+                    if (string.Equals(fileName, ModConfigFileName, StringComparison.OrdinalIgnoreCase)) continue;
+                    var modId = Path.GetFileNameWithoutExtension(fileName);
+                    var enabled = disabled ? false : ReadSidecarEnabled(file);
+                    if (enabled.HasValue) states[modId] = enabled.Value;
+                    else if (disabled) states[modId] = false;
                 }
-                else
+            }
+            catch { }
+
+            // 2. 新布局: {folder}/{folder}.json (新布局优先覆盖平铺)
+            try
+            {
+                foreach (var subDir in Directory.EnumerateDirectories(modsDir))
                 {
-                    // 兼容文件夹内 sidecar 与文件夹名不完全一致但为 mod 主配置的情况
-                    foreach (var file in Directory.EnumerateFiles(subDir, "*.json"))
+                    var folderName = Path.GetFileName(subDir);
+                    var sidecar = Path.Combine(subDir, folderName + ".json");
+                    if (File.Exists(sidecar))
                     {
-                        var name = Path.GetFileName(file);
-                        if (string.Equals(name, ModConfigFileName, StringComparison.OrdinalIgnoreCase)) continue;
-                        var modId = Path.GetFileNameWithoutExtension(name);
-                        var enabled = ReadSidecarEnabled(file);
-                        if (enabled.HasValue)
+                        var enabled = disabled ? false : ReadSidecarEnabled(sidecar);
+                        if (enabled.HasValue) states[folderName] = enabled.Value;
+                        else if (disabled) states[folderName] = false;
+                    }
+                    else
+                    {
+                        if (disabled) states[folderName] = false;
+                        // 兼容文件夹内 sidecar 与文件夹名不完全一致但为 mod 主配置的情况
+                        foreach (var file in Directory.EnumerateFiles(subDir, "*.json"))
                         {
-                            states[modId] = enabled.Value;
-                            states[folderName] = enabled.Value;
+                            var name = Path.GetFileName(file);
+                            if (string.Equals(name, ModConfigFileName, StringComparison.OrdinalIgnoreCase)) continue;
+                            var modId = Path.GetFileNameWithoutExtension(name);
+                            var enabled = disabled ? false : ReadSidecarEnabled(file);
+                            if (enabled.HasValue)
+                            {
+                                states[modId] = enabled.Value;
+                                states[folderName] = enabled.Value;
+                            }
+                            else if (disabled)
+                            {
+                                states[modId] = false;
+                            }
                         }
                     }
                 }
             }
+            catch { }
         }
-        catch { }
-
-        return states;
     }
 
     /// <summary>把 zip 内 mods 前缀下的全部文件条目提取到 loaderRoot，保留目录层级。
@@ -630,6 +700,16 @@ public sealed partial class ModManager
             var relative = entry.FullName.Substring(packageRootLength).Replace('/', Path.DirectorySeparatorChar);
             if (!IsSafeRelativePath(relative))
                 throw new InvalidDataException($"发布包含有非法路径：{entry.FullName}");
+            // 停用的 mod 已经躺在 disabled_mods 里：这次更新写回原处，不能借机把它放回 mods(等于偷偷重新启用)
+            var segments = relative.Split(Path.DirectorySeparatorChar);
+            var targetRoot = ModsFolderName;
+            if (segments.Length > 2 && segments[0].Equals(ModsFolderName, StringComparison.OrdinalIgnoreCase))
+            {
+                var folderName = segments[1];
+                if (Directory.Exists(Path.Combine(loaderRoot, DisabledModsFolderName, folderName)))
+                    targetRoot = DisabledModsFolderName;
+                relative = Path.Combine(new[] { targetRoot, folderName }.Concat(segments.Skip(2)).ToArray());
+            }
             var target = Path.Combine(loaderRoot, relative);
             var fileName = Path.GetFileName(target);
 

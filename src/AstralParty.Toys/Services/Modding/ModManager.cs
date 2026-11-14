@@ -24,6 +24,8 @@ public sealed partial class ModManager
     public const string LoaderDllName = "version.dll";
     public const string LoaderFolderName = "AstralParty_ModLoader";
     public const string ModsFolderName = "mods";
+    /// <summary>停用的 mod 搬到这里：加载器只扫 mods，等于彻底不进游戏，DLL 也不会被游戏进程占用。</summary>
+    public const string DisabledModsFolderName = "disabled_mods";
     public const string SdkFolderName = "sdk";
     public const string LogsFolderName = "logs";
     public const string ConfigFileName = "doorstop_config.json";
@@ -277,5 +279,24 @@ public sealed partial class ModManager
 
     public static void OpenInExplorer(string path)
         => SpeedhackManager.OpenInExplorer(path);
+
+    // ============================== mod 目录（启用 / 停用） ==============================
+
+    /// <summary>启用的 mod 目录：<c>AstralParty_ModLoader\mods</c>。</summary>
+    public static string ModsRoot(string gameDirectory) => Path.Combine(gameDirectory, LoaderFolderName, ModsFolderName);
+
+    /// <summary>停用的 mod 目录：<c>AstralParty_ModLoader\disabled_mods</c>。</summary>
+    public static string DisabledModsRoot(string gameDirectory) => Path.Combine(gameDirectory, LoaderFolderName, DisabledModsFolderName);
+
+    /// <summary>
+    /// 这个 mod 的内容该写回哪个根目录：已经在 <c>disabled_mods</c> 里的 mod 保持原位，
+    /// 更新加载器 / 重装内置模组 / 重新导入都不能把它悄悄搬回 <c>mods</c>（否则停用就白点了）。
+    /// </summary>
+    private static string ResolveModRoot(string loaderRoot, string folderName)
+    {
+        if (!string.IsNullOrEmpty(folderName) && Directory.Exists(Path.Combine(loaderRoot, DisabledModsFolderName, folderName)))
+            return Path.Combine(loaderRoot, DisabledModsFolderName);
+        return Path.Combine(loaderRoot, ModsFolderName);
+    }
 }
 

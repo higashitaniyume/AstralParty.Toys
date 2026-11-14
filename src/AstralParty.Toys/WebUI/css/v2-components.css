@@ -40,6 +40,42 @@ html body .v2-select:disabled { opacity: .45; cursor: not-allowed; color: var(--
 .v2-log-input { display: block; width: 100%; min-height: 120px; max-height: 240px; margin-top: 12px; padding: 10px; resize: vertical; overflow: auto; background: var(--v2-well); border: 1px solid var(--v2-border); border-radius: 8px; font-size: 12px; line-height: 1.55; color: var(--gp-text-sub); white-space: pre-wrap; word-break: break-all; user-select: text; -webkit-user-select: text; cursor: text; outline: none; }
 .v2-log-input:focus { border-color: var(--v2-border-strong); }
 
+/* ---------- 模组页：排序 / 分组 ---------- */
+.v2-mod-view { gap: 10px; }
+.v2-mod-view-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--gp-text-muted); }
+.v2-mod-select { height: 30px; min-width: 0; padding: 0 8px; font-size: 12px; }
+.v2-mod-group-head { display: flex; align-items: center; gap: 8px; padding: 10px 18px 6px; border-top: 1px solid var(--v2-border); font-size: 12px; font-weight: 600; color: var(--gp-text-muted); }
+.v2-mod-group:first-child > .v2-mod-group-head { border-top: 0; }
+.v2-mod-group-head + .v2-mod { border-top: 0; }
+.v2-mod-group-head .n { font-weight: 400; }
+html body .v2-mod[hidden], html body .v2-mod-group[hidden] { display: none !important; }
+
+/* ---------- 模组页：加载器下载 / 安装进度 ---------- */
+.v2-modp { display: grid; gap: 8px; padding: 12px 18px; }
+html body .v2-modp[hidden] { display: none !important; }
+.v2-modp-head { display: flex; align-items: baseline; gap: 12px; font-size: 13px; }
+.v2-modp-head .msg { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v2-modp-head .pct { flex: none; font-variant-numeric: tabular-nums; font-size: 12px; color: var(--gp-text-muted); }
+.v2-modp-bar { height: 8px; border-radius: 999px; background: var(--v2-well); overflow: hidden; }
+.v2-modp-bar i { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--gp-pink), #ff5aa2); transition: width .18s ease; }
+.v2-modp.is-indeterminate .v2-modp-bar i { width: 35% !important; animation: v2-modp-slide 1.2s ease-in-out infinite alternate; }
+.v2-modp.is-error .v2-modp-bar i { background: #f43f5e; }
+.v2-modp.is-done .v2-modp-bar i { background: var(--gp-green); }
+@keyframes v2-modp-slide { from { transform: translateX(-30%); } to { transform: translateX(250%); } }
+body.reduce-motion .v2-modp.is-indeterminate .v2-modp-bar i { animation: none; width: 100% !important; opacity: .5; }
+
+/* ---------- 模组页：运行日志 ---------- */
+.v2-modlog-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 0 18px 10px; font-size: 12px; }
+.v2-modlog-tools .v2-btn { height: 28px; padding: 0 10px; font-size: 12px; }
+.v2-modlog { margin: 0 18px 14px; padding: 8px 12px; max-height: 260px; overflow: auto; border-radius: 8px; background: var(--v2-well); font: 12px/1.6 var(--v2-mono); color: var(--gp-text-sub); user-select: text; -webkit-user-select: text; cursor: text; }
+.v2-modlog-line { display: flex; gap: 8px; align-items: baseline; white-space: pre-wrap; word-break: break-word; }
+.v2-modlog-line .t { flex: none; color: var(--gp-text-muted); font-variant-numeric: tabular-nums; }
+.v2-modlog-line .lv { flex: none; width: 40px; color: var(--gp-text-muted); }
+.v2-modlog-line .a { flex: none; color: var(--gp-blue); }
+.v2-modlog-line.lv-warn .lv { color: var(--gp-gold); }
+.v2-modlog-line.lv-error .lv, .v2-modlog-line.lv-error .m { color: #f43f5e; }
+.v2-modlog-empty { color: var(--gp-text-muted); }
+
 /* ---------- 角色：向导 ---------- */
 .v2-modal-box.wide { width: 600px; }
 .v2-wz-bar { display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-bottom: 1px solid var(--v2-border); font-size: 13px; }

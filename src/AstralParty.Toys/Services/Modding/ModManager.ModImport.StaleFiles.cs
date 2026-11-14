@@ -163,20 +163,23 @@ public sealed partial class ModManager
     }
 
     /// <summary>沿用已有的文件夹写法（Windows 不区分大小写：已存在 <c>mods\handviewermod</c> 时用它），
-    /// 避免同一个模组出现两个只差大小写的目录。</summary>
-    private static string ResolveModFolderName(string modsDir, string modId)
+    /// 避免同一个模组出现两个只差大小写的目录。停用目录也一起看。</summary>
+    private static string ResolveModFolderName(string modsDir, string modId, string? disabledDir = null)
     {
-        try
+        foreach (var root in disabledDir is null ? new[] { modsDir } : new[] { modsDir, disabledDir })
         {
-            foreach (var directory in Directory.EnumerateDirectories(modsDir))
+            try
             {
-                var name = Path.GetFileName(directory);
-                if (name.Equals(modId, StringComparison.OrdinalIgnoreCase)) return name;
+                foreach (var directory in Directory.EnumerateDirectories(root))
+                {
+                    var name = Path.GetFileName(directory);
+                    if (name.Equals(modId, StringComparison.OrdinalIgnoreCase)) return name;
+                }
             }
-        }
-        catch
-        {
-            // 扫描失败就用请求的名字
+            catch
+            {
+                // 扫描失败就用请求的名字
+            }
         }
         return modId;
     }

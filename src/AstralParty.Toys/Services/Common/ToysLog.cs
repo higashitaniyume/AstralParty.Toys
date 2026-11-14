@@ -21,8 +21,14 @@ public static class ToysLog
     public const int DefaultRetentionDays = 7;
     public const long DefaultMaxFileBytes = 10L * 1024 * 1024;
 
+    /// <summary>内存里留着的最近若干条日志，界面打开日志面板时先补一次历史。</summary>
+    public readonly record struct Entry(DateTime Time, ToysLogLevel Level, string Area, string Message);
+
+    private const int RecentCapacity = 300;
+
     private static readonly object Gate = new();
     private static readonly UTF8Encoding Utf8 = new(false);
+    private static readonly Queue<Entry> Recent = new();
 
     private static ToysLogLevel _level = ToysLogLevel.Info;
     private static int _retentionDays = DefaultRetentionDays;
@@ -109,16 +115,30 @@ public static class ToysLog
             maxBytes = _maxFileBytes;
         }
 
-        if (directory is null || level < threshold) return;
+        if (level < threshold) return;
+        var now = DateTime.Now;
+        var areaName = string.IsNullOrWhiteSpace(area) ? "app" : area;
+        lock (Gate)
+        {
+            Recent.Enqueue(new Entry(now, level, areaName, message));
+            while (Recent.Count > RecentCapacity) Recent.Dequeue();
+        }
+
+        // 界面上的实时日志：文件写不进去（目录不可写/被占用）也要能看到；
+        // 订阅者自己负责不抛异常、不阻塞，这里再兜一层。
+        try { Written?.Invoke(now, level, area, message); }
+        catch { }
+
+        if (directory is null) return;
 
         try
         {
             System.IO.Directory.CreateDirectory(directory);
-            var path = ResolveFile(directory, DateTime.Now, maxBytes);
+            var path = ResolveFile(directory, now, maxBytes);
             var line = new StringBuilder()
-                .Append(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"))
+                .Append(now.ToString("yyyy-MM-dd HH:mm:ss.fff"))
                 .Append(' ').Append(Format(level))
-                .Append(" [").Append(string.IsNullOrWhiteSpace(area) ? "app" : area).Append("] ")
+                .Append(" [").Append(areaName).Append("] ")
                 .Append(message);
             if (exception is not null)
                 line.AppendLine().Append("    ").Append(exception.GetType().Name).Append(": ")
@@ -133,6 +153,29 @@ public static class ToysLog
         catch
         {
             // 日志失败绝不能往上抛
+        }
+    }
+
+    /// <summary>每写一条日志就触发一次（界面上的实时日志用）。参数：时间、级别、来源、正文。</summary>
+    public static event Action<DateTime, ToysLogLevel, string, string>? Written;
+
+    /// <summary>内存里最近的日志（最新的在末尾）。界面打开日志面板时用它补历史——
+    /// 窗口订阅 <see cref="Written"/> 之前的启动日志就只有这里还留着。</summary>
+    public static IReadOnlyList<Entry> RecentEntries(int max = 200)
+    {
+        lock (Gate)
+        {
+            var take = Math.Min(Math.Max(max, 0), Recent.Count);
+            if (take == 0) return Array.Empty<Entry>();
+            var result = new Entry[take];
+            var skip = Recent.Count - take;
+            var index = 0;
+            foreach (var entry in Recent)
+            {
+                if (skip-- > 0) continue;
+                result[index++] = entry;
+            }
+            return result;
         }
     }
 

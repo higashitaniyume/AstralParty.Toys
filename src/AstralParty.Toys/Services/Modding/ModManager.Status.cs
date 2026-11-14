@@ -72,7 +72,7 @@ public sealed partial class ModManager
             if (loaderRoot.Length > 0)
             {
                 status.LoaderRootExists = Directory.Exists(loaderRoot);
-                status.Mods = ScanMods(Path.Combine(loaderRoot, ModsFolderName));
+                status.Mods = ScanMods(Path.Combine(loaderRoot, ModsFolderName), Path.Combine(loaderRoot, DisabledModsFolderName));
                 status.Sdk = ScanMods(Path.Combine(loaderRoot, SdkFolderName));
             }
 
@@ -104,7 +104,9 @@ public sealed partial class ModManager
         if (!status.Installed)
             return "尚未安装：点「安装加载器」，把加载器和内置模组装进游戏目录。";
 
-        var mods = $"已加载 {status.Mods.Count} 个模组";
+        var mods = status.Mods.Count(m => m.Enabled) is var enabledCount && enabledCount == status.Mods.Count
+            ? $"已加载 {enabledCount} 个模组"
+            : $"已加载 {enabledCount} 个模组（另有 {status.Mods.Count - enabledCount} 个停用）";
         if (!status.LoaderManaged)
             return $"游戏目录里的 version.dll 不是本工具装的（来源不明）——可能是旧版独立变速器或第三方文件，安装或卸载前请先确认。";
         if (status.InstalledVersion.Length == 0)
@@ -114,26 +116,40 @@ public sealed partial class ModManager
             : $"加载器已就绪（{mods}）。";
     }
 
-    private static List<ModEntryInfo> ScanMods(string directory)
+    /// <summary>扫描 mod 目录。给了 <paramref name="disabledDirectory"/> 时把停用的 mod 一起列出来：
+    /// 启用的排在前面，停用的强制 <see cref="ModEntryInfo.Enabled"/> = false 并标记来源目录。</summary>
+    private static List<ModEntryInfo> ScanMods(string directory, string? disabledDirectory = null)
+    {
+        var list = ScanModsIn(directory, disabled: false);
+        if (string.IsNullOrEmpty(disabledDirectory)) return list;
+        foreach (var entry in ScanModsIn(disabledDirectory, disabled: true))
+        {
+            if (list.Any(m => string.Equals(m.Name, entry.Name, StringComparison.OrdinalIgnoreCase))) continue;
+            list.Add(entry);
+        }
+        return list;
+    }
+
+    private static List<ModEntryInfo> ScanModsIn(string directory, bool disabled)
     {
         var list = new List<ModEntryInfo>();
         try
         {
             if (!Directory.Exists(directory)) return list;
-            // 新布局: mods\{ModId}\{ModId}.dll (每 mod 一个文件夹, sidecar 在文件夹内)
+            // 新布局: {ModId}\{ModId}.dll (每 mod 一个文件夹, sidecar 在文件夹内)
             foreach (var sub in Directory.EnumerateDirectories(directory).OrderBy(d => d, StringComparer.OrdinalIgnoreCase))
             {
                 var dirName = Path.GetFileName(sub);
                 var dllPath = Path.Combine(sub, dirName + ".dll");
                 if (!File.Exists(dllPath)) continue;   // 文件夹里没有同名 dll, 不是 mod 文件夹
-                list.Add(ScanModEntry(dllPath, dirName));
+                list.Add(ScanModEntry(dllPath, dirName, disabled));
             }
-            // 旧布局兼容: mods 根下平铺的 .dll (sidecar 在 mods 根)
+            // 旧布局兼容: 根下平铺的 .dll (sidecar 在同级)
             foreach (var file in Directory.EnumerateFiles(directory, "*.dll").OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
             {
                 if (list.Any(m => string.Equals(m.Name, Path.GetFileNameWithoutExtension(file), StringComparison.OrdinalIgnoreCase)))
                     continue;
-                list.Add(ScanModEntry(file, null));
+                list.Add(ScanModEntry(file, null, disabled));
             }
         }
         catch
@@ -143,7 +159,7 @@ public sealed partial class ModManager
         return list;
     }
 
-    private static ModEntryInfo ScanModEntry(string file, string? directoryName)
+    private static ModEntryInfo ScanModEntry(string file, string? directoryName, bool disabled = false)
     {
         var info = new FileInfo(file);
         var entry = new ModEntryInfo
@@ -152,7 +168,8 @@ public sealed partial class ModManager
             FileName = Path.GetFileName(file),
             DirectoryName = directoryName,
             SizeBytes = info.Length,
-            ModifiedUtc = info.LastWriteTimeUtc
+            ModifiedUtc = info.LastWriteTimeUtc,
+            DisabledFolder = disabled
         };
         // 同名 sidecar(新布局: mod 文件夹内 {Name}.json; 旧布局: 同目录 {Name}.json):
         // {id,name,version,author,description,permissions,sdkVersion,dependencies}

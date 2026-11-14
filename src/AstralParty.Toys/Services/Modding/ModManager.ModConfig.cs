@@ -191,10 +191,10 @@ public sealed partial class ModManager
     /// <summary>mod 配置的落盘位置(mods\{ModId}\config.json; 不要求已存在)。</summary>
     private static string ModConfigWritePath(string gameDirectory, string fileName)
     {
-        var modsDir = Path.Combine(gameDirectory, LoaderFolderName, ModsFolderName);
-        var (_, directoryName) = ResolveModPath(modsDir, fileName);
+        var modsDir = ModsRoot(gameDirectory);
+        var (_, directoryName, root) = ResolveModPath(modsDir, fileName);
         var folder = directoryName ?? Path.GetFileNameWithoutExtension(fileName);
-        return Path.Combine(modsDir, folder, ModConfigFileName);
+        return Path.Combine(root, folder, ModConfigFileName);
     }
 
     /// <summary>旧版集中存放位置(AstralParty_ModLoader\configs\{modName}.json); 仅用于读取兼容。</summary>
@@ -300,14 +300,14 @@ public sealed partial class ModManager
         if (!sourcePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
             throw new InvalidDataException("mod 必须是 .dll 文件（模组包请用 .zip）。");
 
-        var modsDir = Path.Combine(gameDirectory, LoaderFolderName, ModsFolderName);
+        var modsDir = ModsRoot(gameDirectory);
 
         var fileName = Path.GetFileName(sourcePath);
         var stem = Path.GetFileNameWithoutExtension(fileName);
-        // 每 mod 一个文件夹; 若已有同名 mod(文件夹或平铺), 覆盖其 DLL
-        var (existing, existingDir) = ResolveModPath(modsDir, fileName);
+        // 每 mod 一个文件夹; 若已有同名 mod(文件夹或平铺), 覆盖其 DLL（停用的 mod 也写回 disabled_mods）
+        var (existing, existingDir, root) = ResolveModPath(modsDir, fileName);
         var dirName = existingDir ?? stem;
-        var modFolder = Path.Combine(modsDir, dirName);
+        var modFolder = Path.Combine(root, dirName);
         var bytes = File.ReadAllBytes(sourcePath);
         using var retained = BeginRetainedOperation(gameDirectory, "import-mod", bytes);
         Directory.CreateDirectory(modFolder);

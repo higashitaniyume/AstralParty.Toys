@@ -9,10 +9,12 @@ public sealed partial class ModManager
     private const int MaxSdkFileBytes = 16 * 1024 * 1024;
 
     /// <summary>加载器 ZIP 整包安装；SDK 工具包或单独 DLL 只更新 SDK。</summary>
-    public string ImportReleaseFile(string gameDirectory, string sourcePath, bool overwriteDll, bool allowDowngrade = false)
+    public string ImportReleaseFile(string gameDirectory, string sourcePath, bool overwriteDll, bool allowDowngrade = false,
+        LoaderProgressCallback? progress = null)
     {
         if (new FileInfo(sourcePath).Length > 64 * 1024 * 1024)
             throw new InvalidOperationException("发布包不能超过 64 MB。");
+        ToysLog.Info("modloader", $"导入发布文件：{Path.GetFileName(sourcePath)}（{FormatBytes(new FileInfo(sourcePath).Length)}）");
         if (Path.GetExtension(sourcePath).Equals(".zip", StringComparison.OrdinalIgnoreCase))
         {
             using var archive = ZipFile.OpenRead(sourcePath);
@@ -32,7 +34,7 @@ public sealed partial class ModManager
             if (paths.Contains(LoaderDllName))
             {
                 var bytes = File.ReadAllBytes(sourcePath);
-                InstallPackage(gameDirectory, bytes, overwriteDll, allowDowngrade);
+                InstallPackage(gameDirectory, bytes, overwriteDll, allowDowngrade, progress);
                 return "加载器发布包 " + (ParsePackageManifest(bytes)?.Version ?? "");
             }
             // 模组包（<ModId>/<ModId>.dll）走到这里说明选错了入口：直接说清楚该点哪个按钮，
@@ -136,6 +138,7 @@ public sealed partial class ModManager
         else if (File.Exists(targetPdb)) File.Delete(targetPdb);
         SyncLoaderConfigSdkVersion(Path.Combine(loaderRoot, ConfigFileName), version);
         retained.Complete();
+        ToysLog.Info("modloader", $"已导入 CesiumLoader.SDK {version}");
         return version;
     }
 

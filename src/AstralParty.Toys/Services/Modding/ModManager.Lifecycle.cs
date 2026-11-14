@@ -50,14 +50,15 @@ public sealed partial class ModManager
         }
     }
 
-    /// <summary>切换 mod 启用/禁用: 改写 sidecar(mods\{name}.json) 的 enabled 字段。
-    /// 加载器读取 sidecar 的 enabled=false 时跳过该 mod。无 sidecar 的 mod 自动补一个。</summary>
+    /// <summary>切换 mod 启用/禁用。禁用 = 把 mod 搬进 <c>disabled_mods</c>（加载器只扫 mods，DLL 也不会被游戏占用），
+    /// 启用 = 搬回 <c>mods</c>；sidecar 的 enabled 字段同步改写，手动挪回去时也还是同样状态。
+    /// 无 sidecar 的 mod 自动补一个。</summary>
     public bool ToggleMod(string gameDirectory, string fileName, bool enabled)
     {
         if (string.IsNullOrWhiteSpace(gameDirectory) || string.IsNullOrWhiteSpace(fileName))
             throw new ArgumentException("游戏目录或 mod 文件名无效。");
-        var modsDir = Path.Combine(gameDirectory, LoaderFolderName, ModsFolderName);
-        var (dllPath, _) = ResolveModPath(modsDir, fileName);
+        var loaderRoot = Path.Combine(gameDirectory, LoaderFolderName);
+        var (dllPath, directoryName, root) = ResolveModPath(Path.Combine(loaderRoot, ModsFolderName), fileName);
         if (dllPath is null) throw new FileNotFoundException($"mod 不存在：{fileName}");
 
         var sidecarPath = Path.ChangeExtension(dllPath, ".json");
@@ -75,7 +76,46 @@ public sealed partial class ModManager
 
         var updated = SetJsonBool(json, "enabled", enabled);
         WriteAllBytesProtected(sidecarPath, System.Text.Encoding.UTF8.GetBytes(updated));
+
+        // 目录搬家（先写 sidecar 再搬，搬失败也不会留下状态不一致的 sidecar）
+        var targetRootName = enabled ? ModsFolderName : DisabledModsFolderName;
+        var currentRootName = Path.GetFileName(root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        if (!string.Equals(currentRootName, targetRootName, StringComparison.OrdinalIgnoreCase))
+            MoveModEntry(loaderRoot, root, dllPath, directoryName, targetRootName);
+        ToysLog.Info("mods",
+            $"{(enabled ? "启用" : "禁用")}模组 {fileName}" + (enabled ? "" : "（已搬入 disabled_mods）"));
         return enabled;
+    }
+
+    /// <summary>把 mod 从当前根目录搬到另一个根目录（mod 文件夹整体搬；旧布局平铺的 DLL 连同 sidecar 一起搬）。</summary>
+    private static void MoveModEntry(string loaderRoot, string sourceRoot, string dllPath, string? directoryName, string targetRootName)
+    {
+        var targetRoot = Path.Combine(loaderRoot, targetRootName);
+        try
+        {
+            Directory.CreateDirectory(targetRoot);
+            if (!string.IsNullOrEmpty(directoryName))
+            {
+                var target = Path.Combine(targetRoot, directoryName);
+                if (Directory.Exists(target))
+                    throw new IOException($"目标目录已存在同名模组：{target}");
+                Directory.Move(Path.Combine(sourceRoot, directoryName), target);
+                return;
+            }
+
+            foreach (var path in new[] { dllPath, Path.ChangeExtension(dllPath, ".json") })
+            {
+                if (!File.Exists(path)) continue;
+                var target = Path.Combine(targetRoot, Path.GetFileName(path));
+                if (File.Exists(target))
+                    throw new IOException($"目标目录已存在同名文件：{target}");
+                File.Move(path, target);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            throw new IOException($"移动 mod 到 {targetRootName} 失败：{ex.Message}（游戏运行时 DLL 可能被占用）。", ex);
+        }
     }
 
     /// <summary>批量切换 mod 启用/禁用：逐个调用 <see cref="ToggleMod"/>，单项失败不中断其余项。</summary>
@@ -95,28 +135,34 @@ public sealed partial class ModManager
         return (ok, failed.ToArray());
     }
 
-    /// <summary>按文件名在 mods 目录定位 mod(DLL 路径 + 文件夹名)。
-    /// 新布局: mods\{FolderName}\{FolderName}.dll; 旧布局: mods\{FileName}.dll。</summary>
-    private static (string? Dll, string? DirectoryName) ResolveModPath(string modsDir, string fileName)
+    /// <summary>按文件名定位 mod（DLL 路径 + 文件夹名 + 所在根目录）。
+    /// 新布局: {root}\{FolderName}\{FolderName}.dll; 旧布局: {root}\{FileName}.dll。
+    /// 先找 <c>mods</c>（启用的），再找同级的 <c>disabled_mods</c>（停用的）。</summary>
+    private static (string? Dll, string? DirectoryName, string Root) ResolveModPath(string modsDir, string fileName)
     {
-        if (string.IsNullOrWhiteSpace(fileName)) return (null, null);
+        if (string.IsNullOrWhiteSpace(fileName)) return (null, null, modsDir);
+        var loaderRoot = Path.GetDirectoryName(modsDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
+                         ?? modsDir;
         var stem = Path.GetFileNameWithoutExtension(fileName);
-        // 新布局优先
-        var inFolder = Path.Combine(modsDir, stem, fileName);
-        if (File.Exists(inFolder)) return (inFolder, stem);
-        // 旧布局平铺
-        var flat = Path.Combine(modsDir, fileName);
-        if (File.Exists(flat)) return (flat, null);
-        return (null, null);
+        foreach (var root in new[] { modsDir, Path.Combine(loaderRoot, DisabledModsFolderName) })
+        {
+            // 新布局优先
+            var inFolder = Path.Combine(root, stem, fileName);
+            if (File.Exists(inFolder)) return (inFolder, stem, root);
+            // 旧布局平铺
+            var flat = Path.Combine(root, fileName);
+            if (File.Exists(flat)) return (flat, null, root);
+        }
+        return (null, null, modsDir);
     }
 
-    /// <summary>从游戏 mods 目录删除一个 mod DLL。</summary>
+    /// <summary>从游戏 mods / disabled_mods 目录删除一个 mod（含整个模组文件夹）。</summary>
     public ModEntryInfo? DeleteMod(string gameDirectory, string fileName)
     {
         if (string.IsNullOrWhiteSpace(gameDirectory) || string.IsNullOrWhiteSpace(fileName))
             return null;
-        var modsDir = Path.Combine(gameDirectory, LoaderFolderName, ModsFolderName);
-        var (target, dirName) = ResolveModPath(modsDir, fileName);
+        var loaderRoot = Path.Combine(gameDirectory, LoaderFolderName);
+        var (target, dirName, root) = ResolveModPath(Path.Combine(loaderRoot, ModsFolderName), fileName);
         if (target is null || !File.Exists(target)) return null;
 
         var info = new ModEntryInfo
@@ -125,25 +171,35 @@ public sealed partial class ModManager
             FileName = Path.GetFileName(target),
             DirectoryName = dirName,
             SizeBytes = new FileInfo(target).Length,
-            ModifiedUtc = File.GetLastWriteTimeUtc(target)
+            ModifiedUtc = File.GetLastWriteTimeUtc(target),
+            DisabledFolder = string.Equals(
+                Path.GetFileName(root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)),
+                DisabledModsFolderName, StringComparison.OrdinalIgnoreCase)
         };
         try
         {
             File.Delete(target);
-            // 新布局: 删掉整个 mod 文件夹(含 sidecar/附属文件); 平铺旧布局只删 DLL
+            // 新布局: 删掉整个 mod 文件夹(含 sidecar/附属文件); 平铺旧布局只删 DLL + sidecar
             if (!string.IsNullOrEmpty(dirName))
             {
-                var folder = Path.Combine(modsDir, dirName);
+                var folder = Path.Combine(root, dirName);
                 if (Directory.Exists(folder))
                 {
                     // 只删 mod 文件夹里的已知文件 + 空文件夹(不误删用户放在里面的其它东西? 约定: 整个文件夹都属于该 mod)
                     Directory.Delete(folder, recursive: true);
                 }
             }
+            else
+            {
+                var sidecar = Path.ChangeExtension(target, ".json");
+                if (File.Exists(sidecar)) File.Delete(sidecar);
+            }
+            ToysLog.Info("mods", $"删除模组 {info.Name}" + (info.DisabledFolder ? "（原在 disabled_mods）" : ""));
             return info;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
+            ToysLog.Error("mods", $"删除模组 {fileName} 失败", ex);
             throw new IOException($"删除 {fileName} 失败：{ex.Message}（游戏运行时 DLL 可能被占用）。", ex);
         }
     }
