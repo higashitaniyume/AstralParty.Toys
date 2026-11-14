@@ -10,12 +10,17 @@ namespace AstralParty.Toys.Tests;
 public sealed class ReleaseWorkflowTests
 {
     [Fact]
-    public void Version231_UsesMatchingAppAndInstallerVersion()
+    public void ProjectVersion_MatchesAssemblyAndHasChangelogEntry()
     {
         var project = XDocument.Load(Path.Combine(TestPaths.AppSourceDirectory, "AstralParty.Toys.csproj"));
-        Assert.Equal("2.3.1", project.Descendants("Version").Single().Value);
-        Assert.Equal("2.3.1.0", project.Descendants("AssemblyVersion").Single().Value);
-        Assert.Equal("2.3.1.0", project.Descendants("FileVersion").Single().Value);
+        var version = project.Descendants("Version").Single().Value;
+        Assert.True(Regex.IsMatch(version, @"^\d+\.\d+\.\d+$"), $"版本号格式不对：{version}");
+        Assert.Equal(version + ".0", project.Descendants("AssemblyVersion").Single().Value);
+        Assert.Equal(version + ".0", project.Descendants("FileVersion").Single().Value);
+
+        var changelog = File.ReadAllText(Path.GetFullPath(Path.Combine(
+            TestPaths.AppSourceDirectory, "..", "..", "CHANGELOG.md")));
+        Assert.Contains($"## [v{version}]", changelog);
     }
 
     [Fact]
