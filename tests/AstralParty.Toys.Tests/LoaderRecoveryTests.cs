@@ -207,6 +207,63 @@ public sealed class LoaderRecoveryTests
     }
 
     [Fact]
+    public void PruneHistory_RemovesOldOperationsAndUnreferencedBlobs()
+    {
+        using var h = new Harness(); h.Install();
+        var history = Path.Combine(h.Profile, "install-history");
+        var gameDir = Assert.Single(Directory.GetDirectories(Path.Combine(history, "games")));
+        var operations = Directory.CreateDirectory(Path.Combine(gameDir, "operations")).FullName;
+
+        // 一条很久以前的操作记录 + 一个没人引用的备份
+        var oldOperation = Path.Combine(operations,
+            DateTime.UtcNow.AddDays(-90).ToString("yyyyMMddTHHmmssfffffff") + "-" + Guid.NewGuid().ToString("N") + ".json");
+        File.WriteAllText(oldOperation, "{\"action\":\"install\",\"state\":\"done\"}");
+        File.SetLastWriteTimeUtc(oldOperation, DateTime.UtcNow.AddDays(-90));
+        var orphan = Path.Combine(h.Files, new string('b', 64));
+        Directory.CreateDirectory(h.Files);
+        File.WriteAllBytes(orphan, new byte[] { 1, 2, 3 });
+        File.SetLastWriteTimeUtc(orphan, DateTime.UtcNow.AddDays(-30));
+        var referencedBlobs = Directory.GetFiles(h.Files).Length - 1;
+
+        var result = h.Manager.PruneHistory(TimeSpan.FromDays(30), keepOperationsPerGame: 1, blobGrace: TimeSpan.FromDays(7));
+
+        Assert.False(File.Exists(oldOperation));
+        Assert.False(File.Exists(orphan));
+        Assert.True(File.Exists(Path.Combine(gameDir, "current.json")), "当前安装快照必须保留");
+        Assert.Equal(referencedBlobs, Directory.GetFiles(h.Files).Length);   // 当前安装引用的备份一个都不能少
+        Assert.Equal(1, result.RemovedOperations);
+        Assert.Equal(1, result.RemovedBlobs);
+        Assert.True(result.FreedBytes > 0);
+    }
+
+    [Fact]
+    public void PruneHistory_KeepsNewestOperationsEvenWhenTheyAreOld()
+    {
+        using var h = new Harness(); h.Install();
+        var history = Path.Combine(h.Profile, "install-history");
+        var gameDir = Assert.Single(Directory.GetDirectories(Path.Combine(history, "games")));
+        var operations = Directory.CreateDirectory(Path.Combine(gameDir, "operations")).FullName;
+
+        var names = new List<string>();
+        foreach (var days in new[] { 90, 60, 30 })
+        {
+            var name = Path.Combine(operations,
+                DateTime.UtcNow.AddDays(-days).ToString("yyyyMMddTHHmmssfffffff") + "-" + Guid.NewGuid().ToString("N") + ".json");
+            File.WriteAllText(name, "{\"action\":\"install\",\"state\":\"done\"}");
+            File.SetLastWriteTimeUtc(name, DateTime.UtcNow.AddDays(-days));
+            names.Add(name);
+        }
+
+        // h.Install() 自己也留下一条「最新」的操作记录，所以这里保留 3 条 = 安装记录 + 最近两天的两条
+        var result = h.Manager.PruneHistory(TimeSpan.Zero, keepOperationsPerGame: 3, blobGrace: TimeSpan.FromDays(7));
+
+        Assert.False(File.Exists(names[0]), "最旧的一条应被删掉");
+        Assert.True(File.Exists(names[1]));
+        Assert.True(File.Exists(names[2]));
+        Assert.Equal(1, result.RemovedOperations);
+    }
+
+    [Fact]
     public async Task ExistingForeignDll_IsNeverOverwrittenByRecovery()
     {
         using var h = new Harness(); h.Install(); h.Manager.DisableLoader(h.Game);

@@ -115,6 +115,7 @@ public sealed partial class ModManager
 
     private RetainedOperation BeginRetainedOperation(string directory, string action, params byte[][] incoming)
     {
+        PruneHistoryIfDue();   // 历史就是在这里长的：每次操作前顺手清一次旧的
         foreach (var bytes in incoming) CacheBytes(bytes);
         var before = CaptureInstallation(directory);
         return new RetainedOperation(this, before, action, incoming.Select(HashBytes).ToArray());

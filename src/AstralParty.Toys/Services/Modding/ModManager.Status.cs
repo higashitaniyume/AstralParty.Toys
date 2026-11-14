@@ -21,6 +21,7 @@ public sealed partial class ModManager
     public ModStatus GetStatus()
     {
         var status = new ModStatus();
+        PruneHistoryIfDue();   // 每 6 小时最多一次：install-history 不无限长
         try
         {
             status.BundleLoaderPresent = HasEmbeddedLoader;
