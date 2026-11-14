@@ -174,6 +174,51 @@
     }
   }
 
+  // ---------- 版本回滚（安装历史） ----------
+  const fmtWhen = iso => {
+    const t = Date.parse(iso || '');
+    if (!Number.isFinite(t)) return '';
+    const d = new Date(t), pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  /** 宿主回传的可回滚版本：列出来，选一个做整包回滚。 */
+  function rollbackVersions(payload) {
+    const versions = Array.isArray(payload?.versions) ? payload.versions : [];
+    const rows = versions.map(v => {
+      const can = v.packageAvailable && !v.current;
+      const state = v.current ? ' <span class="v2-tag blue">当前</span>'
+        : v.packageAvailable ? '' : ' <span class="v2-tag" title="安装历史里只留下了加载器 DLL，没有完整发布包">缺少发布包</span>';
+      return `<div class="v2-row"><span class="k">v${esc(v.version)}${state}</span>
+        <span class="v v2-muted">${esc(fmtWhen(v.timeUtc))}</span>
+        <button class="v2-btn line" data-v2rollback="${esc(v.version)}" ${can ? '' : 'disabled'}
+          title="${v.current ? '当前已经是这个版本' : v.packageAvailable ? '用安装历史里的发布包整包回滚' : '没有完整发布包，无法整包回滚'}">回滚</button></div>`;
+    }).join('');
+    U().openModal(`<div class="v2-modal-head"><b>回滚加载器版本</b><button class="v2-icon-btn" data-v2modal="close">${I().x}</button></div>
+      <div style="padding:8px 0 4px">${rows || '<div class="v2-empty">安装历史里没有可回滚的版本。</div>'}</div>
+      <p class="v2-muted" style="margin:0;padding:0 18px 12px;font-size:12px;line-height:1.6">回滚会用当时那份发布包重新安装加载器、SDK 与内置模组，保留你的模组配置和停用状态。安装历史按「最近 20 次 / 30 天」保留。</p>
+      <div class="v2-modal-foot"><span class="v2-top-spacer"></span><button class="v2-btn ghost" data-v2modal="close">关闭</button></div>`, 'narrow');
+  }
+
+  // 弹窗里的「回滚」按钮：先在确认弹窗里说清楚会发生什么
+  document.addEventListener('click', ev => {
+    const btn = ev.target.closest?.('[data-v2rollback]');
+    if (!btn || btn.disabled) return;
+    const version = btn.dataset.v2rollback;
+    U().closeModal();
+    U().modalActions.v2mRollbackOk = () => {
+      U().closeModal();
+      post({ type: 'modRollbackApply', version });
+    };
+    U().openModal(`<div class="v2-confirm"><div class="v2-confirm-icon" style="background:rgba(56,189,248,.12);color:var(--gp-blue)">${I().refresh}</div>
+      <div><b class="v2-confirm-title">回滚到 v${esc(version)}？</b>
+        <ul class="v2-confirm-lines"><li>用安装历史里的发布包重新安装加载器、SDK 与内置模组</li>
+          <li>你的模组配置和停用状态会保留</li>
+          <li>${status()?.gameRunning ? '游戏正在运行：写入后要重启游戏才生效' : '重启游戏后生效'}</li></ul></div></div>
+      <div class="v2-modal-foot"><span class="v2-top-spacer"></span><button class="v2-btn ghost" data-v2modal="close">取消</button>
+        <button class="v2-btn primary" data-v2modal="v2mRollbackOk">回滚</button></div>`, 'narrow');
+  });
+
   // ---------- 原地筛选（不重建输入框，输入法拼字不会被打断） ----------
   function applyFilter() {
     const listEl = $('v2mList');
@@ -367,6 +412,8 @@
           ${s.installed && !s.loaderManaged ? `<div class="v2-notice" style="margin:0 18px 12px">${I().info}<span>游戏目录里的 version.dll 不是本工具装的。要换成 CesiumLoader，用下面的「覆盖安装」；只想清掉就用「强制卸载」。</span></div>` : ''}
           <div class="v2-row"><span class="n">版本</span><span class="d">已装 ${esc(s.installedVersion || '—')} · 程序内置 ${esc(s.embeddedVersion || '—')} · GitHub <b>${esc(latest() ? 'v' + latest() : (checking() ? '检查中…' : (ghError() ? '检查失败' : '未检查')))}</b>${latest() && checkedAtLabel() ? ` <span class="v2-muted">${esc(checkedAtLabel())} 检查</span>` : ''}${latest() && ghPublishedAt() ? ` <span class="v2-muted">· 发布于 ${esc(ghPublishedAt().slice(0, 10))}</span>` : ''}${ghError() ? ` <span class="v2-muted" title="${esc(ghError())}">（点重新检查）</span>` : ''}</span>
             <button class="v2-btn line" data-v2m="checkTop" ${b || checking() ? 'disabled' : ''}>检查 GitHub 更新</button><button class="v2-btn line" data-v2m="changelog">更新日志</button><a class="v2-btn line" href="${esc(ghHtmlUrl())}" target="_blank" rel="noopener" title="${esc(ghHtmlUrl())}" style="text-decoration:none">GitHub ↗</a></div>
+          <div class="v2-row"><span class="n">回滚版本</span><span class="d">从安装历史恢复之前用过的加载器（整包回滚，保留最近 20 次 / 30 天）</span>
+            <button class="v2-btn line" data-v2m="rollback" ${b || !s.installed ? 'disabled' : ''}>选择…</button></div>
           <div class="v2-row"><span class="n">游戏目录</span><span class="d" style="font-family:var(--v2-mono);font-size:12px">${esc(s.gameDirectory || '未找到')}</span>
             <button class="v2-btn line" data-v2m="dirMenu" data-v2menu>更改…</button></div>
           <div class="v2-row"><span class="n">打开文件夹</span><span class="d">mods / SDK / 日志</span><button class="v2-btn line" data-v2m="openMenu" data-v2menu>选择…</button></div>
@@ -513,6 +560,7 @@
     checkTop: () => actions.check(),
     reinstallTop: () => actions.reinstall(),
     manageGames: () => showPage('settings'),
+    rollback: () => post({ type: 'modRollbackList' }),
     adv: () => { const d = $('v2ModsAdv'); if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth' }); } },
     loaderSettings: () => MM()?.openLoaderSettings(),
     changelog: () => window.VersionModule?.requestChangelog('loader'),
@@ -658,6 +706,6 @@
     render();
   });
 
-  // 宿主消息（dispatcher）用：加载器进度条；render 供内部重画
-  window.V2ModsModule = { render, progress, applyFilter, get state() { return M; } };
+  // 宿主消息（dispatcher）用：加载器进度条 / 版本回滚列表；render 供内部重画
+  window.V2ModsModule = { render, progress, rollbackVersions, applyFilter, get state() { return M; } };
 })();

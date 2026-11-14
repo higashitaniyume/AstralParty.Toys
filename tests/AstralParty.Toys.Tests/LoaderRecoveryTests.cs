@@ -264,6 +264,44 @@ public sealed class LoaderRecoveryTests
     }
 
     [Fact]
+    public void RetainedVersions_ListPackageBackedVersions_AndRollbackRestoresThem()
+    {
+        using var h = new Harness(); h.Install("9.1.0");
+        h.Manager.InstallPackage(h.Game, Package("9.2.0"), false);
+
+        var versions = h.Manager.GetRetainedVersions(h.Game);
+        Assert.Contains(versions, v => v.Version == "9.1.0" && v.PackageAvailable);
+        Assert.Contains(versions, v => v.Version == "9.2.0" && v.Current);
+
+        var message = h.Manager.RollbackLoader(h.Game, "9.1.0");
+        Assert.Contains("9.1.0", message);
+        Assert.Equal(Encoding.UTF8.GetBytes("loader 9.1.0"), File.ReadAllBytes(h.Dll));
+        Assert.Equal("9.1.0", h.Manager.GetStatus().InstalledVersion);
+
+        // 回滚本身也是一次安装：刚回滚掉的 9.2.0 仍留在历史里，可以再滚回去
+        var after = h.Manager.GetRetainedVersions(h.Game);
+        Assert.Contains(after, v => v.Version == "9.2.0" && v.PackageAvailable && !v.Current);
+        Assert.Contains(after, v => v.Version == "9.1.0" && v.Current);
+    }
+
+    [Fact]
+    public void RollbackLoader_RejectsCurrentUnknownAndPackageLessVersions()
+    {
+        using var h = new Harness(); h.Install("9.1.0");
+        h.Manager.InstallPackage(h.Game, Package("9.2.0"), false);
+
+        Assert.Throws<InvalidOperationException>(() => h.Manager.RollbackLoader(h.Game, "9.2.0"));
+        Assert.Throws<InvalidOperationException>(() => h.Manager.RollbackLoader(h.Game, "0.0.1"));
+
+        // 删掉 9.1.0 的发布包备份后：只剩记录，不再列为可回滚
+        var entry = h.Manager.GetRetainedVersions(h.Game).First(v => v.Version == "9.1.0");
+        File.Delete(Path.Combine(h.Files, entry.PackageHash));
+        Assert.False(h.Manager.GetRetainedVersions(h.Game).First(v => v.Version == "9.1.0").PackageAvailable);
+        Assert.Throws<InvalidOperationException>(() => h.Manager.RollbackLoader(h.Game, "9.1.0"));
+        Assert.Equal(Encoding.UTF8.GetBytes("loader 9.2.0"), File.ReadAllBytes(h.Dll));
+    }
+
+    [Fact]
     public async Task ExistingForeignDll_IsNeverOverwrittenByRecovery()
     {
         using var h = new Harness(); h.Install(); h.Manager.DisableLoader(h.Game);

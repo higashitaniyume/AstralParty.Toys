@@ -136,6 +136,11 @@ host?.addEventListener('message', event => {
       window.V2ModsModule?.progress?.(msg.payload);
       break;
 
+    case 'modRollbackVersions':
+      // 安装历史里还能整包回滚的版本（模组页「回滚版本」弹窗）
+      window.V2ModsModule?.rollbackVersions?.(msg.payload);
+      break;
+
     case 'toysLog':
       // 日志落盘的同时转发到设置页的「运行日志」
       window.V2SettingsModule?.log?.(msg.payload);

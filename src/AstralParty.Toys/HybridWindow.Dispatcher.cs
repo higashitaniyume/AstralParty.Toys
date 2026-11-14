@@ -26,9 +26,9 @@ public partial class HybridWindow
             if (HandleUiThemeMessage(type, root)) return;   // 新界面：深浅色
             if (HandleBackgroundMessage(type, root)) return;   // 新界面：自定义 → 背景
             if (HandleWindowChromeMessage(type, root)) return;   // 新界面自绘标题栏：拖动 / 最小化 / 最大化 / 关闭
-            if ((_loaderRecoveryBusy || _modPackageImportRunning || _modUpdateRunning || _modImportRunning || _modInstallRunning || _workshopBusy)
+            if ((_loaderRecoveryBusy || _modPackageImportRunning || _modUpdateRunning || _modImportRunning || _modInstallRunning || _modRollbackRunning || _workshopBusy)
                 && type is "modInstall" or "modUninstall" or "modDisableLoader" or "modRestoreLoader"
-                    or "modDownloadUpdate" or "modImportPackage" or "modImport" or "modPickImport" or "modDelete" or "modToggle"
+                    or "modRollbackApply" or "modDownloadUpdate" or "modImportPackage" or "modImport" or "modPickImport" or "modDelete" or "modToggle"
                     or "modToggleBatch" or "modDeleteBatch"
                     or "speedhackInstall" or "speedhackUninstall" or "workshopInstall" or "appUninstall")
             {
@@ -399,6 +399,16 @@ public partial class HybridWindow
                     break;
                 case "modStatus":
                     _ = PushModStatusAsync();
+                    break;
+                case "modRollbackList":
+                    HandleModRollbackList();
+                    break;
+                case "modRollbackApply":
+                    if (root.TryGetProperty("version", out var rollbackVersionElement)
+                        && rollbackVersionElement.GetString() is { Length: > 0 } rollbackVersion)
+                    {
+                        HandleModRollbackApply(rollbackVersion);
+                    }
                     break;
                 case "toysLogsRequest":
                     HandleToysLogsRequest();

@@ -289,8 +289,65 @@ public partial class HybridWindow
         }
     }
 
-    // ============================== 加载器进度 / 实时日志 ==============================
+    // ============================== 版本回滚（安装历史） ==============================
 
+    /// <summary>把安装历史里还能整包回滚的版本推给界面。</summary>
+    private void HandleModRollbackList()
+    {
+        try
+        {
+            var directory = RequireModGameDirectory();
+            var versions = _modManager.GetRetainedVersions(directory);
+            Post(new { type = "modRollbackVersions", payload = new { versions } });
+        }
+        catch (Exception ex)
+        {
+            Post(new { type = "toast", message = $"读取可回滚版本失败：{ex.Message}" });
+        }
+    }
+
+    private bool _modRollbackRunning;
+
+    private void HandleModRollbackApply(string version)
+    {
+        if (_modRollbackRunning)
+        {
+            Post(new { type = "toast", message = "正在回滚加载器，请稍候。" });
+            return;
+        }
+        _modRollbackRunning = true;
+        _ = RollbackModLoaderAsync(version);
+    }
+
+    private async Task RollbackModLoaderAsync(string version)
+    {
+        var reporter = LoaderProgressReporter();
+        try
+        {
+            var directory = RequireModGameDirectory();
+            var message = await Task.Run(() => _modManager.RollbackLoader(directory, version, reporter))
+                .ConfigureAwait(true);
+            Post(new
+            {
+                type = "toast",
+                message = message + (SpeedhackManager.IsGameRunning() ? "。游戏正在运行，重启游戏后生效。" : "。")
+            });
+            _ = PostSteamBypassSyncAsync();
+        }
+        catch (Exception ex)
+        {
+            ToysLog.Error("modloader", $"回滚到 v{version} 失败", ex);
+            Post(new { type = "modLoaderProgress", payload = new { phase = "error", percent = -1, message = ex.Message, active = false } });
+            Post(new { type = "error", message = $"回滚失败：{ex.Message}" });
+        }
+        finally
+        {
+            _modRollbackRunning = false;
+            _ = PushModStatusAsync();
+        }
+    }
+
+    // ============================== 加载器进度 / 实时日志 ==============================
     /// <summary>把 ModManager 的进度回调转成界面消息（modLoaderProgress）：下载、校验、安装各阶段一条。
     /// 回调可能来自后台线程，Post 自己会切回 UI 线程。</summary>
     private ModManager.LoaderProgressCallback LoaderProgressReporter() => (phase, percent, message) =>
