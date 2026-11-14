@@ -192,6 +192,7 @@ body.v2-maximized .v2-win .restore { display: block; }
 .v2-badge.off { background: rgba(148, 163, 184, .12); color: var(--gp-text-muted); }
 .v2-badge.pink { background: var(--v2-pink-soft); color: var(--gp-pink); }
 .v2-tag { font-size: 12px; padding: 1px 7px; border-radius: 4px; background: var(--v2-panel-2); color: var(--gp-text-sub); font-weight: 400; }
+.v2-tag.blue { background: rgba(56, 189, 248, .14); color: var(--gp-blue); }
 
 .v2-btn { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: 8px; font-weight: 500; white-space: nowrap; color: var(--gp-text-sub); }
 .v2-btn svg { width: 16px; height: 16px; }

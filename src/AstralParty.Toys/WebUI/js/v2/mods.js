@@ -122,7 +122,7 @@
       <label class="v2-check" title="选中此模组"><input type="checkbox" data-v2m-sel="${esc(m.fileName)}" ${selected ? 'checked' : ''} ${disableUi ? 'disabled' : ''}><span></span></label>
       <div class="body">
         <div class="name">${esc(m.displayName || m.name || m.fileName)}${m.version ? `<span class="v2-tag">v${esc(m.version)}</span>` : ''}
-          ${isBuiltIn(m) ? '<span class="v2-tag" title="随加载器一起安装的内置模组">内置</span>' : '<span class="v2-tag" title="不是随加载器内置的：来自市场或手动导入">第三方</span>'}
+          ${isBuiltIn(m) ? '<span class="v2-tag blue" title="随加载器一起安装的内置模组">内置</span>' : '<span class="v2-tag" title="不是随加载器内置的：来自市场或手动导入">第三方</span>'}
           ${m.disabledFolder ? '<span class="v2-tag" title="模组文件夹在 disabled_mods 里，加载器不会扫描这个目录">disabled_mods</span>' : ''}
           ${(Number(m.permissions) & 2) ? '<span class="v2-badge warn" title="此模组声明可以操作游戏（模拟出牌 / 掷骰 / 移动等），请确认来源可信">可操作游戏</span>' : ''}</div>
         <div class="desc" title="${esc(m.description || '')}">${esc(m.description || '')}${deps ? `　<span class="v2-muted">依赖：${esc(deps)}</span>` : ''}</div>
