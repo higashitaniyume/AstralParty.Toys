@@ -64,17 +64,15 @@ html body .v2-modp[hidden] { display: none !important; }
 @keyframes v2-modp-slide { from { transform: translateX(-30%); } to { transform: translateX(250%); } }
 body.reduce-motion .v2-modp.is-indeterminate .v2-modp-bar i { animation: none; width: 100% !important; opacity: .5; }
 
-/* ---------- 模组页：运行日志 ---------- */
-.v2-modlog-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 0 18px 10px; font-size: 12px; }
-.v2-modlog-tools .v2-btn { height: 28px; padding: 0 10px; font-size: 12px; }
-.v2-modlog { margin: 0 18px 14px; padding: 8px 12px; max-height: 260px; overflow: auto; border-radius: 8px; background: var(--v2-well); font: 12px/1.6 var(--v2-mono); color: var(--gp-text-sub); user-select: text; -webkit-user-select: text; cursor: text; }
-.v2-modlog-line { display: flex; gap: 8px; align-items: baseline; white-space: pre-wrap; word-break: break-word; }
-.v2-modlog-line .t { flex: none; color: var(--gp-text-muted); font-variant-numeric: tabular-nums; }
-.v2-modlog-line .lv { flex: none; width: 40px; color: var(--gp-text-muted); }
-.v2-modlog-line .a { flex: none; color: var(--gp-blue); }
-.v2-modlog-line.lv-warn .lv { color: var(--gp-gold); }
-.v2-modlog-line.lv-error .lv, .v2-modlog-line.lv-error .m { color: #f43f5e; }
-.v2-modlog-empty { color: var(--gp-text-muted); }
+/* ---------- 设置 · 日志：本次运行的实时日志 ---------- */
+.v2-livelog { margin: 0 18px 14px; padding: 8px 12px; max-height: 320px; overflow: auto; border-radius: 8px; background: var(--v2-well); font: 12px/1.6 var(--v2-mono); color: var(--gp-text-sub); user-select: text; -webkit-user-select: text; cursor: text; }
+.v2-livelog-line { display: flex; gap: 8px; align-items: baseline; white-space: pre-wrap; word-break: break-word; }
+.v2-livelog-line .t { flex: none; color: var(--gp-text-muted); font-variant-numeric: tabular-nums; }
+.v2-livelog-line .lv { flex: none; width: 40px; color: var(--gp-text-muted); }
+.v2-livelog-line .a { flex: none; color: var(--gp-blue); }
+.v2-livelog-line.lv-warn .lv { color: var(--gp-gold); }
+.v2-livelog-line.lv-error .lv, .v2-livelog-line.lv-error .m { color: #f43f5e; }
+.v2-livelog-empty { color: var(--gp-text-muted); }
 
 /* ---------- 角色：向导 ---------- */
 .v2-modal-box.wide { width: 600px; }

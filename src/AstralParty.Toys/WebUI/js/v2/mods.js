@@ -2,18 +2,16 @@
 // 页面整体重做；模组配置表单、加载器设置、导入发布包这三个弹窗暂时沿用原版 ModsModule（按键捕获等逻辑较多）。
 // 字段与消息见 astralparty-redesign/模组与皮肤接口.md。
 (function () {
-  // 排序 / 分组 / 日志面板展开状态记在 localStorage：换页面回来还是上次的样子
-  const PREF = { sort: 'v2ModsSort', group: 'v2ModsGroup', log: 'v2ModsLogOpen' };
+  // 排序 / 分组记在 localStorage：换页面回来还是上次的样子
+  const PREF = { sort: 'v2ModsSort', group: 'v2ModsGroup' };
   const readPref = (key, fallback) => { try { return localStorage.getItem(key) || fallback; } catch { return fallback; } };
   const writePref = (key, value) => { try { localStorage.setItem(key, value); } catch { /* 存不了就只在本次会话生效 */ } };
 
-  const MAX_LOGS = 400;
   const M = {
     q: '', speedCfg: null, sel: new Set(), pendingBatch: null,
     sort: readPref(PREF.sort, 'installed'),   // installed | name | status
     group: readPref(PREF.group, 'kind'),      // kind | time | none
-    logOpen: readPref(PREF.log, '0') === '1',
-    progress: null, logs: [], historyAsked: false, historyLoaded: false,
+    progress: null,
   };
   const U = () => window.V2UI;
   const I = () => window.V2UI.ICON;
@@ -174,64 +172,6 @@
         if (M.progress?.phase === 'done') { M.progress = null; applyProgress(); }
       }, 4000);
     }
-  }
-
-  // ---------- 运行日志 ----------
-  const LOG_LEVELS = { debug: '调试', info: '信息', warn: '警告', error: '错误' };
-  function logLineHtml(p) {
-    const lv = String(p?.level || 'info').toLowerCase();
-    return `<div class="v2-modlog-line lv-${esc(lv)}"><span class="t">${esc(p?.time || '')}</span><span class="lv">${esc(LOG_LEVELS[lv] || lv)}</span><span class="a">${esc(p?.area || 'app')}</span><span class="m">${esc(p?.message || '')}</span></div>`;
-  }
-
-  function updateLogBadge() {
-    const badge = $('v2mLogCount');
-    if (!badge) return;
-    badge.textContent = String(M.logs.length);
-    badge.hidden = M.logs.length === 0;
-  }
-
-  function appendLogLine(body, p) {
-    const empty = body.querySelector('.v2-modlog-empty');
-    if (empty) empty.remove();
-    const nearBottom = body.scrollHeight - body.scrollTop - body.clientHeight < 48;
-    const tpl = document.createElement('template');
-    tpl.innerHTML = logLineHtml(p);
-    body.appendChild(tpl.content.firstElementChild);
-    while (body.childElementCount > MAX_LOGS) body.firstElementChild?.remove();
-    if (nearBottom) body.scrollTop = body.scrollHeight;
-  }
-
-  function log(payload) {
-    if (!payload?.message) return;
-    M.logs.push(payload);
-    if (M.logs.length > MAX_LOGS) M.logs.splice(0, M.logs.length - MAX_LOGS);
-    const body = $('v2mLogBody');
-    if (body) appendLogLine(body, payload);
-    updateLogBadge();
-  }
-
-  const LOG_EMPTY_HTML = '<div class="v2-modlog-empty">还没有日志。启动环境、加载器下载 / 安装和模组改动会显示在这里。</div>';
-  function logBodyHtml() {
-    return M.logs.length ? M.logs.map(logLineHtml).join('') : LOG_EMPTY_HTML;
-  }
-
-  /** 宿主补的历史日志（本次运行内、面板打开之前写的，比如启动环境那条）。 */
-  function history(lines) {
-    if (M.historyLoaded) return;
-    M.historyLoaded = true;
-    if (!Array.isArray(lines) || lines.length === 0) return;
-    const known = new Set(M.logs.map(entry => entry.time + '\u0000' + entry.area + '\u0000' + entry.message));
-    const fresh = lines
-      .filter(entry => entry && entry.message)
-      .filter(entry => !known.has(entry.time + '\u0000' + entry.area + '\u0000' + entry.message));
-    if (fresh.length === 0) return;
-    M.logs = [...fresh, ...M.logs].slice(-MAX_LOGS);
-    const body = $('v2mLogBody');
-    if (body) {
-      body.innerHTML = logBodyHtml();
-      if (M.logOpen) body.scrollTop = body.scrollHeight;
-    }
-    updateLogBadge();
   }
 
   // ---------- 原地筛选（不重建输入框，输入法拼字不会被打断） ----------
@@ -421,17 +361,6 @@
         <button class="v2-btn ghost" data-v2m="clearSel" title="清空勾选"><span aria-hidden="true">✕</span></button>
       </div>` : ''}
 
-      <details class="v2-card v2-modlog-card" id="v2ModsLog" ${M.logOpen ? 'open' : ''}>
-        <summary><div class="t"><b>运行日志</b><small>Toys 运行日志：启动环境、加载器下载 / 校验 / 安装、模组改动</small></div><span class="v2-badge" id="v2mLogCount" ${M.logs.length ? '' : 'hidden'}>${M.logs.length}</span>${I().down}</summary>
-        <div class="v2-modlog-tools">
-          <span class="v2-muted">只显示达到日志级别的记录；完整文件日志在日志文件夹里</span>
-          <span class="v2-top-spacer"></span>
-          <button class="v2-btn ghost" data-v2m="clearLog" ${M.logs.length ? '' : 'disabled'}>清空</button>
-          <button class="v2-btn ghost" data-v2m="openLogs">打开日志目录</button>
-        </div>
-        <div class="v2-modlog" id="v2mLogBody" role="log" aria-live="polite">${logBodyHtml()}</div>
-      </details>
-
       <details class="v2-card" id="v2ModsAdv" ${M.advOpen ? 'open' : ''}>
         <summary><div class="t"><b>高级操作</b><small>版本、目录、发布包、停用与卸载</small></div>${I().down}</summary>
         <div class="v2-adv">
@@ -455,8 +384,6 @@
 
   function render() {
     const root = $('v2Mods'); if (!root || U().isComposing()) return;
-    // 日志历史只问一次（状态到了说明宿主已连通）；打开面板时若还没拿到再问一次
-    if (!M.historyAsked && status()) { M.historyAsked = true; post({ type: 'modLogsRequest' }); }
     const adv = $('v2ModsAdv'); if (adv) M.advOpen = adv.open;
     const focusSearch = document.activeElement?.id === 'v2mq';
     const caret = focusSearch ? document.activeElement.selectionStart : 0;
@@ -471,19 +398,6 @@
     }
     const all = root.querySelector('[data-v2m-select-all]');
     if (all && all.dataset.indeterminate) all.indeterminate = true;
-    const logDetails = $('v2ModsLog');
-    if (logDetails) {
-      logDetails.ontoggle = () => {
-        M.logOpen = logDetails.open;
-        writePref(PREF.log, logDetails.open ? '1' : '0');
-        const body = $('v2mLogBody');
-        if (body && logDetails.open) body.scrollTop = body.scrollHeight;
-      };
-      if (M.logOpen) {
-        const body = $('v2mLogBody');
-        if (body) body.scrollTop = body.scrollHeight;
-      }
-    }
     applyFilter();
   }
 
@@ -608,7 +522,6 @@
     disableSel: () => batchToggle(selectedTargets(), false),
     deleteSel: () => batchDelete(selectedTargets()),
     clearSel: () => { M.sel.clear(); render(); },
-    clearLog: () => { M.logs.length = 0; const body = $('v2mLogBody'); if (body) body.innerHTML = LOG_EMPTY_HTML; updateLogBadge(); },
     speedModOn: () => { const m = speedMod(); if (m) post({ type: 'modToggle', fileName: m.fileName, enabled: true }); },
     importPkg: () => MM()?.openPackageImport(),
     dirMenu: el => U().openMenu(el, [
@@ -745,6 +658,6 @@
     render();
   });
 
-  // 宿主消息（dispatcher）用：进度条 / 实时日志；render 供内部重画
-  window.V2ModsModule = { render, progress, log, history, applyFilter, get state() { return M; } };
+  // 宿主消息（dispatcher）用：加载器进度条；render 供内部重画
+  window.V2ModsModule = { render, progress, applyFilter, get state() { return M; } };
 })();

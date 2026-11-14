@@ -296,7 +296,7 @@ public partial class HybridWindow
     private ModManager.LoaderProgressCallback LoaderProgressReporter() => (phase, percent, message) =>
         Post(new { type = "modLoaderProgress", payload = new { phase, percent, message, active = phase != "done" } });
 
-    /// <summary>日志落盘的同时转发给界面上的「运行日志」面板（只转发到配置级别及以上的日志）。</summary>
+    /// <summary>日志落盘的同时转发给设置页的「运行日志」面板（只转发到配置级别及以上的日志）。</summary>
     private void OnToysLogWritten(DateTime time, ToysLogLevel level, string area, string message) =>
         Post(new
         {
@@ -304,9 +304,9 @@ public partial class HybridWindow
             payload = LogPayload(time, level, area, message)
         });
 
-    /// <summary>界面打开日志面板时补一次历史：窗口订阅 Written 之前的启动日志只有内存里还留着。
+    /// <summary>设置页打开「日志」时补一次历史：窗口订阅 Written 之前的启动日志只有内存里还留着。
     /// 不读日志文件——那里面还有上一次启动的记录，混在一起反而分不清哪条属于本次运行。</summary>
-    private void HandleModLogsRequest()
+    private void HandleToysLogsRequest()
     {
         var lines = ToysLog.RecentEntries(200)
             .Select(entry => LogPayload(entry.Time, entry.Level, entry.Area, entry.Message))

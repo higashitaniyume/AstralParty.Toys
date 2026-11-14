@@ -2,7 +2,7 @@
 // 数据仍由原版保存：语言 / 动画（i18n、localStorage）、游戏目录（GameLibModule）、回放库设置（AppState.librarySettings）、版本（VersionModule）。
 // 版本详情、更新日志两个弹窗沿用原版。
 (function () {
-  const G = { scan: null, tab: 'ui' };   // 扫描状态：{ mode, running, message, current, candidates }
+  const G = { scan: null, tab: 'ui', logs: [], logsAsked: false, logsLoaded: false };   // 扫描状态：{ mode, running, message, current, candidates }
   const U = () => window.V2UI;
   const I = () => window.V2UI.ICON;
   const GL = () => window.GameLibModule;
@@ -19,6 +19,60 @@
   }
   const SOURCES = { steam: 'Steam 库', registry: '注册表', common: '常见位置', deep: '深度扫描' };
   const motionOn = () => { try { return localStorage.getItem('motionEnabled') !== 'false'; } catch { return true; } };
+
+  // ---------- 运行日志：宿主写日志时实时推过来；打开日志页时补一次本次运行的历史 ----------
+  const MAX_LOGS = 400;
+  const LOG_LEVELS = { debug: '调试', info: '信息', warn: '警告', error: '错误' };
+  const LOG_EMPTY = '<div class="v2-livelog-empty">还没有日志。启动环境、加载器下载 / 安装和模组改动都会显示在这里。</div>';
+  const logKey = entry => entry.time + '\u0000' + entry.area + '\u0000' + entry.message;
+  const logLineHtml = p => {
+    const lv = String(p?.level || 'info').toLowerCase();
+    return `<div class="v2-livelog-line lv-${esc(lv)}"><span class="t">${esc(p?.time || '')}</span><span class="lv">${esc(LOG_LEVELS[lv] || lv)}</span><span class="a">${esc(p?.area || 'app')}</span><span class="m">${esc(p?.message || '')}</span></div>`;
+  };
+  const logBodyHtml = () => G.logs.length ? G.logs.map(logLineHtml).join('') : LOG_EMPTY;
+
+  function updateLogBadge() {
+    const badge = $('v2gLogCount');
+    if (!badge) return;
+    badge.textContent = String(G.logs.length);
+    badge.hidden = G.logs.length === 0;
+  }
+
+  function appendLog(payload) {
+    const body = $('v2gLogBody');
+    if (!body) return;
+    body.querySelector('.v2-livelog-empty')?.remove();
+    const nearBottom = body.scrollHeight - body.scrollTop - body.clientHeight < 48;
+    const tpl = document.createElement('template');
+    tpl.innerHTML = logLineHtml(payload);
+    body.appendChild(tpl.content.firstElementChild);
+    while (body.childElementCount > MAX_LOGS) body.firstElementChild?.remove();
+    if (nearBottom) body.scrollTop = body.scrollHeight;
+  }
+
+  /** 宿主推来的实时日志。不在日志页时只存着，进页面时直接渲染。 */
+  function log(payload) {
+    if (!payload?.message) return;
+    G.logs.push(payload);
+    if (G.logs.length > MAX_LOGS) G.logs.splice(0, G.logs.length - MAX_LOGS);
+    if ($('v2gLogBody')) appendLog(payload);
+    updateLogBadge();
+  }
+
+  /** 本次运行里、页面打开之前写的日志（比如启动环境那几条）。只补一次。 */
+  function history(lines) {
+    if (G.logsLoaded) return;
+    G.logsLoaded = true;
+    if (!Array.isArray(lines) || lines.length === 0) return;
+    const known = new Set(G.logs.map(logKey));
+    const fresh = lines.filter(entry => entry && entry.message && !known.has(logKey(entry)));
+    if (fresh.length === 0) return;
+    G.logs = [...fresh, ...G.logs].slice(-MAX_LOGS);
+    const body = $('v2gLogBody');
+    if (body) { body.innerHTML = logBodyHtml(); body.scrollTop = body.scrollHeight; }
+    updateLogBadge();
+  }
+
   const REPO_URL = 'https://github.com/higashitaniyume/AstralParty.Toys';
   // 关于页的加载器安装信息：显示逻辑与「版本详情」弹窗共用（js/version.js）
   const installedLoader = info => window.VersionModule?.installedLoaderText?.(info) || '未读取到';
@@ -178,6 +232,14 @@
         <div class="v2-row"><span class="k">日志级别</span><span class="v v2-muted">排查问题时切到 Debug，平时保持 Info 即可</span>
           <select id="v2gLogLevel" class="v2-select">${[['debug', 'Debug'], ['info', 'Info'], ['warn', 'Warn'], ['error', 'Error']].map(([v, l]) => `<option value="${v}" ${(LS().loggingLevel || 'info') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
         <div class="v2-row"><span class="k">保留策略</span><span class="v v2-muted" style="white-space:normal">按天分文件，默认保留 7 天；单个文件超过 10 MB 时自动分卷</span></div>
+      </div>
+      <div class="v2-card">
+        <div class="v2-card-title"><span>运行日志 <span class="v2-muted" style="font-weight:400">本次运行</span></span>
+          <span><span class="v2-badge" id="v2gLogCount" ${G.logs.length ? '' : 'hidden'}>${G.logs.length}</span>
+          <button class="v2-btn ghost" data-v2g="clearLogs" ${G.logs.length ? '' : 'disabled'}>清空</button>
+          <button class="v2-btn ghost" data-v2g="openLogs">${I().folder}打开日志文件夹</button></span></div>
+        <p class="v2-muted" style="margin:0;padding:0 18px 10px;font-size:12px;line-height:1.6">只显示达到当前日志级别的记录；完整历史在日志文件里。启动环境、加载器下载 / 安装、模组改动都会记录。</p>
+        <div class="v2-livelog" id="v2gLogBody" role="log" aria-live="polite">${logBodyHtml()}</div>
       </div>`;
     else if (tab === 'net') main = `
       <div class="v2-card"><div class="v2-card-title"><span>网络</span></div>
@@ -301,6 +363,12 @@
     const root = $('v2Settings'); if (!root) return;
     root.innerHTML = html();
     window.Motion?.content(root, G.tab, '.v2-settings-main');
+    if (G.tab === 'logs') {
+      // 本次运行的历史只问一次；之后再进日志页直接用已经攒下来的记录
+      if (!G.logsAsked) { G.logsAsked = true; post({ type: 'toysLogsRequest' }); }
+      const body = $('v2gLogBody');
+      if (body) body.scrollTop = body.scrollHeight;
+    }
   }
 
   function editProfile(g) {
@@ -333,6 +401,12 @@
     libOpen: () => post({ type: 'libraryOpenFolder' }),
     libDataOpen: () => post({ type: 'openDataRoot' }),
     openLogs: () => post({ type: 'openLogsFolder' }),
+    clearLogs: () => {
+      G.logs.length = 0;
+      const body = $('v2gLogBody');
+      if (body) body.innerHTML = LOG_EMPTY;
+      updateLogBadge();
+    },
     maintainNow: () => post({ type: 'libraryMaintain' }),
     checkUpdate: () => post({ type: 'checkAppUpdate' }),
     updateDownload: () => post({ type: 'startAppUpdateDownload' }),
@@ -418,4 +492,7 @@
     enforceLanguage();
     render();
   });
+
+  // 宿主消息（dispatcher）用：实时日志 / 历史日志；render 供内部重画
+  window.V2SettingsModule = { render, log, history, get state() { return G; } };
 })();

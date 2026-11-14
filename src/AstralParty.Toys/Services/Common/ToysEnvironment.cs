@@ -1,33 +1,33 @@
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
-using System.Text;
 using Microsoft.Web.WebView2.Core;
 
 namespace AstralParty.Toys.Services.Common;
 
 /// <summary>
-/// 每次启动往运行日志里写一条环境信息。
+/// 每次启动往运行日志里写一份环境信息，一条一行。
 ///
 /// 出问题时日志自带诊断上下文，不用让用户再去翻系统版本 / .NET 版本 / 是不是管理员 / WebView2 版本。
 /// 只报事实：任何一项取不到就跳过，整条失败也不能影响启动。
+/// 不记机器名和 CPU 核心数——对排查没用，还平白多暴露本机信息。
 /// </summary>
 public static class ToysEnvironment
 {
-    private static string? _cached;
+    private static IReadOnlyList<string>? _lines;
 
-    /// <summary>环境摘要（分号分隔；启动时算一次，之后直接复用）。</summary>
-    public static string Describe()
+    /// <summary>本次运行的环境信息，一条一行（启动时写一次，之后复用）。</summary>
+    public static IReadOnlyList<string> Lines()
     {
-        if (_cached is not null) return _cached;
-        var text = Build();
-        _cached = text;
-        return text;
+        if (_lines is not null) return _lines;
+        var lines = Build();
+        _lines = lines;
+        return lines;
     }
 
-    private static string Build()
+    private static IReadOnlyList<string> Build()
     {
-        var builder = new StringBuilder();
+        var lines = new List<string>();
         var elevated = IsElevated();
 
         void Add(string label, Func<string> read)
@@ -42,8 +42,7 @@ public static class ToysEnvironment
                 return;
             }
             if (value.Length == 0) return;
-            if (builder.Length > 0) builder.Append('；');
-            builder.Append(label).Append('：').Append(value);
+            lines.Add($"{label}：{value}");
         }
 
         Add("系统", () => RuntimeInformation.OSDescription);
@@ -52,13 +51,11 @@ public static class ToysEnvironment
         Add(".NET", () => RuntimeInformation.FrameworkDescription);
         Add("程序目录", () => TrimTrailingSeparators(AppContext.BaseDirectory));
         Add("工作目录", () => TrimTrailingSeparators(Environment.CurrentDirectory));
-        Add("机器名", () => Environment.MachineName);
-        Add("CPU 核心", () => Environment.ProcessorCount.ToString());
         Add("区域", () => $"{CultureInfo.CurrentCulture.Name} / UI {CultureInfo.CurrentUICulture.Name}");
         Add("管理员", () => elevated ? "是" : "否");
         Add("WebView2", () => CoreWebView2Environment.GetAvailableBrowserVersionString());
 
-        return builder.ToString();
+        return lines;
     }
 
     private static string TrimTrailingSeparators(string path)

@@ -137,13 +137,13 @@ host?.addEventListener('message', event => {
       break;
 
     case 'toysLog':
-      // 日志落盘的同时转发到界面上的「运行日志」
-      window.V2ModsModule?.log?.(msg.payload);
+      // 日志落盘的同时转发到设置页的「运行日志」
+      window.V2SettingsModule?.log?.(msg.payload);
       break;
 
     case 'toysLogHistory':
-      // 打开日志面板时补的历史（窗口订阅 Written 之前的启动日志在这里）
-      window.V2ModsModule?.history?.(msg.payload?.lines || []);
+      // 打开日志页时补的历史（窗口订阅 Written 之前的启动日志在这里）
+      window.V2SettingsModule?.history?.(msg.payload?.lines || []);
       break;
 
     case 'resourceModsStatus':

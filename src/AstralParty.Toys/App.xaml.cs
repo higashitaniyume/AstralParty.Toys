@@ -36,8 +36,9 @@ public partial class App : Application
             ToysLog.Configure(ToysPaths.LogsDirectory, ToysLogLevel.Info);
             ToysLog.Info("app",
                 $"启动 AstralParty.Toys {AppInfo.Get().Version}；数据文件夹：{root}");
-            // 环境信息单独一条：出问题时不用再去问用户「系统版本 / .NET / 是不是管理员 / WebView2 版本」
-            ToysLog.Info("env", ToysEnvironment.Describe());
+            // 环境信息逐条写：一条一行，出问题时不用再去问用户「系统版本 / .NET / 是不是管理员 / WebView2 版本」
+            foreach (var line in ToysEnvironment.Lines())
+                ToysLog.Info("env", line);
 
             var store = ToysConfigStore.ForRoot(root);
             var report = ToysMigration.Run(root, store);

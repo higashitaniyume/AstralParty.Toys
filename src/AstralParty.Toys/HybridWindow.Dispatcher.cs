@@ -400,8 +400,8 @@ public partial class HybridWindow
                 case "modStatus":
                     _ = PushModStatusAsync();
                     break;
-                case "modLogsRequest":
-                    HandleModLogsRequest();
+                case "toysLogsRequest":
+                    HandleToysLogsRequest();
                     break;
                 case "modInstall":
                     var modOverwrite = root.TryGetProperty("overwriteDll", out var modOverwriteElement) &&
