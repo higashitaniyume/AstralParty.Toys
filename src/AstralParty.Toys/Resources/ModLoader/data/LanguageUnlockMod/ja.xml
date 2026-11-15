@@ -96,9 +96,9 @@
   <string name="vckl96ksyjnjlsq88-n10_at01" mz="btn_Light">点灯</string>
   <string name="vckl96ksyjnjlsq8u-n16_o812" mz="btn_ShowSkin">プレビュー</string>
   <string name="vckl96ksyjnjlsq8u-n26_o812" mz="n26">-専属バトルステージ</string>
+  <string name="1pgen0em6brr0-n23_6brr" mz="txt_coin">x1000</string>
   <string name="1pgen0em6brr0-n19_6brr" mz="txt_title">活动标题</string>
   <string name="1pgen0em6brr0-n20_6brr" mz="txt_date">4.25~5.23</string>
-  <string name="1pgen0em6brr0-n23_6brr" mz="txt_coin">x1000</string>
   <string name="1pgen0em6brro-n8_6brr" mz="title">完成奖励（7/7）</string>
   <string name="1pgen0em6brrm-n4_6brr" mz="txt_icon">x1300</string>
   <string name="1pgen0em6brrm-n8_6brr" mz="txt_num">第1张</string>
@@ -277,6 +277,16 @@
   <string name="6dt5s4htqw8h7-n77_v1vk" mz="txt_NextTime">次のシーズンまで</string>
   <string name="6dt5s4htqw8hv-n177_v1vk" mz="n177">進行中</string>
   <string name="6dt5s4htqw8hv-n186_v1vk" mz="n186">受取</string>
+  <string name="7lignf1bizzn0-n19_z8qc" mz="n19">キャラクターお試し</string>
+  <string name="7lignf1bizzn0-n8_z8qc" mz="txt_Time">残り時間: 10日20時間</string>
+  <string name="7lignf1bizzn0-n21_z8qc" mz="n21">指定されたお試しキャラクターでステージに勝利すると、報酬を受け取れます</string>
+  <string name="7lignf1bizzn0-n14_z8qc" mz="n14">報酬一覧</string>
+  <string name="7lignf1bizzn0-n10_z8qc" mz="n10">未達成</string>
+  <string name="7lignf1bizzn0-n11_z8qc" mz="btn_GetAward">受取</string>
+  <string name="7lignf1bizzn0-n2_izzn" mz="btn_Trial">お試し開始</string>
+  <string name="7lignf1bizzn0-n4_z8qc" mz="btn_GetWay">入手先へ</string>
+  <string name="7lignf1bbez2l-n11_micc" mz="title">確認</string>
+  <string name="7lignf1bz8qcg-n24_z8qc" mz="n24">プレビュー</string>
   <string name="zlysd2gupgzf51-n46_debj" mz="title">戻る</string>
   <string name="zlysd2gupgzf4c-n69_ru20" mz="btn_TaskToggle">一覧</string>
   <string name="k49wk9ftesyu2t-n28_q4ft" mz="n28">購入</string>
@@ -392,12 +402,23 @@
   <string name="bi8fdi6nqy4029-n3_qb3s" mz="n3">決定</string>
   <string name="bi8fdi6nsjju21-n3_qb3s" mz="n1">パス</string>
   <string name="bi8fdi6nsjju21-n8_wvm9" mz="n2">キャンセル</string>
+  <string name="y0luzhk8l38o1q-n0_g04j" mz="tips">2026/06/01 名前xxxxxがxxxxxを副会長に昇格させました</string>
+  <string name="y0luzhk8styp26-n0_g04j" mz="tips">2026/06/01 名前xxxxxがxxxxxを副会長に昇格させました</string>
   <string name="y0luzhk8x1udb-n36_mdt4" mz="n36">チャット</string>
+  <string name="y0luzhk8x1udb-n49_l38o" mz="btn_tagGuild">ギルド</string>
+  <string name="y0luzhk8x1udb-n50_l38o" mz="btn_tagFriend">フレンド</string>
   <string name="y0luzhk8x1udb-n7-prompt" mz="Input_Send">[color=#CCCCCC]文字を入力してください[/color]</string>
   <string name="y0luzhk8x1udb-n30_eipb" mz="txt_wordLimit">{current=0}/{limit=100}</string>
   <string name="y0luzhk8x1udb-n8" mz="btn_Send">送信</string>
   <string name="y0luzhk8ednm16-n43_ednm" mz="btn_Cancel">キャンセル</string>
   <string name="y0luzhk8ednm16-n44_ednm" mz="btn_Sure">確定</string>
+  <string name="y0luzhk8l38o1r-n6_l38o" mz="txt_MapName">夢想号</string>
+  <string name="y0luzhk8l38o1r-n8_l38o" mz="txt_MapModel">協力チャレンジ</string>
+  <string name="y0luzhk8l38o1r-n13_l38o" mz="txt_RoomMember">人数[color=#02BD06]{num=3}[/color]/{maxnum=4}</string>
+  <string name="y0luzhk8l38o1r-n15_l38o" mz="n15">満員</string>
+  <string name="y0luzhk8l38o1r-n14_l38o" mz="btn_Join">ルームに参加</string>
+  <string name="y0luzhk8l38o1r-n16_z8qc" mz="n16">期限切れ</string>
+  <string name="y0luzhk8l38o1n-n5_l38o" mz="title">ギルド</string>
   <string name="y0luzhk8njjna-n36_ednm" mz="txt_Online">•オンライン</string>
   <string name="y0luzhk8njjna-n37_ednm" mz="txt_Offline">オフライン</string>
   <string name="y0luzhk8sgc41d-n25_sgc4" mz="btn_Delete">削除</string>
@@ -641,7 +662,6 @@
   <string name="egrtucyhot0w6-n88_vlgj" mz="n88">アイテム</string>
   <string name="egrtucyhot0w6-n89_vlgj" mz="n89">数量</string>
   <string name="egrtucyhot0w6-n90_vlgj" mz="n90">時間</string>
-  <string name="egrtucyhnu3za-n12_nu3z" mz="btn_SkipSkin">スキップ</string>
   <string name="egrtucyhot0w0-n11_r3jj" mz="bottom">ガチャ情報</string>
   <string name="egrtucyhot0w0-n7_izsa" mz="btn_Skip">スキップ</string>
   <string name="q1a022ssjrp5qq38-n116_pzeu" mz="txt_receive">受取</string>
@@ -659,9 +679,12 @@
   <string name="d5a5wdik7wqn0-n29_ru20-2" mz="list_Labels">モンスター</string>
   <string name="d5a5wdik7wqn0-n29_ru20-3" mz="list_Labels">チップ</string>
   <string name="d5a5wdik7wqn0-n29_ru20-4" mz="list_Labels">イベント</string>
+  <string name="w5bj58pzz8qc3w-n5_z8qc" mz="n5">加入申請の承認設定</string>
   <string name="w5bj58pzlwm12-n1_lwm1" mz="title">戻る</string>
   <string name="w5bj58pzg04jk-n6_rc48" mz="title">参加</string>
   <string name="w5bj58pzg04jj-n1_g04j" mz="title">通報</string>
+  <string name="w5bj58pzz8qc3t-n6_z8qc" mz="n6">On</string>
+  <string name="w5bj58pzz8qc3t-n8_z8qc" mz="n8">閉じる</string>
   <string name="w5bj58pzlwm20-n2_lwm1" mz="txt_AnnouncementTitle">お知らせ</string>
   <string name="w5bj58pzlwm20-n4_lwm1" mz="txt_AnnouncementUpdatedMeta">最終更新 {time=2026/06/30}</string>
   <string name="w5bj58pzlwm13-n3_lwm1-0" mz="list_GuildMainNavItems">チャット</string>
@@ -682,6 +705,21 @@
   <string name="w5bj58pzg04j10-n7_g04j" mz="btn_invite">ギルドに招待</string>
   <string name="w5bj58pzg04j10-n8_g04j" mz="btn_approval">加入申請</string>
   <string name="w5bj58pzg04j17-n6_g04j" mz="active">今週の活躍度:{active=999}</string>
+  <string name="w5bj58pzhtd136-n0_htd1" mz="bottom">通報</string>
+  <string name="w5bj58pzhtd136-n2_htd1" mz="btn_report">確認</string>
+  <string name="w5bj58pzhtd136-n5_l38o" mz="n5">通報する相手</string>
+  <string name="w5bj58pzhtd136-n6_l38o" mz="n6">通報する理由</string>
+  <string name="w5bj58pzhtd136-n7_l38o" mz="n7">その他</string>
+  <string name="w5bj58pzhtd136-n12_l38o" mz="n12">チャット履歴を添付</string>
+  <string name="w5bj58pzhtd136-n18_l38o" mz="combobox_target">プレイヤー／ギルドを選択</string>
+  <string name="w5bj58pzhtd136-n19_l38o" mz="combobox_reason">理由を選択</string>
+  <string name="w5bj58pzhtd136-n13_l38o" mz="btn_OpenRecord">履歴を開く</string>
+  <string name="w5bj58pzl38o3a-n3_l38o" mz="title">個人/ギルドを選択</string>
+  <string name="w5bj58pzl38o38-n2_l38o" mz="title">こんにちは！</string>
+  <string name="w5bj58pzl38o3c-n2_l38o" mz="n2">チャット履歴は一度に10件まで選択できます</string>
+  <string name="w5bj58pzl38o3c-n4_l38o" mz="btn_sure">確認</string>
+  <string name="w5bj58pzl38o3h-n17_l38o-prompt" mz="txt_ExpectExplanation">300文字以内で入力してください</string>
+  <string name="w5bj58pzmnrq3j-n0_mnrq" mz="bottom">ルール</string>
   <string name="w5bj58pzhtd11m-n1_htd1" mz="n1">ギルドショップ</string>
   <string name="w5bj58pzhtd11l-n1_htd1" mz="n1">ギルドミッション</string>
   <string name="w5bj58pzhtd11p-n38_htd1" mz="btn_taskStatus">挑戦する</string>
@@ -691,6 +729,13 @@
   <string name="w5bj58pzhtd135-n4_htd1" mz="btn_see">チェック</string>
   <string name="w5bj58pzhtd135-n5_htd1" mz="btn_refuse">拒否</string>
   <string name="w5bj58pzhtd135-n6_htd1" mz="btn_agree">承認</string>
+  <string name="w5bj58pzz8qc3l-n0_z8qc" mz="bottom">加入申請の承認設定</string>
+  <string name="w5bj58pzz8qc3l-n10_z8qc" mz="n10">自動承認する最低レベル</string>
+  <string name="w5bj58pzz8qc3l-n11_z8qc" mz="n11">申請者のレベルが設定値以上の場合、加入申請を自動的に承認します</string>
+  <string name="w5bj58pzz8qc3l-n8_z8qc" mz="n8">加入申請の自動承認</string>
+  <string name="w5bj58pzz8qc3l-n9_z8qc" mz="n9">有効にすると、条件を満たす加入申請を自動的に承認します</string>
+  <string name="w5bj58pzz8qc3l-n1_z8qc" mz="btn_sure">セーブ</string>
+  <string name="w5bj58pzz8qc3l-n2_z8qc" mz="btn_cancel">キャンセル</string>
   <string name="w5bj58pzhtd12j-n0_htd1" mz="bottom">加入申請</string>
   <string name="w5bj58pzhtd12j-n3_htd1" mz="n3">過去7日間の申請</string>
   <string name="w5bj58pzhtd12j-n5_htd1" mz="btn_refuseall">すべて拒否</string>
@@ -708,7 +753,7 @@
 おしゃべりしながら助け合おう!!</string>
   <string name="w5bj58pzhtd12a-n4_htd1" mz="btn_notice_sure">確認</string>
   <string name="w5bj58pzhtd12a-n6_htd1" mz="txt_editerName">最終更新者:{name=名字XXXX}</string>
-  <string name="w5bj58pzhtd12a-n9_htd1" mz="n9">変更は1日3回まで</string>
+  <string name="w5bj58pzhtd12a-n9_htd1" mz="txt_editerLimit">変更は1日3回まで</string>
   <string name="w5bj58pzhtd129-n0_htd1" mz="bottom">ギルド設定</string>
   <string name="w5bj58pzhtd129-n2_htd1" mz="n2">ギルドタグ</string>
   <string name="w5bj58pzhtd129-n5_htd1" mz="n5">募集メッセージ</string>
@@ -718,7 +763,7 @@
   <string name="w5bj58pzhtd129-n9_htd1" mz="btn_dissolve">ギルドを解散</string>
   <string name="w5bj58pzhtd129-n10_htd1" mz="btn_settingsure">確認</string>
   <string name="w5bj58pzhtd129-n12_htd1" mz="txt_editerName">最終更新者:{name=名字XXXX}</string>
-  <string name="w5bj58pzhtd129-n15_htd1" mz="n15">変更は1日3回まで</string>
+  <string name="w5bj58pzhtd129-n15_htd1" mz="txt_editerLimit">変更は1日3回まで</string>
   <string name="w5bj58pzg04j1i-n0_g04j" mz="tips">2026/06/01 名前xxxxxがxxxxxを副会長に昇格させました</string>
   <string name="w5bj58pzlwm11-n3_lwm1" mz="btn_Back">戻る</string>
   <string name="gldisc01gd007-n7_hmn1" mz="n7">申請履歴</string>
@@ -726,6 +771,8 @@
   <string name="gldisc01rc48v-n4_y9qn" mz="n4">戻る</string>
   <string name="gldisc01gd002-n9_rc48" mz="title">ギルドを設立</string>
   <string name="gldisc01rc4816-n6_rc48" mz="title">参加</string>
+  <string name="gldisc01mnrq1w-n1_g04j" mz="title">通報</string>
+  <string name="gldisc01gd009-n46_mnrq" mz="btn_rule">ルール</string>
   <string name="gldisc01gd009-n21_hmn1" mz="n21">ギルド名</string>
   <string name="gldisc01gd009-n23_hmn1" mz="input_GuildName">ギルド名XXXXXXXX</string>
   <string name="gldisc01gd009-n26_hmn1" mz="txt_hint1">20文字以内で入力してください</string>
@@ -754,10 +801,21 @@
   <string name="gldisc01gd016-n15_hmn1" mz="btn_SearchGuild">検索</string>
   <string name="gldisc01gd016-n18_hmn1" mz="btn_ReportGuild">通報</string>
   <string name="gldisc01gd016-n19_hmn1" mz="btn_ApplyJoinGuild">参加</string>
+  <string name="gldisc01gd016-n22_mnrq" mz="btn_Refresh">更新</string>
   <string name="gldisc01gd005-n2_gd" mz="txt_GuildName">ギルド名ギルド名ギルド名ギルド名</string>
   <string name="gldisc01gd005-n16_hmn1" mz="n16">申請済み</string>
+  <string name="gldisc01gd005-n19_z8qc" mz="n19">自由加入</string>
   <string name="gldisc01gd005-n5_gd" mz="txt_GuildMember">総人数:{num=999}</string>
   <string name="gldisc01gd005-n10_hmn1" mz="txt_GuildActiveMember">先週の活躍度:{num=666}</string>
+  <string name="gldisc01mnrq1h-n0_htd1" mz="bottom">通報</string>
+  <string name="gldisc01mnrq1h-n6_l38o" mz="n6">通報する理由</string>
+  <string name="gldisc01mnrq1h-n19_l38o" mz="combobox_reason">理由を選択</string>
+  <string name="gldisc01mnrq1h-n7_l38o" mz="n7">その他</string>
+  <string name="gldisc01mnrq1h-n27_mnrq" mz="btn_report">確認</string>
+  <string name="gldisc01mnrq1o-n3_l38o" mz="title">個人/ギルドを選択</string>
+  <string name="gldisc01mnrq1s-n2_l38o" mz="title">こんにちは！</string>
+  <string name="gldisc01mnrq1t-n17_l38o-prompt" mz="txt_ExpectExplanation">300文字以内で入力してください</string>
+  <string name="gldisc01mnrq1y-n0_mnrq" mz="bottom">ルール</string>
   <string name="gldisc01gd001-n7_gd-0" mz="list_GuildSideNavItems">ギルドに加入</string>
   <string name="gldisc01gd001-n7_gd-1" mz="list_GuildSideNavItems">申請履歴</string>
   <string name="gldisc01gd001-n7_gd-2" mz="list_GuildSideNavItems">受信した招待</string>
@@ -861,7 +919,10 @@
   <string name="24i5r2i07h6s8-n8_7h6s" mz="btn_Join">参加</string>
   <string name="24i5r2i07h6s8-n9_7h6s" mz="n9">失效</string>
   <string name="24i5r2i07h6s0-n28_r26s" mz="btn_LastTeam">最近のプレイヤー</string>
+  <string name="24i5r2i07h6s0-n34_l38o" mz="btn_Guild">ギルド</string>
+  <string name="24i5r2i07h6s0-n35_l38o" mz="txt_NotGuildMember">オンライン中のギルドメンバーはいません</string>
   <string name="24i5r2i07h6s0-n2_7h6s" mz="btn_Invite">招待</string>
+  <string name="24i5r2i07h6s0-n36_l38o" mz="btn_ShareGuild">ギルドチャットに共有</string>
   <string name="24i5r2i07h6s0-n15_7h6s" mz="btn_ClearInfo">全部削除</string>
   <string name="dc8zac77rum7c-n19_gn3o" mz="n19">発射！</string>
   <string name="dc8zac77rum79-n19_gn3o" mz="n19">終了</string>
@@ -874,6 +935,14 @@
   <string name="dc8zac77hmjfi-n37_tlsf-texts_1" mz="n37">現在のターゲットに狙え	
 		攻撃を行うことを確認しますか？</string>
   <string name="dc8zac77hmjfi-n37_tlsf-texts_2" mz="n37">発射します！</string>
+  <string name="uxy5qzintjfg5-n19_gn3o" mz="n19">購入！</string>
+  <string name="uxy5qzintjfg5-n22_o812" mz="txt_Desc">{needGold=0}&lt;img src='ui://xuaw6o8jmmmw3x' width='45' height='45'/&gt;</string>
+  <string name="uxy5qzintjfg1-n5_r94h" mz="btn_Cancel">終了</string>
+  <string name="uxy5qzintjfg1-n29_qpnt" mz="n29">隠れる</string>
+  <string name="uxy5qzintjfg1-n30_qpnt" mz="n30">現れる</string>
+  <string name="uwm4hro3lbmc0002-n1_lbm" mz="title">×</string>
+  <string name="uwm4hro3lt52h-n23_lt52-texts_0" mz="txt_Completed">解放済み</string>
+  <string name="uwm4hro3lt52h-n23_lt52-texts_def" mz="txt_Completed">未解放</string>
   <string name="dngx84d5rum70-n23_y0e5" mz="n99">運命を選択中</string>
   <string name="dngx84d5rum70-n27_y0e5" mz="n100">選んだ運命が訪れるのは…？</string>
   <string name="dngx84d5rum70-n24_y0e5" mz="txt_Tip">[size=40][color=#{color=ff0000}]{playerName=PLAYER NAME}[/color][/size]</string>
@@ -1001,6 +1070,8 @@
   <string name="vxuz3wboorg70-n50_axwd" mz="btn_Cancel">キャンセル</string>
   <string name="vxuz3wboorg70-n49_axwd" mz="btn_Bestow">贈る</string>
   <string name="vxuz3wboorg70-n52_uzzv" mz="btn_Mix">ミックス</string>
+  <string name="vxuz3wboorg70-n54_mnrq" mz="btn_Sure">確認</string>
+  <string name="vxuz3wboorg70-n55_nkzh" mz="btn_Select">確認</string>
   <string name="vxuz3wboorg70-n48_p4oi" mz="txt_CardNum">{cur=[color=#ff0000]00[/color]}/{max=00}</string>
   <string name="2p754tqkilj51d-n3_ilj5" mz="title">折りたたむ</string>
   <string name="2p754tqkilj51d-n3_ilj5-texts_0" mz="title">さらに表示</string>
@@ -1083,10 +1154,6 @@
   <string name="mc0y3plupj0z2m-n36_pj0z" mz="Btn_Exclusive">専属</string>
   <string name="mc0y3plupj0z2m-n37_pj0z" mz="Btn_Common">通用</string>
   <string name="mc0y3plupj0z1m-n8_rj85" mz="Text_NoSearch">該当する結果はありませんでした</string>
-  <string name="mc0y3plupj0z1m-n9_s8o9-0" mz="DropDown_Filter">全て</string>
-  <string name="mc0y3plupj0z1m-n9_s8o9-1" mz="DropDown_Filter">カードスタイル</string>
-  <string name="mc0y3plupj0z1m-n9_s8o9-2" mz="DropDown_Filter">カードスタイル解放済み</string>
-  <string name="mc0y3plupj0z1m-n9_s8o9-3" mz="DropDown_Filter">キャラクターカード</string>
   <string name="mc0y3plupj0z1p-n9_rj85" mz="Text_NoSearch">該当する結果はありませんでした</string>
   <string name="mc0y3plupj0z1r-n9_rj85" mz="Text_NoSearch">該当する結果はありませんでした</string>
   <string name="mc0y3plupj0z1k-n4_pj0z" mz="n4">イベント</string>
@@ -1185,6 +1252,8 @@
   <string name="pr2pbkngeduv1-n2_eduv" mz="btn_GuideLevel1">【チュートリアル-基礎】</string>
   <string name="pr2pbkngeduv1-n3_eduv" mz="btn_GuideLevel2">【チュートリアル-戦闘】</string>
   <string name="iy1joavto1n81f-n16_iy9w" mz="title">画面設定</string>
+  <string name="iy1joavtz8qc2e-n2_z8qc" mz="txt_option">戻る／メニューを開く</string>
+  <string name="iy1joavtz8qc2f-n4_z8qc" mz="lable_title">画面のリフレッシュレート</string>
   <string name="iy1joavtl38o2a-n1_l38o" mz="title">未設定</string>
   <string name="iy1joavto1n810-n1_u0xa-prompt" mz="title">[size=28][color=#999999]シリアルコードを入力してください[/color][/size]</string>
   <string name="iy1joavto1n8l-n0_u0xa" mz="title">フリーカメラ</string>
@@ -1192,11 +1261,11 @@
   <string name="iy1joavtl38o2b-n1_l38o" mz="bottom">キーのカスタマイズ</string>
   <string name="iy1joavtl38o2b-n2_l38o" mz="txt_BingButton">割り当てるキーを押してください</string>
   <string name="iy1joavtp5xi1s-n88_u0xa" mz="uid">UID：</string>
-  <string name="iy1joavtl38o29-n1_l38o-cp-lable_title" mz="n1">スキル</string>
-  <string name="iy1joavtl38o29-n2_l38o-cp-lable_title" mz="n2">移動</string>
-  <string name="iy1joavtl38o29-n3_l38o-cp-lable_title" mz="n3">マーク</string>
-  <string name="iy1joavtl38o29-n4_l38o-cp-lable_title" mz="n4">確認ツール</string>
   <string name="iy1joavtl38o29-n5_l38o" mz="btn_reset">初期設定</string>
+  <string name="iy1joavtz8qc2c-n9_z8qc-cp-lable_title" mz="com_camera">カメラ操作</string>
+  <string name="iy1joavtz8qc2c-n10_z8qc-cp-lable_title" mz="com_game">対局中の操作</string>
+  <string name="iy1joavtz8qc2c-n11_z8qc-cp-lable_title" mz="com_video">ストーリー・リプレイ</string>
+  <string name="iy1joavtz8qc2c-n12_z8qc-cp-lable_title" mz="com_other">その他</string>
   <string name="iy1joavto1n8k-n54_u0xa-cp-lable_title" mz="n54">カメラ</string>
   <string name="iy1joavto1n8k-n56_u0xa-cp-title" mz="com_MouseSwither">マウス</string>
   <string name="iy1joavto1n8k-n55_u0xa-cp-title" mz="com_FreeCameraSwither">フリーカメラ</string>
@@ -1219,6 +1288,11 @@
   <string name="iy1joavto1n81c-n50_10ruo-cp-title" mz="com_ActionSuggestSwither">行動タイムアウト注意</string>
   <string name="iy1joavto1n81c-n51_l38o" mz="com_DistanceHelperSwither">自動距離アシスト</string>
   <string name="iy1joavto1n81c-n51_l38o-cp-title" mz="com_DistanceHelperSwither">自動距離アシスト</string>
+  <string name="iy1joavto1n81c-n52_l38o-cp-lable_title" mz="n52">ギルド設定</string>
+  <string name="iy1joavto1n81c-n53_l38o" mz="com_refuseGuildInvite">ギルド招待の自動拒否</string>
+  <string name="iy1joavto1n81c-n53_l38o-cp-title" mz="com_refuseGuildInvite">カードアシスト表示</string>
+  <string name="iy1joavto1n81c-n54_l38o" mz="com_guildMsgPrompt">ギルドチャット通知の受付</string>
+  <string name="iy1joavto1n81c-n54_l38o-cp-title" mz="com_guildMsgPrompt">カードアシスト表示</string>
   <string name="iy1joavto1801z-n56_o180" mz="txt_desc">マナースコア：極めて良好</string>
   <string name="iy1joavto1801z-n57_o180" mz="btn_check">マナースコアルールを見る</string>
   <string name="iy1joavto1n87-n59_u0xa-cp-lable_title" mz="n59">解像度</string>
@@ -1265,12 +1339,6 @@
 対局中の切断かつ3分以上再接続なし：-5点
 対局中のゲームプロセス終了かつ再接続なし：-10点
 対局中に複数回の行動制限時間超過による強制離脱：-10点</string>
-  <string name="iy1joavtwh311r-n33_jzri" mz="n33">画面設定</string>
-  <string name="iy1joavtwh311r-n34_jzri" mz="n34">サウンド設定</string>
-  <string name="iy1joavtwh311r-n35_jzri" mz="n35">オプション</string>
-  <string name="iy1joavtwh311r-n44_efox" mz="n44">ユーザー</string>
-  <string name="iy1joavtwh311r-n108_o180" mz="n108">マナースコア</string>
-  <string name="iy1joavtwh311r-n116_l38o" mz="n116">キー設定</string>
   <string name="iy1joavtwh311r-n0_jzri" mz="btn_Return">戻る</string>
   <string name="h88onq8cgzvsf-n8_gzvs" mz="title">星引擎缔造者</string>
   <string name="h88onq8cd11o0-n10_gzvs" mz="n10">星引擎拥有者</string>
@@ -1484,49 +1552,7 @@
   <string name="hn2q98k6kqgji-n44_kqgj" mz="com_TaiDao">ミサキ</string>
   <string name="hn2q98k6kqgji-n40_kqgj" mz="com_XiuNv">アランナ</string>
   <string name="hn2q98k6kqgjm-n40_kqgj" mz="txt_Name">魔女兵器</string>
-  <string name="y0luzhk8l38o1r-n6_l38o" mz="txt_MapName">夢想号</string>
-  <string name="y0luzhk8l38o1r-n13_l38o" mz="txt_RoomMember">人数[color=#02BD06]{num=3}[/color]/{maxnum=4}</string>
-  <string name="w5bj58pzhtd136-n5_l38o" mz="n5">通報する相手</string>
-  <string name="w5bj58pzhtd136-n6_l38o" mz="n6">通報する理由</string>
-  <string name="w5bj58pzhtd136-n7_l38o" mz="n7">その他</string>
-  <string name="w5bj58pzhtd136-n12_l38o" mz="n12">チャット履歴を添付</string>
-  <string name="w5bj58pzhtd136-n18_l38o" mz="combobox_target">プレイヤー／ギルドを選択</string>
-  <string name="w5bj58pzhtd136-n19_l38o" mz="combobox_reason">理由を選択</string>
-  <string name="w5bj58pzhtd136-n13_l38o" mz="btn_OpenRecord">履歴を開く</string>
-  <string name="w5bj58pzl38o3a-n3_l38o" mz="title">個人/ギルドを選択</string>
-  <string name="w5bj58pzl38o38-n2_l38o" mz="title">こんにちは！</string>
-  <string name="w5bj58pzl38o3c-n2_l38o" mz="n2">チャット履歴は一度に10件まで選択できます</string>
-  <string name="w5bj58pzl38o3h-n17_l38o-prompt" mz="txt_ExpectExplanation">300文字以内で入力してください</string>
-  <string name="gldisc01mnrq1h-n6_l38o" mz="n6">通報する理由</string>
-  <string name="gldisc01mnrq1h-n19_l38o" mz="combobox_reason">理由を選択</string>
-  <string name="gldisc01mnrq1h-n7_l38o" mz="n7">その他</string>
-  <string name="gldisc01mnrq1o-n3_l38o" mz="title">個人/ギルドを選択</string>
-  <string name="gldisc01mnrq1s-n2_l38o" mz="title">こんにちは！</string>
-  <string name="gldisc01mnrq1t-n17_l38o-prompt" mz="txt_ExpectExplanation">300文字以内で入力してください</string>
-  <string name="24i5r2i07h6s0-n35_l38o" mz="txt_NotGuildMember">オンライン中のギルドメンバーはいません</string>
-  <string name="24i5r2i07h6s0-n36_l38o" mz="btn_ShareGuild">ギルドチャットに共有</string>
-  <string name="iy1joavto1n81c-n53_l38o" mz="com_refuseGuildInvite">ギルド招待の自動拒否</string>
-  <string name="iy1joavto1n81c-n54_l38o" mz="com_guildMsgPrompt">ギルドチャット通知の受付</string>
-  <string name="y0luzhk8l38o1q-n0_g04j" mz="tips">2026/06/01 名前xxxxxがxxxxxを副会長に昇格させました</string>
-  <string name="y0luzhk8x1udb-n49_l38o" mz="btn_tagGuild">ギルド</string>
-  <string name="y0luzhk8x1udb-n50_l38o" mz="btn_tagFriend">フレンド</string>
-  <string name="y0luzhk8l38o1r-n8_l38o" mz="txt_MapModel">協力チャレンジ</string>
-  <string name="y0luzhk8l38o1r-n15_l38o" mz="n15">満員</string>
-  <string name="y0luzhk8l38o1r-n14_l38o" mz="btn_Join">ルームに参加</string>
-  <string name="y0luzhk8l38o1n-n5_l38o" mz="title">ギルド</string>
-  <string name="w5bj58pzhtd136-n0_htd1" mz="bottom">通報</string>
-  <string name="w5bj58pzhtd136-n2_htd1" mz="btn_report">確認</string>
-  <string name="w5bj58pzl38o3c-n4_l38o" mz="btn_sure">確認</string>
-  <string name="w5bj58pzmnrq3j-n0_mnrq" mz="bottom">ルール</string>
-  <string name="gldisc01mnrq1w-n1_g04j" mz="title">通報</string>
-  <string name="gldisc01gd009-n46_mnrq" mz="btn_rule">ルール</string>
-  <string name="gldisc01gd016-n22_mnrq" mz="btn_Refresh">更新</string>
-  <string name="gldisc01mnrq1h-n0_htd1" mz="bottom">通報</string>
-  <string name="gldisc01mnrq1h-n27_mnrq" mz="btn_report">確認</string>
-  <string name="gldisc01mnrq1y-n0_mnrq" mz="bottom">ルール</string>
-  <string name="24i5r2i07h6s0-n34_l38o" mz="btn_Guild">ギルド</string>
-  <string name="vxuz3wboorg70-n54_mnrq" mz="btn_Sure">確認</string>
-  <string name="iy1joavto1n81c-n52_l38o-cp-lable_title" mz="n52">ギルド設定</string>
-  <string name="iy1joavto1n81c-n53_l38o-cp-title" mz="com_refuseGuildInvite">カードアシスト表示</string>
-  <string name="iy1joavto1n81c-n54_l38o-cp-title" mz="com_guildMsgPrompt">カードアシスト表示</string>
+  <string name="iy1joavtstyp2g-n91_styp" mz="n91">ゲーム終了</string>
+  <string name="9k6d9by2nu3za-n12_nu3z" mz="btn_SkipHero">スキップ</string>
+  <string name="9k6d9by2mzc8t-n12_nu3z" mz="btn_SkipHero">スキップ</string>
 </resources>

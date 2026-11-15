@@ -96,9 +96,9 @@
   <string name="vckl96ksyjnjlsq88-n10_at01" mz="btn_Light">點亮</string>
   <string name="vckl96ksyjnjlsq8u-n16_o812" mz="btn_ShowSkin">預覽</string>
   <string name="vckl96ksyjnjlsq8u-n26_o812" mz="n26">·獨屬戰鬥舞台 ·獨屬戰鬥BGM</string>
+  <string name="1pgen0em6brr0-n23_6brr" mz="txt_coin">x1000</string>
   <string name="1pgen0em6brr0-n19_6brr" mz="txt_title">活动标题</string>
   <string name="1pgen0em6brr0-n20_6brr" mz="txt_date">4.25~5.23</string>
-  <string name="1pgen0em6brr0-n23_6brr" mz="txt_coin">x1000</string>
   <string name="1pgen0em6brro-n8_6brr" mz="title">完成奖励（7/7）</string>
   <string name="1pgen0em6brrm-n4_6brr" mz="txt_icon">x1300</string>
   <string name="1pgen0em6brrm-n8_6brr" mz="txt_num">第1张</string>
@@ -277,6 +277,16 @@
   <string name="6dt5s4htqw8h7-n77_v1vk" mz="txt_NextTime">下期開放</string>
   <string name="6dt5s4htqw8hv-n177_v1vk" mz="n177">進行中</string>
   <string name="6dt5s4htqw8hv-n186_v1vk" mz="n186">領取</string>
+  <string name="7lignf1bizzn0-n19_z8qc" mz="n19">角色試用</string>
+  <string name="7lignf1bizzn0-n8_z8qc" mz="txt_Time">剩餘時間：10天20時</string>
+  <string name="7lignf1bizzn0-n21_z8qc" mz="n21">使用指定試用角色獲取關卡勝利可領取獎勵</string>
+  <string name="7lignf1bizzn0-n14_z8qc" mz="n14">預覽獎勵</string>
+  <string name="7lignf1bizzn0-n10_z8qc" mz="n10">未完成</string>
+  <string name="7lignf1bizzn0-n11_z8qc" mz="btn_GetAward">可領取</string>
+  <string name="7lignf1bizzn0-n2_izzn" mz="btn_Trial">開始試用</string>
+  <string name="7lignf1bizzn0-n4_z8qc" mz="btn_GetWay">前往獲取</string>
+  <string name="7lignf1bbez2l-n11_micc" mz="title">確定</string>
+  <string name="7lignf1bz8qcg-n24_z8qc" mz="n24">點擊預覽</string>
   <string name="zlysd2gupgzf51-n46_debj" mz="title">返回</string>
   <string name="zlysd2gupgzf4c-n69_ru20" mz="btn_TaskToggle">總覽</string>
   <string name="k49wk9ftesyu2t-n28_q4ft" mz="n28">購買</string>
@@ -391,12 +401,23 @@
   <string name="bi8fdi6nqy4029-n3_qb3s" mz="n3">確定</string>
   <string name="bi8fdi6nsjju21-n3_qb3s" mz="n1">不出牌</string>
   <string name="bi8fdi6nsjju21-n8_wvm9" mz="n2">CANCEL</string>
+  <string name="y0luzhk8l38o1q-n0_g04j" mz="tips">2026/06/01 名字xxxxx 將 xxxxx 升爲 副會長</string>
+  <string name="y0luzhk8styp26-n0_g04j" mz="tips">2026/06/01 名字xxxxx 將 xxxxx 升爲 副會長</string>
   <string name="y0luzhk8x1udb-n36_mdt4" mz="n36">聊天</string>
+  <string name="y0luzhk8x1udb-n49_l38o" mz="btn_tagGuild">公會</string>
+  <string name="y0luzhk8x1udb-n50_l38o" mz="btn_tagFriend">好友</string>
   <string name="y0luzhk8x1udb-n7-prompt" mz="Input_Send">[color=#CCCCCC]輸入聊天[/color]</string>
   <string name="y0luzhk8x1udb-n30_eipb" mz="txt_wordLimit">{current=0}/{limit=100}</string>
   <string name="y0luzhk8x1udb-n8" mz="btn_Send">Send</string>
   <string name="y0luzhk8ednm16-n43_ednm" mz="btn_Cancel">取 消</string>
   <string name="y0luzhk8ednm16-n44_ednm" mz="btn_Sure">確 定</string>
+  <string name="y0luzhk8l38o1r-n6_l38o" mz="txt_MapName">星趴夢想號</string>
+  <string name="y0luzhk8l38o1r-n8_l38o" mz="txt_MapModel">合作挑戰</string>
+  <string name="y0luzhk8l38o1r-n13_l38o" mz="txt_RoomMember">人數[color=#02BD06]{num=3}[/color]/{maxnum=4}</string>
+  <string name="y0luzhk8l38o1r-n15_l38o" mz="n15">滿員</string>
+  <string name="y0luzhk8l38o1r-n14_l38o" mz="btn_Join">加入房間</string>
+  <string name="y0luzhk8l38o1r-n16_z8qc" mz="n16">已失效</string>
+  <string name="y0luzhk8l38o1n-n5_l38o" mz="title">公會</string>
   <string name="y0luzhk8njjna-n36_ednm" mz="txt_Online">•在線</string>
   <string name="y0luzhk8njjna-n37_ednm" mz="txt_Offline">離線</string>
   <string name="y0luzhk8sgc41d-n25_sgc4" mz="btn_Delete">移除會話</string>
@@ -640,7 +661,6 @@
   <string name="egrtucyhot0w6-n88_vlgj" mz="n88">物品名稱</string>
   <string name="egrtucyhot0w6-n89_vlgj" mz="n89">物品數量</string>
   <string name="egrtucyhot0w6-n90_vlgj" mz="n90">取得時間</string>
-  <string name="egrtucyhnu3za-n12_nu3z" mz="btn_SkipSkin">跳過</string>
   <string name="egrtucyhot0w0-n11_r3jj" mz="bottom">卡池信息</string>
   <string name="egrtucyhot0w0-n7_izsa" mz="btn_Skip">跳過</string>
   <string name="q1a022ssjrp5qq38-n116_pzeu" mz="txt_receive">領取</string>
@@ -658,9 +678,12 @@
   <string name="d5a5wdik7wqn0-n29_ru20-2" mz="list_Labels">怪物</string>
   <string name="d5a5wdik7wqn0-n29_ru20-3" mz="list_Labels">籌碼</string>
   <string name="d5a5wdik7wqn0-n29_ru20-4" mz="list_Labels">事件</string>
+  <string name="w5bj58pzz8qc3w-n5_z8qc" mz="n5">審批設置</string>
   <string name="w5bj58pzlwm12-n1_lwm1" mz="title">返回</string>
   <string name="w5bj58pzg04jk-n6_rc48" mz="title">加入</string>
   <string name="w5bj58pzg04jj-n1_g04j" mz="title">舉報</string>
+  <string name="w5bj58pzz8qc3t-n6_z8qc" mz="n6">開啓</string>
+  <string name="w5bj58pzz8qc3t-n8_z8qc" mz="n8">關閉</string>
   <string name="w5bj58pzlwm20-n2_lwm1" mz="txt_AnnouncementTitle">公告</string>
   <string name="w5bj58pzlwm20-n4_lwm1" mz="txt_AnnouncementUpdatedMeta">上次修改{time=2026/06/30}</string>
   <string name="w5bj58pzlwm13-n3_lwm1-0" mz="list_GuildMainNavItems">聊天</string>
@@ -681,6 +704,21 @@
   <string name="w5bj58pzg04j10-n7_g04j" mz="btn_invite">邀請入會</string>
   <string name="w5bj58pzg04j10-n8_g04j" mz="btn_approval">審批申請</string>
   <string name="w5bj58pzg04j17-n6_g04j" mz="active">本週活躍：{active=999}</string>
+  <string name="w5bj58pzhtd136-n0_htd1" mz="bottom">舉報</string>
+  <string name="w5bj58pzhtd136-n2_htd1" mz="btn_report">確定</string>
+  <string name="w5bj58pzhtd136-n5_l38o" mz="n5">舉報對象</string>
+  <string name="w5bj58pzhtd136-n6_l38o" mz="n6">舉報原因</string>
+  <string name="w5bj58pzhtd136-n7_l38o" mz="n7">額外說明</string>
+  <string name="w5bj58pzhtd136-n12_l38o" mz="n12">附公會聊天記錄</string>
+  <string name="w5bj58pzhtd136-n18_l38o" mz="combobox_target">選擇個人/公會</string>
+  <string name="w5bj58pzhtd136-n19_l38o" mz="combobox_reason">選擇原因</string>
+  <string name="w5bj58pzhtd136-n13_l38o" mz="btn_OpenRecord">打開記錄</string>
+  <string name="w5bj58pzl38o3a-n3_l38o" mz="title">選擇個人/公會</string>
+  <string name="w5bj58pzl38o38-n2_l38o" mz="title">你好</string>
+  <string name="w5bj58pzl38o3c-n2_l38o" mz="n2">一次最多選擇10條聊天記錄</string>
+  <string name="w5bj58pzl38o3c-n4_l38o" mz="btn_sure">確定</string>
+  <string name="w5bj58pzl38o3h-n17_l38o-prompt" mz="txt_ExpectExplanation">請輸入300字以內的文本</string>
+  <string name="w5bj58pzmnrq3j-n0_mnrq" mz="bottom">規則</string>
   <string name="w5bj58pzhtd11m-n1_htd1" mz="n1">公會商店</string>
   <string name="w5bj58pzhtd11l-n1_htd1" mz="n1">公會任務</string>
   <string name="w5bj58pzhtd11p-n38_htd1" mz="btn_taskStatus">去完成</string>
@@ -690,6 +728,13 @@
   <string name="w5bj58pzhtd135-n4_htd1" mz="btn_see">查看</string>
   <string name="w5bj58pzhtd135-n5_htd1" mz="btn_refuse">拒絕</string>
   <string name="w5bj58pzhtd135-n6_htd1" mz="btn_agree">同意</string>
+  <string name="w5bj58pzz8qc3l-n0_z8qc" mz="bottom">審批設置</string>
+  <string name="w5bj58pzz8qc3l-n10_z8qc" mz="n10">自動同意等級限制</string>
+  <string name="w5bj58pzz8qc3l-n11_z8qc" mz="n11">申請玩家大於等於該等級時，自動同意入會申請</string>
+  <string name="w5bj58pzz8qc3l-n8_z8qc" mz="n8">是否自動通過</string>
+  <string name="w5bj58pzz8qc3l-n9_z8qc" mz="n9">開啓後，符合規則的申請自動同意</string>
+  <string name="w5bj58pzz8qc3l-n1_z8qc" mz="btn_sure">儲存</string>
+  <string name="w5bj58pzz8qc3l-n2_z8qc" mz="btn_cancel">取消</string>
   <string name="w5bj58pzhtd12j-n0_htd1" mz="bottom">審批申請</string>
   <string name="w5bj58pzhtd12j-n3_htd1" mz="n3">七日內的申請</string>
   <string name="w5bj58pzhtd12j-n5_htd1" mz="btn_refuseall">拒絕全部</string>
@@ -707,7 +752,7 @@
 吹水互助!!</string>
   <string name="w5bj58pzhtd12a-n4_htd1" mz="btn_notice_sure">確定</string>
   <string name="w5bj58pzhtd12a-n6_htd1" mz="txt_editerName">上次修改:{name=名字XXXX}</string>
-  <string name="w5bj58pzhtd12a-n9_htd1" mz="n9">每日修改次數上限3次</string>
+  <string name="w5bj58pzhtd12a-n9_htd1" mz="txt_editerLimit">每日修改次數上限3次</string>
   <string name="w5bj58pzhtd129-n0_htd1" mz="bottom">公會設置</string>
   <string name="w5bj58pzhtd129-n2_htd1" mz="n2">公會標籤</string>
   <string name="w5bj58pzhtd129-n5_htd1" mz="n5">招募公告</string>
@@ -717,7 +762,7 @@
   <string name="w5bj58pzhtd129-n9_htd1" mz="btn_dissolve">解散公會</string>
   <string name="w5bj58pzhtd129-n10_htd1" mz="btn_settingsure">確定</string>
   <string name="w5bj58pzhtd129-n12_htd1" mz="txt_editerName">上次修改:{name=名字XXXX}</string>
-  <string name="w5bj58pzhtd129-n15_htd1" mz="n15">每日修改次數上限3次</string>
+  <string name="w5bj58pzhtd129-n15_htd1" mz="txt_editerLimit">每日修改次數上限3次</string>
   <string name="w5bj58pzg04j1i-n0_g04j" mz="tips">2026/06/01 名字xxxxx 將 xxxxx 升爲 副會長</string>
   <string name="w5bj58pzlwm11-n3_lwm1" mz="btn_Back">返回</string>
   <string name="gldisc01gd007-n7_hmn1" mz="n7">申請記錄</string>
@@ -725,6 +770,8 @@
   <string name="gldisc01rc48v-n4_y9qn" mz="n4">返回</string>
   <string name="gldisc01gd002-n9_rc48" mz="title">創建公會</string>
   <string name="gldisc01rc4816-n6_rc48" mz="title">加入</string>
+  <string name="gldisc01mnrq1w-n1_g04j" mz="title">舉報</string>
+  <string name="gldisc01gd009-n46_mnrq" mz="btn_rule">規則</string>
   <string name="gldisc01gd009-n21_hmn1" mz="n21">公會名稱</string>
   <string name="gldisc01gd009-n23_hmn1" mz="input_GuildName">公會名稱XXXXXXXX</string>
   <string name="gldisc01gd009-n26_hmn1" mz="txt_hint1">不能超過20個字符</string>
@@ -753,10 +800,21 @@
   <string name="gldisc01gd016-n15_hmn1" mz="btn_SearchGuild">搜索</string>
   <string name="gldisc01gd016-n18_hmn1" mz="btn_ReportGuild">舉報</string>
   <string name="gldisc01gd016-n19_hmn1" mz="btn_ApplyJoinGuild">加入</string>
+  <string name="gldisc01gd016-n22_mnrq" mz="btn_Refresh">刷新</string>
   <string name="gldisc01gd005-n2_gd" mz="txt_GuildName">公會名公會名公會名公會名</string>
   <string name="gldisc01gd005-n16_hmn1" mz="n16">已申請</string>
+  <string name="gldisc01gd005-n19_z8qc" mz="n19">自由加入</string>
   <string name="gldisc01gd005-n5_gd" mz="txt_GuildMember">總人數:{num=999}</string>
   <string name="gldisc01gd005-n10_hmn1" mz="txt_GuildActiveMember">上週活躍:{num=666}</string>
+  <string name="gldisc01mnrq1h-n0_htd1" mz="bottom">舉報</string>
+  <string name="gldisc01mnrq1h-n6_l38o" mz="n6">舉報原因</string>
+  <string name="gldisc01mnrq1h-n19_l38o" mz="combobox_reason">選擇原因</string>
+  <string name="gldisc01mnrq1h-n7_l38o" mz="n7">額外說明</string>
+  <string name="gldisc01mnrq1h-n27_mnrq" mz="btn_report">確定</string>
+  <string name="gldisc01mnrq1o-n3_l38o" mz="title">選擇個人/公會</string>
+  <string name="gldisc01mnrq1s-n2_l38o" mz="title">你好</string>
+  <string name="gldisc01mnrq1t-n17_l38o-prompt" mz="txt_ExpectExplanation">請輸入300字以內的文本</string>
+  <string name="gldisc01mnrq1y-n0_mnrq" mz="bottom">規則</string>
   <string name="gldisc01gd001-n7_gd-0" mz="list_GuildSideNavItems">加入公會</string>
   <string name="gldisc01gd001-n7_gd-1" mz="list_GuildSideNavItems">申請記錄</string>
   <string name="gldisc01gd001-n7_gd-2" mz="list_GuildSideNavItems">收到邀請</string>
@@ -860,7 +918,10 @@
   <string name="24i5r2i07h6s8-n8_7h6s" mz="btn_Join">加入</string>
   <string name="24i5r2i07h6s8-n9_7h6s" mz="n9">失效</string>
   <string name="24i5r2i07h6s0-n28_r26s" mz="btn_LastTeam">近期玩家</string>
+  <string name="24i5r2i07h6s0-n34_l38o" mz="btn_Guild">公會</string>
+  <string name="24i5r2i07h6s0-n35_l38o" mz="txt_NotGuildMember">暫無公會成員在線</string>
   <string name="24i5r2i07h6s0-n2_7h6s" mz="btn_Invite">邀請</string>
+  <string name="24i5r2i07h6s0-n36_l38o" mz="btn_ShareGuild">分享到公會頻道</string>
   <string name="24i5r2i07h6s0-n15_7h6s" mz="btn_ClearInfo">忽略全部</string>
   <string name="dc8zac77rum7c-n19_gn3o" mz="n19">發射！</string>
   <string name="dc8zac77rum79-n19_gn3o" mz="n19">離開</string>
@@ -873,6 +934,14 @@
   <string name="dc8zac77hmjfi-n37_tlsf-texts_1" mz="n37">確定對目前目標進行
 打擊嗎？</string>
   <string name="dc8zac77hmjfi-n37_tlsf-texts_2" mz="n37">對該目標發射！</string>
+  <string name="uxy5qzintjfg5-n19_gn3o" mz="n19">購買！</string>
+  <string name="uxy5qzintjfg5-n22_o812" mz="txt_Desc">{needGold=0}&lt;img src='ui://xuaw6o8jmmmw3x' width='45' height='45'/&gt;</string>
+  <string name="uxy5qzintjfg1-n5_r94h" mz="btn_Cancel">離開</string>
+  <string name="uxy5qzintjfg1-n29_qpnt" mz="n29">隱藏</string>
+  <string name="uxy5qzintjfg1-n30_qpnt" mz="n30">顯示</string>
+  <string name="uwm4hro3lbmc0002-n1_lbm" mz="title">×</string>
+  <string name="uwm4hro3lt52h-n23_lt52-texts_0" mz="txt_Completed">已解放</string>
+  <string name="uwm4hro3lt52h-n23_lt52-texts_def" mz="txt_Completed">未解放</string>
   <string name="dngx84d5rum70-n23_y0e5" mz="n99">正在選擇必定會發生的命運</string>
   <string name="dngx84d5rum70-n27_y0e5" mz="n100">選擇的命運將會降臨在⋯？</string>
   <string name="dngx84d5rum70-n24_y0e5" mz="txt_Tip">[size=40][color=#{color=ff0000}]{playerName=PLAYER NAME}[/color][/size]</string>
@@ -1001,6 +1070,8 @@
   <string name="vxuz3wboorg70-n50_axwd" mz="btn_Cancel">取消</string>
   <string name="vxuz3wboorg70-n49_axwd" mz="btn_Bestow">贈送</string>
   <string name="vxuz3wboorg70-n52_uzzv" mz="btn_Mix">調制</string>
+  <string name="vxuz3wboorg70-n54_mnrq" mz="btn_Sure">確定</string>
+  <string name="vxuz3wboorg70-n55_nkzh" mz="btn_Select">確認</string>
   <string name="vxuz3wboorg70-n48_p4oi" mz="txt_CardNum">{cur=[color=#ff0000]00[/color]}/{max=00}</string>
   <string name="2p754tqkilj51d-n3_ilj5" mz="title">收起</string>
   <string name="2p754tqkilj51d-n3_ilj5-texts_0" mz="title">展開全部</string>
@@ -1083,10 +1154,6 @@
   <string name="mc0y3plupj0z2m-n36_pj0z" mz="Btn_Exclusive">專屬</string>
   <string name="mc0y3plupj0z2m-n37_pj0z" mz="Btn_Common">通用</string>
   <string name="mc0y3plupj0z1m-n8_rj85" mz="Text_NoSearch">沒有查找到</string>
-  <string name="mc0y3plupj0z1m-n9_s8o9-0" mz="DropDown_Filter">全部</string>
-  <string name="mc0y3plupj0z1m-n9_s8o9-1" mz="DropDown_Filter">異畫卡</string>
-  <string name="mc0y3plupj0z1m-n9_s8o9-2" mz="DropDown_Filter">已擁有異畫卡</string>
-  <string name="mc0y3plupj0z1m-n9_s8o9-3" mz="DropDown_Filter">角色卡</string>
   <string name="mc0y3plupj0z1p-n9_rj85" mz="Text_NoSearch">沒有查找到</string>
   <string name="mc0y3plupj0z1r-n9_rj85" mz="Text_NoSearch">沒有查找到</string>
   <string name="mc0y3plupj0z1k-n4_pj0z" mz="n4">事件</string>
@@ -1185,6 +1252,8 @@
   <string name="pr2pbkngeduv1-n2_eduv" mz="btn_GuideLevel1">教學關-基礎</string>
   <string name="pr2pbkngeduv1-n3_eduv" mz="btn_GuideLevel2">教學關-戰鬥</string>
   <string name="iy1joavto1n81f-n16_iy9w" mz="title">畫面</string>
+  <string name="iy1joavtz8qc2e-n2_z8qc" mz="txt_option">返回/打開菜單</string>
+  <string name="iy1joavtz8qc2f-n4_z8qc" mz="lable_title">螢幕更新率</string>
   <string name="iy1joavtl38o2a-n1_l38o" mz="title">未設置</string>
   <string name="iy1joavto1n810-n1_u0xa-prompt" mz="title">[size=28][color=#ffffff]兌換碼[/color][/size]</string>
   <string name="iy1joavto1n8l-n0_u0xa" mz="title">自由鏡頭</string>
@@ -1192,11 +1261,11 @@
   <string name="iy1joavtl38o2b-n1_l38o" mz="bottom">自定義按鍵</string>
   <string name="iy1joavtl38o2b-n2_l38o" mz="txt_BingButton">請輸入想要更換的按鍵</string>
   <string name="iy1joavtp5xi1s-n88_u0xa" mz="uid">UID：</string>
-  <string name="iy1joavtl38o29-n1_l38o-cp-lable_title" mz="n1">技能</string>
-  <string name="iy1joavtl38o29-n2_l38o-cp-lable_title" mz="n2">移動</string>
-  <string name="iy1joavtl38o29-n3_l38o-cp-lable_title" mz="n3">標記</string>
-  <string name="iy1joavtl38o29-n4_l38o-cp-lable_title" mz="n4">查看工具</string>
   <string name="iy1joavtl38o29-n5_l38o" mz="btn_reset">默認設置</string>
+  <string name="iy1joavtz8qc2c-n9_z8qc-cp-lable_title" mz="com_camera">鏡頭操作</string>
+  <string name="iy1joavtz8qc2c-n10_z8qc-cp-lable_title" mz="com_game">局內操作</string>
+  <string name="iy1joavtz8qc2c-n11_z8qc-cp-lable_title" mz="com_video">劇情與回放</string>
+  <string name="iy1joavtz8qc2c-n12_z8qc-cp-lable_title" mz="com_other">其它</string>
   <string name="iy1joavto1n8k-n54_u0xa-cp-lable_title" mz="n54">鏡頭</string>
   <string name="iy1joavto1n8k-n56_u0xa-cp-title" mz="com_MouseSwither">滑鼠控制</string>
   <string name="iy1joavto1n8k-n55_u0xa-cp-title" mz="com_FreeCameraSwither">自由鏡頭</string>
@@ -1219,6 +1288,11 @@
   <string name="iy1joavto1n81c-n50_10ruo-cp-title" mz="com_ActionSuggestSwither">行動即將超時提醒</string>
   <string name="iy1joavto1n81c-n51_l38o" mz="com_DistanceHelperSwither">自動距離輔助</string>
   <string name="iy1joavto1n81c-n51_l38o-cp-title" mz="com_DistanceHelperSwither">自動距離輔助</string>
+  <string name="iy1joavto1n81c-n52_l38o-cp-lable_title" mz="n52">公會設置</string>
+  <string name="iy1joavto1n81c-n53_l38o" mz="com_refuseGuildInvite">阻止入會邀請</string>
+  <string name="iy1joavto1n81c-n53_l38o-cp-title" mz="com_refuseGuildInvite">出牌推薦</string>
+  <string name="iy1joavto1n81c-n54_l38o" mz="com_guildMsgPrompt">公會頻道新消息提醒</string>
+  <string name="iy1joavto1n81c-n54_l38o-cp-title" mz="com_guildMsgPrompt">出牌推薦</string>
   <string name="iy1joavto1801z-n56_o180" mz="txt_desc">信譽極佳</string>
   <string name="iy1joavto1801z-n57_o180" mz="btn_check">查看信譽分規則</string>
   <string name="iy1joavto1n87-n59_u0xa-cp-lable_title" mz="n59">解析度</string>
@@ -1265,12 +1339,6 @@
 遊戲對局中斷開連接並且超過3分鐘未重連：-5分
 遊戲對局中關閉遊戲進程並且未重連：-10分
 遊戲對局中多次行動超時導致退出遊戲：-10分</string>
-  <string name="iy1joavtwh311r-n33_jzri" mz="n33">畫面</string>
-  <string name="iy1joavtwh311r-n34_jzri" mz="n34">聲音</string>
-  <string name="iy1joavtwh311r-n35_jzri" mz="n35">功能設置</string>
-  <string name="iy1joavtwh311r-n44_efox" mz="n44">用戶</string>
-  <string name="iy1joavtwh311r-n108_o180" mz="n108">信譽分</string>
-  <string name="iy1joavtwh311r-n116_l38o" mz="n116">按鍵設置</string>
   <string name="iy1joavtwh311r-n0_jzri" mz="btn_Return">返回</string>
   <string name="h88onq8cgzvsf-n8_gzvs" mz="title">星引擎缔造者</string>
   <string name="h88onq8cd11o0-n10_gzvs" mz="n10">星引擎拥有者</string>
@@ -1484,49 +1552,7 @@
   <string name="hn2q98k6kqgji-n44_kqgj" mz="com_TaiDao">美咲</string>
   <string name="hn2q98k6kqgji-n40_kqgj" mz="com_XiuNv">阿蘭娜</string>
   <string name="hn2q98k6kqgjm-n40_kqgj" mz="txt_Name">魔女兵器</string>
-  <string name="y0luzhk8l38o1r-n6_l38o" mz="txt_MapName">星趴夢想號</string>
-  <string name="y0luzhk8l38o1r-n13_l38o" mz="txt_RoomMember">人數[color=#02BD06]{num=3}[/color]/{maxnum=4}</string>
-  <string name="w5bj58pzhtd136-n5_l38o" mz="n5">舉報對象</string>
-  <string name="w5bj58pzhtd136-n6_l38o" mz="n6">舉報原因</string>
-  <string name="w5bj58pzhtd136-n7_l38o" mz="n7">額外說明</string>
-  <string name="w5bj58pzhtd136-n12_l38o" mz="n12">附公會聊天記錄</string>
-  <string name="w5bj58pzhtd136-n18_l38o" mz="combobox_target">選擇個人/公會</string>
-  <string name="w5bj58pzhtd136-n19_l38o" mz="combobox_reason">選擇原因</string>
-  <string name="w5bj58pzhtd136-n13_l38o" mz="btn_OpenRecord">打開記錄</string>
-  <string name="w5bj58pzl38o3a-n3_l38o" mz="title">選擇個人/公會</string>
-  <string name="w5bj58pzl38o38-n2_l38o" mz="title">你好</string>
-  <string name="w5bj58pzl38o3c-n2_l38o" mz="n2">一次最多選擇10條聊天記錄</string>
-  <string name="w5bj58pzl38o3h-n17_l38o-prompt" mz="txt_ExpectExplanation">請輸入300字以內的文本</string>
-  <string name="gldisc01mnrq1h-n6_l38o" mz="n6">舉報原因</string>
-  <string name="gldisc01mnrq1h-n19_l38o" mz="combobox_reason">選擇原因</string>
-  <string name="gldisc01mnrq1h-n7_l38o" mz="n7">額外說明</string>
-  <string name="gldisc01mnrq1o-n3_l38o" mz="title">選擇個人/公會</string>
-  <string name="gldisc01mnrq1s-n2_l38o" mz="title">你好</string>
-  <string name="gldisc01mnrq1t-n17_l38o-prompt" mz="txt_ExpectExplanation">請輸入300字以內的文本</string>
-  <string name="24i5r2i07h6s0-n35_l38o" mz="txt_NotGuildMember">暫無公會成員在線</string>
-  <string name="24i5r2i07h6s0-n36_l38o" mz="btn_ShareGuild">分享到公會頻道</string>
-  <string name="iy1joavto1n81c-n53_l38o" mz="com_refuseGuildInvite">阻止入會邀請</string>
-  <string name="iy1joavto1n81c-n54_l38o" mz="com_guildMsgPrompt">公會頻道新消息提醒</string>
-  <string name="y0luzhk8l38o1q-n0_g04j" mz="tips">2026/06/01 名字xxxxx 將 xxxxx 升爲 副會長</string>
-  <string name="y0luzhk8x1udb-n49_l38o" mz="btn_tagGuild">公會</string>
-  <string name="y0luzhk8x1udb-n50_l38o" mz="btn_tagFriend">好友</string>
-  <string name="y0luzhk8l38o1r-n8_l38o" mz="txt_MapModel">合作挑戰</string>
-  <string name="y0luzhk8l38o1r-n15_l38o" mz="n15">滿員</string>
-  <string name="y0luzhk8l38o1r-n14_l38o" mz="btn_Join">加入房間</string>
-  <string name="y0luzhk8l38o1n-n5_l38o" mz="title">公會</string>
-  <string name="w5bj58pzhtd136-n0_htd1" mz="bottom">舉報</string>
-  <string name="w5bj58pzhtd136-n2_htd1" mz="btn_report">確定</string>
-  <string name="w5bj58pzl38o3c-n4_l38o" mz="btn_sure">確定</string>
-  <string name="w5bj58pzmnrq3j-n0_mnrq" mz="bottom">規則</string>
-  <string name="gldisc01mnrq1w-n1_g04j" mz="title">舉報</string>
-  <string name="gldisc01gd009-n46_mnrq" mz="btn_rule">規則</string>
-  <string name="gldisc01gd016-n22_mnrq" mz="btn_Refresh">刷新</string>
-  <string name="gldisc01mnrq1h-n0_htd1" mz="bottom">舉報</string>
-  <string name="gldisc01mnrq1h-n27_mnrq" mz="btn_report">確定</string>
-  <string name="gldisc01mnrq1y-n0_mnrq" mz="bottom">規則</string>
-  <string name="24i5r2i07h6s0-n34_l38o" mz="btn_Guild">公會</string>
-  <string name="vxuz3wboorg70-n54_mnrq" mz="btn_Sure">確定</string>
-  <string name="iy1joavto1n81c-n52_l38o-cp-lable_title" mz="n52">公會設置</string>
-  <string name="iy1joavto1n81c-n53_l38o-cp-title" mz="com_refuseGuildInvite">出牌推薦</string>
-  <string name="iy1joavto1n81c-n54_l38o-cp-title" mz="com_guildMsgPrompt">出牌推薦</string>
+  <string name="iy1joavtstyp2g-n91_styp" mz="n91">退出遊戲</string>
+  <string name="9k6d9by2nu3za-n12_nu3z" mz="btn_SkipHero">跳過</string>
+  <string name="9k6d9by2mzc8t-n12_nu3z" mz="btn_SkipHero">跳過</string>
 </resources>

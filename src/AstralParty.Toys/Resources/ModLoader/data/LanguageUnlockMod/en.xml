@@ -70,10 +70,8 @@
   <string name="vckl96ksize7sq4y-n38_ize7" mz="txt_Desc">（1 Attempt）</string>
   <string name="vckl96ksize7sq4x-n37_ize7" mz="txt_Title">Purchase</string>
   <string name="vckl96kso812e0-n37_ize7" mz="txt_Title">Purchase</string>
-  <string name="vckl96ksize7sq4u-n6_at01" mz="n6"> </string>
   <string name="vckl96ksize7sq4u-n11_at01" mz="btn_Purchase">Purchase</string>
   <string name="vckl96ksize7sq4u-n10_at01" mz="btn_Light">Unlock</string>
-  <string name="vckl96kso812e2-n6_at01" mz="n6"> </string>
   <string name="vckl96kso812e2-n11_at01" mz="btn_Purchase">Purchase</string>
   <string name="vckl96kso812e2-n10_at01" mz="btn_Light">Unlock</string>
   <string name="vckl96ksize7sq4z-n37_ize7" mz="btn_ShowSkin">Skin Preview</string>
@@ -83,7 +81,6 @@
   <string name="vckl96ksxcsllsq7p-n37_ize7" mz="txt_Title">Unlock</string>
   <string name="vckl96ksxcsllsq7p-n38_ize7" mz="txt_Desc">（1 Attempt）</string>
   <string name="vckl96ksxcsllsq7n-n37_ize7" mz="txt_Title">Purchase</string>
-  <string name="vckl96ksxcsllsq76-n6_at01" mz="n6"> </string>
   <string name="vckl96ksxcsllsq76-n11_at01" mz="btn_Purchase">Purchase</string>
   <string name="vckl96ksxcsllsq76-n10_at01" mz="btn_Light">Unlock</string>
   <string name="vckl96ksxcsllsq80-n37_ize7" mz="btn_ShowSkin">Skin Preview</string>
@@ -91,14 +88,13 @@
   <string name="vckl96ksyjnjlsq8p-n33_o812" mz="txt_Title">Unlock</string>
   <string name="vckl96ksyjnjlsq8p-n35_o812" mz="txt_Desc">（1 Attempt）</string>
   <string name="vckl96ksyjnjlsq8n-n33_o812" mz="txt_Title">Purchase</string>
-  <string name="vckl96ksyjnjlsq88-n6_at01" mz="n6"> </string>
   <string name="vckl96ksyjnjlsq88-n11_at01" mz="btn_Purchase">Purchase</string>
   <string name="vckl96ksyjnjlsq88-n10_at01" mz="btn_Light">Unlock</string>
   <string name="vckl96ksyjnjlsq8u-n16_o812" mz="btn_ShowSkin">Preview</string>
   <string name="vckl96ksyjnjlsq8u-n26_o812" mz="n26">· Exclusive Battle Stage· Exclusive Battle BGM</string>
+  <string name="1pgen0em6brr0-n23_6brr" mz="txt_coin">x1000</string>
   <string name="1pgen0em6brr0-n19_6brr" mz="txt_title">活动标题</string>
   <string name="1pgen0em6brr0-n20_6brr" mz="txt_date">4.25~5.23</string>
-  <string name="1pgen0em6brr0-n23_6brr" mz="txt_coin">x1000</string>
   <string name="1pgen0em6brro-n8_6brr" mz="title">完成奖励（7/7）</string>
   <string name="1pgen0em6brrm-n4_6brr" mz="txt_icon">x1300</string>
   <string name="1pgen0em6brrm-n8_6brr" mz="txt_num">第1张</string>
@@ -149,7 +145,6 @@
   <string name="n4exfankjqro1e-n37_ize7" mz="txt_Title">Unlock</string>
   <string name="n4exfankjqro1e-n38_ize7" mz="txt_Desc">（1 Attempt）</string>
   <string name="n4exfankjqro1c-n37_ize7" mz="txt_Title">Purchase</string>
-  <string name="n4exfankjqrov-n6_at01" mz="n6"> </string>
   <string name="n4exfankjqrov-n11_at01" mz="btn_Purchase">Purchase</string>
   <string name="n4exfankjqrov-n10_at01" mz="btn_Light">Unlock</string>
   <string name="n4exfankjqro1k-n37_ize7" mz="btn_ShowSkin">Skin Preview</string>
@@ -157,7 +152,6 @@
   <string name="n4exfankjqrol-n5_jqro" mz="txt_Title">Unlock</string>
   <string name="n4exfankjqrol-n6_jqro" mz="txt_Desc">（1 Attempt）</string>
   <string name="n4exfankjqroj-n5_jqro" mz="txt_Title">Purchase</string>
-  <string name="n4exfankjqro5-n9_jqro" mz="n9"> </string>
   <string name="n4exfankjqrom-n0_jqro" mz="btn_ShowSkin">Preview</string>
   <string name="n4exfankjqrom-n8_jqro" mz="n8">· Exclusive Battle Stage· Exclusive Battle BGM</string>
   <string name="wdl8l4hslwm16-n3_lwm1" mz="n3">Tasks</string>
@@ -277,6 +271,16 @@ Tap to Enter</string>
   <string name="6dt5s4htqw8h7-n77_v1vk" mz="txt_NextTime">Opens Next Season</string>
   <string name="6dt5s4htqw8hv-n177_v1vk" mz="n177">Ongoing</string>
   <string name="6dt5s4htqw8hv-n186_v1vk" mz="n186">Claim</string>
+  <string name="7lignf1bizzn0-n19_z8qc" mz="n19">Character Trial</string>
+  <string name="7lignf1bizzn0-n8_z8qc" mz="txt_Time">Time Remaining: 10 Days 20 Hours</string>
+  <string name="7lignf1bizzn0-n21_z8qc" mz="n21">Win a stage using the specified trial character to claim the reward.</string>
+  <string name="7lignf1bizzn0-n14_z8qc" mz="n14">Reward Preview</string>
+  <string name="7lignf1bizzn0-n10_z8qc" mz="n10">Incomplete</string>
+  <string name="7lignf1bizzn0-n11_z8qc" mz="btn_GetAward">Receive</string>
+  <string name="7lignf1bizzn0-n2_izzn" mz="btn_Trial">Start Trial</string>
+  <string name="7lignf1bizzn0-n4_z8qc" mz="btn_GetWay">Go Get It</string>
+  <string name="7lignf1bbez2l-n11_micc" mz="title">Confirm</string>
+  <string name="7lignf1bz8qcg-n24_z8qc" mz="n24">Preview</string>
   <string name="zlysd2gupgzf51-n46_debj" mz="title">Back</string>
   <string name="zlysd2gupgzf4c-n69_ru20" mz="btn_TaskToggle">Overview</string>
   <string name="k49wk9ftesyu2t-n28_q4ft" mz="n28">Purchase</string>
@@ -391,12 +395,23 @@ Tap to Enter</string>
   <string name="bi8fdi6nqy4029-n3_qb3s" mz="n3">Confirm</string>
   <string name="bi8fdi6nsjju21-n3_qb3s" mz="n1">Pass</string>
   <string name="bi8fdi6nsjju21-n8_wvm9" mz="n2">CANCEL</string>
+  <string name="y0luzhk8l38o1q-n0_g04j" mz="tips">2026/06/01 Name xxxxx promoted xxxxx to Vice Leader</string>
+  <string name="y0luzhk8styp26-n0_g04j" mz="tips">2026/06/01 Name xxxxx promoted xxxxx to Vice Leader</string>
   <string name="y0luzhk8x1udb-n36_mdt4" mz="n36">Chat</string>
+  <string name="y0luzhk8x1udb-n49_l38o" mz="btn_tagGuild">Guild</string>
+  <string name="y0luzhk8x1udb-n50_l38o" mz="btn_tagFriend">Friend</string>
   <string name="y0luzhk8x1udb-n7-prompt" mz="Input_Send">[color=#CCCCCC]Enter Message[/color]</string>
   <string name="y0luzhk8x1udb-n30_eipb" mz="txt_wordLimit">{current=0}/{limit=100}</string>
   <string name="y0luzhk8x1udb-n8" mz="btn_Send">Send</string>
   <string name="y0luzhk8ednm16-n43_ednm" mz="btn_Cancel">Cancel</string>
   <string name="y0luzhk8ednm16-n44_ednm" mz="btn_Sure">Confirm</string>
+  <string name="y0luzhk8l38o1r-n6_l38o" mz="txt_MapName">Dreama</string>
+  <string name="y0luzhk8l38o1r-n8_l38o" mz="txt_MapModel">Co-op Challenge</string>
+  <string name="y0luzhk8l38o1r-n13_l38o" mz="txt_RoomMember">Players [color=#02BD06]{num=3}[/color]/{maxnum=4}</string>
+  <string name="y0luzhk8l38o1r-n15_l38o" mz="n15">Full</string>
+  <string name="y0luzhk8l38o1r-n14_l38o" mz="btn_Join">Join Room</string>
+  <string name="y0luzhk8l38o1r-n16_z8qc" mz="n16">Expired</string>
+  <string name="y0luzhk8l38o1n-n5_l38o" mz="title">Guild</string>
   <string name="y0luzhk8njjna-n36_ednm" mz="txt_Online">•Online</string>
   <string name="y0luzhk8njjna-n37_ednm" mz="txt_Offline">Offline</string>
   <string name="y0luzhk8sgc41d-n25_sgc4" mz="btn_Delete">Remove Conversation</string>
@@ -640,7 +655,6 @@ Tap to Enter</string>
   <string name="egrtucyhot0w6-n88_vlgj" mz="n88">Name</string>
   <string name="egrtucyhot0w6-n89_vlgj" mz="n89">Amount</string>
   <string name="egrtucyhot0w6-n90_vlgj" mz="n90">Time</string>
-  <string name="egrtucyhnu3za-n12_nu3z" mz="btn_SkipSkin">Skip</string>
   <string name="egrtucyhot0w0-n11_r3jj" mz="bottom">Gacha Info</string>
   <string name="egrtucyhot0w0-n7_izsa" mz="btn_Skip">Skip</string>
   <string name="q1a022ssjrp5qq38-n116_pzeu" mz="txt_receive">Claim</string>
@@ -658,9 +672,12 @@ Tap to Enter</string>
   <string name="d5a5wdik7wqn0-n29_ru20-2" mz="list_Labels">Monster</string>
   <string name="d5a5wdik7wqn0-n29_ru20-3" mz="list_Labels">Chips</string>
   <string name="d5a5wdik7wqn0-n29_ru20-4" mz="list_Labels">Event</string>
+  <string name="w5bj58pzz8qc3w-n5_z8qc" mz="n5">Approval Settings</string>
   <string name="w5bj58pzlwm12-n1_lwm1" mz="title">Back</string>
   <string name="w5bj58pzg04jk-n6_rc48" mz="title">Join</string>
   <string name="w5bj58pzg04jj-n1_g04j" mz="title">Report</string>
+  <string name="w5bj58pzz8qc3t-n6_z8qc" mz="n6">On</string>
+  <string name="w5bj58pzz8qc3t-n8_z8qc" mz="n8">Close</string>
   <string name="w5bj58pzlwm20-n2_lwm1" mz="txt_AnnouncementTitle">Notice</string>
   <string name="w5bj58pzlwm20-n4_lwm1" mz="txt_AnnouncementUpdatedMeta">Last Modified: {time=2026/06/30}</string>
   <string name="w5bj58pzlwm13-n3_lwm1-0" mz="list_GuildMainNavItems">Chat</string>
@@ -681,6 +698,21 @@ Tap to Enter</string>
   <string name="w5bj58pzg04j10-n7_g04j" mz="btn_invite">Invite to Guild</string>
   <string name="w5bj58pzg04j10-n8_g04j" mz="btn_approval">Review Applications</string>
   <string name="w5bj58pzg04j17-n6_g04j" mz="active">This Week's Activity: {active=999}</string>
+  <string name="w5bj58pzhtd136-n0_htd1" mz="bottom">Report</string>
+  <string name="w5bj58pzhtd136-n2_htd1" mz="btn_report">Confirm</string>
+  <string name="w5bj58pzhtd136-n5_l38o" mz="n5">Report Target</string>
+  <string name="w5bj58pzhtd136-n6_l38o" mz="n6">Report Reason</string>
+  <string name="w5bj58pzhtd136-n7_l38o" mz="n7">Additional Details</string>
+  <string name="w5bj58pzhtd136-n12_l38o" mz="n12">Attach Guild Chat Logs</string>
+  <string name="w5bj58pzhtd136-n18_l38o" mz="combobox_target">Select Player/Guild</string>
+  <string name="w5bj58pzhtd136-n19_l38o" mz="combobox_reason">Select Reason</string>
+  <string name="w5bj58pzhtd136-n13_l38o" mz="btn_OpenRecord">Open Chat Logs</string>
+  <string name="w5bj58pzl38o3a-n3_l38o" mz="title">Select Player/Guild</string>
+  <string name="w5bj58pzl38o38-n2_l38o" mz="title">Hello</string>
+  <string name="w5bj58pzl38o3c-n2_l38o" mz="n2">Select up to 10 chat messages at a time</string>
+  <string name="w5bj58pzl38o3c-n4_l38o" mz="btn_sure">Confirm</string>
+  <string name="w5bj58pzl38o3h-n17_l38o-prompt" mz="txt_ExpectExplanation">Enter up to 300 characters</string>
+  <string name="w5bj58pzmnrq3j-n0_mnrq" mz="bottom">Rules</string>
   <string name="w5bj58pzhtd11m-n1_htd1" mz="n1">Guild Store</string>
   <string name="w5bj58pzhtd11l-n1_htd1" mz="n1">Guild Missions</string>
   <string name="w5bj58pzhtd11p-n38_htd1" mz="btn_taskStatus">Go Complete</string>
@@ -690,6 +722,13 @@ Tap to Enter</string>
   <string name="w5bj58pzhtd135-n4_htd1" mz="btn_see">Check</string>
   <string name="w5bj58pzhtd135-n5_htd1" mz="btn_refuse">Reject</string>
   <string name="w5bj58pzhtd135-n6_htd1" mz="btn_agree">Accept</string>
+  <string name="w5bj58pzz8qc3l-n0_z8qc" mz="bottom">Approval Settings</string>
+  <string name="w5bj58pzz8qc3l-n10_z8qc" mz="n10">Auto-Approval Level Requirement</string>
+  <string name="w5bj58pzz8qc3l-n11_z8qc" mz="n11">Automatically approve join requests from players at or above this level.</string>
+  <string name="w5bj58pzz8qc3l-n8_z8qc" mz="n8">Auto-Approve</string>
+  <string name="w5bj58pzz8qc3l-n9_z8qc" mz="n9">When enabled, requests that meet the requirements are automatically approved.</string>
+  <string name="w5bj58pzz8qc3l-n1_z8qc" mz="btn_sure">Save</string>
+  <string name="w5bj58pzz8qc3l-n2_z8qc" mz="btn_cancel">Cancel</string>
   <string name="w5bj58pzhtd12j-n0_htd1" mz="bottom">Review Applications</string>
   <string name="w5bj58pzhtd12j-n3_htd1" mz="n3">Applications from the Last 7 Days</string>
   <string name="w5bj58pzhtd12j-n5_htd1" mz="btn_refuseall">Reject All</string>
@@ -706,7 +745,7 @@ Tap to Enter</string>
   <string name="w5bj58pzhtd12a-n3_htd1" mz="input_notice">NoTranslate</string>
   <string name="w5bj58pzhtd12a-n4_htd1" mz="btn_notice_sure">Confirm</string>
   <string name="w5bj58pzhtd12a-n6_htd1" mz="txt_editerName">Last Modified by: {name=名字XXXX}</string>
-  <string name="w5bj58pzhtd12a-n9_htd1" mz="n9">Daily edit limit: 3 times</string>
+  <string name="w5bj58pzhtd12a-n9_htd1" mz="txt_editerLimit">Daily edit limit: 3 times</string>
   <string name="w5bj58pzhtd129-n0_htd1" mz="bottom">Guild Settings</string>
   <string name="w5bj58pzhtd129-n2_htd1" mz="n2">Guild Tags</string>
   <string name="w5bj58pzhtd129-n5_htd1" mz="n5">Recruitment Notice</string>
@@ -715,7 +754,7 @@ Tap to Enter</string>
   <string name="w5bj58pzhtd129-n9_htd1" mz="btn_dissolve">Disband Guild</string>
   <string name="w5bj58pzhtd129-n10_htd1" mz="btn_settingsure">Confirm</string>
   <string name="w5bj58pzhtd129-n12_htd1" mz="txt_editerName">Last Modified: {name=name XXXX}</string>
-  <string name="w5bj58pzhtd129-n15_htd1" mz="n15">Daily edit limit: 3 times</string>
+  <string name="w5bj58pzhtd129-n15_htd1" mz="txt_editerLimit">Daily edit limit: 3 times</string>
   <string name="w5bj58pzg04j1i-n0_g04j" mz="tips">2026/06/01 Name xxxxx promoted xxxxx to Vice Leader</string>
   <string name="w5bj58pzlwm11-n3_lwm1" mz="btn_Back">Back</string>
   <string name="gldisc01gd007-n7_hmn1" mz="n7">Application Records</string>
@@ -723,6 +762,8 @@ Tap to Enter</string>
   <string name="gldisc01rc48v-n4_y9qn" mz="n4">Back</string>
   <string name="gldisc01gd002-n9_rc48" mz="title">Create Guild</string>
   <string name="gldisc01rc4816-n6_rc48" mz="title">Join</string>
+  <string name="gldisc01mnrq1w-n1_g04j" mz="title">Report</string>
+  <string name="gldisc01gd009-n46_mnrq" mz="btn_rule">Rules</string>
   <string name="gldisc01gd009-n21_hmn1" mz="n21">Guild Name</string>
   <string name="gldisc01gd009-n23_hmn1" mz="input_GuildName">NoTranslate</string>
   <string name="gldisc01gd009-n26_hmn1" mz="txt_hint1">Cannot exceed 20 characters.</string>
@@ -750,10 +791,21 @@ Tap to Enter</string>
   <string name="gldisc01gd016-n15_hmn1" mz="btn_SearchGuild">Search</string>
   <string name="gldisc01gd016-n18_hmn1" mz="btn_ReportGuild">Report</string>
   <string name="gldisc01gd016-n19_hmn1" mz="btn_ApplyJoinGuild">Join</string>
+  <string name="gldisc01gd016-n22_mnrq" mz="btn_Refresh">Refresh</string>
   <string name="gldisc01gd005-n2_gd" mz="txt_GuildName">NoTranslate</string>
   <string name="gldisc01gd005-n16_hmn1" mz="n16">Applied</string>
+  <string name="gldisc01gd005-n19_z8qc" mz="n19">Open to Join</string>
   <string name="gldisc01gd005-n5_gd" mz="txt_GuildMember">Total Members: {num=999}</string>
   <string name="gldisc01gd005-n10_hmn1" mz="txt_GuildActiveMember">Last Week's Activity: {num=666}</string>
+  <string name="gldisc01mnrq1h-n0_htd1" mz="bottom">Report</string>
+  <string name="gldisc01mnrq1h-n6_l38o" mz="n6">Report Reason</string>
+  <string name="gldisc01mnrq1h-n19_l38o" mz="combobox_reason">Select Reason</string>
+  <string name="gldisc01mnrq1h-n7_l38o" mz="n7">Additional Details</string>
+  <string name="gldisc01mnrq1h-n27_mnrq" mz="btn_report">Confirm</string>
+  <string name="gldisc01mnrq1o-n3_l38o" mz="title">Select Player/Guild</string>
+  <string name="gldisc01mnrq1s-n2_l38o" mz="title">Hello</string>
+  <string name="gldisc01mnrq1t-n17_l38o-prompt" mz="txt_ExpectExplanation">Enter up to 300 characters</string>
+  <string name="gldisc01mnrq1y-n0_mnrq" mz="bottom">Rules</string>
   <string name="gldisc01gd001-n7_gd-0" mz="list_GuildSideNavItems">Join Guild</string>
   <string name="gldisc01gd001-n7_gd-1" mz="list_GuildSideNavItems">Application Records</string>
   <string name="gldisc01gd001-n7_gd-2" mz="list_GuildSideNavItems">Received Invites</string>
@@ -857,7 +909,10 @@ Tap to Enter</string>
   <string name="24i5r2i07h6s8-n8_7h6s" mz="btn_Join">Join</string>
   <string name="24i5r2i07h6s8-n9_7h6s" mz="n9">Expired</string>
   <string name="24i5r2i07h6s0-n28_r26s" mz="btn_LastTeam">Recent Players</string>
+  <string name="24i5r2i07h6s0-n34_l38o" mz="btn_Guild">Guild</string>
+  <string name="24i5r2i07h6s0-n35_l38o" mz="txt_NotGuildMember">No guild members online</string>
   <string name="24i5r2i07h6s0-n2_7h6s" mz="btn_Invite">Invite</string>
+  <string name="24i5r2i07h6s0-n36_l38o" mz="btn_ShareGuild">Share to Guild Channel</string>
   <string name="24i5r2i07h6s0-n15_7h6s" mz="btn_ClearInfo">Ignore All</string>
   <string name="dc8zac77rum7c-n19_gn3o" mz="n19">[b]FIRE[/b]</string>
   <string name="dc8zac77rum79-n19_gn3o" mz="n19">[b]EXIT[/b]</string>
@@ -867,6 +922,14 @@ Tap to Enter</string>
   <string name="dc8zac77hmjfi-n37_tlsf-texts_0" mz="n37">Railgun aiming to the target!</string>
   <string name="dc8zac77hmjfi-n37_tlsf-texts_1" mz="n37">Hit the target?</string>
   <string name="dc8zac77hmjfi-n37_tlsf-texts_2" mz="n37">Fire to the target!</string>
+  <string name="uxy5qzintjfg5-n19_gn3o" mz="n19">Purchase</string>
+  <string name="uxy5qzintjfg5-n22_o812" mz="txt_Desc">{needGold=0}&lt;img src='ui://xuaw6o8jmmmw3x' width='45' height='45'/&gt;</string>
+  <string name="uxy5qzintjfg1-n5_r94h" mz="btn_Cancel">Leave</string>
+  <string name="uxy5qzintjfg1-n29_qpnt" mz="n29">Hide</string>
+  <string name="uxy5qzintjfg1-n30_qpnt" mz="n30">Show</string>
+  <string name="uwm4hro3lbmc0002-n1_lbm" mz="title">×</string>
+  <string name="uwm4hro3lt52h-n23_lt52-texts_0" mz="txt_Completed">Unlocked</string>
+  <string name="uwm4hro3lt52h-n23_lt52-texts_def" mz="txt_Completed">Locked</string>
   <string name="dngx84d5rum70-n23_y0e5" mz="n99">Choosing the predeterminate fortune</string>
   <string name="dngx84d5rum70-n27_y0e5" mz="n100">The fortune will fall on…?</string>
   <string name="dngx84d5rum70-n24_y0e5" mz="txt_Tip">[size=40][color=#{color=ff0000}]{playerName=PLAYER NAME}[/color][/size]</string>
@@ -994,6 +1057,8 @@ Sure, but it’s gonna cost ya.</string>
   <string name="vxuz3wboorg70-n50_axwd" mz="btn_Cancel">Cancel</string>
   <string name="vxuz3wboorg70-n49_axwd" mz="btn_Bestow">Gift</string>
   <string name="vxuz3wboorg70-n52_uzzv" mz="btn_Mix">Mixing</string>
+  <string name="vxuz3wboorg70-n54_mnrq" mz="btn_Sure">Confirm</string>
+  <string name="vxuz3wboorg70-n55_nkzh" mz="btn_Select">Confirm</string>
   <string name="vxuz3wboorg70-n48_p4oi" mz="txt_CardNum">{cur=[color=#ff0000]00[/color]}/{max=00}</string>
   <string name="2p754tqkilj51d-n3_ilj5" mz="title">Collapse</string>
   <string name="2p754tqkilj51d-n3_ilj5-texts_0" mz="title">Expand All</string>
@@ -1076,10 +1141,6 @@ Sure, but it’s gonna cost ya.</string>
   <string name="mc0y3plupj0z2m-n36_pj0z" mz="Btn_Exclusive">Exclusive</string>
   <string name="mc0y3plupj0z2m-n37_pj0z" mz="Btn_Common">General</string>
   <string name="mc0y3plupj0z1m-n8_rj85" mz="Text_NoSearch">No results found</string>
-  <string name="mc0y3plupj0z1m-n9_s8o9-0" mz="DropDown_Filter">All</string>
-  <string name="mc0y3plupj0z1m-n9_s8o9-1" mz="DropDown_Filter">Alt. Illustration Cards</string>
-  <string name="mc0y3plupj0z1m-n9_s8o9-2" mz="DropDown_Filter">Unlocked Alt. Illustration Cards</string>
-  <string name="mc0y3plupj0z1m-n9_s8o9-3" mz="DropDown_Filter">Character Exclusive Cards</string>
   <string name="mc0y3plupj0z1p-n9_rj85" mz="Text_NoSearch">No results found</string>
   <string name="mc0y3plupj0z1r-n9_rj85" mz="Text_NoSearch">No results found</string>
   <string name="mc0y3plupj0z1k-n4_pj0z" mz="n4">Event</string>
@@ -1177,6 +1238,8 @@ Sure, but it’s gonna cost ya.</string>
   <string name="pr2pbkngeduv1-n2_eduv" mz="btn_GuideLevel1">[Tutorial - Foundation ]</string>
   <string name="pr2pbkngeduv1-n3_eduv" mz="btn_GuideLevel2">[Tutorial - Battle]</string>
   <string name="iy1joavto1n81f-n16_iy9w" mz="title">Display</string>
+  <string name="iy1joavtz8qc2e-n2_z8qc" mz="txt_option">Back/Open Menu</string>
+  <string name="iy1joavtz8qc2f-n4_z8qc" mz="lable_title">Refresh Rate</string>
   <string name="iy1joavtl38o2a-n1_l38o" mz="title">Not Set</string>
   <string name="iy1joavto1n810-n1_u0xa-prompt" mz="title">[size=28][color=#999999]Input the Redemption code[/color][/size]</string>
   <string name="iy1joavto1n8l-n0_u0xa" mz="title">Free Camera</string>
@@ -1184,11 +1247,11 @@ Sure, but it’s gonna cost ya.</string>
   <string name="iy1joavtl38o2b-n1_l38o" mz="bottom">Custom Keybinds</string>
   <string name="iy1joavtl38o2b-n2_l38o" mz="txt_BingButton">Please enter the key you want to rebind to</string>
   <string name="iy1joavtp5xi1s-n88_u0xa" mz="uid">UID：</string>
-  <string name="iy1joavtl38o29-n1_l38o-cp-lable_title" mz="n1">Skill</string>
-  <string name="iy1joavtl38o29-n2_l38o-cp-lable_title" mz="n2">Move</string>
-  <string name="iy1joavtl38o29-n3_l38o-cp-lable_title" mz="n3">Mark</string>
-  <string name="iy1joavtl38o29-n4_l38o-cp-lable_title" mz="n4">View Tools</string>
   <string name="iy1joavtl38o29-n5_l38o" mz="btn_reset">Default Settings</string>
+  <string name="iy1joavtz8qc2c-n9_z8qc-cp-lable_title" mz="com_camera">Camera Controls</string>
+  <string name="iy1joavtz8qc2c-n10_z8qc-cp-lable_title" mz="com_game">In-Game Controls</string>
+  <string name="iy1joavtz8qc2c-n11_z8qc-cp-lable_title" mz="com_video">Story &amp; Replay</string>
+  <string name="iy1joavtz8qc2c-n12_z8qc-cp-lable_title" mz="com_other">Other</string>
   <string name="iy1joavto1n8k-n54_u0xa-cp-lable_title" mz="n54">Camera</string>
   <string name="iy1joavto1n8k-n56_u0xa-cp-title" mz="com_MouseSwither">Mouse controls</string>
   <string name="iy1joavto1n8k-n55_u0xa-cp-title" mz="com_FreeCameraSwither">Free Camera</string>
@@ -1211,6 +1274,11 @@ Sure, but it’s gonna cost ya.</string>
   <string name="iy1joavto1n81c-n50_10ruo-cp-title" mz="com_ActionSuggestSwither">AFK Timeout Reminder</string>
   <string name="iy1joavto1n81c-n51_l38o" mz="com_DistanceHelperSwither">Auto Distance Assist</string>
   <string name="iy1joavto1n81c-n51_l38o-cp-title" mz="com_DistanceHelperSwither">Auto Distance Assist</string>
+  <string name="iy1joavto1n81c-n52_l38o-cp-lable_title" mz="n52">Guild Settings</string>
+  <string name="iy1joavto1n81c-n53_l38o" mz="com_refuseGuildInvite">Block Guild Invitations</string>
+  <string name="iy1joavto1n81c-n53_l38o-cp-title" mz="com_refuseGuildInvite">Card Recommendation</string>
+  <string name="iy1joavto1n81c-n54_l38o" mz="com_guildMsgPrompt">Guild Channel Message Notifications</string>
+  <string name="iy1joavto1n81c-n54_l38o-cp-title" mz="com_guildMsgPrompt">Card Recommendation</string>
   <string name="iy1joavto1801z-n56_o180" mz="txt_desc">Excellent Fair Play</string>
   <string name="iy1joavto1801z-n57_o180" mz="btn_check">View Fair Play Score Rules</string>
   <string name="iy1joavto1n87-n59_u0xa-cp-lable_title" mz="n59">Resolution</string>
@@ -1257,12 +1325,6 @@ Surrendering and exiting mid-match: -5 points
 Disconnecting during a match and failing to reconnect within 3 minutes: -5 points
 Closing the game during a match without reconnecting: -10 points
 Being removed from the game due to multiple AFK timeouts during a match: -10 points</string>
-  <string name="iy1joavtwh311r-n33_jzri" mz="n33">Display</string>
-  <string name="iy1joavtwh311r-n34_jzri" mz="n34">Sound</string>
-  <string name="iy1joavtwh311r-n35_jzri" mz="n35">Setting</string>
-  <string name="iy1joavtwh311r-n44_efox" mz="n44">User</string>
-  <string name="iy1joavtwh311r-n108_o180" mz="n108">Fair Play Score</string>
-  <string name="iy1joavtwh311r-n116_l38o" mz="n116">Keybind Settings</string>
   <string name="iy1joavtwh311r-n0_jzri" mz="btn_Return">Back</string>
   <string name="h88onq8cgzvsf-n8_gzvs" mz="title">星引擎缔造者</string>
   <string name="h88onq8cd11o0-n10_gzvs" mz="n10">星引擎拥有者</string>
@@ -1476,49 +1538,7 @@ Being removed from the game due to multiple AFK timeouts during a match: -10 poi
   <string name="hn2q98k6kqgji-n44_kqgj" mz="com_TaiDao">Misaki</string>
   <string name="hn2q98k6kqgji-n40_kqgj" mz="com_XiuNv">Alana</string>
   <string name="hn2q98k6kqgjm-n40_kqgj" mz="txt_Name">Witch's Weapon</string>
-  <string name="y0luzhk8l38o1r-n6_l38o" mz="txt_MapName">Dreama</string>
-  <string name="y0luzhk8l38o1r-n13_l38o" mz="txt_RoomMember">Players [color=#02BD06]{num=3}[/color]/{maxnum=4}</string>
-  <string name="w5bj58pzhtd136-n5_l38o" mz="n5">Report Target</string>
-  <string name="w5bj58pzhtd136-n6_l38o" mz="n6">Report Reason</string>
-  <string name="w5bj58pzhtd136-n7_l38o" mz="n7">Additional Details</string>
-  <string name="w5bj58pzhtd136-n12_l38o" mz="n12">Attach Guild Chat Logs</string>
-  <string name="w5bj58pzhtd136-n18_l38o" mz="combobox_target">Select Player/Guild</string>
-  <string name="w5bj58pzhtd136-n19_l38o" mz="combobox_reason">Select Reason</string>
-  <string name="w5bj58pzhtd136-n13_l38o" mz="btn_OpenRecord">Open Chat Logs</string>
-  <string name="w5bj58pzl38o3a-n3_l38o" mz="title">Select Player/Guild</string>
-  <string name="w5bj58pzl38o38-n2_l38o" mz="title">Hello</string>
-  <string name="w5bj58pzl38o3c-n2_l38o" mz="n2">Select up to 10 chat messages at a time</string>
-  <string name="w5bj58pzl38o3h-n17_l38o-prompt" mz="txt_ExpectExplanation">Enter up to 300 characters</string>
-  <string name="gldisc01mnrq1h-n6_l38o" mz="n6">Report Reason</string>
-  <string name="gldisc01mnrq1h-n19_l38o" mz="combobox_reason">Select Reason</string>
-  <string name="gldisc01mnrq1h-n7_l38o" mz="n7">Additional Details</string>
-  <string name="gldisc01mnrq1o-n3_l38o" mz="title">Select Player/Guild</string>
-  <string name="gldisc01mnrq1s-n2_l38o" mz="title">Hello</string>
-  <string name="gldisc01mnrq1t-n17_l38o-prompt" mz="txt_ExpectExplanation">Enter up to 300 characters</string>
-  <string name="24i5r2i07h6s0-n35_l38o" mz="txt_NotGuildMember">No guild members online</string>
-  <string name="24i5r2i07h6s0-n36_l38o" mz="btn_ShareGuild">Share to Guild Channel</string>
-  <string name="iy1joavto1n81c-n53_l38o" mz="com_refuseGuildInvite">Block Guild Invitations</string>
-  <string name="iy1joavto1n81c-n54_l38o" mz="com_guildMsgPrompt">Guild Channel Message Notifications</string>
-  <string name="y0luzhk8l38o1q-n0_g04j" mz="tips">2026/06/01 Name xxxxx promoted xxxxx to Vice Leader</string>
-  <string name="y0luzhk8x1udb-n49_l38o" mz="btn_tagGuild">Guild</string>
-  <string name="y0luzhk8x1udb-n50_l38o" mz="btn_tagFriend">Friend</string>
-  <string name="y0luzhk8l38o1r-n8_l38o" mz="txt_MapModel">Co-op Challenge</string>
-  <string name="y0luzhk8l38o1r-n15_l38o" mz="n15">Full</string>
-  <string name="y0luzhk8l38o1r-n14_l38o" mz="btn_Join">Join Room</string>
-  <string name="y0luzhk8l38o1n-n5_l38o" mz="title">Guild</string>
-  <string name="w5bj58pzhtd136-n0_htd1" mz="bottom">Report</string>
-  <string name="w5bj58pzhtd136-n2_htd1" mz="btn_report">Confirm</string>
-  <string name="w5bj58pzl38o3c-n4_l38o" mz="btn_sure">Confirm</string>
-  <string name="w5bj58pzmnrq3j-n0_mnrq" mz="bottom">Rules</string>
-  <string name="gldisc01mnrq1w-n1_g04j" mz="title">Report</string>
-  <string name="gldisc01gd009-n46_mnrq" mz="btn_rule">Rules</string>
-  <string name="gldisc01gd016-n22_mnrq" mz="btn_Refresh">Refresh</string>
-  <string name="gldisc01mnrq1h-n0_htd1" mz="bottom">Report</string>
-  <string name="gldisc01mnrq1h-n27_mnrq" mz="btn_report">Confirm</string>
-  <string name="gldisc01mnrq1y-n0_mnrq" mz="bottom">Rules</string>
-  <string name="24i5r2i07h6s0-n34_l38o" mz="btn_Guild">Guild</string>
-  <string name="vxuz3wboorg70-n54_mnrq" mz="btn_Sure">Confirm</string>
-  <string name="iy1joavto1n81c-n52_l38o-cp-lable_title" mz="n52">Guild Settings</string>
-  <string name="iy1joavto1n81c-n53_l38o-cp-title" mz="com_refuseGuildInvite">Card Recommendation</string>
-  <string name="iy1joavto1n81c-n54_l38o-cp-title" mz="com_guildMsgPrompt">Card Recommendation</string>
+  <string name="iy1joavtstyp2g-n91_styp" mz="n91">Exit Game</string>
+  <string name="9k6d9by2nu3za-n12_nu3z" mz="btn_SkipHero">Skip</string>
+  <string name="9k6d9by2mzc8t-n12_nu3z" mz="btn_SkipHero">Skip</string>
 </resources>
