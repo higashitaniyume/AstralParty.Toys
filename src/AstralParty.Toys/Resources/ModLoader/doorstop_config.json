@@ -31,6 +31,31 @@
   // 关掉只影响命令输入, 控制台照常显示日志。
   "debugShell": true,
   "forwardActivityLog": true,
+  // ---------- 调试辅助 ----------
+  // 等调试器附加后再继续引导: 游戏由 Steam 拉起时不能由 VS 直接 F5, 手动附加常常赶不上
+  // 最早的几步。设为 true 后引导线程会停住等调试器(控制台每 5 秒提示一次), 检测到就主动
+  // 断下来, 可以先下断点再继续。排查完记得改回 false —— 否则没附加调试器时会白等
+  // debugWaitTimeoutSec 秒。
+  "debugWaitForDebugger": false,
+  // 等调试器的超时(秒), 范围 1..3600。
+  "debugWaitTimeoutSec": 120,
+  // SDK / mod 日志级别: "inherit"(默认, 沿用环境变量 CESIUM_LOG_LEVEL) /
+  // "Debug" / "Info" / "Warn" / "Error" / "Fatal"。Debug 会输出 SDK 与 mod 的每帧、
+  // 每事件日志, 排查完改回 inherit。
+  "logLevel": "inherit",
+  // 崩溃转储: 访问冲突、栈溢出、堆损坏等致命原生异常时, 在加载器目录的 crash\ 下写
+  // <会话>.dmp 与同名 .txt。dmp 可直接用 VS 打开看线程栈与模块; .txt 里是异常摘要
+  // 与崩溃时的加载器环境(版本、路径、配置、游戏程序集指纹、mod 加载结果)。
+  // 有调试器附加时不落盘(交给调试器处理)。
+  "crashDumpEnabled": true,
+  // 转储包含完整内存(文件可能几 GB); 默认只导线程栈与模块列表。
+  "crashDumpFullMemory": false,
+  // 原生看门狗: 主线程的指令指针连续 N 秒不动(且游戏窗口在前台)时, 自动写一份
+  // hang dump(crash\hang-<会话>.dmp + 同名 .txt), 用于"游戏无响应"这类没有异常的场景。
+  // 默认关闭: 卡死时它会主动落盘(每段停滞 0.5–2 MB), 排障时再打开。
+  "nativeWatchdogEnabled": false,
+  // 停滞判定阈值(秒, 10–600)。建议 20–60: 太短容易撞上加载画面。
+  "nativeWatchdogTimeoutSec": 30,
   // 变速引擎基础倍率: 游戏启动即应用, 全程保持。1.0=正常(默认), 2.0=全程2倍速。
   // 范围 [1,100] —— 低于 1 倍(减速)被硬性禁止, 写更小的值会按 1.0 处理并记日志。
   // 设 1.0 或省略 = 不启用(可用 SpeedHackMod 热键临时变速)。
@@ -48,21 +73,24 @@
   // 注意: 该通道目前在加载器代码里硬编码关闭(kEnableAudioControl=false)，本键只保留读写，
   // 不再决定是否启动；关闭后自定义音效/BGM 替换不可用，游戏本体音效不受影响。
   "audioControlEnabled": true,
+  // ---------- Steam 绕过(默认全关) ----------
+  // 正常由 Steam 启动时不需要任何绕过; 只有"不开 Steam 也要进游戏/建房"才逐项打开。
+  // 打开后加载器会 inline hook 游戏的 AOT 方法, 行为与联网语义随之改变, 出问题先全部关回去。
   // Steam 自杀门绕过: 国服客户端在非 Steam 客户端启动时, AOT 类 SteamManager 的
   // Awake() 会打印 "[ERROR] 非Steam客户端启动, 退出游戏" 并退出。true=把 Awake()
   // 换成 no-op(原生 inline hook), 让游戏继续启动; false=恢复原版行为(会退出游戏)。
   // 不伪造 Steam 身份, 不改动 steam_api64.dll 的认证语义。
-  "steamBypassEnabled": true,
+  "steamBypassEnabled": false,
   // 附加保险: 让 steam_api64.dll 的 SteamAPI_RestartAppIfNecessary 恒返回 0
   // (本是 Steamworks 的无害样板调用)。仅在 steamBypassEnabled=true 时生效。
-  "steamBypassRestartCheck": true,
+  "steamBypassRestartCheck": false,
   // Steam 大厅匹配绕过(阶段2): Steam 全关时点"创建房间/加入房间"毫无反应, 原因是真实的
   // SteamMatchmaking.CreateLobbyAsync 会抛 NullReferenceException, 这个 async 异常把建房
   // 流程整个吃掉(游戏不崩)。true=把 CreateLobbyAsync/JoinLobbyAsync 换成"返回一个已完成、
   // 结果为 null 的 Task<Lobby?>", 游戏按"没有 Steam 大厅"正常建房(协议里 LobbyId=0 合法);
   // false=恢复原版行为(创建/加入房间仍会无反应)。
   // 只受本开关控制, 与 steamBypassEnabled/steamBypassRestartCheck 互不影响。
-  "steamBypassMatchmaking": true,
+  "steamBypassMatchmaking": false,
   // Steam 大厅匹配绕过(阶段3): 上一步(阶段2)之后实测异常**前进到了** Steamworks.Data.Lobby.SetPublic
   // —— UICom_CreateRoom.cs:133 的 val.HasValue 被判成 true, 于是进 if 块, 第 136 行 SetPublic() 抛
   // NullReferenceException。true = 把 AOT 方法 System.Nullable`1<Steamworks.Data.Lobby>::get_HasValue()
@@ -71,7 +99,7 @@
   // 把 Nullable.HasValue 当**内建指令**内联处理, 不走 MethodInfo->methodPointer。hook 留着无害,
   // 但它不是解法; 真正的解法是下面的 steamBypassTaskCtorMode(方案C) + steamBypassLobbyMethods(方案B)。
   // 只在 steamBypassMatchmaking=true 时有意义(阶段2 没装就没有 Nullable 类可解析)。
-  "steamBypassLobbyHasValue": true,
+  "steamBypassLobbyHasValue": false,
   // 方案C(主): 造"已完成的空 Task<Lobby?>"时 Task<T>..ctor(T) 的调用方式。
   // 实测根因: il2cpp_runtime_invoke 给 Task<T>..ctor(Nullable<Lobby>) 传**值类型参数**时编组不正确
   // —— 传进去的 Nullable 的 hasValue 落成了非零(证据: 安装期探针里 il2cpp_field_get_value_object
@@ -112,7 +140,7 @@
   // 影响面为零: 全仓 grep 确认全游戏只有这 2 处调用(RoomLogic.cs:384 与 :554)。
   // 独立开关: 与 steamBypassEnabled/steamBypassMatchmaking/steamBypassLobbyHasValue/
   // steamBypassLobbyMethods 互不影响。false = 恢复原版行为(退房/解散/被踢时 await 之后仍被跳过)。
-  "steamBypassLobbyQuery": true,
+  "steamBypassLobbyQuery": false,
   // TapTap 版绕过(默认关闭): TapTap 自杀门在 AOT 类 TapClientStandalone.IsLaunchedFromTapTapPC,
   // 不是 SteamManager.Awake(), Steam 绕过装了也没用。true=hook 拦截恒通过(当前版本只枚举不真正
   // 下 hook, 等 MethodInfo/返回类型/实测命中钉死后再装, 避免把 async 状态机打崩)。
@@ -123,7 +151,7 @@
   "tapTapBypassLogin": false,
   // 当前分发的 SDK 版本(SemVer): 加载器用它校验 mod 声明的 SdkVersion,
   // 不兼容时拒绝加载该 mod。升级 SDK 时同步更新此字段。
-  "sdkVersion": "3.7.0"
+  "sdkVersion": "3.8.1"
 }
 
 

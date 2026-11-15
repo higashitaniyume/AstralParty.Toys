@@ -24,6 +24,33 @@ public sealed class LoaderConfig
     /// <summary>原生音频控制通道(UDP + 加载器 audio 目录, 自定义音效/BGM 用)。默认开。</summary>
     public bool AudioControlEnabled { get; set; } = true;
 
+    // ---- 排查: 崩溃转储 / 卡死看门狗 / 日志级别 / 等待调试器(加载器原生层功能) ----
+
+    /// <summary>崩溃转储: 原生层遇到未处理异常时在加载器目录 crash\ 写 &lt;会话&gt;.dmp 与同名 .txt 摘要,
+    /// 可直接用 Visual Studio 打开看线程栈。默认开; 只在真崩溃时产生文件。</summary>
+    public bool CrashDumpEnabled { get; set; } = true;
+
+    /// <summary>⚠ 转储包含完整内存(文件可达数 GB, 写出时游戏停顿更久)。只在排查托管崩溃 / 局部变量时才开。</summary>
+    public bool CrashDumpFullMemory { get; set; }
+
+    /// <summary>卡死看门狗: 主线程长时间不响应时自动写 crash\hang-&lt;会话&gt;.dmp。
+    /// 平时有轻微开销, 排查「游戏卡死」时再打开。</summary>
+    public bool NativeWatchdogEnabled { get; set; }
+
+    /// <summary>卡死判定秒数(加载器只接受 [1,3600], 建议 20–60)。</summary>
+    public int NativeWatchdogTimeoutSec { get; set; } = 30;
+
+    /// <summary>日志级别: inherit(跟随环境变量) / Debug / Info / Warn / Error / Fatal。
+    /// 加载器初始化 SDK 与 mod 之前把它注入 CESIUM_LOG_LEVEL; Debug 会写出大量每帧日志, 排查完记得改回。</summary>
+    public string LogLevel { get; set; } = "inherit";
+
+    /// <summary>启动时等待调试器接入(开发用): 等到有调试器挂上再继续, 并在该处断开点。
+    /// 没接调试器时会一直等到 <see cref="DebugWaitTimeoutSec"/>; Steam 启动删不掉参数, 普通玩家保持关闭。</summary>
+    public bool DebugWaitForDebugger { get; set; }
+
+    /// <summary>等待调试器的超时秒数(加载器只接受 [1,3600])。</summary>
+    public int DebugWaitTimeoutSec { get; set; } = 120;
+
     // ---- Steam 绕过(加载器原生功能, 非 mod; 见加载器 docs\steam-bypass.md) ----
     // 这些是**加载器**(version.dll) 的功能开关: 国服客户端在非 Steam 启动时, AOT 类
     // SteamManager.Awake() 会打印 "[ERROR] [SteamManager] 非Steam客户端启动, 退出游戏" 并退出。

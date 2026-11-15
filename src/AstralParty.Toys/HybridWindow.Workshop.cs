@@ -110,6 +110,7 @@ public partial class HybridWindow
                 downloads7Days = item.Downloads7Days,
                 downloads30Days = item.Downloads30Days,
                 featured = item.Featured,
+                platforms = item.Platforms,
                 builtIn = builtIn.Contains(item.Id),
                 installedVersion = installed.TryGetValue(item.Id, out var entry) ? entry.Version : "",
                 enabled = !installed.TryGetValue(item.Id, out var installedEntry) || installedEntry.Enabled
@@ -187,7 +188,8 @@ public partial class HybridWindow
                             dependencies = version.Dependencies,
                             changelog = version.Changelog,
                             publishedAt = version.PublishedAt,
-                            downloads = version.Downloads
+                            downloads = version.Downloads,
+                            platforms = version.Platforms
                         })
                     }
                 }

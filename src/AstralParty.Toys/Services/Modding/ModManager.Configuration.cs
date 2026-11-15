@@ -58,6 +58,18 @@ public sealed partial class ModManager
             if (root.TryGetProperty("windowControlEnabled", out wc) && wc.ValueKind == JsonValueKind.False) defaults.WindowControlEnabled = false;
             if (root.TryGetProperty("audioControlEnabled", out var ac) && ac.ValueKind == JsonValueKind.True) defaults.AudioControlEnabled = true;
             if (root.TryGetProperty("audioControlEnabled", out ac) && ac.ValueKind == JsonValueKind.False) defaults.AudioControlEnabled = false;
+            // 排查类开关(加载器原生层): 崩溃转储 / 卡死看门狗 / 日志级别 / 等待调试器
+            if (root.TryGetProperty("crashDumpEnabled", out var cde) && cde.ValueKind == JsonValueKind.True) defaults.CrashDumpEnabled = true;
+            if (root.TryGetProperty("crashDumpEnabled", out cde) && cde.ValueKind == JsonValueKind.False) defaults.CrashDumpEnabled = false;
+            if (root.TryGetProperty("crashDumpFullMemory", out var cdf) && cdf.ValueKind == JsonValueKind.True) defaults.CrashDumpFullMemory = true;
+            if (root.TryGetProperty("crashDumpFullMemory", out cdf) && cdf.ValueKind == JsonValueKind.False) defaults.CrashDumpFullMemory = false;
+            if (root.TryGetProperty("nativeWatchdogEnabled", out var nwe) && nwe.ValueKind == JsonValueKind.True) defaults.NativeWatchdogEnabled = true;
+            if (root.TryGetProperty("nativeWatchdogEnabled", out nwe) && nwe.ValueKind == JsonValueKind.False) defaults.NativeWatchdogEnabled = false;
+            if (root.TryGetProperty("nativeWatchdogTimeoutSec", out var nwt) && nwt.ValueKind == JsonValueKind.Number) defaults.NativeWatchdogTimeoutSec = nwt.GetInt32();
+            if (root.TryGetProperty("logLevel", out var ll) && ll.ValueKind == JsonValueKind.String) defaults.LogLevel = ll.GetString()!;
+            if (root.TryGetProperty("debugWaitForDebugger", out var dwd) && dwd.ValueKind == JsonValueKind.True) defaults.DebugWaitForDebugger = true;
+            if (root.TryGetProperty("debugWaitForDebugger", out dwd) && dwd.ValueKind == JsonValueKind.False) defaults.DebugWaitForDebugger = false;
+            if (root.TryGetProperty("debugWaitTimeoutSec", out var dwt) && dwt.ValueKind == JsonValueKind.Number) defaults.DebugWaitTimeoutSec = dwt.GetInt32();
             if (root.TryGetProperty("steamBypassEnabled", out var sb) && sb.ValueKind == JsonValueKind.True) defaults.SteamBypassEnabled = true;
             if (root.TryGetProperty("steamBypassEnabled", out sb) && sb.ValueKind == JsonValueKind.False) defaults.SteamBypassEnabled = false;
             if (root.TryGetProperty("steamBypassRestartCheck", out var sr) && sr.ValueKind == JsonValueKind.True) defaults.SteamBypassRestartCheck = true;
@@ -98,6 +110,12 @@ public sealed partial class ModManager
         if (config.SpeedhackBaseSpeed < MinBaseSpeed || config.SpeedhackBaseSpeed > MaxBaseSpeed)
             throw new InvalidOperationException(
                 $"变速基础倍率必须在 [{MinBaseSpeed:0.#},{MaxBaseSpeed:0.#}] 之间（1.0 = 正常速度，不支持减速）。");
+        if (config.DebugWaitTimeoutSec < MinTimeoutSec || config.DebugWaitTimeoutSec > MaxTimeoutSec)
+            throw new InvalidOperationException(
+                $"等待调试器超时必须在 [{MinTimeoutSec},{MaxTimeoutSec}] 秒之间。");
+        if (config.NativeWatchdogTimeoutSec < MinTimeoutSec || config.NativeWatchdogTimeoutSec > MaxTimeoutSec)
+            throw new InvalidOperationException(
+                $"看门狗判定时间必须在 [{MinTimeoutSec},{MaxTimeoutSec}] 秒之间。");
 
         var json = JsonSerializer.Serialize(new Dictionary<string, object?>
         {
@@ -135,9 +153,35 @@ public sealed partial class ModManager
             // 多 profile(加载器功能): 同上, 白名单里漏掉就会在保存时把用户选的 profile 静默清空。
             ["profile"] = config.Profile,
             // 多 profile 窗口标题开关: 同上, 漏掉会在保存时把用户关掉的开关静默恢复成 true。
-            ["profileWindowTitle"] = config.ProfileWindowTitle
+            ["profileWindowTitle"] = config.ProfileWindowTitle,
+            // 排查类(加载器原生层): 崩溃转储 / 卡死看门狗 / 日志级别 / 等待调试器。
+            // 同样是白名单字典, 漏键 = 保存时删掉 = 用户设置被静默重置成默认值。
+            ["crashDumpEnabled"] = config.CrashDumpEnabled,
+            ["crashDumpFullMemory"] = config.CrashDumpFullMemory,
+            ["nativeWatchdogEnabled"] = config.NativeWatchdogEnabled,
+            ["nativeWatchdogTimeoutSec"] = config.NativeWatchdogTimeoutSec,
+            ["logLevel"] = NormalizeLogLevel(config.LogLevel),
+            ["debugWaitForDebugger"] = config.DebugWaitForDebugger,
+            ["debugWaitTimeoutSec"] = config.DebugWaitTimeoutSec
         }, new JsonSerializerOptions { WriteIndented = true });
         WriteAllBytesProtected(LoaderConfigPath(gameDirectory), System.Text.Encoding.UTF8.GetBytes(json));
+    }
+
+    /// <summary>日志级别规范化：与加载器 <c>normalize_log_level</c> 同口径（忽略大小写，
+    /// <c>warning</c> 归到 <c>Warn</c>，认不出的回退 <c>inherit</c>）。</summary>
+    public static string NormalizeLogLevel(string? level)
+    {
+        switch ((level ?? "").Trim().ToLowerInvariant())
+        {
+            case "inherit": return "inherit";
+            case "debug": return "Debug";
+            case "info": return "Info";
+            case "warn":
+            case "warning": return "Warn";
+            case "error": return "Error";
+            case "fatal": return "Fatal";
+            default: return "inherit";
+        }
     }
 
     /// <summary>首页「启动方式」单选框要写的那一组键 —— 它们是**一套**，必须同开同关（见

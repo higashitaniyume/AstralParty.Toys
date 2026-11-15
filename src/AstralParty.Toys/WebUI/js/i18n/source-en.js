@@ -1632,6 +1632,23 @@
       "，已添加到方案": ", added to the profile",
       "，并在控制台窗口显示日志。": ", and show logs in the console window.",
       "：移除与目录块尾部完全相同的": ": removed the ",
-      "；缺失：": "; missing: "
+      "；缺失：": "; missing: ",
+      "仅 Windows": "Windows only",
+      "仅 Android": "Android only",
+      "模组声明只支持该平台；加载器仍会照常加载，但功能不一定可用": "This mod declares support for that platform only; the loader still loads it normally, but its features may not work",
+      "排查 · 崩溃转储与卡死看门狗 —— 平时保持默认，遇到崩溃 / 卡死再打开": "Troubleshooting · Crash Dumps and Hang Watchdog — leave at defaults normally; turn on when the game crashes or hangs",
+      "崩溃转储（加载器目录 crash\\ 下生成 <会话>.dmp + 同名 .txt，可用 Visual Studio 打开看线程栈）": "Crash dump (writes <session>.dmp plus a matching .txt in the loader's crash\\ folder; open it in Visual Studio to see the thread stacks)",
+      "⚠ 转储包含完整内存 —— 文件可达数 GB、写出时游戏停顿更久，只在需要看托管堆 / 局部变量时开": "⚠ Dump includes full memory — files can reach several GB and writing pauses the game longer; enable only when you need the managed heap or locals",
+      "卡死看门狗（主线程长时间不响应时自动写 crash\\hang-<会话>.dmp；平时有轻微开销）": "Hang watchdog (writes crash\\hang-<session>.dmp automatically when the main thread stops responding; slight overhead while enabled)",
+      "卡死判定时间（秒，1 ~ 3600，建议 20 ~ 60）": "Hang detection threshold (seconds, 1–3600, 20–60 recommended)",
+      "日志级别（inherit = 跟随环境变量 / Debug / Info / Warn / Error / Fatal；Debug 会写出大量每帧日志）": "Log level (inherit = follow environment variables / Debug / Info / Warn / Error / Fatal; Debug writes a lot of per-frame logs)",
+      "⚠ 启动时等待调试器接入（开发用：没接调试器会一直等到超时，普通玩家保持关闭）": "⚠ Wait for a debugger at startup (development use: it waits until a debugger attaches, so keep it off otherwise)",
+      "等待调试器超时（秒，1 ~ 3600）": "Debugger wait timeout (seconds, 1–3600)",
+      "原生通道（回合置前 / 自定义音效与 BGM，关掉只影响用到它们的 mod）": "Native channels (turn focus / custom SFX and BGM; turning them off only affects mods that use them)",
+      "窗口置前文件通道": "Window focus file channel",
+      "原生音频控制通道（UDP + 加载器 audio 目录）": "Native audio control channel (UDP + loader audio folder)",
+      "卡死判定时间必须在 1 ~ 3600 秒之间": "Hang detection threshold must be between 1 and 3600 seconds",
+      "等待调试器超时必须在 1 ~ 3600 秒之间": "Debugger wait timeout must be between 1 and 3600 seconds",
+      "高级选项（排查 · 转储与看门狗 · Steam 绕过细节 · 引导 · 超时）": "Advanced options (troubleshooting · dumps and watchdog · Steam bypass details · bootstrap · timeouts)"
   };
 })();

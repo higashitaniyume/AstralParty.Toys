@@ -187,6 +187,15 @@ public sealed partial class ModManager
                 entry.Author = root.TryGetProperty("author", out var a) ? a.GetString() ?? "" : "";
                 entry.Description = root.TryGetProperty("description", out var d) ? d.GetString() ?? "" : "";
                 entry.SdkVersion = root.TryGetProperty("sdkVersion", out var s) ? s.GetString() ?? "" : "";
+                if (root.TryGetProperty("platforms", out var plats) && plats.ValueKind == JsonValueKind.Array)
+                {
+                    var declared = new List<string>();
+                    foreach (var item in plats.EnumerateArray())
+                    {
+                        if (item.ValueKind == JsonValueKind.String) declared.Add(item.GetString() ?? "");
+                    }
+                    entry.Platforms = ModPlatforms.Normalize(declared);
+                }
                 entry.Enabled = !root.TryGetProperty("enabled", out var en) || en.ValueKind != JsonValueKind.False;
                 entry.Permissions = root.TryGetProperty("permissions", out var p) && p.ValueKind == JsonValueKind.Number
                     ? p.GetInt32() : 0;

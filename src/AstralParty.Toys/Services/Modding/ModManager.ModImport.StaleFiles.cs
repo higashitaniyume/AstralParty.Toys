@@ -162,6 +162,32 @@ public sealed partial class ModManager
         }
     }
 
+    /// <summary>从 JSON 文本里读字符串数组字段（<c>platforms</c>）；读不到返回空列表，不猜。</summary>
+    private static List<string> ReadJsonPlatforms(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return new List<string>();
+        try
+        {
+            using var document = JsonDocument.Parse(StripJsonComments(json.TrimStart('\uFEFF')));
+            if (document.RootElement.ValueKind != JsonValueKind.Object
+                || !document.RootElement.TryGetProperty("platforms", out var element)
+                || element.ValueKind != JsonValueKind.Array)
+            {
+                return new List<string>();
+            }
+            var values = new List<string>();
+            foreach (var item in element.EnumerateArray())
+            {
+                if (item.ValueKind == JsonValueKind.String) values.Add(item.GetString() ?? "");
+            }
+            return ModPlatforms.Normalize(values);
+        }
+        catch
+        {
+            return new List<string>();
+        }
+    }
+
     /// <summary>沿用已有的文件夹写法（Windows 不区分大小写：已存在 <c>mods\handviewermod</c> 时用它），
     /// 避免同一个模组出现两个只差大小写的目录。停用目录也一起看。</summary>
     private static string ResolveModFolderName(string modsDir, string modId, string? disabledDir = null)

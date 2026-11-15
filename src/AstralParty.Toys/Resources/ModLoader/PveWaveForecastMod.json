@@ -6,5 +6,5 @@
   "description": "在 PVE 地图上按回合显示任务波次的刷新内容与地块预告，默认 O 键开关",
   "permissions": 1,
   "sdkVersion": "2.8.6",
-  "dependencies": []
+  "platforms":["windows","android"],"dependencies": []
 }

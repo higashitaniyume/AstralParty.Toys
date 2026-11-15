@@ -4,5 +4,6 @@
   "version": "1.2.2",
   "author": "CesiumLoader",
   "description": "自定义手牌、事件、命运、地图事件及图鉴卡面，支持素材名、ID和中文名，支持序列帧动态卡面与显式动态异画，静态异画及未指定卡面保留原版",
-  "sdkVersion": "2.8.6"
+  "sdkVersion": "2.8.6",
+  "platforms": ["windows","android"]
 }

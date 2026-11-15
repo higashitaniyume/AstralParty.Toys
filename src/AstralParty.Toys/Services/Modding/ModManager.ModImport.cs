@@ -270,6 +270,7 @@ public sealed partial class ModManager
                 plan.PackageVersion = ReadJsonString(json, "version");
                 plan.PackageSdkVersion = ReadJsonString(json, "sdkVersion");
                 plan.PackageDisplayName = ReadJsonString(json, "name");
+                plan.PackagePlatforms = ReadJsonPlatforms(json);
             }
             plan.IsDowngrade = plan.InstalledVersion.Length > 0 && plan.PackageVersion.Length > 0
                                && CompareSemVer(plan.PackageVersion, plan.InstalledVersion) < 0;
@@ -314,6 +315,7 @@ public sealed partial class ModManager
         public string PackageVersion { get; set; } = "";
         public string PackageDisplayName { get; set; } = "";
         public string PackageSdkVersion { get; set; } = "";
+        public List<string> PackagePlatforms { get; set; } = new();
         public string InstalledVersion { get; set; } = "";
         public bool Installed { get; set; }
         public bool IsDowngrade { get; set; }

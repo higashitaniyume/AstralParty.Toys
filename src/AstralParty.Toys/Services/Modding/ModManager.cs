@@ -39,6 +39,11 @@ public sealed partial class ModManager
     /// <summary>加载器内置变速的倍率上限，与 speedhack.h 的 kSpeedMax 一致。</summary>
     public const double MaxBaseSpeed = 100.0;
 
+    /// <summary>加载器各类超时（等待调试器 / 看门狗判定）的合法范围，与加载器 config.cpp 的
+    /// <c>read_timeout_sec</c> 一致：越界会被加载器静默回退成默认值。</summary>
+    public const int MinTimeoutSec = 1;
+    public const int MaxTimeoutSec = 3600;
+
     /// <summary>
     /// 随程序集内置的 mod（ModId，顺序即安装顺序）。资源名 = {ModId}.dll / {ModId}.json。
     ///

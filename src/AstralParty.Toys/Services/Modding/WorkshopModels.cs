@@ -30,6 +30,9 @@ public sealed class WorkshopModSummary
     public long Downloads7Days { get; set; }
     public long Downloads30Days { get; set; }
     public bool Featured { get; set; }
+
+    /// <summary>版本声明的支持平台；空 = 没声明（按双平台处理），只用于界面标注。</summary>
+    public List<string> Platforms { get; set; } = new();
 }
 
 public sealed class WorkshopModDetail
@@ -73,6 +76,9 @@ public sealed class WorkshopModVersion
     public string PublishedAt { get; set; } = "";
     public string VerifiedAt { get; set; } = "";
     public long Downloads { get; set; }
+
+    /// <summary>版本声明的支持平台；空 = 没声明（按双平台处理），只用于界面标注。</summary>
+    public List<string> Platforms { get; set; } = new();
 }
 
 public sealed class WorkshopDependency

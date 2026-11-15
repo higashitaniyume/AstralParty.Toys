@@ -92,6 +92,18 @@
     return permissionLabels.filter(([bit]) => (mask & bit) !== 0).map(([, key]) => t(key));
   }
 
+  // 平台声明只做标注：单平台时给一句提示，双平台/未声明返回空（不刷屏）。
+  function describePlatforms(platforms) {
+    const declared = Array.isArray(platforms) ? platforms : [];
+    const known = [];
+    for (const raw of declared) {
+      const value = String(raw || '').trim().toLowerCase();
+      if ((value === 'windows' || value === 'android') && !known.includes(value)) known.push(value);
+    }
+    if (known.length !== 1) return '';
+    return known[0] === 'windows' ? t('workshop.platform_windows_only') : t('workshop.platform_android_only');
+  }
+
   function notice(text, kind) {
     const node = $('workshopNotice');
     if (!node) return;
@@ -668,6 +680,11 @@
         )}
         ${latest ? fact(t('workshop.sdk'), esc(latest.sdkVersion || t('workshop.undeclared'))) : ''}
         ${
+          latest && describePlatforms(latest.platforms)
+            ? fact(t('workshop.platforms'), esc(describePlatforms(latest.platforms)))
+            : ''
+        }
+        ${
           permissions.length
             ? fact(t('workshop.permissions'), esc(permissions.join(' / ')))
             : ''
@@ -770,6 +787,11 @@
             ${detailVersionNotes(version)}
             <div class="workshop-version-meta">
               <span>${esc(t('workshop.sdk'))} ${esc(version.sdkVersion || t('workshop.undeclared'))}</span>
+              ${
+                describePlatforms(version.platforms)
+                  ? `<span>${esc(describePlatforms(version.platforms))}</span>`
+                  : ''
+              }
               ${
                 permissions.length
                   ? `<span>${esc(t('workshop.permissions'))} ${esc(permissions.join(' / '))}</span>`

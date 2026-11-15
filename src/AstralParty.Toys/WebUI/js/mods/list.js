@@ -64,6 +64,18 @@
       return this.builtInMods.some(id => id === name || id === file);
     },
 
+    /** sidecar 的平台声明只做标注：单平台时返回标签，双平台/未声明返回空串。 */
+    platformBadge(entry) {
+      const declared = Array.isArray(entry.platforms) ? entry.platforms : [];
+      const known = [];
+      for (const raw of declared) {
+        const value = String(raw || '').trim().toLowerCase();
+        if ((value === 'windows' || value === 'android') && !known.includes(value)) known.push(value);
+      }
+      if (known.length !== 1) return '';
+      return known[0] === 'windows' ? '仅 Windows' : '仅 Android';
+    },
+
     /** 一个模组 = 一张卡片：名字 / 版本 / 能力标签 → 描述 → 事实行 → 开关 + 配置 + 删除。 */
     modCard(entry) {
       const enabled = entry.enabled !== false;
@@ -77,6 +89,10 @@
         chips.push('<span class="mod-chip mod-chip-warn" title="此模组声明可操作游戏（模拟出牌 / 掷骰 / 移动等）。权限机制已取消，这里只提示：请确认来源可信">' + Icons.svg('warning') + ' 可操作游戏</span>');
       }
       if (!enabled) chips.push('<span class="mod-chip mod-chip-off">已禁用</span>');
+      const platformBadge = this.platformBadge(entry);
+      if (platformBadge) {
+        chips.push(`<span class="mod-chip" title="模组声明只支持该平台；加载器仍会照常加载，但功能不一定可用">${esc(platformBadge)}</span>`);
+      }
 
       const facts = [];
       if (entry.version) facts.push(`v${entry.version}`);

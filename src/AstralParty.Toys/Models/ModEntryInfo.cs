@@ -35,4 +35,13 @@ public sealed class ModEntryInfo
 
     /// <summary>依赖的其他 mod（id + 可选最低版本）。</summary>
     public List<ModDependencyInfo> Dependencies { get; set; } = new();
+
+    /// <summary>
+    /// sidecar 声明的支持平台（<c>windows</c> / <c>android</c>，已规范化）。
+    /// 空 = 没声明（按双平台处理）。只用于界面标注，不参与加载判断。
+    /// </summary>
+    public List<string> Platforms { get; set; } = new();
+
+    /// <summary>单平台 mod 的标签（「仅 Windows」/「仅 Android」）；双平台或未声明为 null。</summary>
+    public string? PlatformBadge => ModPlatforms.Badge(Platforms);
 }

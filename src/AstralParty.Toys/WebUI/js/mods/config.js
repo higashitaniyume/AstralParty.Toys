@@ -141,9 +141,24 @@
         ['debugShell', '控制台命令输入（CesiumLoader Debug Shell，输入 help 查看命令）', 'bool', config.debugShell],
         ['forwardActivityLog', '把模组日志转发到控制台', 'bool', config.forwardActivityLog],
         ['steamBypassEnabled', '不装 Steam 也能启动游戏（首页「启动方式」把这一套三个开关一起开 / 关）', 'bool', config.steamBypassEnabled],
-        ['tapTapBypassEnabled', 'TapTap 自杀门绕过（首页「启动方式」绕过 TapTap 启动，TapTap 版专用）', 'bool', config.tapTapBypassEnabled]
+        ['tapTapBypassEnabled', 'TapTap 自杀门绕过（首页「启动方式」绕过 TapTap 启动，TapTap 版专用）', 'bool', config.tapTapBypassEnabled],
+        // 这两个是加载器原生通道 / 多开设置里管理的字段：这里放隐藏域只是为了保存时原样带回，
+        // 否则保存一次「加载器设置」就会把它们重置成默认值。
+        ['profile', '', 'hidden', config.profile || ''],
+        ['profileWindowTitle', '', 'hidden', config.profileWindowTitle]
       ];
       const advancedRows = [
+        ['__diag', '排查 · 崩溃转储与卡死看门狗 —— 平时保持默认，遇到崩溃 / 卡死再打开', 'header', ''],
+        ['crashDumpEnabled', '崩溃转储（加载器目录 crash\\ 下生成 <会话>.dmp + 同名 .txt，可用 Visual Studio 打开看线程栈）', 'bool', config.crashDumpEnabled],
+        ['crashDumpFullMemory', '⚠ 转储包含完整内存 —— 文件可达数 GB、写出时游戏停顿更久，只在需要看托管堆 / 局部变量时开', 'bool', config.crashDumpFullMemory],
+        ['nativeWatchdogEnabled', '卡死看门狗（主线程长时间不响应时自动写 crash\\hang-<会话>.dmp；平时有轻微开销）', 'bool', config.nativeWatchdogEnabled],
+        ['nativeWatchdogTimeoutSec', '卡死判定时间（秒，1 ~ 3600，建议 20 ~ 60）', 'number', config.nativeWatchdogTimeoutSec, { min: 1, max: 3600 }],
+        ['logLevel', '日志级别（inherit = 跟随环境变量 / Debug / Info / Warn / Error / Fatal；Debug 会写出大量每帧日志）', 'text', config.logLevel],
+        ['debugWaitForDebugger', '⚠ 启动时等待调试器接入（开发用：没接调试器会一直等到超时，普通玩家保持关闭）', 'bool', config.debugWaitForDebugger],
+        ['debugWaitTimeoutSec', '等待调试器超时（秒，1 ~ 3600）', 'number', config.debugWaitTimeoutSec, { min: 1, max: 3600 }],
+        ['__native', '原生通道（回合置前 / 自定义音效与 BGM，关掉只影响用到它们的 mod）', 'header', ''],
+        ['windowControlEnabled', '窗口置前文件通道', 'bool', config.windowControlEnabled],
+        ['audioControlEnabled', '原生音频控制通道（UDP + 加载器 audio 目录）', 'bool', config.audioControlEnabled],
         ['__steam', 'Steam 绕过细节 —— 要从 Steam 启动并使用真大厅，这三个开关必须全部关闭', 'header', ''],
         ['steamBypassRestartCheck', '附加保险：忽略 Steam 的“请从 Steam 启动”重启请求', 'bool', config.steamBypassRestartCheck],
         ['steamBypassMatchmaking', '修复点“创建 / 加入房间”没反应（大厅匹配改为直接返回空结果）', 'bool', config.steamBypassMatchmaking],
@@ -169,7 +184,7 @@
         <div class="cfg-form">
           ${basicRows.map(r => this.cfgRow(...r)).join('')}
           <details class="mods-help cfg-advanced">
-            <summary>高级选项（Steam 绕过细节 · 引导 · 超时）</summary>
+            <summary>高级选项（排查 · 转储与看门狗 · Steam 绕过细节 · 引导 · 超时）</summary>
             ${advancedRows.map(r => this.cfgRow(...r)).join('')}
           </details>
           <div class="cfg-actions">
@@ -202,6 +217,9 @@
           return `<label class="cfg-row"><span class="cfg-label">${lbl(label)}</span><input type="number" data-cfg="${id}" value="${esc(String(value))}" ${attrStr}></label>`;
         case 'readonly':
           return `<label class="cfg-row"><span class="cfg-label">${lbl(label)}</span><input type="text" data-cfg="${id}" value="${esc(String(value))}" readonly></label>`;
+        case 'hidden':
+          // 只为了原样带回（加载器设置页不编辑、由别的页面管理的字段）
+          return `<input type="hidden" data-cfg="${id}" value="${esc(String(value))}">`;
         default:
           return `<label class="cfg-row"><span class="cfg-label">${lbl(label)}</span><input type="text" data-cfg="${id}" value="${esc(String(value))}"></label>`;
       }
@@ -223,6 +241,14 @@
         toast('启动时基础倍速必须在 1.0 ~ 100 之间（1.0 = 正常速度，不支持减速）');
         return null;
       }
+      // 加载器侧超时一律 [1,3600]，越界会被静默回退成默认值
+      for (const [id, label] of [['nativeWatchdogTimeoutSec', '卡死判定时间'], ['debugWaitTimeoutSec', '等待调试器超时']]) {
+        const v = num(id);
+        if (!(v >= 1 && v <= 3600)) {
+          toast(`${label}必须在 1 ~ 3600 秒之间`);
+          return null;
+        }
+      }
       return {
         enabled: bool('enabled'),
         useManagedBootstrap: bool('useManagedBootstrap'),
@@ -238,6 +264,19 @@
         forwardActivityLog: bool('forwardActivityLog'),
         speedhackBaseSpeed: speed,
         speedControlEnabled: bool('speedControlEnabled'),
+        windowControlEnabled: bool('windowControlEnabled'),
+        audioControlEnabled: bool('audioControlEnabled'),
+        // 排查类（加载器原生层）
+        crashDumpEnabled: bool('crashDumpEnabled'),
+        crashDumpFullMemory: bool('crashDumpFullMemory'),
+        nativeWatchdogEnabled: bool('nativeWatchdogEnabled'),
+        nativeWatchdogTimeoutSec: num('nativeWatchdogTimeoutSec'),
+        logLevel: text('logLevel'),
+        debugWaitForDebugger: bool('debugWaitForDebugger'),
+        debugWaitTimeoutSec: num('debugWaitTimeoutSec'),
+        // 由「游戏多开」页管理的字段，这里只原样带回（见 renderLoaderSettings 的隐藏域）
+        profile: text('profile'),
+        profileWindowTitle: text('profileWindowTitle') === 'true',
         steamBypassEnabled: bool('steamBypassEnabled'),
         steamBypassRestartCheck: bool('steamBypassRestartCheck'),
         steamBypassMatchmaking: bool('steamBypassMatchmaking'),
