@@ -14,6 +14,9 @@ public partial class HybridWindow
 {
     private readonly AudioSkinSchemeManager _audioSkins = new();
 
+    /// <summary>批量替换等待页面确认的结果（选文件后、点「替换」前）。</summary>
+    private (string Token, string SchemeId, List<AudioBatchMatch> Matches)? _pendingAudioBatch;
+
     private void HandleAudioSkinMessage(string type, JsonElement root)
     {
         var game = ResolveAudioGameDirectory();
@@ -131,6 +134,63 @@ public partial class HybridWindow
                         Post(new { type = "toast", message = $"已替换音频: {eventName}" });
                     }
                 }
+                break;
+
+            case "audioSkinsBatchPick":
+                {
+                    // 第一步：选文件、按文件名对应条目，把结果发给页面确认（还不改方案）
+                    var schemeId = root.TryGetProperty("schemeId", out var bsElem) ? bsElem.GetString() ?? "" : "";
+                    if (string.IsNullOrEmpty(schemeId) || string.Equals(schemeId, "default", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Post(new { type = "error", message = "官方原版方案不能替换，请先复制为新方案" });
+                        break;
+                    }
+                    var dialog = new OpenFileDialog
+                    {
+                        Title = "批量替换：选择音频文件（可多选）",
+                        Filter = "音频文件 (*.wav;*.ogg;*.mp3)|*.wav;*.ogg;*.mp3|所有文件 (*.*)|*.*",
+                        Multiselect = true
+                    };
+                    if (dialog.ShowDialog(this) != true) break;
+
+                    var (matches, skipped) = _audioSkins.MatchBatchFiles(dialog.FileNames);
+                    var token = Guid.NewGuid().ToString("N");
+                    _pendingAudioBatch = (token, schemeId, matches);
+                    Post(new
+                    {
+                        type = "audioSkinBatchPreview",
+                        payload = new
+                        {
+                            token,
+                            schemeId,
+                            matches = matches.Select(m => new { id = m.Id, label = m.Label, name = m.Name, file = Path.GetFileName(m.FilePath) }),
+                            skipped = skipped.Select(s => new { file = Path.GetFileName(s.FilePath), reason = s.Reason })
+                        }
+                    });
+                }
+                break;
+
+            case "audioSkinsBatchApply":
+                {
+                    // 第二步：页面确认后才写进方案。只认上一步留下的结果，页面只传回令牌
+                    var token = root.TryGetProperty("token", out var tkElem) ? tkElem.GetString() ?? "" : "";
+                    var pending = _pendingAudioBatch;
+                    _pendingAudioBatch = null;
+                    if (pending == null || pending.Value.Token != token)
+                    {
+                        Post(new { type = "error", message = "批量替换已过期，请重新选择文件" });
+                        break;
+                    }
+                    var failed = new List<string>();
+                    int done = _audioSkins.ApplyBatchReplace(game, pending.Value.SchemeId, pending.Value.Matches, failed);
+                    PushAudioSkinItems(game, pending.Value.SchemeId);
+                    PushAudioSkinProfiles(game);
+                    Post(new { type = "toast", message = failed.Count == 0 ? $"已批量替换 {done} 条音效" : $"已替换 {done} 条，{failed.Count} 个文件读取失败：{failed[0]}" });
+                }
+                break;
+
+            case "audioSkinsBatchCancel":
+                _pendingAudioBatch = null;
                 break;
 
             case "audioSkinsRevertAudio":

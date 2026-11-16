@@ -701,6 +701,9 @@ public partial class HybridWindow
                 case "audioSkinsExtractGameAudio":
                 case "audioSkinsExportOriginalZip":
                 case "audioSkinsExportSingleOriginal":
+                case "audioSkinsBatchPick":
+                case "audioSkinsBatchApply":
+                case "audioSkinsBatchCancel":
                     HandleAudioSkinMessage(type, root);
                     break;
                 case "skinsGetProfiles":
