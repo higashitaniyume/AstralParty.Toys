@@ -158,11 +158,11 @@
       <span class="v2-muted">${Math.round((X.progress || 0) * 100)}%</span><br><span class="v2-muted">${esc(X.message || '')}</span>
       <div class="v2-bar" style="max-width:none;margin-top:8px"><div style="width:${(X.progress || 0) * 100}%"></div></div></div>`;
     if (!aItems().length || extracted()) return '';
-    // 实测（1.3.2）：「从游戏提取」并不真的解包游戏，只从事先导出的 audio-export 文件夹复制；找不到就是 0 个
-    if (K.extractEmpty) return `<div class="v2-notice">${I().info}<span style="flex:1">刚才提取到 <b>0 个</b>：这台电脑上没有事先导出的 audio-export 文件夹，
-      所以暂时<b>听不了原版</b>。替换、静音、调音量都不受影响。</span>
+    // 准备 = 从这台电脑上安装的游戏里找出原版音频的位置（不转换）；试听某一条时宿主才转换
+    if (K.extractEmpty) return `<div class="v2-notice">${I().info}<span style="flex:1">刚才<b>没有找到原版音频</b>${K.extractProblem ? '：' + esc(K.extractProblem) : ''}。
+      替换、静音、调音量都不受影响。</span>
       <button class="v2-btn line" data-v2s="audioPrep">了解详情…</button></div>`;
-    return `<div class="v2-notice">${I().info}<span style="flex:1">暂时<b>听不了原版</b>：需要事先导出好的原版音频（替换、静音、调音量都不受影响）</span>
+    return `<div class="v2-notice">${I().info}<span style="flex:1">暂时<b>听不了原版</b>：先从游戏里找出原版音频（约 2 秒，替换、静音、调音量都不受影响）</span>
       <button class="v2-btn line" data-v2s="audioPrep">准备原版音频…</button></div>`;
   }
 
@@ -178,8 +178,8 @@
     return frameHead(action) + prepBanner() + inner + `
     <details class="v2-card" style="margin-top:14px"><summary><div class="t"><b>更多</b><small>原版音频包、方案目录</small></div>${I().down}</summary>
       <div class="v2-adv">
-        <div class="v2-row"><span class="n">导出原版音频包</span><span class="d">把整理好的原版音频打成 ZIP，换电脑时直接导入</span><button class="v2-btn line" data-v2s="audioExportOriginal" ${extracted() ? '' : 'disabled'}>导出</button></div>
-        <div class="v2-row"><span class="n">重新整理原版音频</span><span class="d">游戏更新后，原版音频可能有变化</span><button class="v2-btn line" data-v2s="audioPrep">整理…</button></div>
+        <div class="v2-row"><span class="n">导出原版音频包</span><span class="d">把原版音频打成 ZIP，换电脑时直接导入（会先把没试听过的都转换一遍，约 100 MB）</span><button class="v2-btn line" data-v2s="audioExportOriginal" ${extracted() ? '' : 'disabled'}>导出</button></div>
+        <div class="v2-row"><span class="n">重新准备原版音频</span><span class="d">游戏更新后原版音频可能有变化，重新从游戏里找一遍</span><button class="v2-btn line" data-v2s="audioPrep">准备…</button></div>
         <div class="v2-row"><span class="n">打开方案目录</span><span class="d">所有音效方案存放的位置</span><button class="v2-btn line" data-v2s="audioFolder">打开</button></div>
       </div></details>`;
   }
@@ -241,17 +241,17 @@
     U().openModal(`
       <div class="v2-modal-head"><b>准备原版音频</b><button class="v2-icon-btn" data-v2modal="close">${I().x}</button></div>
       <div style="padding:16px 18px">
-        <p style="margin:0 0 10px">想「试听原版」，要先把约 1,300 个原版音频放进游戏目录的 <span style="font-family:var(--v2-mono)">AstralParty_ModLoader\\audio-cache\\</span>。</p>
-        <div class="v2-notice" style="margin:0 0 10px">${I().info}<span><b>目前的限制：</b>「从游戏提取」其实<b>不会解包游戏</b>，
-          只会从一个事先导出好的 <span style="font-family:var(--v2-mono)">audio-export</span> 文件夹里复制。这个文件夹和原版音频包目前都没有公开，
-          所以在大多数电脑上会提取到 0 个。</span></div>
-        <ul class="v2-confirm-lines" style="margin:0">
-          <li>如果你从别处拿到了别人导出的 <b>audio-export</b> 文件夹，放进游戏目录（或 AstralParty_ModLoader 里）再点「尝试提取」</li>
-          <li>如果你拿到了<b>原版音频包 ZIP</b>，点「导入音频包 ZIP」</li>
-          <li>两样都没有也没关系：替换、静音、调音量都能正常用，只是听不了原版对比</li></ul></div>
+        <p style="margin:0 0 10px">想「试听原版」，要先从<b>这台电脑上安装的游戏</b>里找出原版音频。</p>
+        <ul class="v2-confirm-lines" style="margin:0 0 10px">
+          <li>只<b>读</b>游戏文件，不会修改游戏</li>
+          <li>「开始准备」只记下每条音效在游戏文件里的位置，约 1～2 秒，几乎不占空间</li>
+          <li>试听某一条时才把它转换成 ogg，存进游戏目录的 <span style="font-family:var(--v2-mono)">AstralParty_ModLoader\\audio-cache\\</span></li>
+          <li>游戏更新后，在「更多」里点「重新准备原版音频」</li></ul>
+        <div class="v2-notice" style="margin:0">${I().info}<span>找不到时，先启动一次游戏完成资源更新再试。
+          也可以导入别人用「导出原版音频包」导出的 ZIP。替换、静音、调音量不需要原版音频。</span></div></div>
       <div class="v2-modal-foot"><button class="v2-btn ghost" data-v2modal="close">关闭</button><span class="v2-top-spacer"></span>
         <button class="v2-btn line" data-v2modal="v2sImportOrig">${I().upload}导入音频包 ZIP…</button>
-        <button class="v2-btn line" data-v2modal="v2sExtract">尝试提取</button></div>`);
+        <button class="v2-btn line" data-v2modal="v2sExtract">开始准备</button></div>`);
   }
 
   function selectAudio(id) {
@@ -523,11 +523,12 @@
       obj[name] = function (...args) { before?.(name, args); const r = orig.apply(this, args); render(); return r; };
     });
   }
-  // 宿主提取完不管拿到几个都提示「已同步并就绪 N 个」；N = 0 时这句话会让人以为成功了，换成实话
+  // 宿主准备失败时提示「没有找到原版音频：原因」；记下原因，显示在列表上方的提示里
   const origToast = window.toast;
   if (typeof origToast === 'function') {
     window.toast = function (msg, ...rest) {
-      if (/^已同步并就绪 0 个原版音频/.test(String(msg))) msg = '没有提取到原版音频：电脑上没有事先导出的 audio-export 文件夹（替换、静音不受影响）';
+      const m = /没有找到原版音频：(.+)$/.exec(String(msg));
+      if (m) K.extractProblem = m[1];
       return origToast.call(this, msg, ...rest);
     };
   }

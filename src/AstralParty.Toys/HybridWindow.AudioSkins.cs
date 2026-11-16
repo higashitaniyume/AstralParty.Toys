@@ -213,13 +213,19 @@ public partial class HybridWindow
                     try
                     {
                         Post(new { type = "audioSkinExtractProgress", payload = new { message = "正在准备提取游戏音频…", progress = 0.05 } });
-                        int extracted = _audioSkins.ExtractGameAudio(game, (msg, prog) =>
+                        var prepared = _audioSkins.PrepareOriginalAudio(game, (msg, prog) =>
                         {
                             Post(new { type = "audioSkinExtractProgress", payload = new { message = msg, progress = prog } });
                         });
                         var active = _audioSkins.GetActiveSchemeId(game);
                         PushAudioSkinItems(game, active);
-                        Post(new { type = "toast", message = $"已同步并就绪 {extracted} 个原版音频！" });
+                        Post(new
+                        {
+                            type = "toast",
+                            message = prepared.Ready > 0
+                                ? $"已找到 {prepared.Ready} / {prepared.Total} 个原版音频，试听时再转换"
+                                : $"没有找到原版音频：{prepared.Problem ?? "游戏文件里没有对应的声音"}"
+                        });
                         Post(new { type = "audioSkinExtractDone" });
                     }
                     catch (Exception ex)
@@ -301,9 +307,7 @@ public partial class HybridWindow
                 {
                     var id = root.TryGetProperty("id", out var idProp) ? idProp.GetInt32() : 0;
                     var name = root.TryGetProperty("name", out var nProp) ? nProp.GetString() ?? "" : "";
-                    var cacheDir = AudioSkinSchemeManager.AudioCacheDirectory(game);
-                    var targetFile = Path.Combine(cacheDir, $"{id}.ogg");
-                    if (!File.Exists(targetFile)) targetFile = Path.Combine(cacheDir, $"{id}.wav");
+                    var targetFile = GameAudioIndex.EnsureOriginal(game, id, out var originalProblem) ?? "";
                     if (!File.Exists(targetFile))
                     {
                         var catItem = _audioSkins.LoadCatalog().FirstOrDefault(x => x.Id == id);
@@ -340,7 +344,7 @@ public partial class HybridWindow
                     }
                     else
                     {
-                        Post(new { type = "error", message = "未找到该音频的原版文件" });
+                        Post(new { type = "error", message = "未找到该音频的原版文件" + (originalProblem != null ? "：" + originalProblem : "") });
                     }
                 }
                 break;
@@ -443,10 +447,10 @@ public partial class HybridWindow
             else if (parts.Length >= 2 && string.Equals(parts[0], "original", StringComparison.OrdinalIgnoreCase))
             {
                 var id = Uri.UnescapeDataString(parts[1]);
-                var cacheDir = AudioSkinSchemeManager.AudioCacheDirectory(gameDirectory);
-                var oggPath = Path.Combine(cacheDir, $"{id}.ogg");
-                var wavPath = Path.Combine(cacheDir, $"{id}.wav");
-                var targetFile = File.Exists(oggPath) ? oggPath : (File.Exists(wavPath) ? wavPath : null);
+                // 缓存里有就直接用；没有但已建立索引的，现场从游戏资源转换一次（约十几毫秒）
+                var targetFile = int.TryParse(id, out var previewId)
+                    ? GameAudioIndex.EnsureOriginal(gameDirectory, previewId, out _)
+                    : null;
 
                 if (targetFile == null && int.TryParse(id, out var numId))
                 {

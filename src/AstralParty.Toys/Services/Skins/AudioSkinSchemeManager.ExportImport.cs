@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -53,21 +54,50 @@ public sealed partial class AudioSkinSchemeManager
     }
 
     /// <summary>
-    /// 从工作区预提取目录或游戏资源中同步/提取音频资源至本地 audio-cache。
+    /// 从工作区预提取目录或游戏资源中同步/提取音频资源至本地 audio-cache。返回可以试听的条目数。
     /// </summary>
-    public int ExtractGameAudio(string gameDirectory, Action<string, double>? progress = null)
+    public int ExtractGameAudio(string gameDirectory, Action<string, double>? progress = null) =>
+        PrepareOriginalAudio(gameDirectory, progress).Ready;
+
+    /// <summary>
+    /// 准备原版音频：从游戏资源建立索引（不转换，试听时才转换），并兼容事先导出的 audio-export 目录。
+    /// </summary>
+    public GameAudioPrepareResult PrepareOriginalAudio(string gameDirectory, Action<string, double>? progress = null)
     {
         var cacheDir = AudioCacheDirectory(gameDirectory);
         Directory.CreateDirectory(cacheDir);
+        var catalog = LoadCatalog();
 
         progress?.Invoke("正在扫描游戏音频素材…", 0.05);
+        GameAudioPrepareResult fromGame;
+        try
+        {
+            fromGame = GameAudioIndex.Build(gameDirectory, catalog, (msg, p) => progress?.Invoke(msg, 0.05 + 0.8 * p));
+        }
+        catch (Exception ex)
+        {
+            fromGame = new GameAudioPrepareResult(0, catalog.Count, 0, "读取游戏资源失败：" + ex.Message);
+        }
 
-        int count = 0;
+        CopyFromExportRoot(gameDirectory, cacheDir, catalog, progress);
+
+        var index = GameAudioIndex.TryLoad(gameDirectory);
+        int ready = catalog.Count(c =>
+            File.Exists(Path.Combine(cacheDir, $"{c.Id}.ogg")) ||
+            File.Exists(Path.Combine(cacheDir, $"{c.Id}.wav")) ||
+            (index?.Entries.ContainsKey(c.Id) ?? false));
+
+        progress?.Invoke($"原版音频准备完成，共 {ready} 首可以试听", 1.0);
+        return fromGame with { Ready = ready, Problem = ready > 0 ? null : fromGame.Problem };
+    }
+
+    /// <summary>旧做法：从事先导出好的 audio-export 目录复制（开发环境里有这个目录时仍然可用）。</summary>
+    private static void CopyFromExportRoot(string gameDirectory, string cacheDir, IReadOnlyList<AudioSkinCatalogItem> catalog, Action<string, double>? progress)
+    {
         var exportRoot = FindExportRoot(gameDirectory);
 
         if (exportRoot != null)
         {
-            var catalog = LoadCatalog();
             var total = catalog.Count;
             int i = 0;
 
@@ -93,13 +123,9 @@ public sealed partial class AudioSkinSchemeManager
                     {
                         File.Copy(src, dest, true);
                     }
-                    count++;
                 }
             }
         }
-
-        progress?.Invoke($"原版音频整理完成，共提取 {count} 首音频", 1.0);
-        return count;
     }
 
     /// <summary>
@@ -107,11 +133,14 @@ public sealed partial class AudioSkinSchemeManager
     /// </summary>
     public int ExportOriginalAudioZip(string gameDirectory, string destZipPath, Action<string, double>? progress = null)
     {
-        ExtractGameAudio(gameDirectory, progress);
+        ExtractGameAudio(gameDirectory, (msg, p) => progress?.Invoke(msg, p * 0.3));
 
         var cacheDir = AudioCacheDirectory(gameDirectory);
         var catalog = LoadCatalog();
         int exported = 0;
+
+        // 试听时才转换：导出前把还没转换的都转一遍
+        GameAudioIndex.EnsureOriginals(gameDirectory, catalog.Select(c => c.Id), (msg, p) => progress?.Invoke(msg, 0.3 + p * 0.65));
 
         progress?.Invoke("正在打包原版音频压缩包…", 0.95);
 
