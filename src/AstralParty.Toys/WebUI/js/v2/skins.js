@@ -233,6 +233,38 @@
       </div>`}`;
   }
 
+  // 试听自己播：原版模块的 playAudio 用 textContent 改按钮上的 ▶/⏸，会把这里按钮里的图标一起抹掉；
+  // 它的 play() 被拒绝时也不发任何事件，按钮会一直停在「播放中」。
+  // 播放中显示 ■ 并变粉；播完、出错、再点一次或换一条时恢复 ▶
+  let preview = null; // { audio, btn }
+  function setPlayIcon(b, on) {
+    b.classList.toggle('on', on);
+    const svg = b.querySelector('svg');
+    if (svg) svg.outerHTML = on ? I().stop : I().play;
+  }
+  function stopPreview() {
+    if (!preview) return;
+    const { audio, btn } = preview;
+    preview = null;
+    audio.pause();
+    setPlayIcon(btn, false);
+  }
+  function playPreview(el) {
+    const again = preview?.btn === el;
+    stopPreview();
+    AU()?.currentAudio?.pause?.(); // 原版页面上可能还有一条在放
+    if (again) return;
+    const audio = new Audio(el.dataset.v2sPlay);
+    preview = { audio, btn: el };
+    setPlayIcon(el, true);
+    const done = () => { if (preview?.audio === audio) stopPreview(); };
+    // 出错时 error 事件和 play() 被拒绝会各来一次，只提示一次
+    const fail = msg => { if (preview?.audio !== audio) return; done(); post({ type: 'toast', message: msg }); };
+    audio.addEventListener('ended', done);
+    audio.addEventListener('error', () => fail('音频播放失败，请确认文件是否存在或格式是否受支持'));
+    audio.play().catch(err => { if (err?.name !== 'AbortError') fail('音频播放失败：' + (err?.message || err)); });
+  }
+
   function audioPrepDialog() {
     Object.assign(U().modalActions, {
       v2sExtract: () => { U().closeModal(); post({ type: 'audioSkinsExtractGameAudio' }); },
@@ -482,7 +514,7 @@
     if ((el = q('[data-v2s-audio]'))) return selectAudio(el.dataset.v2sAudio);
     if ((el = q('[data-v2s-acat]'))) { K.aCat = el.dataset.v2sAcat; K.aChar = 'all'; K.aLimit = 200; return render(); }
     if ((el = q('[data-v2s-astatus]'))) { K.aStatus = el.dataset.v2sAstatus; K.aLimit = 200; return render(); }
-    if ((el = q('[data-v2s-play]'))) { if (!el.disabled && el.dataset.v2sPlay) AU()?.playAudio(el.dataset.v2sPlay, el); return; }
+    if ((el = q('[data-v2s-play]'))) { if (!el.disabled && el.dataset.v2sPlay) playPreview(el); return; }
     if ((el = q('[data-v2s-aitem]'))) { const i = aItems().find(x => String(x.id) === el.dataset.v2sAitem); if (i) audioItemMenu(el, i); return; }
     if ((el = q('[data-v2s-rmenu]'))) {
       const m = (rStatus()?.mods || []).find(x => x.id === el.dataset.v2sRmenu); if (!m) return;

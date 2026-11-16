@@ -233,8 +233,9 @@ details.v2-card[open] > summary svg { transform: rotate(180deg); }
 .v2-search { flex: 1; min-width: 200px; display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px; border-radius: 8px; background: var(--v2-panel); border: 1px solid var(--v2-border); color: var(--gp-text-muted); }
 .v2-search svg { width: 16px; height: 16px; }
 .v2-search input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: var(--v2-text); font-size: 14px; }
-.v2-seg { display: inline-flex; padding: 3px; background: var(--v2-panel); border: 1px solid var(--v2-border); border-radius: 8px; }
-.v2-seg button { height: 28px; padding: 0 12px; border-radius: 6px; color: var(--gp-text-muted); font-size: 13px; }
+.v2-seg { display: inline-flex; flex-wrap: wrap; max-width: 100%; padding: 3px; background: var(--v2-panel); border: 1px solid var(--v2-border); border-radius: 8px; }
+/* 按钮高度固定，文字不能折行：窗口窄时整个按钮换到下一行，而不是字掉出色块 */
+.v2-seg button { height: 28px; padding: 0 12px; border-radius: 6px; color: var(--gp-text-muted); font-size: 13px; white-space: nowrap; }
 .v2-seg button.on { background: var(--v2-panel-2); color: var(--v2-text); }
 .v2-notice { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; background: rgba(250, 204, 21, .08); border: 1px solid rgba(250, 204, 21, .25); color: var(--gp-gold); font-size: 13px; margin-bottom: 14px; }
 .v2-notice svg { width: 16px; height: 16px; flex: none; }
@@ -323,6 +324,8 @@ details.v2-card[open] > summary svg { transform: rotate(180deg); }
 .v2-tab-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gp-pink); flex: none; margin-left: auto; }
 .v2-settings-main { flex: 1; min-width: 0; }
 .v2-settings-main .v2-card { margin-bottom: 0; }
+/* 自定义页也用这套侧栏布局，但它的内容不靠父容器 gap 排开：「当前游戏」条要自己留出间距，否则下面的方案卡片会贴上来 */
+.v2-settings-main > .v2-game-picker { margin-bottom: 14px; }
 /* 自定义页侧栏分组标题（游戏自定义 / Toys 自定义） */
 .v2-side-label { padding: 10px 12px 4px; color: var(--gp-text-muted); font-size: 11px; letter-spacing: .04em; font-weight: 600; }
 .v2-side-label:first-child { padding-top: 4px; }

@@ -33,6 +33,7 @@ html body .v2-select:disabled { opacity: .45; cursor: not-allowed; color: var(--
 
 .v2-audio .aid { width: 52px; flex: none; color: var(--gp-pink); font-size: 12px; font-variant-numeric: tabular-nums; }
 .v2-audio .play { height: 30px; padding: 0 10px; font-size: 13px; }
+.v2-audio .play.on { color: var(--gp-pink); }
 .v2-audio .vol { display: flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 12px; }
 .v2-audio .vol input { width: 80px; accent-color: var(--gp-pink); }
 .v2-audio .vol span { width: 36px; }
