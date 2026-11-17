@@ -66,6 +66,7 @@ public partial class HybridWindow
                     await SendReplayLibraryAsync(runMaintain: true);
                     Post(new { type = "librarySettings", payload = BuildLibrarySettingsPayload() });
                     ScheduleStartupUpdateCheck();
+                    ScheduleStartupLoaderUpdateCheck();
                     var args = Environment.GetCommandLineArgs();
                     if (args.Length > 1 && File.Exists(args[1])) await LoadReplayAsync(args[1]);
                     HandleProtocolArguments(args);
