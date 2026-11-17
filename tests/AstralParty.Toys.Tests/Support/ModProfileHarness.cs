@@ -60,8 +60,12 @@ internal sealed class ModProfileHarness : IDisposable
         return dir;
     }
 
+    /// <summary>模组的玩家配置(现行: configs\{ModId}.json; 与启停状态无关, 所以忽略 enabled)。</summary>
     public string ModConfigPath(string name, bool enabled = true)
-        => Path.Combine(enabled ? ModsRoot : DisabledRoot, name, "config.json");
+    {
+        var configs = Sandbox.EnsureDirectory("game", ModManager.LoaderFolderName, "configs");
+        return Path.Combine(configs, name + ".json");
+    }
 
     public string ModSidecarPath(string name, bool enabled = true)
         => Path.Combine(enabled ? ModsRoot : DisabledRoot, name, name + ".json");

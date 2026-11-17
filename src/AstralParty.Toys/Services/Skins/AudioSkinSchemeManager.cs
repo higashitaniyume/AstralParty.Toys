@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using AstralParty.Toys.Services.Common;
 
 namespace AstralParty.Toys.Services.Skins;
 
@@ -22,8 +23,9 @@ public sealed partial class AudioSkinSchemeManager
     public static string Root(string gameDirectory) =>
         Path.Combine(gameDirectory, "AstralParty_ModLoader", "audio-schemes");
 
+    /// <summary>AudioSkinMod 的玩家配置（configs\AudioSkinMod.json；写入目标）。</summary>
     public static string ModConfigPath(string gameDirectory) =>
-        Path.Combine(gameDirectory, "AstralParty_ModLoader", "mods", "AudioSkinMod", "config.json");
+        ModConfigLocator.Canonical(gameDirectory, "AudioSkinMod");
 
     public static string AudioCacheDirectory(string gameDirectory) =>
         Path.Combine(gameDirectory, "AstralParty_ModLoader", "audio-cache");
@@ -94,7 +96,8 @@ public sealed partial class AudioSkinSchemeManager
 
     public string GetActiveSchemeId(string gameDirectory)
     {
-        var cfgPath = ModConfigPath(gameDirectory);
+        // 读取兼容: configs 下没有时仍可能停在旧位置(mods\AudioSkinMod\config.json)。
+        var cfgPath = ModConfigLocator.ResolveForRead(gameDirectory, "AudioSkinMod");
         if (File.Exists(cfgPath))
         {
             try
@@ -114,6 +117,8 @@ public sealed partial class AudioSkinSchemeManager
     public void SetActiveScheme(string gameDirectory, string schemeId)
     {
         if (string.IsNullOrWhiteSpace(schemeId)) schemeId = "default";
+        // 一律写 configs\: 加载器 SDK 只要在 configs 下看到同名文件就只读那份,
+        // 写到模组目录(旧位置)等于没保存。
         var cfgPath = ModConfigPath(gameDirectory);
         Directory.CreateDirectory(Path.GetDirectoryName(cfgPath)!);
 

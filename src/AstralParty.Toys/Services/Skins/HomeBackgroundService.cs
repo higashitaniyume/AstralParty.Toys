@@ -194,23 +194,23 @@ public sealed class HomeBackgroundService
 
     /// <summary>
     /// 加载器（SDK 3.8.5 的 ModConfig）实际读的那份：<c>configs\{ModId}.json</c> 存在就读它，
-    /// 否则才读 <c>mods\{ModId}\config.json</c>；两份都没有时加载器会在 configs 里新建。
-    /// 从市场装的这个模组没带 config.json，第一次运行就是在 configs 里建的。
+    /// 否则才读 <c>mods\{ModId}\config.json</c>。工具箱读写都落在 configs（见 ModManager 的配置路径），
+    /// 所以从市场装的模组（没带 config.json、第一次运行才在 configs 里建）也能正常读到。
     /// </summary>
-    internal static string LegacyConfigPath(string game) =>
+    internal static string ConfigPath(string game) =>
         Path.Combine(LoaderRoot(game), "configs", ModId + ".json");
 
     internal Config ReadConfig(string game)
     {
         bool enable = true, hide = true;
         string video = "bg.mp4", image = "assets/bg.png";
-        var legacy = LegacyConfigPath(game);
-        if (File.Exists(legacy))
+        var external = ConfigPath(game);
+        if (File.Exists(external))
         {
             // 加载器读的是这份，就以它为准
             try
             {
-                using var doc = JsonDocument.Parse(File.ReadAllText(legacy), new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+                using var doc = JsonDocument.Parse(File.ReadAllText(external), new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
                 var r = doc.RootElement;
                 if (r.TryGetProperty("enable", out var e) && e.ValueKind is JsonValueKind.True or JsonValueKind.False) enable = e.GetBoolean();
                 if (r.TryGetProperty("hideThemeVideo", out var h) && h.ValueKind is JsonValueKind.True or JsonValueKind.False) hide = h.GetBoolean();
@@ -234,8 +234,8 @@ public sealed class HomeBackgroundService
     }
 
     /// <summary>
-    /// 四个字段一起写（缺字段会被当成默认值）。写到 <c>mods\{ModId}\config.json</c>（工具箱「模组」页读写的位置）；
-    /// 如果 <c>configs\{ModId}.json</c> 也在，同样内容再写一份——加载器优先读它，只写一边游戏里不会生效。
+    /// 四个字段一起写（缺字段会被当成默认值）。走 ModManager 的配置写入，落点是
+    /// <c>configs\{ModId}.json</c> —— 加载器只优先读它，写到 mods 那份游戏里不会生效。
     /// </summary>
     private void SaveConfig(string game, Config cfg)
     {
@@ -246,12 +246,6 @@ public sealed class HomeBackgroundService
             new ModConfigField { Name = "video", Kind = "string", StringValue = cfg.Video },
             new ModConfigField { Name = "image", Kind = "string", StringValue = cfg.Image },
         ]);
-        var legacy = LegacyConfigPath(game);
-        if (File.Exists(legacy))
-        {
-            var written = _mods.ReadModConfig(game, ModFileName);
-            if (!string.IsNullOrWhiteSpace(written)) WriteAtomic(legacy, System.Text.Encoding.UTF8.GetBytes(written));
-        }
     }
 
     // ------------------------------------------------------------ 安装 / 启用

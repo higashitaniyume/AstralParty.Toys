@@ -477,10 +477,10 @@ public sealed class ModManagerTests
         var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
         harness.Sandbox.WriteFile(Path.Combine(modsDir, "CfgMod.dll"), new byte[] { 0x4D, 0x5A });
 
-        // 无配置 → 创建并返回路径(配置必须与 mod 的 dll 同目录, 否则 mod 读不到)
+        // 无配置 → 创建并返回路径(配置落在 configs 下, 这是加载器唯一会优先读的位置)
         var path = harness.Manager.EnsureModConfig(harness.GameDirectory, "CfgMod.dll");
         Assert.True(File.Exists(path), "EnsureModConfig 应创建配置文件");
-        Assert.EndsWith(Path.Combine("mods", "CfgMod", "config.json"), path);
+        Assert.EndsWith(Path.Combine("configs", "CfgMod.json"), path);
 
         // 写内容后 Read 能读回
         File.WriteAllText(path, "{\"LogUi\": true}");
@@ -488,35 +488,34 @@ public sealed class ModManagerTests
     }
 
     [Fact]
-    public void ModConfig_LivesBesideModDll_AndMigratesLegacyConfigsFolder()
+    public void ModConfig_LivesInConfigsFolder_AndSeedsFromPackagedDefault()
     {
         using var harness = new ModHarness("ap-mod-config-path");
         harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
         var loaderRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
         var modDir = Path.Combine(loaderRoot, ModManager.ModsFolderName, "CfgMod");
         harness.Sandbox.WriteFile(Path.Combine(modDir, "CfgMod.dll"), new byte[] { 0x4D, 0x5A });
+        // 随包默认值: 模组目录里的 config.json(没有 configs 时加载器会读它)
+        harness.Sandbox.WriteFile(Path.Combine(modDir, "config.json"),
+            System.Text.Encoding.UTF8.GetBytes("{\"PackagedKey\": 1}"));
 
-        // 现行约定: mods\{ModId}\config.json —— SDK 的 ModConfig 就是按 DLL 同目录落盘的
+        // 现行约定: configs\{ModId}.json —— 加载器 SDK 的 ModConfig 只要看到它就只读它
+        var expected = Path.Combine(loaderRoot, "configs", "CfgMod.json");
+        Assert.Equal("{\"PackagedKey\": 1}", harness.Manager.ReadModConfig(harness.GameDirectory, "CfgMod.dll"));
+
+        // 打开(首次编辑)时把模组目录那份播种到 configs, 之后读到的是同一份内容
         var path = harness.Manager.EnsureModConfig(harness.GameDirectory, "CfgMod.dll");
-        Assert.Equal(Path.Combine(modDir, "config.json"), path);
+        Assert.Equal(expected, path);
+        Assert.Equal("{\"PackagedKey\": 1}", harness.Manager.ReadModConfig(harness.GameDirectory, "CfgMod.dll"));
 
         harness.Manager.SaveModConfigFields(harness.GameDirectory, "CfgMod.dll", new List<ModConfigField>
         {
             new() { Name = "LogUi", Kind = "bool", BoolValue = true }
         });
         Assert.Contains("\"LogUi\": true", harness.Manager.ReadModConfig(harness.GameDirectory, "CfgMod.dll"));
-        Assert.Equal(Path.Combine(modDir, "config.json"),
-            harness.Manager.ModConfigPath(harness.GameDirectory, "CfgMod.dll"));
-
-        // 旧版集中存放(AstralParty_ModLoader\configs\{mod}.json)仍能读到, 打开时自动迁到 mod 目录
-        File.Delete(Path.Combine(modDir, "config.json"));
-        var legacy = Path.Combine(loaderRoot, "configs", "CfgMod.json");
-        harness.Sandbox.WriteFile(legacy, System.Text.Encoding.UTF8.GetBytes("{\"LegacyKey\": 7}"));
-        Assert.Equal("{\"LegacyKey\": 7}", harness.Manager.ReadModConfig(harness.GameDirectory, "CfgMod.dll"));
-
-        var reopened = harness.Manager.EnsureModConfig(harness.GameDirectory, "CfgMod.dll");
-        Assert.Equal(Path.Combine(modDir, "config.json"), reopened);
-        Assert.Equal("{\"LegacyKey\": 7}", harness.Manager.ReadModConfig(harness.GameDirectory, "CfgMod.dll"));
+        Assert.Equal(expected, harness.Manager.ModConfigPath(harness.GameDirectory, "CfgMod.dll"));
+        // 模组目录里那份保持原样(它是随包默认值, 不再被当成玩家配置写)
+        Assert.Equal("{\"PackagedKey\": 1}", File.ReadAllText(Path.Combine(modDir, "config.json")));
     }
 
     [Fact]
@@ -526,9 +525,12 @@ public sealed class ModManagerTests
         harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
         var modDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName, "FontMod");
         harness.Sandbox.WriteFile(Path.Combine(modDir, "FontMod.dll"), new byte[] { 0x4D, 0x5A });
-        var path = Path.Combine(modDir, "config.json");
-        harness.Sandbox.WriteFile(path, System.Text.Encoding.UTF8.GetBytes(
-            "{\n  // 玩家手写注释\n  \"enabled\": true,\n  \"fontFamily\": \"SimSun\",\n  \"applyToAllFonts\": 1.0,\n  \"scale\": 1.0\n}\n"));
+        // 玩家配置在 configs\FontMod.json(加载器优先读这里)
+        var configDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, "configs");
+        Directory.CreateDirectory(configDir);
+        var path = Path.Combine(configDir, "FontMod.json");
+        File.WriteAllText(path,
+            "{\n  // 玩家手写注释\n  \"enabled\": true,\n  \"fontFamily\": \"SimSun\",\n  \"applyToAllFonts\": 1.0,\n  \"scale\": 1.0\n}\n");
 
         harness.Manager.SetFontModConfig(harness.GameDirectory, "Microsoft YaHei", false);
 
@@ -1537,7 +1539,7 @@ public sealed class ModManagerTests
             new() { Name = "toggleKey", Kind = "key", StringValue = "Mouse4" }
         });
 
-        var json = File.ReadAllText(Path.Combine(modsDir, "KeySaveMod", "config.json"));
+        var json = File.ReadAllText(Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, "configs", "KeySaveMod.json"));
         Assert.Contains("\"toggleKey\": \"Mouse4\"", json);
 
         var field = Assert.Single(harness.Manager.ReadModConfigFields(harness.GameDirectory, "KeySaveMod.dll"));
@@ -1597,9 +1599,9 @@ public sealed class ModManagerTests
     public void SaveModConfigFields_PreservesCommentsAndNestedOtherValues()
     {
         using var harness = new ModHarness("ap-mod-comments-save");
-        var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
-        var configPath = Path.Combine(modsDir, "DocMod", "config.json");
-        Directory.CreateDirectory(Path.GetDirectoryName(configPath)!);
+        var configDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, "configs");
+        Directory.CreateDirectory(configDir);
+        var configPath = Path.Combine(configDir, "DocMod.json");
         File.WriteAllText(configPath, """
             {
               "Enabled": true,
@@ -1635,9 +1637,9 @@ public sealed class ModManagerTests
     public void SaveModConfigFields_RejectsInvalidOtherJson()
     {
         using var harness = new ModHarness("ap-mod-other-json");
-        var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
-        var configPath = Path.Combine(modsDir, "BadMod", "config.json");
-        Directory.CreateDirectory(Path.GetDirectoryName(configPath)!);
+        var configDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, "configs");
+        Directory.CreateDirectory(configDir);
+        var configPath = Path.Combine(configDir, "BadMod.json");
         File.WriteAllText(configPath, "{\"bad\":{\"a\":1}}");
 
         var fields = harness.Manager.ReadModConfigFields(harness.GameDirectory, "BadMod.dll");

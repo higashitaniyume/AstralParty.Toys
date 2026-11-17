@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using AstralParty.Toys.Services.Common;
 
 namespace AstralParty.Toys.Services.Skins;
 
@@ -62,12 +63,15 @@ public sealed partial class SkinManager
         Path.Combine(gameDirectory, "AstralParty_ModLoader", "mods", "CardSkinMod", "mod.cfg");
 
     public const string GameDefault = "__game_default__";
+
+    /// <summary>CardSkinMod 的玩家配置（configs\CardSkinMod.json；写入目标）。</summary>
     public string GetModConfigPath(string gameDirectory) =>
-        Path.Combine(gameDirectory, "AstralParty_ModLoader", "mods", "CardSkinMod", "config.json");
+        ModConfigLocator.Canonical(gameDirectory, "CardSkinMod");
 
     public string GetActiveSkin(string gameDirectory)
     {
-        var path = GetModConfigPath(gameDirectory);
+        // 读取兼容: configs 下没有时仍可能停在旧位置(mods\CardSkinMod\config.json)。
+        var path = ModConfigLocator.ResolveForRead(gameDirectory, "CardSkinMod");
         if (!File.Exists(path)) return "default";
         var config = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(File.ReadAllText(path))!;
         if (config.TryGetValue("Enabled", out var enabled) && enabled.ValueKind == JsonValueKind.False) return GameDefault;

@@ -3,6 +3,7 @@ using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using AstralParty.Toys.Services.Common;
 
 namespace AstralParty.Toys.Services.Skins;
 
@@ -16,13 +17,21 @@ public sealed class CharacterSkinManager
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
     public string Root(string game) => Path.Combine(game, "AstralParty_ModLoader", "character-skins");
-    public string Config(string game) => Path.Combine(game, "AstralParty_ModLoader", "mods", "CharacterSkinMod", "config.json");
+    /// <summary>CharacterSkinMod 的玩家配置（configs\CharacterSkinMod.json；写入目标）。</summary>
+    public string Config(string game) => ModConfigLocator.Canonical(game, "CharacterSkinMod");
     public string Package(string game, string id)
     {
         if (id is null || !Regex.IsMatch(id, "^[A-Za-z0-9_-]{1,80}$")) throw new InvalidOperationException("方案标识仅支持字母、数字、下划线和短横线，最长 80 字符。");
         return CharacterSkinRules.SafePath(Root(game), id);
     }
-    public CharacterSkinSettings Settings(string game) => File.Exists(Config(game)) ? JsonSerializer.Deserialize<CharacterSkinSettings>(File.ReadAllText(Config(game)), JsonOptions) ?? new() : new();
+    public CharacterSkinSettings Settings(string game)
+    {
+        // 读取兼容: configs 下没有时仍可能停在旧位置(mods\CharacterSkinMod\config.json)。
+        var path = ModConfigLocator.ResolveForRead(game, "CharacterSkinMod");
+        return File.Exists(path)
+            ? JsonSerializer.Deserialize<CharacterSkinSettings>(File.ReadAllText(path), JsonOptions) ?? new()
+            : new();
+    }
     public CharacterSkinManifest Load(string game, string id)
     {
         var directory = Package(game, id);
@@ -87,7 +96,7 @@ public sealed class CharacterSkinManager
     private string SerializeSettings(string game, CharacterSkinSettings settings)
     {
         var node = JsonSerializer.SerializeToNode(settings, JsonOptions)!.AsObject();
-        string path = Config(game);
+        string path = ModConfigLocator.ResolveForRead(game, "CharacterSkinMod");
         if (File.Exists(path))
         {
             try

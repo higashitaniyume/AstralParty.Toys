@@ -78,10 +78,11 @@ public sealed class ModRollbackTests
     {
         using var harness = new ModProfileHarness("ap-rollback-conflict");
         harness.AddMod("ModD", enabled: true, config: "{\"d\": 1}");
+        var configPath = harness.ModConfigPath("ModD");
+        File.WriteAllText(configPath, "{\"d\": 1}");   // 玩家配置在 configs 下, 方案会捕获这份原文
         harness.Service.Capture("P", "", includeConfigs: true, includeLoader: false);
         harness.Service.Apply("P");
 
-        var configPath = harness.ModConfigPath("ModD");
         File.WriteAllText(configPath, "{\"d\": 2}");   // 操作之后又被外部改过
 
         var blocked = harness.Service.Journal.Rollback(FirstId(harness, "modProfileApply"), force: false);

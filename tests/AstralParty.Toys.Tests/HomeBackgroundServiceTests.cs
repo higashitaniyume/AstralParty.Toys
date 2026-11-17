@@ -36,6 +36,8 @@ public sealed class HomeBackgroundServiceTests : IDisposable
 
     private string ModsDir => Path.Combine(_game, ModManager.LoaderFolderName, ModManager.ModsFolderName, HomeBackgroundService.ModId);
     private string DisabledDir => Path.Combine(_game, ModManager.LoaderFolderName, ModManager.DisabledModsFolderName, HomeBackgroundService.ModId);
+    /// <summary>玩家配置(加载器优先读的那份): configs\HomeBackgroundMod.json。</summary>
+    private string ConfigFile => Path.Combine(_game, ModManager.LoaderFolderName, "configs", HomeBackgroundService.ModId + ".json");
 
     // ---------------------------------------------------------------- 造测试图片
 
@@ -250,7 +252,7 @@ public sealed class HomeBackgroundServiceTests : IDisposable
         // 修复前放进去的 VP9 视频：页面要说清楚为什么主页会闪
         _service.SetHideThemeVideo(_game, true);
         File.WriteAllBytes(Path.Combine(ModsDir, "bg.webm"), FakeWebm("V_VP9"));
-        var cfg = Directory.GetFiles(ModsDir, "config.json").Single();
+        var cfg = ConfigFile;
         File.WriteAllText(cfg, File.ReadAllText(cfg).Replace("\"bg.mp4\"", "\"bg.webm\""));
 
         var s = _service.GetStatus(_game);
@@ -263,7 +265,7 @@ public sealed class HomeBackgroundServiceTests : IDisposable
     public void Config_AlwaysWritesAllFourFields()
     {
         _service.SetHideThemeVideo(_game, false);
-        var cfgPath = Directory.GetFiles(ModsDir, "config.json").Single();
+        var cfgPath = ConfigFile;
         using var doc = JsonDocument.Parse(File.ReadAllText(cfgPath));
         foreach (var key in new[] { "enable", "hideThemeVideo", "video", "image" })
             Assert.True(doc.RootElement.TryGetProperty(key, out _), "缺少配置字段 " + key);
@@ -271,7 +273,7 @@ public sealed class HomeBackgroundServiceTests : IDisposable
 
     /// <summary>
     /// 加载器（SDK 3.8.5）只要 configs\HomeBackgroundMod.json 存在就读它，不读 mods\…\config.json。
-    /// 从市场装过这个模组的人，配置就在 configs 里：只写 mods 那份，游戏里不会生效。
+    /// 从市场装过这个模组的人，配置就在 configs 里：工具箱必须直接改写这份，否则游戏里不会生效。
     /// </summary>
     [Fact]
     public void LegacyConfigInConfigsFolder_IsKeptInSync()
