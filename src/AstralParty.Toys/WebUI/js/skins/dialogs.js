@@ -11,20 +11,17 @@
     confirmDownloadDefault() {
       this.confirmAction('下载默认皮肤包', '将从最新 Release 下载默认包并安装到当前游戏，覆盖 default 中的同名图片。下载不会自动切换当前方案。', { type: 'skinsDownloadDefault', overwrite: true });
     },
-    confirmRestoreDefault() {
-      this.confirmAction('恢复内置默认包', '将从应用内置资源恢复当前游戏的 default 方案，覆盖同名图片并移除 default 中的动态覆盖。不会改动其他方案，也不会自动切换当前选择。', { type: 'skinsRestoreDefault' });
-    },
     confirmRevertCard(fileName) {
       const card = this.cards.find(c => c.fileName === fileName);
       const name = card ? (card.cardName || card.assetKey) : fileName;
 
-      openModal('恢复内置卡面', `
+      openModal('恢复默认卡面', `
         <div style="display:flex; flex-direction:column; gap:14px;">
           <p style="color:#f8fafc; font-size:0.92rem; margin:0;">
-            确定要将 <strong>${esc(name)}</strong> (<code>${esc(fileName)}</code>) 恢复为应用内置的原始卡面吗？
+            确定要将 <strong>${esc(name)}</strong> (<code>${esc(fileName)}</code>) 恢复为 default 方案的卡面吗？
           </p>
           <p style="color:#94a3b8; font-size:0.82rem; margin:0;">
-            将从应用内置默认包恢复此卡面，覆盖当前方案的同名图片；磁盘上修改过的 default 不会被用作原始模板。
+            将从当前游戏的 default 方案复制同名图片并覆盖本方案中的修改。default 方案需要先下载默认包。
           </p>
           <div class="skin-modal-actions">
             <button class="secondary-btn" id="revertCancelBtn">取消</button>
@@ -89,7 +86,7 @@
       openModal('新建皮肤方案', `
         <div class="skin-duplicate-modal">
           <p style="font-size:0.88rem; color:#94a3b8; margin:0;">
-            从应用内置默认包创建全新方案，不使用磁盘上已经修改过的图片。无需联网，新建后可更换单张卡面。
+            从当前游戏的 default 方案复制一份全新方案；default 需要先在卡牌页「下载默认包」。新建后可更换单张卡面。
           </p>
           <div class="skin-form-group">
             <label for="newSkinFolderName">方案英文目录名（唯一标识）：</label>

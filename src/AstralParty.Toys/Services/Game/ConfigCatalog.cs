@@ -1,4 +1,4 @@
-﻿namespace AstralParty.Toys.Services.Game;
+namespace AstralParty.Toys.Services.Game;
 
 public sealed class ConfigCatalog
 {
@@ -10,6 +10,8 @@ public sealed class ConfigCatalog
     private readonly Dictionary<int, string> _monsters = [];
     private readonly Dictionary<int, string> _items = [];
     private readonly Dictionary<int, string> _cards = [];
+    private readonly Dictionary<int, string> _achievements = [];
+    private readonly Dictionary<int, int> _playerLevels = [];
     private readonly Dictionary<int, (string Name, string Quality)> _relics = [];
     private readonly Dictionary<int, string[]> _cardAssets = [];
     private readonly Dictionary<int, string[]> _characterAssets = [];
@@ -38,6 +40,8 @@ public sealed class ConfigCatalog
         _monsters.Clear();
         _items.Clear();
         _cards.Clear();
+        _achievements.Clear();
+        _playerLevels.Clear();
         _relics.Clear();
         _cardAssets.Clear();
         _characterAssets.Clear();
@@ -107,6 +111,16 @@ public sealed class ConfigCatalog
         _ => $"卡牌 {id}"
     };
 
+    public string Achievement(int id) => _achievements.GetValueOrDefault(id, id == 0 ? "" : _language switch
+    {
+        AppLanguage.English => $"Achievement {id}",
+        AppLanguage.Japanese => $"実績 {id}",
+        AppLanguage.TraditionalChinese => $"成就 {id}",
+        _ => $"成就 {id}"
+    });
+
+    public int PlayerLevelNeedExp(int level) => _playerLevels.GetValueOrDefault(level, 0);
+
     public string Relic(int id) => _relics.TryGetValue(id, out var value) ? value.Name : _language switch
     {
         AppLanguage.English => $"Relic {id}",
@@ -152,6 +166,30 @@ public sealed class ConfigCatalog
         LoadAssets("CharacterConfigure", "Character.bin", _characterAssets, "CharacterMap");
         LoadAssets("MapConfigure", "Map.bin", _mapAssets, "MapImage", "MapSceneImage");
         LoadAssets("MonsterConfigure", "Monster.bin", _monsterAssets, "CharacterMap");
+
+        // Profile-only tables; optional so older data folders keep working.
+        if (File.Exists(Path.Combine(_dataDirectory, "Achieve.bin")) && File.Exists(Path.Combine(_dataDirectory, "STRAchieve.bin")))
+        {
+            var achieveLocal = LoadLocalization("STRAchieveConfigure", "STRAchieve.bin");
+            var achieveConfig = DecodeFile("AchieveConfigure", "Achieve.bin");
+            foreach (var entry in ReflectionValue.Items(ReflectionValue.Get(achieveConfig, "GlobalDict")))
+            {
+                var info = ReflectionValue.Get(entry, "Value");
+                var id = ReflectionValue.Int(info, "Id");
+                var nameId = ReflectionValue.Int(info, "NameID");
+                if (id > 0) _achievements[id] = achieveLocal.GetValueOrDefault(nameId, $"{id}");
+            }
+        }
+        if (File.Exists(Path.Combine(_dataDirectory, "Player.bin")))
+        {
+            var playerConfig = DecodeFile("PlayerConfigure", "Player.bin");
+            foreach (var level in ReflectionValue.Items(ReflectionValue.Get(playerConfig, "Levels")))
+            {
+                var value = ReflectionValue.Int(level, "Level");
+                var needExp = ReflectionValue.Int(level, "NeedExp");
+                if (value > 0) _playerLevels[value] = needExp;
+            }
+        }
 
         var local = LoadLocalization("STRRelicConfigure", "STRRelic.bin");
         var config = DecodeFile("RelicConfigure", "Relic.bin");

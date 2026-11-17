@@ -1,4 +1,4 @@
-﻿.v2-scheme:hover { border-color: var(--v2-border-strong); }
+.v2-scheme:hover { border-color: var(--v2-border-strong); }
 .v2-scheme.active { border-color: rgba(255, 23, 118, .55); }
 .v2-scheme .thumb { flex: none; width: 100%; aspect-ratio: 16 / 10; position: relative; display: grid; place-items: center; font-size: 30px; font-weight: 700; color: rgba(255, 255, 255, .8); }
 .v2-scheme .thumb svg { width: 28px; height: 28px; }
@@ -26,6 +26,12 @@
 .v2-field small { display: block; color: var(--gp-text-muted); font-size: 12px; margin-bottom: 6px; }
 .v2-field input, .v2-field textarea, .v2-select { width: 100%; padding: 7px 10px; border-radius: 8px; background: var(--gp-bg); border: 1px solid var(--v2-border-strong); color: var(--v2-text); outline: 0; font: inherit; }
 .v2-select { width: auto; min-width: 140px; height: 34px; padding: 0 10px; }
+/* 下拉框显式跟主题（不依赖 UA 默认配色）：深色下弹层也深，浅色下弹层白底深字。
+   color-scheme 会继承，但 WebView2 上原生 option 列表偶尔会按系统主题画，这里单独钉住。 */
+html body .v2-select { background: var(--v2-panel-solid, var(--gp-bg)); color: var(--v2-text); color-scheme: dark; }
+html body .v2-select option, html body .v2-select optgroup { background: var(--v2-panel-solid, var(--gp-bg)); color: var(--v2-text); }
+:root[data-theme="light"] .v2-select { background: #fff; color: #1F2233; color-scheme: light; }
+:root[data-theme="light"] .v2-select option, :root[data-theme="light"] .v2-select optgroup { background: #fff; color: #1F2233; }
 .v2-field input:focus, .v2-field textarea:focus { border-color: var(--gp-pink); }
 .v2-err { color: #f43f5e; font-size: 13px; margin: 0; min-height: 18px; }
 /* 不可用的下拉框（比如设置里固定成简体中文的语言）：灰掉，鼠标显示不可点 */

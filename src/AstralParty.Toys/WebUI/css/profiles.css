@@ -382,3 +382,37 @@
     justify-content: flex-start;
   }
 }
+
+/* ---------- 当前使用的档案（顶部下拉） ---------- */
+.profiles-current-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-md);
+  background: var(--gp-bg-panel);
+  font-size: 13px;
+}
+
+.profiles-current-picker.is-disabled {
+  opacity: 0.6;
+}
+
+.profiles-current-picker-label {
+  font-weight: 600;
+  color: var(--gp-text-main);
+}
+
+.profiles-current-picker .v2-select {
+  min-width: 180px;
+}
+
+.profiles-current-picker-hint {
+  flex: 1 1 260px;
+  color: var(--gp-text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}

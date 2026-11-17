@@ -66,6 +66,25 @@ public sealed class WorkshopWebUiTests
     }
 
     [Fact]
+    public void WorkshopPager_KeepsItsStaticNodesAndCanBeRebuilt()
+    {
+        // 翻页条是静态 DOM：上一页 / 页码 / 下一页。清空它会让人永远停在第 1 页
+        // （市场第 25 个模组在 page=2，正好一页 24 条之后）。
+        var html = Read("index.html");
+        Assert.Contains("id=\"workshopPager\"", html);
+        Assert.Contains("id=\"workshopPrevBtn\"", html);
+        Assert.Contains("id=\"workshopPageInfo\"", html);
+        Assert.Contains("id=\"workshopNextBtn\"", html);
+
+        var js = Read("js/workshop/module.js");
+        Assert.DoesNotContain("pager.innerHTML = ''", js);
+        Assert.DoesNotContain("pager.innerHTML=''", js);
+        // 自愈模板 + 容器委托：节点真被清掉时 renderPager 能重建，点击还生效。
+        Assert.Contains("PAGER_MARKUP", js);
+        Assert.Contains("workshopPager')?.addEventListener('click'", js);
+    }
+
+    [Fact]
     public void WorkshopModule_UsesTheSameOutgoingMessageNamesAsTheHost()
     {
         var js = Read("js/workshop/module.js");

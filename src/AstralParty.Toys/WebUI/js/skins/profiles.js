@@ -10,7 +10,6 @@
       $('skinsBackHomeBtn')?.addEventListener('click', () => showPage('home'));
 
       $('skinDownloadDefaultBtn')?.addEventListener('click', () => this.confirmDownloadDefault());
-      $('skinRestoreDefaultBtn')?.addEventListener('click', () => this.confirmRestoreDefault());
       $('skinExportZipBtn')?.addEventListener('click', () => { if (this.selectedSkin && this.selectedSkin !== '__game_default__') post({ type: 'skinsExportZip', name: this.selectedSkin }); });
       $('skinAnimationBindingBtn')?.addEventListener('click', () => this.openAnimationBinding());
       // 顶部操作按钮

@@ -274,6 +274,15 @@ host?.addEventListener('message', event => {
       if (window.ModsModule) window.ModsModule.renderConfigFields(msg.payload);
       break;
 
+    case 'systemFonts':
+      // 自定义 → 字体：系统字体目录与 FontMod 当前配置
+      window.V2Fonts?.render(msg.payload);
+      break;
+
+    case 'fontModApplied':
+      window.V2Fonts?.applied(msg.payload);
+      break;
+
     case 'characterExportTasks':
       window.CharacterSkinsModule?.exportTasks(msg.payload);
       break;
