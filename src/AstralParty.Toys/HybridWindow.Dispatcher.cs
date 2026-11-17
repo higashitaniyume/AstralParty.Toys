@@ -755,6 +755,15 @@ public partial class HybridWindow
                 case "audioSkinsExportSingleOriginal":
                     HandleAudioSkinMessage(type, root);
                     break;
+                // 自定义 → 主页背景（第三方模组 HomeBackgroundMod）
+                case "homeBgGetStatus":
+                case "homeBgPickImage":
+                case "homeBgPickVideo":
+                case "homeBgSetHideTheme":
+                case "homeBgRestore":
+                case "homeBgOpenFolder":
+                    HandleHomeBackgroundMessage(type, root);
+                    break;
                 case "skinsGetProfiles":
                     PushSkinProfiles();
                     break;

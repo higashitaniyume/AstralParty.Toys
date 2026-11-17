@@ -1,0 +1,128 @@
+diff --git a/src/HomeBackgroundMod/ModEntry.cs b/src/HomeBackgroundMod/ModEntry.cs
+index 860d0ac..be8b04d 100644
+--- a/src/HomeBackgroundMod/ModEntry.cs
++++ b/src/HomeBackgroundMod/ModEntry.cs
+@@ -51,7 +51,7 @@ namespace HomeBackgroundMod
+         private bool _loggedHideVideo;
+ 
+         public override string Name { get { return "自定义主页背景"; } }
+-        public override string Version { get { return "1.1.0"; } }
++        public override string Version { get { return "1.1.0.1"; } }
+         public override string Author { get { return "TenkinMori"; } }
+         public override string Description
+         {
+@@ -129,7 +129,10 @@ namespace HomeBackgroundMod
+             if (ui == null || ui.loader_bg == null) return;
+ 
+             NTexture source = null;
+-            if (EnsureVideo()) source = _videoTexture;
++            VideoState state = EnsureVideo();
++            // 视频还在准备：先什么都不动（主题背景照常显示），免得盖上一层空白画面。
++            if (state == VideoState.Preparing) return;
++            if (state == VideoState.Ready) source = _videoTexture;
+ 
+             if (source == null)
+             {
+@@ -144,33 +147,53 @@ namespace HomeBackgroundMod
+             ApplyOverlay(ui, source);
+         }
+ 
+-        /// <summary>优先用模组目录下的 bg.mp4；没有视频就回退到 PNG。</summary>
+-        private bool EnsureVideo()
++        private enum VideoState { None, Preparing, Ready }
++
++        /// <summary>
++        /// 优先用模组目录下的 bg.mp4；没有视频、或游戏放不了这个视频，就回退到 PNG。
++        /// （AstralParty.Toys 修改：原版在 Prepare 完成前就当作成功，
++        /// 游戏放不了的视频会让主页一直盖着空白画面、来回闪。现在等 Prepare 完成才用视频，超时就退回图片。）
++        /// </summary>
++        private VideoState EnsureVideo()
+         {
+             if (_video == null) _video = new VideoBackground();
+             if (_video.IsPlaying)
+             {
+                 // Prepare 异步完成后再 Play；Android 上立即 Play 会丢帧。
+-                if (_video.IsPrepared) _video.Play();
+-                if (_videoTexture == null) _videoTexture = new NTexture(_video.Texture);
+-                return true;
++                if (_video.IsPrepared)
++                {
++                    _video.Play();
++                    if (_videoTexture == null)
++                    {
++                        _videoTexture = new NTexture(_video.Texture);
++                        Log.Info("视频背景已就绪");
++                    }
++                    return VideoState.Ready;
++                }
++                if (_video.PrepareTimedOut)
++                {
++                    Warn("视频背景放不了（游戏只支持 H.264 编码的 mp4 或 VP8 编码的 webm），改用图片背景");
++                    _video.Stop();
++                    _videoTexture = null;
++                    return VideoState.None;
++                }
++                return VideoState.Preparing;
+             }
+-            if (_videoTried) return false;
++            if (_videoTried) return VideoState.None;
+ 
+             _videoTried = true;
+             string path = ResolveVideoPath();
+-            if (path == null) return false;
++            if (path == null) return VideoState.None;
+ 
+             string error;
+             if (!_video.TryStart(path, (int)GRoot.inst.width, (int)GRoot.inst.height, out error))
+             {
+                 Warn("视频背景启动失败: " + error);
+-                return false;
++                return VideoState.None;
+             }
+ 
+-            _videoTexture = new NTexture(_video.Texture);
+-            Log.Info("已启动视频背景: " + path);
+-            return true;
++            Log.Info("正在准备视频背景: " + path);
++            return VideoState.Preparing;
+         }
+ 
+         private string ResolveVideoPath()
+diff --git a/src/HomeBackgroundMod/VideoBackground.cs b/src/HomeBackgroundMod/VideoBackground.cs
+index 9817b17..f0d6de6 100644
+--- a/src/HomeBackgroundMod/VideoBackground.cs
++++ b/src/HomeBackgroundMod/VideoBackground.cs
+@@ -15,8 +15,25 @@ namespace HomeBackgroundMod
+         private RenderTexture _renderTexture;
+         private Type _playerType;
+         private bool _started;
++        private DateTime _prepareStartedUtc;
++
++        /// <summary>
++        /// 超过这个时间还没 Prepare 好，就当游戏放不了这个视频（例如 VP9 / AV1 / H.265 编码）。
++        /// （AstralParty.Toys 修改：原版不检查，放不了时主页会一直闪。）
++        /// </summary>
++        private const double PrepareTimeoutSeconds = 10;
+ 
+         public RenderTexture Texture { get { return _renderTexture; } }
++
++        /// <summary>已经 Prepare 了很久仍没好：视为失败。</summary>
++        public bool PrepareTimedOut
++        {
++            get
++            {
++                if (_player == null || _started) return false;
++                return (DateTime.UtcNow - _prepareStartedUtc).TotalSeconds > PrepareTimeoutSeconds;
++            }
++        }
+         public bool IsPlaying { get { return _player != null && _renderTexture != null; } }
+ 
+         /// <summary>
+@@ -69,6 +86,7 @@ namespace HomeBackgroundMod
+                 Set("playOnAwake", false);
+                 TrySetEnum("audioOutputMode", "None");
+ 
++                _prepareStartedUtc = DateTime.UtcNow;
+                 Invoke("Prepare");
+                 return true;
+             }

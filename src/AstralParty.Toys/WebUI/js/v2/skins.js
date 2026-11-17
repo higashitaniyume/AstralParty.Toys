@@ -27,11 +27,11 @@
 
   /* ---------- 外框 ---------- */
   // 角色皮肤功能目前不稳定，入口暂时隐藏；恢复时把 ['characters', '角色'] 加回来即可，v2-characters.js 还在
-  const TABS = [['cards', '卡牌'], ['audio', '音效'], ['resource', '资源包'], ['background', '背景']];
+  const TABS = [['cards', '卡牌'], ['audio', '音效'], ['resource', '资源包'], ['homebg', '主页背景'], ['background', '背景']];
   // 自定义分成两组：改游戏文件的放「游戏自定义」，只改 Toys 自身外观的放「Toys 自定义」
   function sideNav() {
     const cur = tab();
-    const gameTabs = [['cards', '卡牌', 'playing_cards'], ['audio', '音效', 'graphic_eq'], ['resource', '资源包', 'folder_zip'], ['fonts', '字体', 'font_download']];
+    const gameTabs = [['cards', '卡牌', 'playing_cards'], ['audio', '音效', 'graphic_eq'], ['resource', '资源包', 'folder_zip'], ['fonts', '字体', 'font_download'], ['homebg', '主页背景', 'home']];
     if (window.V2Chars) gameTabs.push(['characters', '角色', 'person']);
     const toysTabs = [['background', '背景', 'wallpaper']];
     const btn = ([k, l, icon]) => `<button class="v2-side-tab${cur === k ? ' on' : ''}" data-v2s-tab="${k}" role="tab" aria-selected="${cur === k}">${window.Icons?.svg(icon) || ''}<span>${l}</span></button>`;
@@ -324,6 +324,70 @@
         </div></details>`;
   }
 
+  /* ---------- 主页背景（第三方模组 HomeBackgroundMod，TenkinMori） ---------- */
+  // 宿主消息：homeBgStatus（状态）、homeBgBusy（转换图片 / 复制视频中）
+  const mb = n => n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
+  function homeBgView() {
+    if (!K.hbAsked) { K.hbAsked = true; post({ type: 'homeBgGetStatus' }); }
+    const s = K.hb, busy = !!K.hbBusy;
+    const action = `<button class="v2-btn primary" data-v2s="hbImage" ${busy || (s && !s.loaderInstalled) ? 'disabled' : ''}>${I().upload}选择图片…</button>`;
+    if (!s) return frameHead(action) + `<div class="v2-card" style="padding:16px 18px"><div class="v2-skel v2-skel-block" style="width:40%"></div></div>`;
+    if (!s.gameDirectory) return frameHead('') + `<div class="v2-empty">还没有选择游戏目录</div>`;
+    if (!s.loaderInstalled) return frameHead(action) + `<div class="v2-notice">${I().info}<span style="flex:1">主页背景靠加载器里的模组实现，要先到「模组」页<b>安装加载器</b></span></div>`;
+
+    const mode = s.mode;
+    const preview = mode === 'image' || (mode === 'off' || mode === 'none') && s.imagePreview
+      ? `<img src="${esc(s.imagePreview)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;${mode === 'image' ? '' : 'opacity:.35;filter:grayscale(1)'}">`
+      : `<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--gp-text-muted)">
+          ${mode === 'video' ? `<span style="display:block;width:36px;height:36px">${I().play}</span><span>视频背景（工具箱里不能预览）</span>` : '<span>游戏默认背景</span>'}</div>`;
+    const what = mode === 'image' ? `图片 · ${s.imageWidth}×${s.imageHeight}`
+      : mode === 'video' ? `视频 · ${esc(s.videoFile)}${s.videoCodec ? ' · ' + esc(s.videoCodec) : ''} · ${mb(s.videoSize)}`
+      : mode === 'none' ? '已启用，但还没有设置背景'
+      : s.modInstalled ? '游戏默认（自定义背景已关闭，之前的文件还留着）' : '游戏默认';
+    const notice = (mode === 'video' && s.videoProblem ? `<div class="v2-notice danger">${I().info}<span style="flex:1"><b>现在的视频背景放不出来</b>：${esc(s.videoProblem)}。
+        ${s.installedVersion === s.bundledVersion
+          ? '游戏里会在 10 秒左右后改用图片背景（没设置图片就是游戏默认背景）。'
+          : '现在装的模组版本放不了时主页会一闪一闪；重新选一次背景，工具箱会换成修好这个问题的版本。'}重新选一个视频或换成图片就好</span></div>` : '')
+      + (s.gameRunning ? `<div class="v2-notice">${I().info}<span style="flex:1"><b>游戏正在运行</b>：换图片回到主页就能看到；换视频、恢复默认要先关闭游戏</span></div>` : '');
+    return frameHead(action) + notice + `
+      <div class="v2-card" style="overflow:hidden">
+        <div style="background:var(--v2-well);padding:12px">
+          <div style="aspect-ratio:16/9;width:min(100%,560px);margin:0 auto;border-radius:8px;overflow:hidden;background:var(--v2-panel-2);position:relative">${preview}
+            ${busy ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);color:#fff">${esc(K.hbBusyMsg || '处理中…')}</div>` : ''}</div></div>
+        <div class="v2-row"><span class="n">当前</span><span class="d">${what}</span>
+          <button class="v2-btn line" data-v2s="hbVideo" ${busy ? 'disabled' : ''}>选择视频…</button></div>
+        <div class="v2-row"><span class="n">隐藏主题背景动画</span><span class="d">换了背景后，盖住游戏主题自带的动态背景</span>
+          <label class="v2-switch"><input type="checkbox" id="v2sHbHide" ${s.hideThemeVideo ? 'checked' : ''} ${busy || !s.modInstalled ? 'disabled' : ''}><span></span></label></div>
+      </div>
+      <ul class="v2-confirm-lines" style="margin:0 0 14px">
+        <li>图片：jpg、png、webp 等都可以，会自动裁成 16:9（游戏会把背景铺满屏幕），游戏开着也能换</li>
+        <li>视频：<b>H.264 编码的 mp4</b>（最常见）或 VP8 编码的 webm；VP9 / AV1 / H.265 游戏放不了，选的时候会拦下。
+          静音循环播放，<b>重启游戏后生效</b>；设置了视频就优先用视频</li></ul>
+      <details class="v2-card"><summary><div class="t"><b>更多</b><small>恢复默认、模组文件夹</small></div>${I().down}</summary>
+        <div class="v2-adv">
+          <div class="v2-row"><span class="n">恢复游戏默认背景</span><span class="d">停用这个功能，重启游戏后生效；你设置的背景文件留着，下次再选就回来</span>
+            <button class="v2-btn line" data-v2s="hbRestore" ${busy || mode === 'off' ? 'disabled' : ''}>恢复默认</button></div>
+          <div class="v2-row"><span class="n">打开模组文件夹</span><span class="d">背景文件放在这里</span>
+            <button class="v2-btn line" data-v2s="hbFolder" ${s.modInstalled ? '' : 'disabled'}>打开</button></div>
+          <div class="v2-row"><span class="n">关于</span><span class="d">由 TenkinMori 的「自定义主页背景」模组实现（${esc(s.installedVersion || s.bundledVersion)}，MIT 许可），
+            源码 github.com/TenkinMori/astralparty-homebg-cesium。工具箱内置的是修改版（1.1.0.1）：游戏放不了的视频会自动退回图片背景，不再闪烁</span></div>
+        </div></details>`;
+  }
+  function hbPickImage() {
+    if (K.hb?.mode !== 'video') return post({ type: 'homeBgPickImage' });
+    confirm({
+      title: '换成图片？', ok: '换成图片',
+      lines: [`会删除模组文件夹里现在的视频背景（${esc(K.hb.videoFile)}），否则游戏会一直先用视频`,
+        '你当初选的那个原视频文件不受影响，想换回来再选一次就行', K.hb.gameRunning && '游戏正在运行时删不掉视频，要先关闭游戏'],
+      onOk: () => post({ type: 'homeBgPickImage' }),
+    });
+  }
+  window.chrome?.webview?.addEventListener('message', e => {
+    const m = e.data;
+    if (m?.type === 'homeBgStatus') { K.hb = m.payload || null; if (tab() === 'homebg') render(); }
+    else if (m?.type === 'homeBgBusy') { K.hbBusy = !!m.payload?.busy; K.hbBusyMsg = m.payload?.message || ''; if (tab() === 'homebg') render(); }
+  });
+
   /* ---------- 渲染 ---------- */
   function render() {
     const root = $('v2Skins'), view = $('skinsView');
@@ -334,6 +398,7 @@
       : t === 'audio' ? (K.audioScheme ? audioScheme() : audioList())
       : t === 'resource' ? resourceView()
       : t === 'fonts' ? (window.V2Fonts ? window.V2Fonts.html() : frameHead())
+      : t === 'homebg' ? homeBgView()
       : t === 'background' && window.V2Bg ? window.V2Bg.html()
       : window.V2Chars ? window.V2Chars.html()
       : frameHead();
@@ -358,6 +423,10 @@
   const curAudio = () => aProfiles().find(x => x.id === K.audioScheme);
 
   const actions = {
+    hbImage: hbPickImage,
+    hbVideo: () => post({ type: 'homeBgPickVideo' }),
+    hbRestore: () => post({ type: 'homeBgRestore' }),
+    hbFolder: () => post({ type: 'homeBgOpenFolder' }),
     manageGames: () => showPage('settings'),
     // 卡牌
     cardAddMenu: el => U().openMenu(el, [
@@ -470,7 +539,7 @@
     const q = sel => t.closest(sel);
     let el;
     if ((el = q('[data-v2s]'))) { if (!el.disabled) actions[el.dataset.v2s]?.(el); return; }
-    if ((el = q('[data-v2s-tab]'))) { CS()?.switchTab(el.dataset.v2sTab); return; }
+    if ((el = q('[data-v2s-tab]'))) { if (el.dataset.v2sTab === 'homebg') K.hbAsked = false; CS()?.switchTab(el.dataset.v2sTab); return; }
     if ((el = q('[data-v2s-card]'))) {
       K.cardScheme = el.dataset.v2sCard; K.cardCat = 'all'; K.cardQ = '';
       if (SK()) { SK().selectedSkin = K.cardScheme; post({ type: 'skinsGetCards', name: K.cardScheme }); }
@@ -504,8 +573,10 @@
       post({ type: 'gameProfileSetActive', id: t.value });
       // 卡牌由 GameLibModule 自动刷新；音效、资源包、字体要重新向宿主要一次新游戏的数据
       if (tab() === 'audio' || tab() === 'resource' || tab() === 'fonts') CS()?.switchTab(tab());
+      if (tab() === 'homebg') { K.hb = null; K.hbAsked = false; render(); }
       return;
     }
+    if (t.id === 'v2sHbHide') { post({ type: 'homeBgSetHideTheme', hide: t.checked }); return; }
     if (t.dataset.v2sAvol) { const i = aItems().find(x => String(x.id) === t.dataset.v2sAvol); if (i) post({ type: 'audioSkinsSetVolume', schemeId: K.audioScheme, configId: i.id, eventName: i.name, volume: Number(t.value) }); return; }
     if (t.id === 'v2sAChar') { K.aChar = t.value; K.aLimit = 200; return render(); }
     if (t.dataset.v2sRtoggle) {

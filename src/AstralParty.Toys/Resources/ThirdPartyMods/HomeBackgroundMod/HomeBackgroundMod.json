@@ -1,0 +1,10 @@
+{
+  "id": "HomeBackgroundMod",
+  "name": "自定义主页背景",
+  "version": "1.1.0.1",
+  "author": "TenkinMori",
+  "description": "把游戏主页背景换成自定义视频或图片（bg.mp4 / assets/bg.png）。",
+  "permissions": 401,
+  "sdkVersion": "3.1.1",
+  "dependencies": []
+}
