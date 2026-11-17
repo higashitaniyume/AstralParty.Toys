@@ -25,6 +25,7 @@ public partial class HybridWindow
             if (type is "gameProfileSetActive" or "gameProfileRemove" or "accountProfileActivate") StopMyAccount("game_changed");
             if (HandleUiThemeMessage(type, root)) return;   // 新界面：深浅色
             if (HandleBackgroundMessage(type, root)) return;   // 新界面：自定义 → 背景
+            if (HandleFontMessage(type, root)) return;         // 新界面：自定义 → 字体
             if (HandleWindowChromeMessage(type, root)) return;   // 新界面自绘标题栏：拖动 / 最小化 / 最大化 / 关闭
             if ((_loaderRecoveryBusy || _modPackageImportRunning || _modUpdateRunning || _modImportRunning || _modInstallRunning || _modRollbackRunning || _workshopBusy)
                 && type is "modInstall" or "modUninstall" or "modDisableLoader" or "modRestoreLoader"

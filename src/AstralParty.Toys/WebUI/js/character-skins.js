@@ -38,10 +38,12 @@
       $('cardSkinPanel').classList.toggle('hidden',tab!=='cards');$('characterSkinPanel').classList.toggle('hidden',tab!=='characters');$('audioSkinPanel')?.classList.toggle('hidden',tab!=='audio');$('resourceModPanel')?.classList.toggle('hidden',tab!=='resource');
       for(const [id,on] of [['cardSkinTab',tab==='cards'],['characterSkinTab',tab==='characters'],['audioSkinTab',tab==='audio'],['resourceModTab',tab==='resource']]){if($(id)){$(id).classList.toggle('active',on);$(id).setAttribute('aria-selected',on);$(id).tabIndex=on?0:-1;}}
       document.querySelector('.skins-header .utilities-header-actions').classList.toggle('hidden',tab!=='cards');
-      document.querySelector('.skins-header .utilities-tagline').textContent=tab==='cards'?'卡牌皮肤 · 方案与卡面管理':tab==='characters'?'角色皮肤 · 图片 / 文案 / 精灵动画':tab==='audio'?'音效方案 · UI / 对局 / 技能 / 语音多方案替换':'资源模组 · RML 格式 ZIP / 目录替换';
+      const taglines={cards:'卡牌皮肤 · 方案与卡面管理',characters:'角色皮肤 · 图片 / 文案 / 精灵动画',audio:'音效方案 · UI / 对局 / 技能 / 语音多方案替换',resource:'资源模组 · RML 格式 ZIP / 目录替换',fonts:'字体 · 系统字体替换（游戏内即时生效）'};
+      document.querySelector('.skins-header .utilities-tagline').textContent=taglines[tab]||'';
       if(tab==='characters')this.send('characterSkinsGet');
       if(tab==='audio')window.AudioSkinsModule?.onShow();
       if(tab==='resource')window.ResourceModsModule?.onShow();
+      if(tab==='fonts')window.V2Fonts?.onShow();
     },
     render(payload) {
       // Preserve manifest dictionary keys (Idle, Character, etc.). Only normalize DTO envelope fields.

@@ -31,6 +31,7 @@ public sealed class ModManagerTests
         Assert.Contains("StarCoinShopMod", ModManager.EmbeddedBuiltInModIdList);
         Assert.Contains("CharacterTransparencyMod", ModManager.EmbeddedBuiltInModIdList);
         Assert.Contains("ShopRelicPeekMod", ModManager.EmbeddedBuiltInModIdList);
+        Assert.Contains("FontMod", ModManager.EmbeddedBuiltInModIdList);
         // 清单与安装用的那份必须是同一个来源(扫描内嵌资源), 不能各自维护
         Assert.Equal(ModManager.BuiltInModIds, ModManager.EmbeddedBuiltInModIdList);
     }
@@ -516,6 +517,67 @@ public sealed class ModManagerTests
         var reopened = harness.Manager.EnsureModConfig(harness.GameDirectory, "CfgMod.dll");
         Assert.Equal(Path.Combine(modDir, "config.json"), reopened);
         Assert.Equal("{\"LegacyKey\": 7}", harness.Manager.ReadModConfig(harness.GameDirectory, "CfgMod.dll"));
+    }
+
+    [Fact]
+    public void SetFontModConfig_PreservesCommentsAndOtherKeys()
+    {
+        using var harness = new ModHarness("ap-fontmod-config");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var modDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName, "FontMod");
+        harness.Sandbox.WriteFile(Path.Combine(modDir, "FontMod.dll"), new byte[] { 0x4D, 0x5A });
+        var path = Path.Combine(modDir, "config.json");
+        harness.Sandbox.WriteFile(path, System.Text.Encoding.UTF8.GetBytes(
+            "{\n  // 玩家手写注释\n  \"enabled\": true,\n  \"fontFamily\": \"SimSun\",\n  \"applyToAllFonts\": 1.0,\n  \"scale\": 1.0\n}\n"));
+
+        harness.Manager.SetFontModConfig(harness.GameDirectory, "Microsoft YaHei", false);
+
+        var text = File.ReadAllText(path);
+        // 文本定点替换：注释、其它键与 1.0 的写法都保留
+        Assert.Contains("// 玩家手写注释", text);
+        Assert.Contains("\"fontFamily\": \"Microsoft YaHei\"", text);
+        Assert.Contains("\"applyToAllFonts\": false", text);
+        Assert.Contains("\"scale\": 1.0", text);
+        // 游戏内的 FontMod 读的就是这份文件
+        Assert.Equal(path, harness.Manager.ModConfigPath(harness.GameDirectory, "FontMod.dll"));
+    }
+
+    [Fact]
+    public void SetFontModConfig_CreatesDefaultsWhenMissing()
+    {
+        using var harness = new ModHarness("ap-fontmod-config-new");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var modDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName, "FontMod");
+        harness.Sandbox.WriteFile(Path.Combine(modDir, "FontMod.dll"), new byte[] { 0x4D, 0x5A });
+
+        harness.Manager.SetFontModConfig(harness.GameDirectory, "Microsoft YaHei", true);
+
+        var text = harness.Manager.ReadModConfig(harness.GameDirectory, "FontMod.dll");
+        Assert.Contains("\"enabled\": true", text);
+        Assert.Contains("\"fontFamily\": \"Microsoft YaHei\"", text);
+        Assert.Contains("\"applyToAllFonts\": true", text);
+    }
+
+    [Fact]
+    public void SetFontModConfig_WritesExistingLegacyConfigInPlace()
+    {
+        using var harness = new ModHarness("ap-fontmod-config-legacy");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        var loaderRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
+        var modDir = Path.Combine(loaderRoot, ModManager.ModsFolderName, "FontMod");
+        harness.Sandbox.WriteFile(Path.Combine(modDir, "FontMod.dll"), new byte[] { 0x4D, 0x5A });
+
+        // SDK 在全新安装时会把配置写到 configs/FontMod.json；页面必须改同一份文件，
+        // 否则游戏读旧文件、Toys 写新文件，用户在页面上的选择不会生效。
+        var legacy = Path.Combine(loaderRoot, "configs", "FontMod.json");
+        harness.Sandbox.WriteFile(legacy, System.Text.Encoding.UTF8.GetBytes(
+            "{\n  \"enabled\": true,\n  \"fontFamily\": \"SimSun\"\n}\n"));
+
+        harness.Manager.SetFontModConfig(harness.GameDirectory, "Microsoft YaHei", true);
+
+        Assert.Contains("\"fontFamily\": \"Microsoft YaHei\"", File.ReadAllText(legacy));
+        Assert.False(File.Exists(Path.Combine(modDir, "config.json")),
+            "已存在 configs 配置时不应另写一份 mods 配置");
     }
 
     [Fact]
@@ -1706,9 +1768,9 @@ public sealed class ModManagerTests
         Assert.True(File.Exists(Path.Combine(modsRoot, "OptionalMod", "OptionalMod.dll")));
         Assert.True(File.Exists(Path.Combine(modsRoot, "OptionalMod", "OptionalMod.json")));
         Assert.True(File.Exists(Path.Combine(modsRoot, "OptionalMod", "OptionalMod.pdb")));
-        Assert.Equal(22, ModManager.EmbeddedBuiltInModIdList.Count);
+        Assert.Equal(23, ModManager.EmbeddedBuiltInModIdList.Count);
         Assert.Equal(new[] { "ActivityLogMod", "AudioSkinMod", "AutoThanksMod", "CardSkinMod",
-            "CharacterTransparencyMod", "ChatDurationMod", "CombatOddsMod", "ForkDirectionMod", "FreeCameraMod", "HideHudMod",
+            "CharacterTransparencyMod", "ChatDurationMod", "CombatOddsMod", "FontMod", "ForkDirectionMod", "FreeCameraMod", "HideHudMod",
             "HomeBottomBarMod", "LanguageUnlockMod", "MapPeekMod", "PveWaveForecastMod", "QuickChatPlusMod", "ShopRelicPeekMod", "SpeedHackMod", "StarCoinShopMod", "TurnClockMod",
             "TurnFocusMod", "UnlockFrameRateMod", "UpdateNoticeMod" },
             ModManager.EmbeddedBuiltInModIdList);

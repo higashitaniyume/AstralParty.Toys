@@ -31,7 +31,7 @@
   // 自定义分成两组：改游戏文件的放「游戏自定义」，只改 Toys 自身外观的放「Toys 自定义」
   function sideNav() {
     const cur = tab();
-    const gameTabs = [['cards', '卡牌'], ['audio', '音效'], ['resource', '资源包']];
+    const gameTabs = [['cards', '卡牌'], ['audio', '音效'], ['resource', '资源包'], ['fonts', '字体']];
     if (window.V2Chars) gameTabs.push(['characters', '角色']);
     const toysTabs = [['background', '背景']];
     const btn = ([k, l]) => `<button class="v2-side-tab${cur === k ? ' on' : ''}" data-v2s-tab="${k}" role="tab" aria-selected="${cur === k}">${l}</button>`;
@@ -333,6 +333,7 @@
     const inner = t === 'cards' ? (K.cardScheme ? cardScheme() : cardsList())
       : t === 'audio' ? (K.audioScheme ? audioScheme() : audioList())
       : t === 'resource' ? resourceView()
+      : t === 'fonts' ? (window.V2Fonts ? window.V2Fonts.html() : frameHead())
       : t === 'background' && window.V2Bg ? window.V2Bg.html()
       : window.V2Chars ? window.V2Chars.html()
       : frameHead();
@@ -503,8 +504,8 @@
     if (t.id === 'v2sGame') {
       if (!t.value) return;
       post({ type: 'gameProfileSetActive', id: t.value });
-      // 卡牌由 GameLibModule 自动刷新；音效、资源包要重新向宿主要一次新游戏的数据
-      if (tab() === 'audio' || tab() === 'resource') CS()?.switchTab(tab());
+      // 卡牌由 GameLibModule 自动刷新；音效、资源包、字体要重新向宿主要一次新游戏的数据
+      if (tab() === 'audio' || tab() === 'resource' || tab() === 'fonts') CS()?.switchTab(tab());
       return;
     }
     if (t.dataset.v2sAvol) { const i = aItems().find(x => String(x.id) === t.dataset.v2sAvol); if (i) post({ type: 'audioSkinsSetVolume', schemeId: K.audioScheme, configId: i.id, eventName: i.name, volume: Number(t.value) }); return; }

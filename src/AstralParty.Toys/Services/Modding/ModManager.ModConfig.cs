@@ -325,4 +325,77 @@ public sealed partial class ModManager
         };
     }
 
+    // ============================== 系统字体（FontMod） ==============================
+
+    private static readonly JsonSerializerOptions FontStringOptions = new()
+    {
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
+
+    /// <summary>
+    /// 写入 FontMod 的字体配置。<b>只改这两个标量</b>：保留文件里的注释、空行和其它键
+    /// （整份反序列化再序列化会把注释和 `1` / `1.0` 这类写法改掉）。
+    /// 文件不存在时按 FontMod 的默认结构创建，避免写出一份只有字体名的空壳。
+    /// </summary>
+    public string SetFontModConfig(string gameDirectory, string fontFamily, bool applyToAllFonts)
+    {
+        if (string.IsNullOrWhiteSpace(gameDirectory))
+            throw new ArgumentException("游戏目录无效。");
+
+        var path = ModConfigPath(gameDirectory, "FontMod.dll")
+                   ?? ModConfigWritePath(gameDirectory, "FontMod.dll");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+
+        var text = File.Exists(path) ? File.ReadAllText(path) : "";
+        if (string.IsNullOrWhiteSpace(text))
+            text = "{\n  \"enabled\": true,\n  \"fontFamily\": \"\",\n  \"applyToAllFonts\": true\n}\n";
+
+        text = SetJsonString(text, "fontFamily", fontFamily ?? "");
+        text = SetJsonBool(text, "applyToAllFonts", applyToAllFonts);
+        WriteAllBytesProtected(path, new System.Text.UTF8Encoding(false).GetBytes(text));
+        return path;
+    }
+
+    /// <summary>把 JSON 文本里某个字符串字段换成新值（找不到就追加），其余内容逐字保留。</summary>
+    private static string SetJsonString(string json, string key, string value)
+    {
+        var literal = JsonSerializer.Serialize(value, FontStringOptions);
+        var needle = "\"" + key + "\"";
+        var keyIndex = json.IndexOf(needle, StringComparison.Ordinal);
+        if (keyIndex >= 0)
+        {
+            var colon = json.IndexOf(':', keyIndex + needle.Length);
+            if (colon >= 0)
+            {
+                var i = colon + 1;
+                while (i < json.Length && char.IsWhiteSpace(json[i])) i++;
+                if (i < json.Length && json[i] == '"')
+                {
+                    var end = FindJsonStringEnd(json, i + 1);
+                    if (end >= 0)
+                        return json[..i] + literal + json[(end + 1)..];
+                }
+                var j = i;
+                while (j < json.Length && json[j] != ',' && json[j] != '}') j++;
+                return json[..i] + literal + json[j..];
+            }
+        }
+
+        var insert = json.LastIndexOf('}');
+        if (insert < 0) return "{\n  " + needle + ": " + literal + "\n}\n";
+        var prefix = json[..insert].TrimEnd();
+        var separator = prefix.EndsWith("{", StringComparison.Ordinal) ? "" : ",";
+        return prefix + separator + "\n  " + needle + ": " + literal + "\n" + json[insert..];
+    }
+
+    private static int FindJsonStringEnd(string json, int start)
+    {
+        for (var i = start; i < json.Length; i++)
+        {
+            var c = json[i];
+            if (c == '\\') { i++; continue; }
+            if (c == '"') return i;
+        }
+        return -1;
+    }
 }
