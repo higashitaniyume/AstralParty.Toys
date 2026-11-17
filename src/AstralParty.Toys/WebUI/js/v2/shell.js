@@ -502,6 +502,29 @@
     renderHome();
   }
 
+  /* ---------- 概览：模组方案一行（选中即套用） ---------- */
+  function modProfileRow() {
+    const data = window.V2ModProfiles?.data;
+    const list = data?.profiles || [];
+    const active = list.find(p => p.active) || null;
+    const options = list.length
+      ? (active ? '' : '<option value="" selected disabled>选择方案…</option>') +
+        list.map(p => {
+          const suffix = (p.active && p.dirty ? '（已修改）' : '') + (p.missingCount ? `（缺 ${p.missingCount} 个）` : '');
+          return `<option value="${esc(p.name)}"${p.active ? ' selected' : ''}>${esc(p.name)}${esc(suffix)}</option>`;
+        }).join('')
+      : '<option value="">还没有保存方案</option>';
+    const hint = !data
+      ? '<span class="v2-muted">读取中…</span>'
+      : active
+        ? `<span class="v2-muted">${active.dirty ? '当前状态与方案不一致' : '已应用'}</span>`
+        : '<span class="v2-muted">选中即套用</span>';
+    return `<div class="v2-row"><span class="k">模组方案</span>
+      <select id="v2HomeProfile" class="v2-select" aria-label="选择模组方案" ${list.length ? '' : 'disabled'}>${options}</select>
+      ${hint}
+      <button class="v2-btn ghost" data-v2page="mods">管理</button></div>`;
+  }
+
   function renderHome() {
     const root = $('v2Home');
     if (!root) return;
@@ -559,6 +582,7 @@
         <div class="v2-row link" data-v2="openLast"><span class="k">最近对局</span>
           <span class="v">${last ? esc([last.finishText, last.mapName, last.roundCount ? last.roundCount + ' 回合' : ''].filter(v => v && v !== '—').join(' · ') || ('#' + last.replayId))
             : '<span class="v2-muted">还没有回放</span>'}</span>${ICON.right}</div>
+        ${modProfileRow()}
         <div class="v2-row link" data-v2page="mods"><span class="k">模组</span>
           <span class="v">${s ? `${(s.mods || []).filter(m => m.enabled !== false).length} / ${(s.mods || []).length} 已启用` : '<span class="v2-muted">查看与配置模组</span>'}</span>${ICON.right}</div>
         <div class="v2-row link" data-v2page="skins"><span class="k">自定义</span>
@@ -704,6 +728,9 @@
   window.V2UI = { ICON, gamePicker, openMenu, closeMenu, openModal, closeModal, modalActions, armDanger, confirmDelete, bindSearch, isComposing,
     setModalCancel: fn => { modalCancel = fn; } };
 
+  // 模组方案模块数据到了要重画概览（它负责在宿主回推后调用这里）
+  window.V2Home = { render: renderHome };
+
   /* ---------- 接线 ---------- */
   function onShowHome() {
     renderHome();
@@ -732,6 +759,13 @@
       const a = e.target.closest('[data-v2]'), p = e.target.closest('[data-v2page]');
       if (a && !a.disabled) actions[a.dataset.v2]?.(a);
       if (p) showPage(p.dataset.v2page);
+    });
+
+    // 概览里选方案 = 套用（先由 mod-profiles.js 请求差异预览，再确认）
+    document.addEventListener('change', e => {
+      if (e.target?.id === 'v2HomeProfile' && e.target.value) {
+        window.V2ModProfiles?.choose?.(e.target.value);
+      }
     });
 
     // 进入概览时刷新（包一层原版 showPage，不改它的行为）

@@ -196,6 +196,8 @@ public partial class HybridWindow
                 });
             if (request == _modStatusRequest)
                 PostAppVersion(status);   // 关于页的「已安装加载器」跟着安装 / 更新 / 停用一起刷新
+            if (request == _modStatusRequest)
+                _ = PushModProfilesAsync();   // 方案列表的"已修改 / 缺少 N 个"跟着模组状态一起变
         }
         catch (Exception ex)
         {

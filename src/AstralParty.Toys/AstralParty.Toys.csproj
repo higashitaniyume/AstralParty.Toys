@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
-    <Platforms>AnyCPU;x86</Platforms>
+    <Platforms>AnyCPU;x86;x64</Platforms>
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -11,9 +11,9 @@
     <RootNamespace>AstralParty.Toys</RootNamespace>
     <StartupObject>AstralParty.Toys.App</StartupObject>
     <!-- v2.3.3，程序与安装器数字版本为 2.3.3。 -->
-    <Version>2.3.3</Version>
-    <AssemblyVersion>2.3.3.0</AssemblyVersion>
-    <FileVersion>2.3.3.0</FileVersion>
+    <Version>2.4.0</Version>
+    <AssemblyVersion>2.4.0.0</AssemblyVersion>
+    <FileVersion>2.4.0.0</FileVersion>
     <ApplicationIcon>WebUI\images\UT_AccountHeadShot_70902.ico</ApplicationIcon>
   </PropertyGroup>
 
@@ -57,7 +57,7 @@
     <Content Include="Protocol\*.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="GameData\Version.bin;GameData\Skin.bin;GameData\STRSkin.bin;GameData\Character.bin;GameData\STRCharacter.bin;GameData\Map.bin;GameData\STRMap.bin;GameData\Monster.bin;GameData\STRMonster.bin;GameData\Relic.bin;GameData\STRRelic.bin;GameData\Item.bin;GameData\STRItem.bin;GameData\Card.bin;GameData\STRCard.bin;GameData\Event.bin;GameData\STREvent.bin;GameData\Destiny.bin;GameData\STRDestiny.bin;GameData\MapEvent.bin;GameData\STRMapEvent.bin">
+    <Content Include="GameData\Version.bin;GameData\Skin.bin;GameData\STRSkin.bin;GameData\Character.bin;GameData\STRCharacter.bin;GameData\Map.bin;GameData\STRMap.bin;GameData\Monster.bin;GameData\STRMonster.bin;GameData\Relic.bin;GameData\STRRelic.bin;GameData\Item.bin;GameData\STRItem.bin;GameData\Card.bin;GameData\STRCard.bin;GameData\Event.bin;GameData\STREvent.bin;GameData\Destiny.bin;GameData\STRDestiny.bin;GameData\MapEvent.bin;GameData\STRMapEvent.bin;GameData\Achieve.bin;GameData\STRAchieve.bin;GameData\Player.bin">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="WebUI\images\UT_AccountHeadShot_70902.ico" />

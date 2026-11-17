@@ -1,10 +1,12 @@
 <Solution>
   <Configurations>
     <Platform Name="Any CPU" />
+    <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
   <Project Path="src/AstralParty.Toys/AstralParty.Toys.csproj">
     <Platform Solution="*|x86" Project="x86" />
+    <Platform Solution="Release|x64" Project="x64" />
   </Project>
   <Project Path="src/ResourceModEngine/ResourceModEngine.csproj" />
   <Project Path="tests/AstralParty.Toys.Tests/AstralParty.Toys.Tests.csproj" />

@@ -374,6 +374,8 @@
           ${sm && !hk ? `<button class="v2-btn line" data-v2m="speedModOn">开启模组</button>` : ''}</div>
       </div>
 
+      ${window.V2ModProfiles?.card?.() || ''}
+
       ${progressHtml()}
 
       <div class="v2-card">

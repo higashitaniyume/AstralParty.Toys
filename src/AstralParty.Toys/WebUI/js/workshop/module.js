@@ -3,6 +3,22 @@
 (function () {
   'use strict';
 
+  // 排序：默认「最近更新」，并记住用户选过的方式（只接受这三个值）
+  const SORT_KEY = 'workshop_sort';
+  const SORT_VALUES = ['updated', 'downloads', 'name'];
+  const DEFAULT_SORT = 'updated';
+  function savedSort() {
+    try {
+      const value = localStorage.getItem(SORT_KEY);
+      return SORT_VALUES.includes(value) ? value : DEFAULT_SORT;
+    } catch {
+      return DEFAULT_SORT;
+    }
+  }
+  function rememberSort(value) {
+    try { localStorage.setItem(SORT_KEY, value); } catch { /* 存不了只影响下次 */ }
+  }
+
   const state = {
     initialized: false,
     loaded: false,
@@ -15,7 +31,7 @@
     tags: [],
     query: '',
     tag: '',
-    sort: 'downloads',
+    sort: savedSort(),
     viewMode: localStorage.getItem('workshop_view_mode') || 'list',
     statusFilter: 'all',
     detail: null,
@@ -1168,7 +1184,8 @@
       });
 
       $('workshopSortSelect')?.addEventListener('change', event => {
-        state.sort = event.target.value || 'downloads';
+        state.sort = event.target.value || DEFAULT_SORT;
+        rememberSort(state.sort);
         load(1);
       });
 
@@ -1337,13 +1354,13 @@
         return;
       }
 
-      // 每次进入市场：清空老信息，重置筛选，拉取最新数据
+      // 每次进入市场：清空老信息，重置筛选，拉取最新数据（排序沿用用户上次的选择）
       state.items = [];
       state.total = 0;
       state.page = 1;
       state.query = '';
       state.tag = '';
-      state.sort = 'downloads';
+      state.sort = savedSort();
       state.statusFilter = 'all';
       state.loaded = false;
       state.details.clear();
@@ -1354,7 +1371,7 @@
       const tagSelect = $('workshopTagSelect');
       if (tagSelect) tagSelect.value = '';
       const sortSelect = $('workshopSortSelect');
-      if (sortSelect) sortSelect.value = 'downloads';
+      if (sortSelect) sortSelect.value = state.sort;
       const statusSelect = $('workshopStatusSelect');
       if (statusSelect) statusSelect.value = 'all';
 

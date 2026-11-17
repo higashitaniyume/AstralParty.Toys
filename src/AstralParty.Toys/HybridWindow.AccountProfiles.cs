@@ -152,7 +152,8 @@ public partial class HybridWindow
             {
                 var active = _modManager.ReadLoaderConfig(gameDirectory).Profile ?? "";
                 if (string.Equals(active.Trim(), (name ?? "").Trim(), StringComparison.OrdinalIgnoreCase))
-                    _modManager.SetLoaderProfile(gameDirectory, newName.Trim());
+                    SetLoaderProfileJournaled(gameDirectory, newName.Trim(),
+                        $"档案改名后同步加载器配置（{name} → {newName.Trim()}）");
             }
             Post(new { type = "toast", message = $"已改名为「{newName.Trim()}」。" });
         }
@@ -197,7 +198,8 @@ public partial class HybridWindow
                 {
                     var active = _modManager.ReadLoaderConfig(gameDirectory).Profile ?? "";
                     if (string.Equals(active.Trim(), (name ?? "").Trim(), StringComparison.OrdinalIgnoreCase))
-                        _modManager.SetLoaderProfile(gameDirectory, "");
+                        SetLoaderProfileJournaled(gameDirectory, "",
+                            $"删除档案后同步加载器配置（{name} → 默认）");
                 }
                 Post(new { type = "toast", message = $"已删除 profile「{name}」。{RecycleBinHelper.Describe(outcome, toRecycleBin: true)}" });
             }
@@ -209,7 +211,8 @@ public partial class HybridWindow
         _ = PushAccountProfilesAsync();
     }
 
-    /// <summary>把配置里的 profile 改成指定值（空 = 默认档案）。不启动游戏。</summary>
+    /// <summary>把配置里的 profile 改成指定值（空 = 默认档案）。不启动游戏。
+    /// 写入前经回滚日志：多开页选错档案也能从「历史与回滚」原样还原 doorstop_config.json。</summary>
     private bool TryApplyAccountProfile(string? name, out string error)
     {
         error = "";
@@ -227,12 +230,45 @@ public partial class HybridWindow
             error = "还没安装加载器：profile 切换需要加载器（在「模组」页安装一次）。";
             return false;
         }
+
+        // 已经是目标档案：不写盘，也不产生一条空操作记录
+        var current = (_modManager.ReadLoaderConfig(gameDirectory).Profile ?? "").Trim();
+        if (string.Equals(current, trimmed, StringComparison.Ordinal)) return true;
+
+        using var op = CreateRollbackJournal().Begin(
+            "accountProfileSet",
+            trimmed.Length == 0 ? "切换多开档案 → 默认" : $"切换多开档案「{trimmed}」",
+            gameDirectory,
+            includeMods: false,
+            includeLoader: true,
+            includeProfiles: false);
+
         if (!_modManager.SetLoaderProfile(gameDirectory, trimmed))
         {
+            op.Discard();
             error = "没能写入加载器配置（doorstop_config.json），请检查文件是否只读。";
             return false;
         }
+        op.Commit();
         return true;
+    }
+
+    /// <summary>改名 / 删除等流程顺带修正配置里的档案名：有变化才写，写前经回滚日志。</summary>
+    private void SetLoaderProfileJournaled(string gameDirectory, string? profileName, string title)
+    {
+        var target = (profileName ?? "").Trim();
+        var current = (_modManager.ReadLoaderConfig(gameDirectory).Profile ?? "").Trim();
+        if (string.Equals(current, target, StringComparison.Ordinal)) return;
+
+        using var op = CreateRollbackJournal().Begin(
+            "accountProfileSet", title, gameDirectory,
+            includeMods: false, includeLoader: true, includeProfiles: false);
+        if (!_modManager.SetLoaderProfile(gameDirectory, target))
+        {
+            op.Discard();
+            return;
+        }
+        op.Commit();
     }
 
     private void HandleAccountProfileActivate(string? name)
@@ -399,12 +435,26 @@ public partial class HybridWindow
             return;
         }
 
+        ModRollbackJournal.RollbackOperation? windowTitleOp = null;
+        if (_modManager.ReadLoaderConfig(gameDirectory).ProfileWindowTitle != enabled)
+        {
+            windowTitleOp = CreateRollbackJournal().Begin(
+                "accountProfileWindowTitle",
+                enabled ? "开启多开档案窗口标题" : "关闭多开档案窗口标题",
+                gameDirectory,
+                includeMods: false,
+                includeLoader: true,
+                includeProfiles: false);
+        }
+
         if (!_modManager.SetProfileWindowTitle(gameDirectory, enabled))
         {
+            windowTitleOp?.Discard();
             Post(new { type = "toast", message = "没能写入加载器配置（doorstop_config.json），请检查文件是否只读。" });
             _ = PushAccountProfilesAsync();
             return;
         }
+        windowTitleOp?.Commit();
 
         Post(new
         {

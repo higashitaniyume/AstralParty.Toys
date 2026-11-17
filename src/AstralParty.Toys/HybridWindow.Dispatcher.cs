@@ -27,10 +27,13 @@ public partial class HybridWindow
             if (HandleBackgroundMessage(type, root)) return;   // 新界面：自定义 → 背景
             if (HandleFontMessage(type, root)) return;         // 新界面：自定义 → 字体
             if (HandleWindowChromeMessage(type, root)) return;   // 新界面自绘标题栏：拖动 / 最小化 / 最大化 / 关闭
-            if ((_loaderRecoveryBusy || _modPackageImportRunning || _modUpdateRunning || _modImportRunning || _modInstallRunning || _modRollbackRunning || _workshopBusy)
+            if ((_loaderRecoveryBusy || _modPackageImportRunning || _modUpdateRunning || _modImportRunning || _modInstallRunning || _modRollbackRunning || _workshopBusy || _modProfileRunning)
                 && type is "modInstall" or "modUninstall" or "modDisableLoader" or "modRestoreLoader"
                     or "modRollbackApply" or "modDownloadUpdate" or "modImportPackage" or "modImport" or "modPickImport" or "modDelete" or "modToggle"
                     or "modToggleBatch" or "modDeleteBatch"
+                    or "modProfileApply" or "modHistoryRollback"
+                    or "accountProfileActivate" or "accountProfileLaunch" or "accountProfileRename"
+                    or "accountProfileDelete" or "accountProfileSetWindowTitle"
                     or "speedhackInstall" or "speedhackUninstall" or "workshopInstall" or "appUninstall")
             {
                 if (type is "modDisableLoader" or "modRestoreLoader") Post(new { type = "modRecoveryDone" });
@@ -59,6 +62,7 @@ public partial class HybridWindow
                         Post(new { type = "homeData", payload = _homeDataService.GetHomeData() });
                         _ = PostSteamBypassSyncAsync();
                         _ = PushGameProfilesAsync();
+                        _ = PushModProfilesAsync();   // 概览页的「模组方案」下拉要能直接用
                     }
                     finally
                     {
@@ -567,9 +571,16 @@ public partial class HybridWindow
                     {
                         try
                         {
-                            _modManager.SetSpeedhack(RequireModGameDirectory(), modSpeedhackElement.GetDouble());
-                            Post(new { type = "toast", message = modSpeedhackElement.GetDouble() > 1.0
-                                ? $"已启用变速：{modSpeedhackElement.GetDouble():F1}x（重启游戏生效）"
+                            var speedhackDirectory = RequireModGameDirectory();
+                            var speedhackValue = modSpeedhackElement.GetDouble();
+                            using var speedhackOp = CreateRollbackJournal().Begin(
+                                "speedhackSave", $"设置变速 {speedhackValue:0.#}x", speedhackDirectory,
+                                includeMods: false, includeLoader: true, includeProfiles: false,
+                                preserveAccountFields: true);
+                            _modManager.SetSpeedhack(speedhackDirectory, speedhackValue);
+                            speedhackOp.Commit();
+                            Post(new { type = "toast", message = speedhackValue > 1.0
+                                ? $"已启用变速：{speedhackValue:F1}x（重启游戏生效）"
                                 : "已禁用变速（恢复 1.0 正常速度，重启游戏生效）" });
                         }
                         catch (Exception ex)
@@ -583,8 +594,14 @@ public partial class HybridWindow
                     {
                         try
                         {
+                            var loaderDirectory = RequireModGameDirectory();
                             var config = modLoaderCfgElement.Deserialize<LoaderConfig>(WebReadOptions) ?? new LoaderConfig();
-                            _modManager.SaveLoaderConfig(RequireModGameDirectory(), config);
+                            using var loaderOp = CreateRollbackJournal().Begin(
+                                "loaderConfigSave", "保存加载器设置", loaderDirectory,
+                                includeMods: false, includeLoader: true, includeProfiles: false,
+                                preserveAccountFields: true);
+                            _modManager.SaveLoaderConfig(loaderDirectory, config);
+                            loaderOp.Commit();
                             Post(new { type = "toast", message = "已保存加载器设置（重启游戏生效）" });
                             // 加载器设置里的「Steam 绕过」与首页的「绕过 Steam 启动」是同一个配置：改完回推给首页
                             Post(new { type = "steamBypassSync", payload = new { enabled = ModManager.IsSteamBypassActive(config) } });
@@ -594,6 +611,39 @@ public partial class HybridWindow
                             Post(new { type = "toast", message = $"保存加载器设置失败：{ex.Message}" });
                         }
                     }
+                    break;
+                case "modProfilesGet":
+                    _ = PushModProfilesAsync();
+                    break;
+                case "modProfileCapture":
+                    HandleModProfileCapture(root);
+                    break;
+                case "modProfileUpdate":
+                    HandleModProfileUpdate(root);
+                    break;
+                case "modProfileRename":
+                    HandleModProfileRename(root);
+                    break;
+                case "modProfileDelete":
+                    HandleModProfileDelete(root);
+                    break;
+                case "modProfileSetNote":
+                    HandleModProfileSetNote(root);
+                    break;
+                case "modProfileClearActive":
+                    HandleModProfileClearActive();
+                    break;
+                case "modProfilePlan":
+                    HandleModProfilePlan(root);
+                    break;
+                case "modProfileApply":
+                    HandleModProfileApply(root);
+                    break;
+                case "modHistoryList":
+                    HandleModHistoryList();
+                    break;
+                case "modHistoryRollback":
+                    HandleModHistoryRollback(root);
                     break;
                 case "workshopList":
                     await HandleWorkshopListAsync(root);
