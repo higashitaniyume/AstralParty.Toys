@@ -478,9 +478,19 @@
     });
   }
 
+  // 翻页条的节点在 view-workshop.html 里是静态的；这里保留一份同样的结构，
+  // 万一被清空（旧代码 onShow / 刷新按钮会清）就重建，避免翻页静默失效。
+  const PAGER_MARKUP = `<button class="secondary-btn" id="workshopPrevBtn" data-i18n="workshop.prev_page">上一页</button>
+    <span id="workshopPageInfo"></span>
+    <button class="secondary-btn" id="workshopNextBtn" data-i18n="workshop.next_page">下一页</button>`;
+
   function renderPager() {
     const pager = $('workshopPager');
     if (!pager) return;
+    if (!$('workshopPageInfo') || !$('workshopPrevBtn') || !$('workshopNextBtn')) {
+      pager.innerHTML = PAGER_MARKUP;
+      window.i18n?.applyDOM(pager);
+    }
     const show = state.pages > 1;
     pager.classList.toggle('hidden', !show);
     if (!show) return;
@@ -1132,8 +1142,8 @@
       $('workshopRefreshBtn')?.addEventListener('click', () => {
         state.items = [];
         state.loading = false;
-        const pager = $('workshopPager');
-        if (pager) pager.innerHTML = '';
+        // 只先藏起来，不要清 DOM：翻页按钮和页码要留着给 renderPager 更新
+        $('workshopPager')?.classList.add('hidden');
         load(1);
       });
 
@@ -1192,11 +1202,13 @@
 
       syncViewSwitchButtons();
 
-      $('workshopPrevBtn')?.addEventListener('click', () => {
-        if (state.page > 1) load(state.page - 1);
-      });
-      $('workshopNextBtn')?.addEventListener('click', () => {
-        if (state.page < state.pages) load(state.page + 1);
+      // 监听挂在容器上：renderPager 重建按钮后点击依然有效
+      $('workshopPager')?.addEventListener('click', event => {
+        if (event.target.closest('#workshopPrevBtn')) {
+          if (state.page > 1) load(state.page - 1);
+        } else if (event.target.closest('#workshopNextBtn')) {
+          if (state.page < state.pages) load(state.page + 1);
+        }
       });
 
       $('workshopInstallClose')?.addEventListener('click', () => {
@@ -1347,8 +1359,8 @@
       if (statusSelect) statusSelect.value = 'all';
 
       state.loading = false;
-      const pager = $('workshopPager');
-      if (pager) pager.innerHTML = '';
+      // 重新进入市场：先藏翻页条，等新数据回来由 renderPager 决定是否显示
+      $('workshopPager')?.classList.add('hidden');
 
       load(1);
     },
