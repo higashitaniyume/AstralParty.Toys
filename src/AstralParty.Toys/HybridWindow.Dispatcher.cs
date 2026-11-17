@@ -39,7 +39,7 @@ public partial class HybridWindow
                 if (type is "modDisableLoader" or "modRestoreLoader") Post(new { type = "modRecoveryDone" });
                 throw new InvalidOperationException("游戏文件操作正在进行（安装 / 更新 / 导入），请等待完成后再修改。");
             }
-            if (_cardAnimationConversion != null && type is "skinsDelete" or "skinsImportZip" or "skinsRestoreDefault" or "skinsDownloadDefault" or "skinsImportLegacyZip" or "skinsCropSave" or "skinsExportZip" or "skinsExportConfirmed")
+            if (_cardAnimationConversion != null && type is "skinsDelete" or "skinsImportZip" or "skinsDownloadDefault" or "skinsImportLegacyZip" or "skinsCropSave" or "skinsExportZip" or "skinsExportConfirmed")
                 throw new InvalidOperationException("请先等待或取消当前动态卡面转换，再修改或导出皮肤方案。");
             switch (type)
             {
@@ -815,13 +815,6 @@ public partial class HybridWindow
                     break;
                 case "resourceModsCancel":
                     HandleResourceModCancel();
-                    break;
-                case "skinsRestoreDefault":
-                    try {
-                        _skinManager.RestoreDefaultProfile(RequireModGameDirectory());
-                        PushSkinProfiles();
-                        Post(new { type = "toast", message = "已从应用内置默认包恢复 default，重启游戏后生效。" });
-                    } catch (Exception ex) { Post(new { type = "toast", message = "恢复默认包失败：" + ex.Message }); }
                     break;
                 case "skinsDuplicate":
                     HandleSkinDuplicate(root);

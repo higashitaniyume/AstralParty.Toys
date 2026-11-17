@@ -396,7 +396,6 @@
       'skins.crop_title': 'Crop Texture',
       'skins.open_folder': 'Open Skins Folder',
       'skins.download_default': 'Download Default Pack',
-      'skins.restore_builtin': 'Restore Built-in Pack',
       'skins.my_schemes': 'My Schemes',
       'skins.packages_library': 'Asset Library',
       'skins.active_badge': 'Active',

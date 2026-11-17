@@ -361,11 +361,11 @@
     manageGames: () => showPage('settings'),
     // 卡牌
     cardAddMenu: el => U().openMenu(el, [
-      { label: '新建方案（从内置默认包）…', icon: I().plus, fn: () => metaForm({
+      { label: '新建方案（复制 default）…', icon: I().plus, fn: () => metaForm({
         title: '新建卡牌方案', ok: '创建',
         fields: [{ key: 'newName', label: '方案目录名', required: true, value: 'my_skin', ...ID_RULE },
           { key: 'displayName', label: '显示名称', value: '我的卡面' }, { key: 'author', label: '作者' }, { key: 'description', label: '简介', multiline: true }],
-        // 原版：新方案总是从程序内置的默认包复制，不用磁盘上改过的图片
+        // 从当前游戏已安装的 default 方案复制；没有默认包时由宿主提示先下载
         onOk: v => post({ type: 'skinsDuplicate', source: 'default', newName: v.newName, displayName: v.displayName || v.newName, author: v.author, description: v.description }),
       }) },
       { label: '导入方案 ZIP…', icon: I().upload, fn: () => post({ type: 'skinsImportZip' }) },
@@ -388,9 +388,7 @@
         { label: '打开方案目录', icon: I().folder, disabled: gd, fn: () => post({ type: 'skinsOpenFolder', name: p.name }) },
         ...(isDefault ? ['-',
           { label: '从 GitHub 下载最新默认包…', icon: I().download, fn: () => confirm({ title: '下载最新默认包？', ok: '下载',
-            lines: ['从最新 Release 下载默认包，<b>覆盖 default 里的同名图片</b>', '不会切换当前方案'], onOk: () => post({ type: 'skinsDownloadDefault' }) }) },
-          { label: '恢复内置默认包…', icon: I().refresh, fn: () => confirm({ title: '恢复内置默认包？', ok: '恢复',
-            lines: ['用程序内置的资源恢复 default 方案，<b>覆盖同名图片并移除动态覆盖</b>', '不会改动其他方案，也不会切换当前方案'], onOk: () => post({ type: 'skinsRestoreDefault' }) }) }] : []),
+            lines: ['从最新 Release 下载默认包，<b>覆盖 default 里的同名图片</b>', '不会切换当前方案'], onOk: () => post({ type: 'skinsDownloadDefault' }) }) }] : []),
         '-',
         { label: '删除方案…', icon: I().trash, disabled: sp, fn: () => confirm({
           title: `删除卡牌方案「${esc(pName(p))}」？`,

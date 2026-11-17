@@ -395,7 +395,6 @@
       'skins.crop_title': '卡面/贴图裁剪',
       'skins.open_folder': '打开皮肤目录',
       'skins.download_default': '下载默认包',
-      'skins.restore_builtin': '恢复内置默认包',
       'skins.my_schemes': '我的方案',
       'skins.packages_library': '皮肤包素材库',
       'skins.active_badge': '当前生效中',

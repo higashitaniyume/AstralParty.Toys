@@ -49,7 +49,8 @@ public sealed class SkinManagerTests : IDisposable
         Assert.Equal(name, card.CardName);
         Assert.Equal("手牌卡", card.Category);
         Assert.False(card.IsCustomized);
-        Assert.True(card.CanRestore);
+        // 卡面不再随包内置，default 方案里没有的新卡不能从应用内恢复。
+        Assert.False(card.CanRestore);
         Assert.False(File.Exists(Path.Combine(skins, "default", card.FileName)));
 
         var source = Path.Combine(_testRoot, "replacement.png");
@@ -140,6 +141,8 @@ public sealed class SkinManagerTests : IDisposable
 
         File.WriteAllText(Path.Combine(defaultDir, "UT_HandCard_101.png"), "fake image 1");
         File.WriteAllText(Path.Combine(defaultDir, "UT_Destiny_202.png"), "fake image 2");
+        File.WriteAllText(Path.Combine(defaultDir, "UT_HandCard_10001.png"), "fake image 3");
+        File.WriteAllText(Path.Combine(defaultDir, "UT_Destiny_40001.png"), "fake image 4");
 
         var created = _skinManager.DuplicateProfile(
             _testRoot,
@@ -161,8 +164,8 @@ public sealed class SkinManagerTests : IDisposable
         Assert.NotNull(targetProfile);
         Assert.Equal("夏日主题", targetProfile!.DisplayName);
         Assert.Equal("AuthorTest", targetProfile.Author);
-        Assert.Equal(198, targetProfile.CardCount);
-        Assert.False(File.Exists(Path.Combine(targetDir, "UT_HandCard_101.png")));
+        Assert.Equal(4, targetProfile.CardCount);
+        Assert.True(File.Exists(Path.Combine(targetDir, "UT_HandCard_101.png")));
     }
 
     [Fact]
@@ -280,7 +283,7 @@ public sealed class SkinManagerTests : IDisposable
     }
 
     [Fact]
-    public void RevertCardImage_ListRefreshUsesCurrentDefaultContentVersion()
+    public void RevertCardImage_CopiesCurrentDefaultContentAndRefreshesList()
     {
         const string fileName = "UT_HandCard_10001.png";
         var skins = _skinManager.GetSkinsDirectory(_testRoot);
@@ -295,7 +298,7 @@ public sealed class SkinManagerTests : IDisposable
         Assert.Equal(reverted.PreviewUrl, refreshed.PreviewUrl);
         Assert.True(refreshed.IsCustomized);
         Assert.NotEqual(refreshed.PreviewUrl, refreshed.FallbackUrl);
-        Assert.NotEqual("default-image", File.ReadAllText(Path.Combine(skins, "custom", fileName)));
+        Assert.Equal("default-image", File.ReadAllText(Path.Combine(skins, "custom", fileName)));
     }
 
     [Fact]
@@ -322,21 +325,23 @@ public sealed class SkinManagerTests : IDisposable
     }
 
     [Fact]
-    public void EmbeddedTemplate_RestoresDefaultAndCreatesPristineSchemeOffline()
+    public void DuplicateProfile_CopiesDefaultScheme_AndRevertCardRestoresFromDefault()
     {
-        var baseline = Path.Combine(_testRoot, "baseline");
-        Assert.Equal(199, DefaultSkinPackage.Install(baseline));
-        var expected = File.ReadAllBytes(Path.Combine(baseline, "UT_HandCard_10001.png"));
-        _skinManager.RestoreDefaultProfile(_testRoot);
         var defaultDir = Path.Combine(_skinManager.GetSkinsDirectory(_testRoot), "default");
-        File.WriteAllText(Path.Combine(defaultDir, "UT_HandCard_10001.png"), "user modification");
+        Directory.CreateDirectory(defaultDir);
+        File.WriteAllText(Path.Combine(defaultDir, "UT_HandCard_10001.png"), "default image");
+        File.WriteAllText(Path.Combine(defaultDir, "UT_Destiny_40001.png"), "default destiny");
+
         var created = _skinManager.DuplicateProfile(_testRoot, "default", "fresh", "Fresh", "", "");
-        Assert.Equal(expected, File.ReadAllBytes(Path.Combine(_skinManager.GetSkinsDirectory(_testRoot), created, "UT_HandCard_10001.png")));
-        _skinManager.RestoreDefaultProfile(_testRoot);
-        Assert.Equal(expected, File.ReadAllBytes(Path.Combine(defaultDir, "UT_HandCard_10001.png")));
-        File.WriteAllText(Path.Combine(defaultDir, "UT_HandCard_10001.png"), "modified again");
-        _skinManager.RevertCardImage(_testRoot, "default", "UT_HandCard_10001.png");
-        Assert.Equal(expected, File.ReadAllBytes(Path.Combine(defaultDir, "UT_HandCard_10001.png")));
+        var freshDir = Path.Combine(_skinManager.GetSkinsDirectory(_testRoot), created);
+        Assert.Equal("default image", File.ReadAllText(Path.Combine(freshDir, "UT_HandCard_10001.png")));
+
+        File.WriteAllText(Path.Combine(freshDir, "UT_HandCard_10001.png"), "modified");
+        _skinManager.RevertCardImage(_testRoot, "fresh", "UT_HandCard_10001.png");
+        Assert.Equal("default image", File.ReadAllText(Path.Combine(freshDir, "UT_HandCard_10001.png")));
+
+        Assert.Throws<InvalidOperationException>(() =>
+            _skinManager.RevertCardImage(_testRoot, "fresh", "UT_Event_30001.png"));
     }
 
     [Fact]

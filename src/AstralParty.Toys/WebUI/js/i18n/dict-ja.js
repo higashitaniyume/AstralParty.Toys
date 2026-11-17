@@ -396,7 +396,6 @@
       'skins.crop_title': '画像トリミング',
       'skins.open_folder': 'スキンフォルダーを開く',
       'skins.download_default': '初期パッケージを取得',
-      'skins.restore_builtin': '同梱初期設定に戻す',
       'skins.my_schemes': 'マイ構成',
       'skins.packages_library': '素材ライブラリ',
       'skins.active_badge': '適用中',

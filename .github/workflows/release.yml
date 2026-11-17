@@ -155,41 +155,6 @@ jobs:
 
           Get-ChildItem "src/AstralParty.Toys/Resources/ModLoader" | Select-Object Name, Length
 
-      - name: Fetch default skins for embedded template
-        shell: pwsh
-        run: |
-          $destination = "src/AstralParty.Toys/Resources/Skins/default-skins.zip"
-          New-Item -ItemType Directory -Path (Split-Path $destination) -Force | Out-Null
-          # Same 504 retry as the loader package above.
-          $skinsUrl = "https://github.com/higashitaniyume/CesiumLoader/releases/latest/download/cesium-default-skins.zip"
-          $attempt = 0
-          $maxAttempts = 5
-          $downloaded = $false
-          while (-not $downloaded -and $attempt -lt $maxAttempts) {
-            $attempt++
-            try {
-              Invoke-WebRequest -Uri $skinsUrl -OutFile $destination
-              $downloaded = $true
-            } catch {
-              if ($attempt -ge $maxAttempts) { throw }
-              $delaySeconds = 10 * $attempt + (Get-Random -Minimum 0 -Maximum 10)
-              Write-Host "Download attempt $attempt failed ($($_.Exception.Message)), retry in ${delaySeconds}s"
-              Start-Sleep -Seconds $delaySeconds
-            }
-          }
-          if (-not $downloaded) { throw "Failed to download default skins." }
-          Add-Type -AssemblyName System.IO.Compression.FileSystem
-          $archive = [IO.Compression.ZipFile]::OpenRead((Resolve-Path $destination))
-          try {
-            $files = @($archive.Entries | Where-Object { $_.Name })
-            if ($files.Count -eq 0) { throw "默认皮肤包为空" }
-            foreach ($entry in $files) {
-              $path = $entry.FullName.Replace('\', '/')
-              if ($path -notmatch '^AstralParty_ModLoader/skins/default/[^/:]+$' -or $path.Split('/')[-1] -in '.', '..') { throw "默认皮肤包路径不正确: $path" }
-            }
-            if (-not ($files | Where-Object { $_.Name -like '*.png' })) { throw "默认皮肤包没有图片" }
-          } finally { $archive.Dispose() }
-
       - name: Resolve package metadata
         id: metadata
         shell: pwsh

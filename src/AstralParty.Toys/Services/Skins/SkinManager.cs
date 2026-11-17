@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
@@ -219,7 +219,7 @@ public sealed partial class SkinManager
                 Category = category,
                 IsSfw = isSfw,
                 IsCustomized = isCustomized,
-                CanRestore = DefaultSkinPackage.Contains(fileName),
+                CanRestore = File.Exists(Path.Combine(defaultDir, fileName)),
                 FileSizeBytes = size,
                 PreviewUrl = previewUrl,
                 FallbackUrl = fallbackUrl,
@@ -242,14 +242,14 @@ public sealed partial class SkinManager
                     .FirstOrDefault(a => AnimationMatchPriority(card, a.Binding) < int.MaxValue);
                 if (animation == null) continue;
                 represented.Add(animation.Binding);
-                ApplyAnimationMetadata(card, animation, skinName, targetDir);
+                ApplyAnimationMetadata(card, animation, skinName, targetDir, defaultDir);
             }
             foreach (var animation in animations.Where(a => !represented.Contains(a.Binding)))
             {
                 var id = ExtractCardId(animation.Binding, out var sfw);
                 var category = CategorizeCard(animation.Binding);
                 var card = new SkinCardInfo { FileName = animation.Binding + ".png", AssetKey = animation.Binding, CardId = id, IsSfw = sfw, Category = category, CardName = ResolveCardName(id, category, animation.Binding) };
-                ApplyAnimationMetadata(card, animation, skinName, targetDir);
+                ApplyAnimationMetadata(card, animation, skinName, targetDir, defaultDir);
                 list.Add(card);
             }
         }
@@ -278,7 +278,7 @@ public sealed partial class SkinManager
         return card.CardName.Equals(binding, StringComparison.OrdinalIgnoreCase) ? 6 : int.MaxValue;
     }
 
-    private static void ApplyAnimationMetadata(SkinCardInfo card, CardAnimationPackage animation, string skinName, string targetDir)
+    private static void ApplyAnimationMetadata(SkinCardInfo card, CardAnimationPackage animation, string skinName, string targetDir, string defaultDir)
     {
         var manifest = Path.Combine(targetDir, animation.Binding + ".cardanim");
         card.IsCustomized = true;
@@ -291,7 +291,7 @@ public sealed partial class SkinManager
         card.AnimationFrameUrlPrefix = $"https://skins.aspatoys.hiynet.localhost/{Uri.EscapeDataString(skinName)}/{Uri.EscapeDataString(animation.Binding + ".frames")}/";
         card.FileSizeBytes = new FileInfo(manifest).Length + Directory.GetFiles(Path.Combine(targetDir, animation.Binding + ".frames"), "*.png").Sum(f => new FileInfo(f).Length);
         card.LastModified = File.GetLastWriteTime(manifest);
-        card.CanRestore = DefaultSkinPackage.Contains(card.FileName);
+        card.CanRestore = File.Exists(Path.Combine(defaultDir, card.FileName));
     }
 
     private string CurrentAnimationBinding(string gameDirectory, string skinName, string fileName) =>
@@ -367,24 +367,19 @@ public sealed partial class SkinManager
         if (!string.IsNullOrEmpty(previousBinding)) CardAnimationPackage.Remove(targetDir, previousBinding);
         return GetCards(gameDirectory, skinName).First(c => c.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase));
     }
-    /// <summary>从应用内置默认包恢复单卡，与磁盘 default 的修改无关。</summary>
+    /// <summary>从当前 default 方案恢复单卡；default 不存在时提示先下载默认包。</summary>
     public SkinCardInfo RevertCardImage(string gameDirectory, string skinName, string fileName)
     {
         if (skinName == GameDefault) throw new InvalidOperationException("游戏默认方案无需恢复外部卡面。");
-        var directory = Path.Combine(GetSkinsDirectory(gameDirectory), skinName);
+        var skinsDir = GetSkinsDirectory(gameDirectory);
+        var defaultPath = Path.Combine(skinsDir, "default", fileName);
+        if (!File.Exists(defaultPath)) throw new InvalidOperationException("default 方案里没有这张卡面，请先下载默认包。");
+        var directory = Path.Combine(skinsDir, skinName);
+        Directory.CreateDirectory(directory);
         var previousBinding = CurrentAnimationBinding(gameDirectory, skinName, fileName);
-        DefaultSkinPackage.RestoreCard(directory, fileName);
+        File.Copy(defaultPath, Path.Combine(directory, fileName), overwrite: true);
         CardAnimationPackage.Remove(directory, Path.GetFileNameWithoutExtension(fileName));
         if (!string.IsNullOrEmpty(previousBinding)) CardAnimationPackage.Remove(directory, previousBinding);
         return GetCards(gameDirectory, skinName).First(c => c.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase));
-    }
-
-    public int RestoreDefaultProfile(string gameDirectory)
-    {
-        var directory = Path.Combine(GetSkinsDirectory(gameDirectory), "default");
-        var count = DefaultSkinPackage.Install(directory);
-        foreach (var manifest in Directory.GetFiles(directory, "*.cardanim"))
-            CardAnimationPackage.Remove(directory, Path.GetFileNameWithoutExtension(manifest));
-        return count;
     }
 }

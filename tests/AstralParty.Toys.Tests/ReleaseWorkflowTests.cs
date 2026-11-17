@@ -33,11 +33,11 @@ public sealed class ReleaseWorkflowTests
     }
 
     [Fact]
-    public void Release_UsesLatestLoaderAndSkins()
+    public void Release_UsesLatestLoaderWithoutBundledSkins()
     {
         var workflow = ReadWorkflow();
         Assert.Contains("releases/latest/download/cesium-loader.zip", workflow);
-        Assert.Contains("releases/latest/download/cesium-default-skins.zip", workflow);
+        Assert.DoesNotContain("cesium-default-skins.zip", workflow);
         Assert.Contains("if ((Test-Path $packagedChangelog) -and", workflow);
     }
 
