@@ -48,6 +48,10 @@ public sealed class HomeBackgroundStatus
 /// 先找视频（<c>mods\HomeBackgroundMod\{video}</c>、<c>assets\{video}</c>、<c>bg.mp4</c>），没有再用图片；
 /// 图片只认 8-bit 非隔行 PNG，铺满屏幕（会拉伸）。配置变了会重新加载图片，但视频每次启动游戏只试一次。
 /// </para>
+/// <para>
+/// 随包的是 1.1.0.1 修改版：视频准备好才换上，10 秒没准备好就退回图片（原版会一直闪）。
+/// 详见 <c>Resources\ThirdPartyMods\HomeBackgroundMod\README.md</c>。
+/// </para>
 /// </summary>
 public sealed class HomeBackgroundService
 {
@@ -253,7 +257,7 @@ public sealed class HomeBackgroundService
     // ------------------------------------------------------------ 安装 / 启用
 
     /// <summary>
-    /// 确保模组已装好并启用：没装就用随包的 1.1.0 装上；装的是旧版就升级；已经是更新的版本（比如市场装的）不降级。
+    /// 确保模组已装好并启用：没装就用随包的 1.1.0.1 装上；装的是旧版就升级；已经是更新的版本（比如市场装的）不降级。
     /// 停用的会搬回 mods。
     /// </summary>
     public string EnsureInstalledAndEnabled(string game)

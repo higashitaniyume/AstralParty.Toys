@@ -107,6 +107,18 @@ public sealed class HomeBackgroundServiceTests : IDisposable
 
     // ---------------------------------------------------------------- 安装 / 升级 / 不降级
 
+    [Theory]
+    [InlineData("1.1.0", true)]    // 市场装的原版 → 升级成修好闪烁的 1.1.0.1
+    [InlineData("1.0.1", true)]
+    [InlineData("", true)]
+    [InlineData("1.1.0.1", false)]
+    [InlineData("1.1.1", false)]   // 原作者以后的新版不降级
+    public void BundledModifiedVersion_UpgradesMarket110ButNotNewer(string installed, bool expected)
+    {
+        Assert.Equal("1.1.0.1", HomeBackgroundService.BundledVersion);
+        Assert.Equal(expected, HomeBackgroundService.IsOlder(installed, HomeBackgroundService.BundledVersion));
+    }
+
     [Fact]
     public void FirstImage_InstallsBundledModAndLicense()
     {
@@ -115,10 +127,10 @@ public sealed class HomeBackgroundServiceTests : IDisposable
         Assert.True(File.Exists(Path.Combine(ModsDir, "HomeBackgroundMod.dll")));
         Assert.True(File.Exists(Path.Combine(ModsDir, "LICENSE")));
         Assert.Equal(
-            "474e6aebfcfed3259b565b008731a61c85afa650052b8fd413faf0fec35a9d21",
+            "8f7781adb8d485e0924ab6573df4021b27950feb228968dce299e218c0600d5b",
             Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(Path.Combine(ModsDir, "HomeBackgroundMod.dll")))).ToLowerInvariant());
         using var json = JsonDocument.Parse(File.ReadAllText(Path.Combine(ModsDir, "HomeBackgroundMod.json")));
-        Assert.Equal("1.1.0", json.RootElement.GetProperty("version").GetString());
+        Assert.Equal("1.1.0.1", json.RootElement.GetProperty("version").GetString());
         Assert.True(json.RootElement.GetProperty("enabled").GetBoolean());
 
         var s = _service.GetStatus(_game);
@@ -136,7 +148,7 @@ public sealed class HomeBackgroundServiceTests : IDisposable
 
         _service.SetHideThemeVideo(_game, false);
         Assert.False(Directory.Exists(DisabledDir));
-        Assert.Equal(17408, new FileInfo(Path.Combine(ModsDir, "HomeBackgroundMod.dll")).Length);
+        Assert.Equal(17920, new FileInfo(Path.Combine(ModsDir, "HomeBackgroundMod.dll")).Length);
         Assert.False(_service.GetStatus(_game).HideThemeVideo);
 
         // 用户从市场装了更新的版本：工具箱不覆盖

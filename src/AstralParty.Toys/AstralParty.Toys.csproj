@@ -56,7 +56,7 @@
     </EmbeddedResource>
     <!-- 第三方模组「自定义主页背景」（TenkinMori，MIT）：不进加载器内置清单（发布流程会从 CesiumLoader 发布包同步那份清单），
          由「自定义 → 主页背景」第一次设置时装进游戏。说明见 Resources\ThirdPartyMods\HomeBackgroundMod\README.md。 -->
-    <EmbeddedResource Include="Resources\ThirdPartyMods\HomeBackgroundMod\*" Exclude="Resources\ThirdPartyMods\HomeBackgroundMod\README.md">
+    <EmbeddedResource Include="Resources\ThirdPartyMods\HomeBackgroundMod\*" Exclude="Resources\ThirdPartyMods\HomeBackgroundMod\README.md;Resources\ThirdPartyMods\HomeBackgroundMod\*.patch">
       <LogicalName>AstralParty.Toys.ThirdParty.HomeBackgroundMod.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
     <Content Include="Protocol\*.dll">

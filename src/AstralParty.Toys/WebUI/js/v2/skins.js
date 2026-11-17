@@ -345,7 +345,9 @@
       : mode === 'none' ? '已启用，但还没有设置背景'
       : s.modInstalled ? '游戏默认（自定义背景已关闭，之前的文件还留着）' : '游戏默认';
     const notice = (mode === 'video' && s.videoProblem ? `<div class="v2-notice danger">${I().info}<span style="flex:1"><b>现在的视频背景放不出来</b>：${esc(s.videoProblem)}。
-        在这之前主页会一闪一闪（模组把主题背景藏了，盖上的视频却是空的）。重新选一个视频或换成图片就好</span></div>` : '')
+        ${s.installedVersion === s.bundledVersion
+          ? '游戏里会在 10 秒左右后改用图片背景（没设置图片就是游戏默认背景）。'
+          : '现在装的模组版本放不了时主页会一闪一闪；重新选一次背景，工具箱会换成修好这个问题的版本。'}重新选一个视频或换成图片就好</span></div>` : '')
       + (s.gameRunning ? `<div class="v2-notice">${I().info}<span style="flex:1"><b>游戏正在运行</b>：换图片回到主页就能看到；换视频、恢复默认要先关闭游戏</span></div>` : '');
     return frameHead(action) + notice + `
       <div class="v2-card" style="overflow:hidden">
@@ -368,7 +370,7 @@
           <div class="v2-row"><span class="n">打开模组文件夹</span><span class="d">背景文件放在这里</span>
             <button class="v2-btn line" data-v2s="hbFolder" ${s.modInstalled ? '' : 'disabled'}>打开</button></div>
           <div class="v2-row"><span class="n">关于</span><span class="d">由 TenkinMori 的「自定义主页背景」模组实现（${esc(s.installedVersion || s.bundledVersion)}，MIT 许可），
-            源码 github.com/TenkinMori/astralparty-homebg-cesium</span></div>
+            源码 github.com/TenkinMori/astralparty-homebg-cesium。工具箱内置的是修改版（1.1.0.1）：游戏放不了的视频会自动退回图片背景，不再闪烁</span></div>
         </div></details>`;
   }
   function hbPickImage() {
