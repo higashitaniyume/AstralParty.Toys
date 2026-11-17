@@ -31,10 +31,10 @@
   // 自定义分成两组：改游戏文件的放「游戏自定义」，只改 Toys 自身外观的放「Toys 自定义」
   function sideNav() {
     const cur = tab();
-    const gameTabs = [['cards', '卡牌'], ['audio', '音效'], ['resource', '资源包'], ['fonts', '字体']];
-    if (window.V2Chars) gameTabs.push(['characters', '角色']);
-    const toysTabs = [['background', '背景']];
-    const btn = ([k, l]) => `<button class="v2-side-tab${cur === k ? ' on' : ''}" data-v2s-tab="${k}" role="tab" aria-selected="${cur === k}">${l}</button>`;
+    const gameTabs = [['cards', '卡牌', 'playing_cards'], ['audio', '音效', 'graphic_eq'], ['resource', '资源包', 'folder_zip'], ['fonts', '字体', 'font_download']];
+    if (window.V2Chars) gameTabs.push(['characters', '角色', 'person']);
+    const toysTabs = [['background', '背景', 'wallpaper']];
+    const btn = ([k, l, icon]) => `<button class="v2-side-tab${cur === k ? ' on' : ''}" data-v2s-tab="${k}" role="tab" aria-selected="${cur === k}">${window.Icons?.svg(icon) || ''}<span>${l}</span></button>`;
     return `<nav class="v2-settings-side" role="tablist" aria-orientation="vertical" aria-label="自定义分类">
       <div class="v2-side-label">游戏自定义</div>${gameTabs.map(btn).join('')}
       <div class="v2-side-label">Toys 自定义</div>${toysTabs.map(btn).join('')}
