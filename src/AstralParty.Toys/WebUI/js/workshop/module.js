@@ -3,6 +3,22 @@
 (function () {
   'use strict';
 
+  // 排序：默认「最近更新」，并记住用户选过的方式（只接受这三个值）
+  const SORT_KEY = 'workshop_sort';
+  const SORT_VALUES = ['updated', 'downloads', 'name'];
+  const DEFAULT_SORT = 'updated';
+  function savedSort() {
+    try {
+      const value = localStorage.getItem(SORT_KEY);
+      return SORT_VALUES.includes(value) ? value : DEFAULT_SORT;
+    } catch {
+      return DEFAULT_SORT;
+    }
+  }
+  function rememberSort(value) {
+    try { localStorage.setItem(SORT_KEY, value); } catch { /* 存不了只影响下次 */ }
+  }
+
   const state = {
     initialized: false,
     loaded: false,
@@ -15,7 +31,7 @@
     tags: [],
     query: '',
     tag: '',
-    sort: 'downloads',
+    sort: savedSort(),
     viewMode: localStorage.getItem('workshop_view_mode') || 'list',
     statusFilter: 'all',
     detail: null,
@@ -478,9 +494,19 @@
     });
   }
 
+  // 翻页条的节点在 view-workshop.html 里是静态的；这里保留一份同样的结构，
+  // 万一被清空（旧代码 onShow / 刷新按钮会清）就重建，避免翻页静默失效。
+  const PAGER_MARKUP = `<button class="secondary-btn" id="workshopPrevBtn" data-i18n="workshop.prev_page">上一页</button>
+    <span id="workshopPageInfo"></span>
+    <button class="secondary-btn" id="workshopNextBtn" data-i18n="workshop.next_page">下一页</button>`;
+
   function renderPager() {
     const pager = $('workshopPager');
     if (!pager) return;
+    if (!$('workshopPageInfo') || !$('workshopPrevBtn') || !$('workshopNextBtn')) {
+      pager.innerHTML = PAGER_MARKUP;
+      window.i18n?.applyDOM(pager);
+    }
     const show = state.pages > 1;
     pager.classList.toggle('hidden', !show);
     if (!show) return;
@@ -1132,8 +1158,8 @@
       $('workshopRefreshBtn')?.addEventListener('click', () => {
         state.items = [];
         state.loading = false;
-        const pager = $('workshopPager');
-        if (pager) pager.innerHTML = '';
+        // 只先藏起来，不要清 DOM：翻页按钮和页码要留着给 renderPager 更新
+        $('workshopPager')?.classList.add('hidden');
         load(1);
       });
 
@@ -1158,7 +1184,8 @@
       });
 
       $('workshopSortSelect')?.addEventListener('change', event => {
-        state.sort = event.target.value || 'downloads';
+        state.sort = event.target.value || DEFAULT_SORT;
+        rememberSort(state.sort);
         load(1);
       });
 
@@ -1192,11 +1219,13 @@
 
       syncViewSwitchButtons();
 
-      $('workshopPrevBtn')?.addEventListener('click', () => {
-        if (state.page > 1) load(state.page - 1);
-      });
-      $('workshopNextBtn')?.addEventListener('click', () => {
-        if (state.page < state.pages) load(state.page + 1);
+      // 监听挂在容器上：renderPager 重建按钮后点击依然有效
+      $('workshopPager')?.addEventListener('click', event => {
+        if (event.target.closest('#workshopPrevBtn')) {
+          if (state.page > 1) load(state.page - 1);
+        } else if (event.target.closest('#workshopNextBtn')) {
+          if (state.page < state.pages) load(state.page + 1);
+        }
       });
 
       $('workshopInstallClose')?.addEventListener('click', () => {
@@ -1325,13 +1354,13 @@
         return;
       }
 
-      // 每次进入市场：清空老信息，重置筛选，拉取最新数据
+      // 每次进入市场：清空老信息，重置筛选，拉取最新数据（排序沿用用户上次的选择）
       state.items = [];
       state.total = 0;
       state.page = 1;
       state.query = '';
       state.tag = '';
-      state.sort = 'downloads';
+      state.sort = savedSort();
       state.statusFilter = 'all';
       state.loaded = false;
       state.details.clear();
@@ -1342,13 +1371,13 @@
       const tagSelect = $('workshopTagSelect');
       if (tagSelect) tagSelect.value = '';
       const sortSelect = $('workshopSortSelect');
-      if (sortSelect) sortSelect.value = 'downloads';
+      if (sortSelect) sortSelect.value = state.sort;
       const statusSelect = $('workshopStatusSelect');
       if (statusSelect) statusSelect.value = 'all';
 
       state.loading = false;
-      const pager = $('workshopPager');
-      if (pager) pager.innerHTML = '';
+      // 重新进入市场：先藏翻页条，等新数据回来由 renderPager 决定是否显示
+      $('workshopPager')?.classList.add('hidden');
 
       load(1);
     },

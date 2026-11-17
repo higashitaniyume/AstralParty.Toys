@@ -129,6 +129,15 @@ public partial class HybridWindow
                     if (_myAccountPageVisible && _myAccountSession != null && _myAccountLifetime != null)
                         await RefreshMyAccountMatchesAsync(_myAccountSession, _myAccountGeneration, _myAccountLifetime.Token);
                     break;
+                case "myAccountMatchDetail":
+                    if (_myAccountPageVisible && _myAccountSession != null && _myAccountLifetime != null)
+                    {
+                        int index = root.TryGetProperty("index", out var indexElement) && indexElement.TryGetInt32(out var parsedIndex) ? parsedIndex : -1;
+                        string replayId = root.TryGetProperty("replayId", out var replayElement) ? replayElement.GetString() ?? "" : "";
+                        if (index >= 0 && replayId.Length <= 64 && replayId.All(char.IsAsciiDigit))
+                            await SendMyAccountMatchDetailAsync(_myAccountSession, _myAccountGeneration, _myAccountLifetime.Token, index, replayId);
+                    }
+                    break;
             }
         }
         catch { Post(new { type = "myAccountState", payload = new { requestId = _myAccountRequestId, status = "unavailable", stale = true } }); }
@@ -213,13 +222,42 @@ public partial class HybridWindow
         var assets = _myAccountAssets ??= new AssetLocator(_assetDirectory, _materialDirectories);
         return new
         {
-            requestId, player.Uid, player.Name, player.Level, capturedAt = DateTimeOffset.UtcNow,
+            requestId, player.Uid, player.Name, player.Level, player.Exp,
+            expNeed = config.PlayerLevelNeedExp((int)player.Level),
+            winCount = player.WinCount,
+            createdAt = MyAccountUnixDate(player.CreateTime),
+            lastLoginAt = MyAccountUnixDate(player.LoginTime),
+            creditScore = player.CreditScore, praiseNum = player.PraiseNum,
+            privacy = new { stats = player.IsShowData, matches = player.IsShowFight },
+            achievements = player.Achievements.Select(id => new { id, name = config.Achievement(id) }).ToArray(),
             characters = player.Characters.Select(c => new
             {
-                c.Id, c.FightCount, name = config.Character(c.Id),
+                c.Id, c.FightCount, c.Level, c.Breakthrough, name = config.Character(c.Id),
                 image = AssetUrl(assets.Character(c.Id, config.CharacterAssets(c.Id)))
-            }).ToArray()
+            }).ToArray(),
+            winMaps = player.WinMaps.Select(pair => new
+            {
+                mapId = pair.Key, name = MyAccountMapName(config, pair.Key), wins = pair.Value,
+                image = AssetUrl(assets.Map(pair.Key, config.MapAssets(pair.Key)))
+            }).ToArray(),
+            capturedAt = DateTimeOffset.UtcNow
         };
+    }
+
+    private static DateTimeOffset? MyAccountUnixDate(long value) =>
+        value is > 0 and <= 253402300799 ? DateTimeOffset.FromUnixTimeSeconds(value) : null;
+
+    private static string? MyAccountMapName(ConfigCatalog config, int id)
+    {
+        var name = config.Map(id);
+        return string.IsNullOrWhiteSpace(name) ? null : name;
+    }
+
+    private static string MyAccountHeadShot(AssetLocator assets, int id)
+    {
+        if (id <= 0) return "";
+        var path = assets.Named($"UT_Item_PlayerPhoto_{id}");
+        return path.Length > 0 ? path : assets.Named($"UT_AccountHeadShot_{id}");
     }
 
     private async Task RefreshMyAccountFriendsAsync(AccountSession session, int generation, CancellationToken ct)
@@ -236,10 +274,11 @@ public partial class HybridWindow
             var friends = await session.FriendsAsync(ct);
             if (generation != _myAccountGeneration || ct.IsCancellationRequested) return;
             var capturedAt = DateTimeOffset.UtcNow;
+            var assets = _myAccountAssets ??= new AssetLocator(_assetDirectory, _materialDirectories);
             var display = friends.Select(f => new
             {
                 f.Uid, f.Name, f.Note, f.Level, f.Status,
-                image = AssetUrl(_myAccountAssets?.Named($"UT_AccountHeadShot_{f.HeadIcon}") ?? ""),
+                image = AssetUrl(MyAccountHeadShot(assets, f.HeadIcon)),
                 offlineAt = f.OfflineTime is > 0 and <= 253402300799 ? (DateTimeOffset?)DateTimeOffset.FromUnixTimeSeconds(f.OfflineTime) : null
             }).ToArray();
             Post(new { type = "myAccountFriends", payload = new { requestId, session.Uid, friends = display, capturedAt } });
@@ -261,11 +300,13 @@ public partial class HybridWindow
         Post(new { type = "myAccountRecentState", payload = new { requestId, loading = true } });
         try
         {
-            var records = await session.RecentMatchesAsync(ct);
-            var display = await Task.Run(() => BuildMyAccountMatches(records), ct);
+            var showcase = await session.ShowcaseAsync(ct);
+            var display = await Task.Run(() => BuildMyAccountMatches(showcase.Matches), ct);
+            var statistics = await Task.Run(() => BuildMyAccountStatistics(showcase), ct);
             if (generation != _myAccountGeneration || ct.IsCancellationRequested) return;
+            Post(new { type = "myAccountStats", payload = statistics });
             Post(new { type = "myAccountRecent", payload = new { requestId, session.Uid, matches = display, capturedAt = DateTimeOffset.UtcNow } });
-            await ResolveMyAccountMatchMapsAsync(records, session.Uid, generation, requestId, ct);
+            await ResolveMyAccountMatchMapsAsync(showcase.Matches, session.Uid, generation, requestId, ct);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
         catch
@@ -283,16 +324,67 @@ public partial class HybridWindow
         }
     }
 
+    private object BuildMyAccountStatistics(AccountShowcase showcase)
+    {
+        var config = new ConfigCatalog(new GameProtocolContext(Path.Combine(_appDirectory, "Protocol")),
+            Path.Combine(_appDirectory, "GameData"), _libraryService.Settings.Language);
+        var assets = _myAccountAssets ??= new AssetLocator(_assetDirectory, _materialDirectories);
+        var statistics = showcase.Statistics;
+        object? stats = statistics == null ? null : new
+        {
+            fightCount = statistics.FightCount, winCount = statistics.WinCount,
+            roleCardCount = statistics.RoleCardCount, useHero = statistics.UseHero,
+            useHeroName = statistics.UseHero > 0 ? config.Character(statistics.UseHero) : null,
+            useHeroImage = statistics.UseHero > 0 ? AssetUrl(assets.Character(statistics.UseHero, config.CharacterAssets(statistics.UseHero))) : null,
+            adornCount = statistics.AdornCount, skinCount = statistics.SkinCount
+        };
+        return new
+        {
+            showcase.Uid, statistics = stats, showcase.PraiseNum,
+            privacy = new { stats = showcase.IsShowData, matches = showcase.IsShowFight },
+            achievements = showcase.Achievements.Select(id => new { id, name = config.Achievement(id) }).ToArray(),
+            capturedAt = DateTimeOffset.UtcNow
+        };
+    }
+
+    private async Task SendMyAccountMatchDetailAsync(AccountSession session, int generation, CancellationToken ct, int index, string replayId)
+    {
+        int requestId = _myAccountRequestId;
+        try
+        {
+            var detail = await session.MatchDetailAsync(index, ct);
+            if (generation != _myAccountGeneration || ct.IsCancellationRequested) return;
+            var config = new ConfigCatalog(new GameProtocolContext(Path.Combine(_appDirectory, "Protocol")),
+                Path.Combine(_appDirectory, "GameData"), _libraryService.Settings.Language);
+            var assets = _myAccountAssets ??= new AssetLocator(_assetDirectory, _materialDirectories);
+            var players = detail.Players.Select(p => new
+            {
+                p.PlayerId, p.Name, p.Level, p.Gold, p.HeroId, character = config.Character(p.HeroId),
+                p.Slot, p.Rank, p.GaveUp, p.PlayerLevel, isSelf = p.PlayerId == session.Uid,
+                image = AssetUrl(MyAccountHeadShot(assets, p.HeadIcon))
+            }).ToArray();
+            Post(new { type = "myAccountMatchDetail", payload = new { requestId, uid = session.Uid, replayId, index, players, capturedAt = DateTimeOffset.UtcNow } });
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
+        catch
+        {
+            if (generation == _myAccountGeneration)
+                Post(new { type = "myAccountMatchDetail", payload = new { requestId, uid = session.Uid, replayId, index, failed = true } });
+        }
+    }
+
     private object[] BuildMyAccountMatches(IReadOnlyList<AccountMatch> matches)
     {
         var config = new ConfigCatalog(new GameProtocolContext(Path.Combine(_appDirectory, "Protocol")),
             Path.Combine(_appDirectory, "GameData"), _libraryService.Settings.Language);
+        var assets = _myAccountAssets ??= new AssetLocator(_assetDirectory, _materialDirectories);
         return matches.Select(m => (object)new
         {
             m.Index, m.Rank, m.HeroId, m.MapType, m.ReplayId, m.Version,
             playedAt = m.Time is > 0 and <= 253402300799 ? (DateTimeOffset?)DateTimeOffset.FromUnixTimeSeconds(m.Time) : null,
             character = config.Character(m.HeroId),
             mapName = _myAccountMapIds.TryGetValue(m.ReplayId, out var mapId) ? config.Map(mapId) : null,
+            mapImage = _myAccountMapIds.TryGetValue(m.ReplayId, out var knownMapId) ? AssetUrl(assets.Map(knownMapId, config.MapAssets(knownMapId))) : null,
             mapLoading = ReplayCdn.IsValidReplayId(m.ReplayId, out _) && !_myAccountMapIds.ContainsKey(m.ReplayId),
             canDownload = ReplayCdn.IsValidReplayId(m.ReplayId, out _)
         }).ToArray();
@@ -304,6 +396,7 @@ public partial class HybridWindow
         using var protocol = new AccountProtocol(Path.Combine(_appDirectory, "Protocol"));
         var config = await Task.Run(() => new ConfigCatalog(new GameProtocolContext(Path.Combine(_appDirectory, "Protocol")),
             Path.Combine(_appDirectory, "GameData"), _libraryService.Settings.Language), ct);
+        var assets = _myAccountAssets ??= new AssetLocator(_assetDirectory, _materialDirectories);
         await Parallel.ForEachAsync(records.Where(m => ReplayCdn.IsValidReplayId(m.ReplayId, out _)).DistinctBy(m => m.ReplayId),
             new ParallelOptions { MaxDegreeOfParallelism = 3, CancellationToken = ct }, async (record, token) =>
             {
@@ -314,7 +407,16 @@ public partial class HybridWindow
                         (int)AccountProtocol.Number(AccountProtocol.Get(protocol.Parse("RunningGameS2C", payload), "Room"), "MapId"), token);
                 if (mapId > 0) _myAccountMapIds[record.ReplayId] = mapId;
                 if (generation != _myAccountGeneration || token.IsCancellationRequested) return;
-                Post(new { type = "myAccountRecentMap", payload = new { requestId, uid, record.ReplayId, mapName = mapId > 0 ? config.Map(mapId) : null } });
+                Post(new
+                {
+                    type = "myAccountRecentMap",
+                    payload = new
+                    {
+                        requestId, uid, record.ReplayId,
+                        mapName = mapId > 0 ? config.Map(mapId) : null,
+                        mapImage = mapId > 0 ? AssetUrl(assets.Map(mapId, config.MapAssets(mapId))) : null
+                    }
+                });
             });
     }
 

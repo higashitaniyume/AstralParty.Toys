@@ -1,9 +1,21 @@
+using System.Collections;
 using static AstralParty.Toys.Services.Account.AccountProtocol;
 
 namespace AstralParty.Toys.Services.Account;
 
-public sealed record AccountCharacter(int Id, long? FightCount);
-public sealed record AccountPlayer(string Uid, string Name, long Level, IReadOnlyList<AccountCharacter> Characters);
+public sealed record AccountCharacter(int Id, long? FightCount, int Level, int Exp, bool Breakthrough, long Adorn);
+public sealed record AccountPlayer(
+    string Uid, string Name, long Level, long Exp, long WinCount, long CreateTime, long LoginTime,
+    int CreditScore, bool IsShowData, bool IsShowFight, long PraiseNum, int StandingPainting,
+    IReadOnlyList<int> Achievements, IReadOnlyList<AccountCharacter> Characters, IReadOnlyDictionary<int, int> WinMaps);
+public sealed record AccountStatistics(long FightCount, long WinCount, long RoleCardCount, int UseHero, long AdornCount, long SkinCount);
+public sealed record AccountShowcase(
+    string Uid, AccountStatistics? Statistics, long PraiseNum, bool IsShowData, bool IsShowFight,
+    int StandingPainting, IReadOnlyList<int> Achievements, IReadOnlyList<AccountMatch> Matches);
+public sealed record AccountMatchPlayer(
+    string PlayerId, string Name, int Level, int Gold, int HeroId, int Slot, int Rank, int MapType,
+    bool GaveUp, int HeadIcon, int PlayerLevel);
+public sealed record AccountMatchDetail(int Index, IReadOnlyList<AccountMatchPlayer> Players);
 public sealed record AccountFriend(string Uid, string Name, string Note, long Level, int HeadIcon, string Status, long OfflineTime);
 public sealed record AccountMatch(long Time, int Rank, int HeroId, int Index, int MapType, string ReplayId, string Version);
 
@@ -50,9 +62,18 @@ public sealed class AccountSession : IAsyncDisposable
             var role = Get(entry, "Value");
             int id = (int)Number(role, "DefId");
             if (id == 0) id = (int)Number(entry, "Key");
-            return new AccountCharacter(id, Get(role, "FightCount") == null ? null : Number(role, "FightCount"));
-        }).Where(c => c.Id > 0).OrderByDescending(c => c.FightCount).ToArray();
-        return new(Number(player, "Id").ToString(System.Globalization.CultureInfo.InvariantCulture), Text(player, "Nick"), Number(player, "Level"), characters);
+            return new AccountCharacter(id, Get(role, "FightCount") == null ? null : Number(role, "FightCount"),
+                (int)Number(role, "Lv"), (int)Number(role, "Exp"), Flag(role, "IsBreakThrough"), Number(role, "UseAdorn"));
+        }).Where(c => c.Id > 0).OrderByDescending(c => c.FightCount).ThenBy(c => c.Id).ToArray();
+        var show = Get(player, "ShowPlayer");
+        int deduct = (int)Number(Get(player, "CreditInfo"), "DeductScore");
+        var winMaps = IntMap(player, "WinMap").OrderByDescending(pair => pair.Value).ThenBy(pair => pair.Key)
+            .ToDictionary(pair => pair.Key, pair => pair.Value);
+        return new(Number(player, "Id").ToString(System.Globalization.CultureInfo.InvariantCulture), Text(player, "Nick"),
+            Number(player, "Level"), Number(player, "Exp"), Number(player, "WinCount"),
+            Number(player, "CreateTime"), Number(player, "LoginTime"), Math.Clamp(100 - deduct, 0, 100),
+            Flag(show, "IsShowData"), Flag(show, "IsShowFight"), Number(show, "PraiseNum"),
+            (int)Number(show, "StandingPainting"), Achievements(show), characters, winMaps);
     }
 
     public static AccountFriend ProjectFriend(object friend) => new(
@@ -99,17 +120,30 @@ public sealed class AccountSession : IAsyncDisposable
         throw new AccountQueryException("friend_page_limit"); // Never publish a partial snapshot as complete.
     }
 
-    // Account profile contains the short records; 5155 is per-match detail, not the recent list.
-    public async Task<IReadOnlyList<AccountMatch>> RecentMatchesAsync(CancellationToken ct)
+    // 5153 returns both the profile statistics and the short recent-match records; 5155 is one match's detail.
+    public async Task<AccountShowcase> ShowcaseAsync(CancellationToken ct)
     {
         await _operations.WaitAsync(ct).ConfigureAwait(false);
         try
         {
             var response = await _transport.CallAsync(5153,
                 _protocol.Create("GetShowPlayerC2S", ("PlayerId", long.Parse(Uid, System.Globalization.CultureInfo.InvariantCulture))), ct).ConfigureAwait(false);
-            return ProjectRecentMatches(_protocol.Parse("GetShowPlayerS2C", response.Payload), Uid);
+            return ProjectShowcase(_protocol.Parse("GetShowPlayerS2C", response.Payload), Uid);
         }
         finally { _operations.Release(); }
+    }
+
+    public static AccountShowcase ProjectShowcase(object response, string expectedUid)
+    {
+        var data = Get(response, "ShowData");
+        if (data == null || Number(data, "PlayerId").ToString(System.Globalization.CultureInfo.InvariantCulture) != expectedUid)
+            throw new InvalidDataException("account_mismatch");
+        var statistics = Get(data, "Statistics");
+        return new(expectedUid, statistics == null ? null : new AccountStatistics(
+                Number(statistics, "FightCount"), Number(statistics, "WinFightCount"), Number(statistics, "RoleCardCount"),
+                (int)Number(statistics, "UseHero"), Number(statistics, "AdornCount"), Number(statistics, "SkinCount")),
+            Number(data, "PraiseNum"), Flag(data, "IsShowData"), Flag(data, "IsShowFight"),
+            (int)Number(data, "StandingPainting"), Achievements(data), ProjectRecentMatches(response, expectedUid));
     }
 
     public static IReadOnlyList<AccountMatch> ProjectRecentMatches(object response, string expectedUid)
@@ -117,10 +151,49 @@ public sealed class AccountSession : IAsyncDisposable
         var data = Get(response, "ShowData");
         if (data == null || Number(data, "PlayerId").ToString(System.Globalization.CultureInfo.InvariantCulture) != expectedUid)
             throw new InvalidDataException("account_mismatch");
-        return Items(data, "Record").Select(record => new AccountMatch(
+        return RecordItems(data).OrderByDescending(record => record.Time).ToArray();
+    }
+
+    public async Task<AccountMatchDetail> MatchDetailAsync(int index, CancellationToken ct)
+    {
+        if (index is < 0 or > 10000) throw new AccountQueryException("invalid_match_index");
+        await _operations.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var response = await _transport.CallAsync(5155, _protocol.Create("GetPlayerFightRecordC2S",
+                ("PlayerId", long.Parse(Uid, System.Globalization.CultureInfo.InvariantCulture)), ("Index", index)), ct).ConfigureAwait(false);
+            return ProjectMatchDetail(_protocol.Parse("GetPlayerFightRecordS2C", response.Payload), index);
+        }
+        finally { _operations.Release(); }
+    }
+
+    public static AccountMatchDetail ProjectMatchDetail(object response, int index)
+    {
+        var players = Items(response, "RecordData").Take(16).Select(row => new AccountMatchPlayer(
+            Number(row, "PlayerId").ToString(System.Globalization.CultureInfo.InvariantCulture), Text(row, "Name"),
+            (int)Number(row, "Lv"), (int)Number(row, "Gold"), (int)Number(row, "HeroId"), (int)Number(row, "Slot"),
+            (int)Number(row, "Rank"), (int)Number(row, "MapType"), Flag(row, "IsGiveUp"),
+            (int)Number(row, "HeadIcon"), (int)Number(row, "PlayerLevel"))).ToArray();
+        return new(index, players);
+    }
+
+    private static IEnumerable<AccountMatch> RecordItems(object data) =>
+        Items(data, "Record").Select(record => new AccountMatch(
             Number(record, "Time"), (int)Number(record, "Rank"), (int)Number(record, "HeroId"),
-            (int)Number(record, "Index"), (int)Number(record, "MapType"), Text(record, "ReplayId"), Text(record, "Version")))
-            .OrderByDescending(record => record.Time).ToArray();
+            (int)Number(record, "Index"), (int)Number(record, "MapType"), Text(record, "ReplayId"), Text(record, "Version")));
+
+    private static int[] Achievements(object? holder) =>
+        Items(holder, "AchieveId").Select(value => Convert.ToInt32(value, System.Globalization.CultureInfo.InvariantCulture))
+            .Where(id => id > 0).Take(6).ToArray();
+
+    private static IEnumerable<KeyValuePair<int, int>> IntMap(object? holder, string name)
+    {
+        if (Get(holder, name) is not IEnumerable entries) yield break;
+        foreach (var entry in entries)
+        {
+            int key = (int)Number(entry, "Key");
+            if (key > 0) yield return new KeyValuePair<int, int>(key, (int)Number(entry, "Value"));
+        }
     }
 
     private async Task HeartbeatAsync()

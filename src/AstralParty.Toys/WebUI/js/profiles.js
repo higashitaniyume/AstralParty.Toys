@@ -45,6 +45,7 @@
       });
       $('accountProfilesList')?.addEventListener('click', event => this.onListClick(event));
       $('accountProfilesList')?.addEventListener('change', event => this.onListChange(event));
+      $('accountProfileCurrentSelect')?.addEventListener('change', event => this.onCurrentChange(event));
       $('accountProfileWindowTitleToggle')?.addEventListener('change', event => this.onWindowTitleChange(event));
     },
 
@@ -127,9 +128,34 @@
       this.data = payload || { profiles: [], activeName: '', canManage: false, error: null, loaderInstalled: false, windowTitleEnabled: true };
       this.applyNameRule();
       this.renderStatus();
+      this.renderCurrentSelect();
       this.renderWindowTitle();
       this.renderList();
       this.refreshNameValidation();
+    },
+
+    // ---------- 当前使用的档案（顶部下拉；选完写 doorstop 的 profile） ----------
+    renderCurrentSelect() {
+      const select = $('accountProfileCurrentSelect');
+      if (!select) return;
+      const data = this.data || {};
+      const profiles = (data.profiles || []).filter(p => !p.isDefault);
+      const active = String(data.activeName || '');
+      const options = [`<option value="">${esc(t('profile.default_name'))}</option>`]
+        .concat(profiles.map(p => `<option value="${esc(p.name)}">${esc(p.name)}</option>`));
+      select.innerHTML = options.join('');
+      select.value = profiles.some(p => p.name === active) ? active : '';
+      const ready = !!data.loaderInstalled && !data.error;
+      select.disabled = !ready || this.loading;
+      $('accountProfileCurrentPicker')?.classList.toggle('is-disabled', !ready);
+    },
+
+    onCurrentChange(event) {
+      const select = event.target;
+      const name = select.value || '';
+      // 宿主写入加载器配置后会回推 accountProfiles，按 activeName 重新选中
+      select.disabled = true;
+      post({ type: 'accountProfileActivate', name });
     },
 
     // ---------- 窗口标题开关（写加载器的 profileWindowTitle；默认开） ----------
@@ -160,12 +186,9 @@
       }
 
       const profiles = data.profiles || [];
-      const current = profiles.find(p => p.active);
-      const currentLabel = current ? (current.isDefault ? t('profile.default_name') : current.name) : t('profile.default_name');
       const named = profiles.filter(p => !p.isDefault).length;
 
-      let html = `<span class="profiles-current">${esc(t('profile.current_label'))}: <strong>${esc(currentLabel)}</strong></span>`;
-      html += `<span class="profiles-count">${esc(t('profile.count', { count: named }))}</span>`;
+      let html = `<span class="profiles-count">${esc(t('profile.count', { count: named }))}</span>`;
       if (!data.loaderInstalled) {
         html += `<span class="profiles-warn">${Icons.svg('warning')} ${esc(t('profile.loader_missing'))}</span>`;
       }

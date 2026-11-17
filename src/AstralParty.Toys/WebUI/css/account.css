@@ -36,8 +36,46 @@
 .account-notice, .account-status { line-height: 1.7; font-size: 13px; }
 .account-path { overflow-wrap: anywhere; margin-top: 14px; }
 .account-status { padding-top: 12px; border-top: 1px solid var(--v2-border); }
-.account-overview { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
-.account-overview strong { font-size: 24px; }
+.account-overview { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+.account-profile-main { display: grid; gap: 10px; min-width: 0; }
+.account-profile-title { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px 14px; }
+.account-profile-title strong { font-size: 24px; overflow-wrap: anywhere; }
+.account-uid { color: var(--gp-text-muted); font-size: 13px; user-select: text; }
+.account-profile-level { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; color: var(--gp-text-sub); font-size: 13px; }
+.account-exp { width: 180px; height: 8px; overflow: hidden; border-radius: 999px; background: var(--v2-well); }
+.account-exp i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--gp-pink), var(--gp-gold)); }
+.account-profile-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.account-panel-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.account-panel-heading h3 { margin: 0; font-size: 17px; }
+.account-panel-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.account-stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.account-stat { display: grid; gap: 4px; padding: 12px 14px; border-radius: 10px; background: var(--v2-panel-2); min-width: 0; }
+.account-stat span { color: var(--gp-text-muted); font-size: 12px; }
+.account-stat strong { font-size: 20px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.account-stat small { color: var(--gp-text-sub); font-size: 12px; }
+.account-achievements, .account-winmaps { display: grid; gap: 8px; margin-top: 16px; }
+.account-section-label { color: var(--gp-text-muted); font-size: 12px; }
+.account-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.account-chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid var(--v2-border); border-radius: 999px; background: var(--v2-panel-2); color: var(--gp-text-sub); font-size: 12px; }
+.account-chip b { color: var(--gp-pink); font-variant-numeric: tabular-nums; }
+.account-chip small { color: var(--gp-text-muted); font-size: 11px; }
+.account-map-thumb { width: 32px; height: 32px; border-radius: 6px; object-fit: cover; background: var(--v2-well); }
+.account-match-main strong { display: flex; align-items: center; gap: 8px; }
+.account-match-map { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; background: var(--v2-well); flex: 0 0 auto; }
+.account-detail-player { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.account-detail-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: var(--v2-well); flex: 0 0 auto; }
+.account-detail-avatar.placeholder { display: inline-block; }
+.account-tag { display: inline-block; margin-right: 6px; padding: 1px 7px; border-radius: 999px; background: var(--v2-well); color: var(--gp-gold); font-size: 11px; font-style: normal; }
+.account-tag.breakthrough { color: var(--gp-pink); }
+.account-match-actions { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+.account-match-detail { flex-basis: 100%; min-width: 0; margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--v2-border); overflow-x: auto; }
+.account-detail-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.account-detail-table th, .account-detail-table td { padding: 7px 8px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--v2-border); }
+.account-detail-table th { color: var(--gp-text-muted); font-weight: 500; white-space: nowrap; }
+.account-detail-table td { color: var(--gp-text-sub); }
+.account-detail-table tr.self td { color: var(--v2-text); background: var(--v2-pink-soft); }
+.account-detail-table small { display: block; margin-top: 3px; color: var(--gp-text-muted); }
+.account-detail-table strong { overflow-wrap: anywhere; }
 .account-tabs { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 14px; }
 .account-tabs button { padding: 10px 18px; color: var(--gp-text-sub); border: 1px solid color-mix(in srgb, var(--v2-text) 40%, transparent); border-radius: 8px; background: var(--v2-panel); cursor: pointer; }
 .account-tabs button:hover { border-color: var(--gp-pink); color: var(--v2-text); }

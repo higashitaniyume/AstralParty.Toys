@@ -1,4 +1,4 @@
-﻿        <!-- 5. WIKI VIEW (Direct BWiki Webpage) -->
+        <!-- 5. WIKI VIEW (Direct BWiki Webpage) -->
         <section id="wikiView" class="page-view wiki-page hidden">
           <div class="wiki-top-toolbar">
             <div class="wiki-toolbar-left">
@@ -51,6 +51,14 @@
           </div>
 
           <div class="profiles-status" id="accountProfilesStatus"></div>
+
+          <label class="profiles-current-picker" id="accountProfileCurrentPicker">
+            <span class="profiles-current-picker-label" data-i18n="profile.current_label">当前使用</span>
+            <select id="accountProfileCurrentSelect" class="v2-select" data-i18n-skip></select>
+            <span class="profiles-current-picker-hint" data-i18n="profile.current_hint">
+              切换只写入加载器配置，下次启动游戏生效；可以在「模组 → 历史与回滚」里还原。
+            </span>
+          </label>
 
           <label class="profiles-option" id="accountProfileWindowTitleOption">
             <input type="checkbox" id="accountProfileWindowTitleToggle" />

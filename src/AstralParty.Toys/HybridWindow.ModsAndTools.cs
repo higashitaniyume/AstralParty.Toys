@@ -196,6 +196,8 @@ public partial class HybridWindow
                 });
             if (request == _modStatusRequest)
                 PostAppVersion(status);   // 关于页的「已安装加载器」跟着安装 / 更新 / 停用一起刷新
+            if (request == _modStatusRequest)
+                _ = PushModProfilesAsync();   // 方案列表的"已修改 / 缺少 N 个"跟着模组状态一起变
         }
         catch (Exception ex)
         {
@@ -766,9 +768,14 @@ public partial class HybridWindow
 
     /// <summary>只把「最新版本号」回推给界面 —— 版本三栏的「GitHub 最新」栏与结论都由前端自己算，
     /// 这里不再拼一句 toast 文案（同一个结论说两遍，用户反而要自己对齐两个说法）。
-    /// 轻量走 GitHub API（不下载整个发布包）；API 失败才下载发布包读清单兜底。</summary>
-    private async Task HandleModCheckUpdateAsync(string? mirrorType = null, string? customMirrorUrl = null)
+    /// 轻量走 GitHub API（不下载整个发布包）；API 失败才下载发布包读清单兜底。
+    ///
+    /// <paramref name="userInitiated"/> = false 时是启动后的自动检查：
+    /// 失败不弹 toast（自动检查不该在启动时报错打扰用户），发现新版本才提示一次。</summary>
+    private async Task HandleModCheckUpdateAsync(string? mirrorType = null, string? customMirrorUrl = null, bool userInitiated = true)
     {
+        if (_modUpdateCheckRunning) return;
+        _modUpdateCheckRunning = true;
         try
         {
             var settings = _libraryService.Settings;
@@ -787,12 +794,59 @@ public partial class HybridWindow
                 }
             });
             _ = PushModStatusAsync();
+
+            if (!userInitiated) AnnounceLoaderUpdateIfNewer(info);
         }
         catch (Exception ex)
         {
-            Post(new { type = "modUpdateCheck", payload = new { error = ex.Message } });
+            if (userInitiated)
+            {
+                Post(new { type = "modUpdateCheck", payload = new { error = ex.Message } });
+            }
+            else
+            {
+                Debug.WriteLine($"启动时自动检查加载器更新失败: {ex.Message}");
+            }
+        }
+        finally
+        {
+            _modUpdateCheckRunning = false;
         }
     }
+
+    private bool _modUpdateCheckRunning;
+
+    /// <summary>本次运行已经提示过的加载器版本（同一个版本只提示一次，避免每次刷新都弹）。</summary>
+    private string _announcedLoaderVersion = "";
+
+    /// <summary>
+    /// 自动检查发现新版本时提示一次。已装版本读安装清单；读不到（版本未知）就不提示 ——
+    /// 宁可不打扰，也不要对着一个不知道版本的加载器喊"该更新了"。
+    /// </summary>
+    private void AnnounceLoaderUpdateIfNewer(LoaderLatestReleaseInfo? info)
+    {
+        try
+        {
+            if (info == null || string.IsNullOrEmpty(info.Version)) return;
+
+            var installed = _modManager.GetStatus().InstalledVersion;
+            if (string.IsNullOrEmpty(installed)) return;
+            if (!Services.App.AppUpdateService.IsNewerVersion(installed, info.Version)) return;
+            if (string.Equals(_announcedLoaderVersion, info.Version, StringComparison.Ordinal)) return;
+
+            _announcedLoaderVersion = info.Version;
+            Post(new
+            {
+                type = "toast",
+                message = $"加载器有新版本 v{info.Version}（当前 v{installed}），到「模组」页可一键更新。"
+            });
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"AnnounceLoaderUpdateIfNewer failed: {ex.Message}");
+        }
+    }
+
 
     private bool _modUpdateRunning;
     private async Task HandleModDownloadUpdateAsync(bool overwriteDll, bool allowDowngrade, string? mirrorType = null, string? customMirrorUrl = null)

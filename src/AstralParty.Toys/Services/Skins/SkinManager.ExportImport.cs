@@ -156,7 +156,7 @@ public sealed partial class SkinManager
         finally { if (File.Exists(temporary)) File.Delete(temporary); }
     }
 
-    /// <summary>从应用内置默认包创建自定义方案；保留旧 source 参数兼容桥接。</summary>
+    /// <summary>从现有方案创建自定义方案；源方案不存在时提示先下载默认包。</summary>
     public string DuplicateProfile(string gameDirectory, string sourceSkinName, string newSkinName,
         string displayName, string author, string description)
     {
@@ -173,15 +173,27 @@ public sealed partial class SkinManager
         if (Directory.Exists(destDir))
             throw new InvalidOperationException($"目标方案已存在: {cleanName}");
 
+        var sourceName = string.IsNullOrWhiteSpace(sourceSkinName) || sourceSkinName == GameDefault ? "default" : sourceSkinName;
+        var sourceDir = Path.Combine(skinsDir, sourceName);
+        if (!Directory.Exists(sourceDir))
+            throw new InvalidOperationException("源方案不存在，请先下载默认包或选择其它方案。");
+
         Directory.CreateDirectory(destDir);
-        DefaultSkinPackage.Install(destDir);
+        foreach (var source in Directory.EnumerateFiles(sourceDir, "*", SearchOption.AllDirectories))
+        {
+            var relative = Path.GetRelativePath(sourceDir, source);
+            if (relative.Equals("skin.json", StringComparison.OrdinalIgnoreCase)) continue;
+            var destination = Path.Combine(destDir, relative);
+            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+            File.Copy(source, destination, overwrite: true);
+        }
 
         // 写入新方案的元数据 skin.json
         var meta = new
         {
             name = string.IsNullOrWhiteSpace(displayName) ? cleanName : displayName.Trim(),
             author = string.IsNullOrWhiteSpace(author) ? Environment.UserName : author.Trim(),
-            description = string.IsNullOrWhiteSpace(description) ? "基于应用内置默认包创建" : description.Trim()
+            description = string.IsNullOrWhiteSpace(description) ? "基于现有方案创建" : description.Trim()
         };
 
         var json = JsonSerializer.Serialize(meta, new JsonSerializerOptions { WriteIndented = true });

@@ -50,19 +50,9 @@ public partial class HybridWindow
             if (!File.Exists(filePath))
             {
                 var fallbackPath = Path.Combine(skinsDir, "default", fileName);
-                if (File.Exists(fallbackPath))
-                {
-                    filePath = fallbackPath;
-                }
-                else
-                {
-                    var original = DefaultSkinPackage.OpenCard(fileName);
-                    return original is null
-                        ? WebView.CoreWebView2.Environment.CreateWebResourceResponse(Stream.Null, 404, "Not Found", "Content-Type: text/plain")
-                        : WebView.CoreWebView2.Environment.CreateWebResourceResponse(
-                            new WebResourceStream(original), 200, "OK",
-                            "Content-Type: image/png\r\nCache-Control: no-store\r\nAccess-Control-Allow-Origin: *");
-                }
+                if (!File.Exists(fallbackPath))
+                    return WebView.CoreWebView2.Environment.CreateWebResourceResponse(Stream.Null, 404, "Not Found", "Content-Type: text/plain");
+                filePath = fallbackPath;
             }
 
             var contentType = Path.GetExtension(filePath).ToLowerInvariant() switch

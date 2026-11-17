@@ -289,6 +289,154 @@ public sealed class MyAccountTests : IDisposable
     }
 
     [Fact]
+    public void PlayerProjectionIncludesProfileStatisticsAndWinMaps()
+    {
+        var player = AccountSession.ProjectPlayer(new
+        {
+            Id = 1744079L, Nick = "player", Level = 23, Exp = 240, WinCount = 371,
+            CreateTime = 1770348144L, LoginTime = 1794891030L,
+            CreditInfo = new { DeductScore = 0 },
+            ShowPlayer = new
+            {
+                IsShowData = true, IsShowFight = false, PraiseNum = 1006, StandingPainting = 100102002,
+                AchieveId = new[] { 10102, 0, 1702 }
+            },
+            RoleCard = new Dictionary<int, object>
+            {
+                [102] = new { DefId = 102, Lv = 6, Exp = 0, FightCount = 282, IsBreakThrough = true, UseAdorn = 100102002L }
+            },
+            WinMap = new Dictionary<int, int> { [82016] = 100, [81003] = 1 }
+        });
+        Assert.Equal(23, player.Level);
+        Assert.Equal(240, player.Exp);
+        Assert.Equal(371, player.WinCount);
+        Assert.Equal(100, player.CreditScore);
+        Assert.Equal(1006, player.PraiseNum);
+        Assert.Equal(new[] { 10102, 1702 }, player.Achievements);
+        Assert.False(player.IsShowFight);
+        var character = Assert.Single(player.Characters);
+        Assert.Equal(6, character.Level);
+        Assert.True(character.Breakthrough);
+        Assert.Equal(100102002, character.Adorn);
+        Assert.Equal(100, player.WinMaps[82016]);
+    }
+
+    [Fact]
+    public void ShowcaseProjectionIncludesStatisticsAchievementsAndPrivacy()
+    {
+        var response = new
+        {
+            ShowData = new
+            {
+                PlayerId = 100L, PraiseNum = 1006, IsShowData = true, IsShowFight = false, StandingPainting = 100102002,
+                AchieveId = new[] { 10102, 1702 },
+                Statistics = new { FightCount = 400, WinFightCount = 371, RoleCardCount = 21, UseHero = 102, AdornCount = 152, SkinCount = 33 },
+                Record = new[]
+                {
+                    new { Time = 20L, Rank = 1, HeroId = 102, Index = 3, MapType = 4, ReplayId = "123", Version = "3.3.0-1.0.0" }
+                }
+            }
+        };
+        var showcase = AccountSession.ProjectShowcase(response, "100");
+        Assert.NotNull(showcase.Statistics);
+        Assert.Equal(400, showcase.Statistics!.FightCount);
+        Assert.Equal(371, showcase.Statistics.WinCount);
+        Assert.Equal(21, showcase.Statistics.RoleCardCount);
+        Assert.Equal(102, showcase.Statistics.UseHero);
+        Assert.Equal(152, showcase.Statistics.AdornCount);
+        Assert.Equal(33, showcase.Statistics.SkinCount);
+        Assert.Equal(1006, showcase.PraiseNum);
+        Assert.True(showcase.IsShowData);
+        Assert.False(showcase.IsShowFight);
+        Assert.Equal(new[] { 10102, 1702 }, showcase.Achievements);
+        Assert.Equal(3, Assert.Single(showcase.Matches).Index);
+    }
+
+    [Fact]
+    public void ShowcaseRejectsMissingOrOtherAccountProfile()
+    {
+        Assert.Throws<InvalidDataException>(() => AccountSession.ProjectShowcase(new { }, "100"));
+        Assert.Throws<InvalidDataException>(() => AccountSession.ProjectShowcase(new { ShowData = new { PlayerId = 200L } }, "100"));
+    }
+
+    [Fact]
+    public void MatchDetailProjectionKeepsOnlyDisplayFields()
+    {
+        var detail = AccountSession.ProjectMatchDetail(new
+        {
+            RecordData = new[]
+            {
+                new { PlayerId = 100L, Name = "self", Lv = 2, Gold = 26, HeroId = 102, Slot = 0, Rank = 1, MapType = 4, IsGiveUp = false, HeadIcon = 70890, PlayerLevel = 23, Token = "SECRET_SENTINEL" },
+                new { PlayerId = 200L, Name = "other", Lv = 3, Gold = 10, HeroId = 101, Slot = 1, Rank = 1, MapType = 4, IsGiveUp = true, HeadIcon = 70001, PlayerLevel = 20, Token = "" }
+            }
+        }, 9);
+        Assert.Equal(9, detail.Index);
+        Assert.Equal(2, detail.Players.Count);
+        Assert.Equal("100", detail.Players[0].PlayerId);
+        Assert.Equal(26, detail.Players[0].Gold);
+        Assert.Equal(23, detail.Players[0].PlayerLevel);
+        Assert.True(detail.Players[1].GaveUp);
+        Assert.DoesNotContain("SECRET_SENTINEL", JsonSerializer.Serialize(detail));
+    }
+
+    [Fact]
+    public void ShippedProfileConfigResolvesAchievementsAndLevelExp()
+    {
+        using var protocol = new AccountProtocol(Path.Combine(AppContext.BaseDirectory, "Protocol"));
+        var config = new AstralParty.Toys.Services.Game.ConfigCatalog(
+            new AstralParty.Toys.Services.Game.GameProtocolContext(Path.Combine(AppContext.BaseDirectory, "Protocol")),
+            Path.Combine(AppContext.BaseDirectory, "GameData"));
+        Assert.Equal("作弊吧？", config.Achievement(10102));
+        Assert.Equal("探案高手", config.Achievement(1702));
+        Assert.Equal(580, config.PlayerLevelNeedExp(23));
+        Assert.Equal("异变图书馆", config.Map(82016));
+        Assert.Equal("水乡古镇", config.Map(82010));
+    }
+
+    [Fact]
+    public void MissingProfileImagesResolveThroughAssetLocator()
+    {
+        var locator = new AssetLocator(Path.Combine(AppContext.BaseDirectory, "Assets"), []);
+        Assert.Equal("embedded://asset/Characters/130.webp", locator.Character(130));
+        Assert.Equal("embedded://asset/Characters/307.webp", locator.Character(307));
+        Assert.Equal("embedded://asset/Maps/82017.webp", locator.Map(82017, "UT_MapPreview_017"));
+        Assert.Equal("embedded://asset/UI/UT_AccountHeadShot_70930.webp", locator.Named("UT_AccountHeadShot_70930"));
+        Assert.Equal("embedded://asset/UI/UT_AccountHeadShot_70011.webp", locator.Named("UT_AccountHeadShot_70011"));
+        Assert.Equal("embedded://asset/UI/UT_Item_PlayerPhoto_70890.webp", locator.Named("UT_Item_PlayerPhoto_70890"));
+        Assert.Equal("embedded://asset/UI/UT_Item_PlayerPhoto_70891.webp", locator.Named("UT_Item_PlayerPhoto_70891"));
+
+        var config = new AstralParty.Toys.Services.Game.ConfigCatalog(
+            new AstralParty.Toys.Services.Game.GameProtocolContext(Path.Combine(AppContext.BaseDirectory, "Protocol")),
+            Path.Combine(AppContext.BaseDirectory, "GameData"));
+        foreach (var id in config.MapIds)
+        {
+            var hints = config.MapAssets(id);
+            if (hints.Length == 0) continue;
+            Assert.False(string.IsNullOrEmpty(locator.Map(id, hints)), $"地图 {id} 缺少预览图");
+        }
+        foreach (var id in config.CharacterIds)
+            Assert.False(string.IsNullOrEmpty(locator.Character(id, config.CharacterAssets(id))), $"角色 {id} 缺少头像");
+    }
+
+    [Fact]
+    public void MissingProfileImagesAreEmbedded()
+    {
+        foreach (var (folder, name) in new[]
+                 {
+                     ("Characters", "130"), ("Characters", "307"), ("Characters", "308"),
+                     ("Maps", "82017"), ("UI", "UT_AccountHeadShot_70930"), ("UI", "UT_AccountHeadShot_70011"),
+                     ("UI", "UT_Item_PlayerPhoto_70890"), ("UI", "UT_Item_PlayerPhoto_70891")
+                 })
+        {
+            Assert.True(EmbeddedAssetStore.TryFind(folder, name, out var path), $"{folder}/{name} 未内嵌");
+            Assert.True(EmbeddedAssetStore.TryGetRelativePath(path, out var relative), $"{folder}/{name} 路径无效");
+            using var stream = EmbeddedAssetStore.OpenWebPath(relative);
+            Assert.NotNull(stream);
+            Assert.True(stream!.Length > 0, $"{folder}/{name} 为空");
+        }
+    }
+
+    [Fact]
     public void RecentMatchUiReusesDownloadWorkflowAndOnlyOffersValidReplayIds()
     {
         var account = Web("js/account.js");
@@ -302,7 +450,14 @@ public sealed class MyAccountTests : IDisposable
         Assert.Contains("Date.now() - state.matchesAttempt < 3000", account);
         Assert.Contains("<strong data-account-map=", account);
         Assert.Contains("m.mapName || t(m.mapLoading ? 'account.mapLoading' : 'account.unknownMap')", account);
-        Assert.Contains("title.textContent = p.mapName || t('account.unknownMap')", account);
+        Assert.Contains("match.mapImage = p.mapImage", account);
+        Assert.Contains("account-map-thumb", account);
+        Assert.Contains("account-detail-avatar", account);
+        Assert.Contains("accountStatsFreshness", account);
+        Assert.Contains("account.achievements", account);
+        Assert.Contains("data-account-detail", account);
+        Assert.Contains("type: 'myAccountMatchDetail'", account);
+        Assert.Contains("message.type === 'myAccountStats'", account);
         var download = Web("js/replay/download.js");
         Assert.Contains("openDownloadDialog(preset = {})", download);
         Assert.Contains("preset.autoStart === true) this.startDownload()", download);
@@ -390,6 +545,7 @@ public sealed class MyAccountTests : IDisposable
         string index = Web("index.html");
         Assert.Contains("data-page=\"account\"", index);
         Assert.Contains("id=\"accountView\"", index);
+        Assert.Contains("id=\"accountStats\"", index);
         Assert.Contains("js/account.js", index);
         Assert.Contains("css/account.css", index);
         Assert.Contains("MyAccountModule?.onHide()", Web("js/core/router.js"));
@@ -426,6 +582,8 @@ public sealed class MyAccountTests : IDisposable
         Assert.Contains(".account-page .v2-btn:active:not(:disabled)", css);
         Assert.Contains(".account-page .v2-btn:disabled", css);
         Assert.Contains(".account-tabs button[aria-selected=\"true\"]", css);
+        Assert.Contains(".account-stat-grid {", css);
+        Assert.Contains(".account-detail-table {", css);
     }
 
     [Fact]

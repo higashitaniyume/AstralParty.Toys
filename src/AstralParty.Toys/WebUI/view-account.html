@@ -26,6 +26,12 @@
         <div id="accountConnectionStatus" role="status" aria-live="polite" class="account-status"></div>
       </section>
       <section id="accountOverview" class="account-panel account-overview" data-i18n-skip hidden></section>
+      <section id="accountStats" class="account-panel account-stats" data-i18n-skip hidden>
+        <div class="account-panel-heading"><h3 data-i18n="account.statsTitle"></h3><div class="account-panel-actions"><small id="accountStatsFreshness" class="account-muted"></small><button class="v2-btn" id="accountStatsRefreshBtn" data-i18n="account.refresh" disabled></button></div></div>
+        <div id="accountStatGrid" class="account-stat-grid"></div>
+        <div id="accountAchievements" class="account-achievements"></div>
+        <div id="accountWinMaps" class="account-winmaps"></div>
+      </section>
       <div class="account-tabs" role="tablist" aria-label="Account data">
         <button id="accountCharactersTab" role="tab" aria-selected="true" aria-controls="accountCharactersPanel" data-i18n="account.characters"></button>
         <button id="accountFriendsTab" role="tab" aria-selected="false" aria-controls="accountFriendsPanel" tabindex="-1" data-i18n="account.friends"></button>

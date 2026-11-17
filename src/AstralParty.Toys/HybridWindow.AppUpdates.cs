@@ -428,4 +428,36 @@ public partial class HybridWindow
             }
         });
     }
+
+    /// <summary>
+    /// 启动后自动检查**加载器**（CesiumLoader）的更新 —— 与「模组」页的「检查更新」按钮同一条通道：
+    /// 先读 Release 的静态 version.json（免 GitHub API 配额），失败才退到 API / 发布包。
+    ///
+    /// 只「查」不「装」：查到新版本时由 <c>AnnounceLoaderUpdateIfNewer</c> 提示一次，
+    /// 版本三栏与「可更新」结论由界面自己算；真正更新仍要用户点「从 GitHub 更新」。
+    /// 失败静默（自动检查不该在启动时报错打扰用户），只写 Debug 输出。
+    /// 与 Toys 自身更新共用「启动时检查更新」开关（AutoCheckUpdates）。
+    /// </summary>
+    private void ScheduleStartupLoaderUpdateCheck()
+    {
+        if (!_libraryService.Settings.AutoCheckUpdates) return;
+        if (_supersededByInstaller) return;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                // 没装加载器就没有"更新"可谈；状态检查放后台线程，别拖慢启动消息的处理。
+                if (!_modManager.GetStatus().Installed) return;
+
+                // 比 Toys 自身检查（2.5s）再晚一点：两块网络请求别挤在同一瞬间。
+                await Task.Delay(4000).ConfigureAwait(false);
+                await Dispatcher.InvokeAsync(() => { _ = HandleModCheckUpdateAsync(userInitiated: false); });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"ScheduleStartupLoaderUpdateCheck failed: {ex.Message}");
+            }
+        });
+    }
 }

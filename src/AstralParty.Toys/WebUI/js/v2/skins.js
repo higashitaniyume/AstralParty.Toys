@@ -31,10 +31,10 @@
   // 自定义分成两组：改游戏文件的放「游戏自定义」，只改 Toys 自身外观的放「Toys 自定义」
   function sideNav() {
     const cur = tab();
-    const gameTabs = [['cards', '卡牌'], ['audio', '音效'], ['resource', '资源包'], ['homebg', '主页背景']];
-    if (window.V2Chars) gameTabs.push(['characters', '角色']);
-    const toysTabs = [['background', '背景']];
-    const btn = ([k, l]) => `<button class="v2-side-tab${cur === k ? ' on' : ''}" data-v2s-tab="${k}" role="tab" aria-selected="${cur === k}">${l}</button>`;
+    const gameTabs = [['cards', '卡牌', 'playing_cards'], ['audio', '音效', 'graphic_eq'], ['resource', '资源包', 'folder_zip'], ['fonts', '字体', 'font_download'], ['homebg', '主页背景', 'home']];
+    if (window.V2Chars) gameTabs.push(['characters', '角色', 'person']);
+    const toysTabs = [['background', '背景', 'wallpaper']];
+    const btn = ([k, l, icon]) => `<button class="v2-side-tab${cur === k ? ' on' : ''}" data-v2s-tab="${k}" role="tab" aria-selected="${cur === k}">${window.Icons?.svg(icon) || ''}<span>${l}</span></button>`;
     return `<nav class="v2-settings-side" role="tablist" aria-orientation="vertical" aria-label="自定义分类">
       <div class="v2-side-label">游戏自定义</div>${gameTabs.map(btn).join('')}
       <div class="v2-side-label">Toys 自定义</div>${toysTabs.map(btn).join('')}
@@ -397,6 +397,7 @@
     const inner = t === 'cards' ? (K.cardScheme ? cardScheme() : cardsList())
       : t === 'audio' ? (K.audioScheme ? audioScheme() : audioList())
       : t === 'resource' ? resourceView()
+      : t === 'fonts' ? (window.V2Fonts ? window.V2Fonts.html() : frameHead())
       : t === 'homebg' ? homeBgView()
       : t === 'background' && window.V2Bg ? window.V2Bg.html()
       : window.V2Chars ? window.V2Chars.html()
@@ -429,11 +430,11 @@
     manageGames: () => showPage('settings'),
     // 卡牌
     cardAddMenu: el => U().openMenu(el, [
-      { label: '新建方案（从内置默认包）…', icon: I().plus, fn: () => metaForm({
+      { label: '新建方案（复制 default）…', icon: I().plus, fn: () => metaForm({
         title: '新建卡牌方案', ok: '创建',
         fields: [{ key: 'newName', label: '方案目录名', required: true, value: 'my_skin', ...ID_RULE },
           { key: 'displayName', label: '显示名称', value: '我的卡面' }, { key: 'author', label: '作者' }, { key: 'description', label: '简介', multiline: true }],
-        // 原版：新方案总是从程序内置的默认包复制，不用磁盘上改过的图片
+        // 从当前游戏已安装的 default 方案复制；没有默认包时由宿主提示先下载
         onOk: v => post({ type: 'skinsDuplicate', source: 'default', newName: v.newName, displayName: v.displayName || v.newName, author: v.author, description: v.description }),
       }) },
       { label: '导入方案 ZIP…', icon: I().upload, fn: () => post({ type: 'skinsImportZip' }) },
@@ -456,9 +457,7 @@
         { label: '打开方案目录', icon: I().folder, disabled: gd, fn: () => post({ type: 'skinsOpenFolder', name: p.name }) },
         ...(isDefault ? ['-',
           { label: '从 GitHub 下载最新默认包…', icon: I().download, fn: () => confirm({ title: '下载最新默认包？', ok: '下载',
-            lines: ['从最新 Release 下载默认包，<b>覆盖 default 里的同名图片</b>', '不会切换当前方案'], onOk: () => post({ type: 'skinsDownloadDefault' }) }) },
-          { label: '恢复内置默认包…', icon: I().refresh, fn: () => confirm({ title: '恢复内置默认包？', ok: '恢复',
-            lines: ['用程序内置的资源恢复 default 方案，<b>覆盖同名图片并移除动态覆盖</b>', '不会改动其他方案，也不会切换当前方案'], onOk: () => post({ type: 'skinsRestoreDefault' }) }) }] : []),
+            lines: ['从最新 Release 下载默认包，<b>覆盖 default 里的同名图片</b>', '不会切换当前方案'], onOk: () => post({ type: 'skinsDownloadDefault' }) }) }] : []),
         '-',
         { label: '删除方案…', icon: I().trash, disabled: sp, fn: () => confirm({
           title: `删除卡牌方案「${esc(pName(p))}」？`,
@@ -572,8 +571,8 @@
     if (t.id === 'v2sGame') {
       if (!t.value) return;
       post({ type: 'gameProfileSetActive', id: t.value });
-      // 卡牌由 GameLibModule 自动刷新；音效、资源包要重新向宿主要一次新游戏的数据
-      if (tab() === 'audio' || tab() === 'resource') CS()?.switchTab(tab());
+      // 卡牌由 GameLibModule 自动刷新；音效、资源包、字体要重新向宿主要一次新游戏的数据
+      if (tab() === 'audio' || tab() === 'resource' || tab() === 'fonts') CS()?.switchTab(tab());
       if (tab() === 'homebg') { K.hb = null; K.hbAsked = false; render(); }
       return;
     }
