@@ -24,7 +24,7 @@ public sealed partial class ModManager
         return dll is null ? null : Path.ChangeExtension(dll, ".json");
     }
 
-    /// <summary><c>mods\{ModId}\config.json</c> 的落盘位置（不要求文件已存在）。</summary>
+    /// <summary><c>configs\{ModId}.json</c> 的落盘位置（不要求文件已存在）。</summary>
     public string ModConfigWritePathFor(string gameDirectory, string fileName)
         => ModConfigWritePath(gameDirectory, fileName);
 

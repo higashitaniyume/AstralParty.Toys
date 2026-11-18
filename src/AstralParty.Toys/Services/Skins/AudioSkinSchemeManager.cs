@@ -117,10 +117,9 @@ public sealed partial class AudioSkinSchemeManager
     public void SetActiveScheme(string gameDirectory, string schemeId)
     {
         if (string.IsNullOrWhiteSpace(schemeId)) schemeId = "default";
-        // 一律写 configs\: 加载器 SDK 只要在 configs 下看到同名文件就只读那份,
-        // 写到模组目录(旧位置)等于没保存。
-        var cfgPath = ModConfigPath(gameDirectory);
-        Directory.CreateDirectory(Path.GetDirectoryName(cfgPath)!);
+        // 读 configs 优先（没有时回退模组目录那份），写的时候两份都写：
+        // 加载器优先读 configs，模组目录那份也不能留旧值。
+        var cfgPath = ModConfigLocator.ResolveForRead(gameDirectory, "AudioSkinMod");
 
         JsonObject root;
         if (File.Exists(cfgPath))
@@ -146,7 +145,7 @@ public sealed partial class AudioSkinSchemeManager
         if (!root.ContainsKey("bgmVolume")) root["bgmVolume"] = 1.0;
         if (!root.ContainsKey("voiceVolume")) root["voiceVolume"] = 1.0;
 
-        File.WriteAllText(cfgPath, root.ToJsonString(JsonOptions));
+        ModConfigLocator.WriteText(gameDirectory, "AudioSkinMod", root.ToJsonString(JsonOptions));
     }
 
     public List<AudioSkinProfile> GetProfiles(string gameDirectory)

@@ -149,7 +149,8 @@ public sealed class CharacterSkinSchemeManager
         settings.ActiveSchemeId = id;
         if (enable && id.Length > 0) settings.Enabled = true;
         settings.ActivePackages.Clear();
-        Atomic(packages.Config(game), settings);
+        // configs 与模组目录两份一起写（后者是 CharacterSkinMod 直接读的位置）
+        packages.SaveSettings(game, settings);
     }
     public void Delete(string game, string id)
     {

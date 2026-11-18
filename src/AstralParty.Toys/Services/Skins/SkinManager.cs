@@ -81,14 +81,16 @@ public sealed partial class SkinManager
     public void SetActiveSkin(string gameDirectory, string skinName)
     {
         if (string.IsNullOrWhiteSpace(skinName)) throw new ArgumentException("皮肤方案名称不能为空");
-        var path = GetModConfigPath(gameDirectory);
-        var config = File.Exists(path)
-            ? JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(File.ReadAllText(path))!
+        // 读取兼容: configs 下没有时仍可能停在旧位置(mods\CardSkinMod\config.json)。
+        var readPath = ModConfigLocator.ResolveForRead(gameDirectory, "CardSkinMod");
+        var config = File.Exists(readPath)
+            ? JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(File.ReadAllText(readPath))!
             : new Dictionary<string, JsonElement>();
         config["Enabled"] = JsonSerializer.SerializeToElement(skinName != GameDefault);
         if (skinName != GameDefault) config["ActiveSkin"] = JsonSerializer.SerializeToElement(skinName);
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true }));
+        // configs 与模组目录两份一起写（后者是 CardSkinMod 直接读的位置）
+        ModConfigLocator.WriteText(gameDirectory, "CardSkinMod",
+            JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true }));
     }
     /// <summary>获取指定游戏目录下的所有可用皮肤方案。</summary>
     public List<SkinProfile> GetProfiles(string gameDirectory)

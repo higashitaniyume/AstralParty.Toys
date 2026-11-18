@@ -88,9 +88,15 @@ public sealed class CharacterSkinManager
             }
             settings.ActivePackages.Add(id);
         }
-        Directory.CreateDirectory(Path.GetDirectoryName(Config(game))!);
-        Atomic(Config(game), SerializeSettings(game, settings));
+        SaveSettings(game, settings);
     }
+
+    /// <summary>
+    /// 写回 CharacterSkinMod 的玩家配置。<b>两份都写</b>：<c>configs\CharacterSkinMod.json</c>
+    /// 与模组目录里的 <c>config.json</c>（模组直接按路径读后者）。
+    /// </summary>
+    public void SaveSettings(string game, CharacterSkinSettings settings)
+        => ModConfigLocator.WriteText(game, "CharacterSkinMod", SerializeSettings(game, settings));
 
     /// <summary>写配置时保留 mod 初始化写在 config.json 里的 _comments（Toys 只改启用列表）。</summary>
     private string SerializeSettings(string game, CharacterSkinSettings settings)

@@ -72,4 +72,42 @@ public sealed class CharacterSkinTests : IDisposable
         Assert.Empty(manager.Settings(root).ActivePackages);Assert.Empty(manager.Profiles(root));
         Assert.Single(Directory.GetDirectories(Path.Combine(manager.Root(root),".deleted")));
     }
+    [Fact]
+    public void SetActiveUpdatesBothConfigLocationsAndKeepsComments()
+    {
+        // CharacterSkinMod 直接按路径读 mods\CharacterSkinMod\config.json，
+        // Toys 必须连这一份一起写，否则界面上切换了皮肤游戏里却不生效。
+        string modDir = Path.Combine(root, "AstralParty_ModLoader", "mods", "CharacterSkinMod");
+        Directory.CreateDirectory(modDir);
+        string packaged = Path.Combine(modDir, "config.json");
+        File.WriteAllText(packaged,
+            "{\n  \"enabled\": true,\n  \"activePackages\": [],\n  \"_comments\": { \"enabled\": { \"zh-Hans\": \"开关\" } }\n}\n");
+        manager.Create(root, "blue", 114, 100114001, "蓝海晴");
+        manager.SetActive(root, "blue", true);
+
+        string canonical = Path.Combine(root, "AstralParty_ModLoader", "configs", "CharacterSkinMod.json");
+        Assert.True(File.Exists(canonical));
+        string text = File.ReadAllText(packaged);
+        Assert.Equal(File.ReadAllText(canonical), text);
+        Assert.Contains("\"blue\"", text);
+        Assert.Contains("_comments", text);
+    }
+    [Fact]
+    public void SetActiveWritesConfigsTooWhenModIsDisabled()
+    {
+        // 停用的模组在 disabled_mods，但 configs 那份照写（加载器优先读它），
+        // 不能因为模组不在 mods 就漏掉。
+        string disabled = Path.Combine(root, "AstralParty_ModLoader", "disabled_mods", "CharacterSkinMod");
+        Directory.CreateDirectory(disabled);
+        string packaged = Path.Combine(disabled, "config.json");
+        File.WriteAllText(packaged, "{\n  \"enabled\": true,\n  \"activePackages\": []\n}\n");
+        manager.Create(root, "blue", 114, 100114001, "蓝海晴");
+        manager.SetActive(root, "blue", true);
+
+        string canonical = Path.Combine(root, "AstralParty_ModLoader", "configs", "CharacterSkinMod.json");
+        Assert.True(File.Exists(canonical), "停用的模组也必须写 configs 配置");
+        Assert.Equal(File.ReadAllText(canonical), File.ReadAllText(packaged));
+        Assert.Contains("\"blue\"", File.ReadAllText(canonical));
+        Assert.False(Directory.Exists(Path.Combine(root, "AstralParty_ModLoader", "mods", "CharacterSkinMod")));
+    }
 }

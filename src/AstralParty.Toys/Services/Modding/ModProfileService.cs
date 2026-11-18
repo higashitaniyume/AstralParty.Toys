@@ -361,8 +361,7 @@ public sealed class ModProfileService
                         }
                         try
                         {
-                            var path = _modManager.ModConfigWritePathFor(GameDirectory, entry.FileName);
-                            WriteConfig(path, mod.Config, mod.ConfigHasBom);
+                            _modManager.WriteModConfigText(GameDirectory, entry.FileName, mod.Config, mod.ConfigHasBom);
                             written++;
                         }
                         catch (Exception ex)
@@ -515,21 +514,6 @@ public sealed class ModProfileService
         {
             return (null, false);
         }
-    }
-
-    private static void WriteConfig(string path, string text, bool bom)
-    {
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        var bytes = Utf8NoBom.GetBytes(text ?? "");
-        if (bom)
-        {
-            var withBom = new byte[bytes.Length + 3];
-            withBom[0] = 0xEF; withBom[1] = 0xBB; withBom[2] = 0xBF;
-            Array.Copy(bytes, 0, withBom, 3, bytes.Length);
-            bytes = withBom;
-        }
-        if (File.Exists(path)) File.SetAttributes(path, FileAttributes.Normal);
-        File.WriteAllBytes(path, bytes);
     }
 
     private ModProfile BuildProfile(string name, bool includeConfigs, bool includeLoader)

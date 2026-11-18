@@ -65,6 +65,9 @@ public sealed class RollbackModSnapshot
 
     public RollbackFileSnapshot? Sidecar { get; set; }
     public RollbackFileSnapshot? Config { get; set; }
+
+    /// <summary>模组目录里的那份 <c>config.json</c>（当前配置双写，回滚要把它一起还原）。</summary>
+    public RollbackFileSnapshot? PackagedConfig { get; set; }
 }
 
 /// <summary>操作之后的观测值，只用于回滚前的冲突检测（外部改过就不静默覆盖）。</summary>
@@ -73,6 +76,9 @@ public sealed class RollbackModAfter
     public bool DirectoryEnabled { get; set; }
     public string? SidecarSha { get; set; }
     public string? ConfigSha { get; set; }
+
+    /// <summary>模组目录里那份 <c>config.json</c> 的观测值；空 = 旧记录没有这一项，不做冲突检测。</summary>
+    public string? PackagedConfigSha { get; set; }
 }
 
 public sealed class RollbackAfterState
@@ -261,7 +267,8 @@ public sealed class ModRollbackJournal
                         Name = mod.Name,
                         DirectoryEnabled = !mod.DisabledFolder,
                         Sidecar = RollbackFileSnapshot.Capture(_modManager.ModSidecarPath(directory, mod.FileName)),
-                        Config = RollbackFileSnapshot.Capture(_modManager.ModConfigWritePathFor(directory, mod.FileName))
+                        Config = RollbackFileSnapshot.Capture(_modManager.ModConfigWritePathFor(directory, mod.FileName)),
+                        PackagedConfig = RollbackFileSnapshot.Capture(_modManager.ModPackagedConfigPathFor(directory, mod.FileName))
                     });
                 }
             }
@@ -364,7 +371,9 @@ public sealed class ModRollbackJournal
                     }
                     if (current.DirectoryEnabled != after.DirectoryEnabled ||
                         !SnapshotMatches(_modManager.ModSidecarPath(directory, current.FileName), after.SidecarSha) ||
-                        !SnapshotMatches(_modManager.ModConfigWritePathFor(directory, current.FileName), after.ConfigSha))
+                        !SnapshotMatches(_modManager.ModConfigWritePathFor(directory, current.FileName), after.ConfigSha) ||
+                        (mod.PackagedConfig is not null &&
+                         !SnapshotMatches(_modManager.ModPackagedConfigPathFor(directory, current.FileName), after.PackagedConfigSha)))
                     {
                         result.Conflicts.Add($"模组「{mod.Name}」的状态或配置在操作之后被改过");
                     }
@@ -833,6 +842,15 @@ public sealed class ModRollbackJournal
             !RestoreFile(snapshot.Config, _modManager.ModConfigWritePathFor(directory, current.FileName), "配置", result))
             return;
 
+        // 模组目录里那份 config.json 也要按原文还原（当前配置双写，两边内容一致）
+        if (snapshot.PackagedConfig is not null)
+        {
+            var packagedPath = _modManager.ModPackagedConfigPathFor(directory, current.FileName);
+            if (packagedPath is not null &&
+                !RestoreFile(snapshot.PackagedConfig, packagedPath, "模组目录配置", result))
+                return;
+        }
+
         result.Restored.Add($"模组「{snapshot.Name}」");
     }
 
@@ -1038,11 +1056,15 @@ public sealed class ModRollbackJournal
                 if (current is null) continue;
                 var sidecar = _modManager.ModSidecarPath(entry.GameDirectory, current.FileName);
                 var config = _modManager.ModConfigWritePathFor(entry.GameDirectory, current.FileName);
+                var packagedConfig = _modManager.ModPackagedConfigPathFor(entry.GameDirectory, current.FileName);
                 after.Mods[name] = new RollbackModAfter
                 {
                     DirectoryEnabled = current.DirectoryEnabled,
                     SidecarSha = !string.IsNullOrWhiteSpace(sidecar) && File.Exists(sidecar) ? Sha256For(sidecar!) : null,
-                    ConfigSha = File.Exists(config) ? Sha256For(config) : null
+                    ConfigSha = File.Exists(config) ? Sha256For(config) : null,
+                    PackagedConfigSha = packagedConfig is not null && File.Exists(packagedConfig)
+                        ? Sha256For(packagedConfig)
+                        : null
                 };
             }
         }

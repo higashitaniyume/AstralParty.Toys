@@ -2,6 +2,12 @@
 
 本文件按版本记录 `AstralParty.Toys` 的功能变更。版本号与 GitHub 发布 tag 一一对应（如 `v0.2.0`），发布产物由 [release.yml](.github/workflows/release.yml) 在打 tag 时自动构建。
 
+## [v2.4.2] - 2026-11-18
+
+### 修复
+
+- 修复部分模组（如角色皮肤）读取模组目录里的 `config.json`、而工具箱只写加载器 `configs` 目录导致修改不生效的问题。现在每次修改模组配置都会同时写入 `configs\<ModId>.json` 与模组目录里的 `config.json` 两份；模组被停用时也会更新 `configs` 配置，并在回滚时一并还原两份文件。
+
 ## [v2.4.1] - 2026-11-18
 
 ### 自定义
