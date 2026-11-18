@@ -1,51 +1,31 @@
-# Experimental Linux deployment with Proton
+# Linux 安装部署指南（Proton，实验性）
 
-AstralParty.Toys is a Windows application built with WPF and WebView2. This guide
-runs the Windows release through Proton; it does **not** add native Linux support
-or make Linux an officially supported platform.
+AstralParty.Toys 是基于 WPF 和 WebView2 的 Windows 应用。本文通过 Proton 运行 Windows 发布包，**不提供原生 Linux 构建，也不代表 Linux 已成为官方支持的平台**。
 
-The recipe below reproduces a community-tested installation. Other distributions,
-Proton builds, release versions, and Steam packaging formats may behave differently.
+以下步骤来自一次社区实测安装。其他发行版、Proton 构建、软件版本和 Steam 安装方式的表现可能不同。
 
-## Tested scope and prerequisites
+## 已验证范围与准备工作
 
-- x86_64 Arch Linux with the native Steam client, niri, and xwayland-satellite.
-- AstralParty.Toys **v2.3.3**, `win-x64-self-contained-portable.zip`.
-- CesiumLoader **3.8.3** and the Chinese Steam build of Astral Party, app ID
-  **2622000** (`AstralParty_CN.exe`).
-- Steam's **Proton - Experimental** and `SteamLinuxRuntime_4`.
-- Microsoft Edge WebView2 Evergreen **157.0.4341.60** in the toolbox prefix.
-- Bash, `curl`, and `unzip`; `desktop-file-validate` is useful for the optional
-  application-menu entry.
+- x86_64 Arch Linux，原生安装的 Steam 客户端，niri 和 xwayland-satellite。
+- AstralParty.Toys **v2.3.3**，使用 `win-x64-self-contained-portable.zip`。
+- CesiumLoader **3.8.3**，Steam 国服《吉星派对》，App ID 为 **2622000**，主程序为 `AstralParty_CN.exe`。
+- Steam 提供的 **Proton - Experimental** 和 `SteamLinuxRuntime_4`。
+- 工具箱独立的 Wine 前缀（prefix）内安装 Microsoft Edge WebView2 Evergreen **157.0.4341.60**。
+- Bash、`curl` 和 `unzip`；如需创建应用菜单入口，可用 `desktop-file-validate` 检查桌面文件。
 
-The observed result was a toolbox-button launch through Steam, both applications
-running together, and a new loader report with 23 successful mods and zero failed
-mods. This is a startup test, not validation of every replay, editor, multiplayer,
-or mod feature. Newer releases, including v2.4.0, have not been validated by this
-recipe. Flatpak/Snap Steam, ARM systems, and TapTap are outside its tested scope.
+实测中，从工具箱按钮交给 Steam 启动游戏后，工具箱与游戏可以同时运行；本次新生成的加载器日志显示 23 个模组加载成功、0 个失败。这只验证了启动流程，没有逐项验证回放、编辑器、联机或所有模组功能。**v2.4.0 及后续版本尚未按此流程验证**；Flatpak/Snap Steam、ARM 和 TapTap 也不在已验证范围内。
 
-Install the game and the Steam tools above first. Select Proton - Experimental in
-the game's Steam compatibility settings, launch the unmodified game once through
-Steam, then exit it normally. Keep Steam running during setup.
+先安装游戏及上述 Steam 工具，在游戏的 Steam 兼容性设置中选择 Proton - Experimental，通过 Steam 启动一次未安装模组的游戏，再正常退出。配置期间保持 Steam 客户端运行。
 
-**Exit the game before installing, updating, removing, or reconfiguring mods.**
-Keep a separate backup of game data before using tools that move replays or manage
-account profiles. Third-party mods remain subject to the game's rules; this guide
-does not establish anti-cheat compatibility.
+**安装、更新、卸载或修改模组配置前，务必完全退出游戏。** 使用会移动回放或管理账号档案的功能前，另行备份游戏数据。第三方模组仍需遵守游戏规则，本文不保证反作弊兼容性。
 
-## 1. Choose paths and unpack the toolbox
+## 1. 确认路径并解压工具箱
 
-These examples use a native Steam installation under `~/.local/share/Steam` and
-its default library. Adjust the variables for your installation. The executable's
-subdirectory can change: find it with Steam's **Manage > Browse local files**, and
-set `game_dir` to the directory containing `AstralParty_CN.exe`, not its parent.
+示例使用 `~/.local/share/Steam` 下的原生 Steam 及其默认库。请按实际安装位置调整变量。游戏主程序所在的子目录可能变化，可从 Steam 的「管理 → 浏览本地文件」查找；`game_dir` 应指向包含 `AstralParty_CN.exe` 的目录，而不是它的上一级。
 
-Download the [v2.3.3 self-contained portable release](https://github.com/higashitaniyume/AstralParty.Toys/releases/tag/v2.3.3)
-and [CesiumLoader 3.8.3](https://github.com/higashitaniyume/CesiumLoader/releases/tag/modloader-3.8.3).
-The commands use `~/Downloads`; substitute your actual download directory if needed.
-Use a fresh toolbox directory, not an existing installation with different data.
+下载 [v2.3.3 自包含便携版](https://github.com/higashitaniyume/AstralParty.Toys/releases/tag/v2.3.3)和 [CesiumLoader 3.8.3](https://github.com/higashitaniyume/CesiumLoader/releases/tag/modloader-3.8.3)。命令假定文件保存在 `~/Downloads`，如下载位置不同，请修改对应路径。工具箱使用新建目录，不要直接覆盖已有安装及其数据。
 
-Run the setup blocks in the **same Bash session**:
+以下配置命令需在**同一个 Bash 会话**中执行：
 
 ```bash
 steam_dir="$HOME/.local/share/Steam"
@@ -61,11 +41,9 @@ unzip "$HOME/Downloads/AstralParty.Toys-v2.3.3-win-x64-self-contained-portable.z
   -d "$app_dir"
 ```
 
-`AstralParty.Toys.exe` should now be directly inside `app_dir`. The self-contained
-package supplies .NET; it does not supply WebView2.
+解压后，`AstralParty.Toys.exe` 应直接位于 `app_dir` 内。自包含发布包自带 .NET，但不包含 WebView2。
 
-Use this temporary shell helper for setup commands. It runs Windows utilities
-through the same Proton and Steam runtime used by the launcher below:
+定义以下临时函数，供后续配置命令使用。它通过与启动器相同的 Proton 和 Steam Runtime 运行 Windows 工具：
 
 ```bash
 run_in_prefix() {
@@ -79,15 +57,11 @@ run_in_prefix() {
 }
 ```
 
-## 2. Create an independent prefix and install WebView2
+## 2. 创建独立前缀并安装 WebView2
 
-Do **not** run the toolbox in `steamapps/compatdata/2622000`. Steam can wait for
-existing processes in that Wine prefix before launching the game, so keeping the
-toolbox open there can prevent the game from starting. This recipe instead uses
-`$app_dir/compatdata`, leaving Steam's game prefix in place.
+**不要**把工具箱放在游戏的 `steamapps/compatdata/2622000` 前缀中运行。Steam 启动游戏前可能等待该 Wine 前缀内已有的进程退出，工具箱一直开着就可能阻塞游戏启动。本文为工具箱单独使用 `$app_dir/compatdata`，保留 Steam 原有的游戏前缀。
 
-Download Microsoft's [WebView2 Evergreen standalone x64 installer](https://developer.microsoft.com/en-us/microsoft-edge/webview2/#download-section)
-and install it into the toolbox prefix:
+下载微软提供的 [WebView2 Evergreen 独立 x64 安装包](https://developer.microsoft.com/en-us/microsoft-edge/webview2/#download-section)，安装到工具箱前缀：
 
 ```bash
 webview_installer="$HOME/Downloads/MicrosoftEdgeWebView2RuntimeInstallerX64.exe"
@@ -99,23 +73,15 @@ run_in_prefix "$app_dir/compatdata" "$app_dir" \
   "$webview_installer" /silent /install
 ```
 
-The download is Evergreen, so its version can differ from the tested version.
-HTTP/1.1 was needed for this download in the tested environment; do not disable
-certificate verification to work around a failed download.
+Evergreen 下载地址提供的版本可能与实测版本不同。实测环境下载时需要使用 HTTP/1.1；下载失败时不要通过关闭证书校验来绕过问题。
 
-Retain Proton's default application compatibility settings. Forcing
-`msedgewebview2.exe` to Windows 10 produced a blank interface in the tested setup;
-restoring Proton's default override allowed WebView2 to render again. Do not apply
-a global Windows-version override to the prefix.
+保留 Proton 默认的应用兼容性设置。实测中，将 `msedgewebview2.exe` 强制设为 Windows 10 后出现过界面空白，恢复 Proton 默认覆盖设置后可再次显示界面。不要给整个前缀统一覆盖 Windows 版本。
 
-## 3. Connect Steam and existing game data
+## 3. 关联 Steam 与现有游戏数据
 
-### Steam URL handler
+### Steam URL 协议
 
-The toolbox uses `steam://rungameid/2622000` for the normal Steam launch mode. The
-independent prefix's Windows Steam stub is not the native Linux Steam client.
-Register the URI handler **only in the toolbox prefix** so Wine hands it to the
-host's browser/URL integration:
+工具箱的正常 Steam 启动方式使用 `steam://rungameid/2622000`。独立前缀中的 Windows Steam 入口并不等同于宿主上的原生 Steam 客户端。**仅在工具箱前缀内**注册以下 URI 处理方式，让 Wine 将请求交给宿主的浏览器／URL 集成：
 
 ```bash
 run_in_prefix "$app_dir/compatdata" "$app_dir" reg.exe add \
@@ -127,21 +93,17 @@ run_in_prefix "$app_dir/compatdata" "$app_dir" reg.exe add \
   /d '"C:\windows\system32\winebrowser.exe" "%1"' /f
 ```
 
-The host must already associate Steam URLs with native Steam. Check with:
+宿主需要已将 Steam URL 关联到原生 Steam。可执行：
 
 ```bash
 xdg-mime query default x-scheme-handler/steam
 ```
 
-The tested system returned `steam.desktop`. If no Steam handler is registered,
-repair your distribution's Steam desktop integration before testing the button.
-This does not require changing Steam's game launch options.
+实测系统返回 `steam.desktop`。如果没有注册 Steam 处理程序，请先修复发行版的 Steam 桌面集成，再测试按钮；不需要为此修改游戏的 Steam 启动选项。
 
-### Existing saves, accounts, and replay cache
+### 现有存档、账号与回放缓存
 
-A separate prefix otherwise has a separate Windows user-data directory. Expose
-only the existing game's `LocalLow/feimo` directory at the location the toolbox
-expects, rather than copying saves or sharing the entire prefix:
+独立前缀有自己的 Windows 用户数据目录。只将游戏原有的 `LocalLow/feimo` 链接到工具箱预期的位置，不复制存档，也不共享整个前缀：
 
 ```bash
 game_data="$game_compat/pfx/drive_c/users/steamuser/AppData/LocalLow/feimo"
@@ -151,26 +113,15 @@ mkdir -p "$tools_local_low"
 ln -s "$game_data" "$tools_local_low/feimo"
 ```
 
-The source `game_data` must already exist. If the destination `feimo` already
-exists, stop and inspect its contents; do not replace or delete existing profiles
-to force this command through. This is a fresh-install recipe, not an automatic
-migration from another toolbox prefix.
+源目录 `game_data` 必须已经存在。如果目标位置已有 `feimo`，请先停止并检查内容，不要为了执行命令而覆盖或删除现有档案。本文适用于新建安装，不会自动迁移其他工具箱前缀中的数据。
 
-**This link grants the toolbox access to the real game data.** It is not a copy:
-profile operations and replay management can affect the game's files. Keep the
-game closed during setup and data-management operations. Ordinary toolbox data
-remains separate under the toolbox prefix's
-`drive_c/users/steamuser/Documents/AstralParty.Toys`.
+**此链接让工具箱直接访问真实游戏数据，并非复制副本。** 账号档案操作和回放管理可能影响游戏文件；配置和管理数据时保持游戏关闭。工具箱自己的普通数据仍单独位于其前缀内的 `drive_c/users/steamuser/Documents/AstralParty.Toys`。
 
-## 4. Install the loader and its per-game DLL override
+## 4. 安装加载器并设置游戏专用 DLL 覆盖
 
-For an existing CesiumLoader installation, skip the fresh-install extraction and
-use the toolbox's normal loader-management flow with the game fully closed. Do not
-overwrite a `version.dll` belonging to another loader.
+已有 CesiumLoader 时，跳过下面的新安装解压步骤，在游戏完全退出后使用工具箱的常规加载器管理功能。不要覆盖属于其他加载器的 `version.dll`。
 
-For the tested fresh installation, extract the loader components next to the game
-executable. Keep the archive's directory structure. Move the release manifest into
-the loader directory so the toolbox can recognize ownership and version:
+实测的新安装将加载器组件解压到游戏主程序旁，保留压缩包内的目录结构，再将发布清单移入加载器目录，让工具箱识别归属和版本：
 
 ```bash
 unzip "$HOME/Downloads/cesium-loader-3.8.3.zip" \
@@ -181,12 +132,9 @@ mv "$game_dir/cesium-loader.json" \
   "$game_dir/AstralParty_ModLoader/cesium-loader.json"
 ```
 
-Optional skin assets are distributed separately; see the
-[CesiumLoader documentation](https://github.com/higashitaniyume/CesiumLoader).
-The base loader archive is sufficient for loader initialization.
+可选皮肤资源单独分发，见 [CesiumLoader 文档](https://github.com/higashitaniyume/CesiumLoader)。基础加载器压缩包已足够完成加载器初始化。
 
-Tell Proton to load the native `version.dll` for this executable. This command
-belongs to the **game prefix**, unlike the WebView2 and Steam-handler commands:
+为此游戏主程序设置原生 `version.dll` 优先加载。与安装 WebView2 和注册 Steam 协议不同，这条命令作用于**游戏前缀**：
 
 ```bash
 run_in_prefix "$game_compat" "$game_dir" reg.exe add \
@@ -194,15 +142,11 @@ run_in_prefix "$game_compat" "$game_dir" reg.exe add \
   /v version /t REG_SZ /d native,builtin /f
 ```
 
-This is an executable-specific override. It avoids replacing existing Steam
-launch options or applying the override to unrelated applications. Leave the
-loader's Steam/TapTap bypass settings off, the default account profile selected,
-and the base speed at 1.0 for the initial test.
+该覆盖只针对这个 EXE，不会替换已有的 Steam 启动选项，也不会应用到其他程序。首次测试时，保持加载器的 Steam/TapTap 绕过开关关闭，使用默认账号档案，基础倍率设为 1.0。
 
-## 5. Add a launcher
+## 5. 创建启动器
 
-Create `~/.local/bin/astralparty-toys`. If you changed `app_dir`, `steam_dir`, or the
-Steam tool locations above, adjust the corresponding paths in this script too.
+创建 `~/.local/bin/astralparty-toys`。如果前面调整了 `app_dir`、`steam_dir` 或 Steam 工具位置，也需修改脚本内的对应路径。
 
 ```bash
 mkdir -p "$HOME/.local/bin"
@@ -229,12 +173,9 @@ SH
 chmod +x "$HOME/.local/bin/astralparty-toys"
 ```
 
-The `d3d9=b` override is limited to the toolbox process tree. It fixed a black WPF
-window after tiling/resizing in the tested environment; it does not change the
-game's rendering configuration. Keep `proton run`, rather than replacing it with
-`runinprefix` or a different Wine installation.
+`d3d9=b` 仅作用于工具箱进程树。实测中，它解决了窗口平铺或调整大小后 WPF 界面变黑的问题，不改变游戏的渲染配置。保留 `proton run`，不要改成 `runinprefix` 或混用其他 Wine 安装。
 
-Optionally add an application-menu entry:
+如需应用菜单入口，可创建：
 
 ```bash
 mkdir -p "$HOME/.local/share/applications"
@@ -250,66 +191,29 @@ Categories=Game;
 EOF
 ```
 
-If installed, `desktop-file-validate` can check that entry. The shell launcher can
-also be run directly as `~/.local/bin/astralparty-toys`.
+如已安装 `desktop-file-validate`，可用它检查此桌面文件；也可直接运行 `~/.local/bin/astralparty-toys`。
 
-## 6. Select the game and verify a fresh launch
+## 6. 选择游戏并验证本次启动
 
-1. Open the toolbox and add/select the directory containing `AstralParty_CN.exe`.
-   Browse through Wine's **Z:** drive to the Linux path in `game_dir`. Do not copy
-   an **S:** drive path from the game's prefix: drive mappings can differ between
-   prefixes, and automatic Windows Steam-library detection may not find native
-   Steam.
-2. Confirm the toolbox recognizes CesiumLoader and its version.
-3. In the overview, select the normal **Steam** launch mode and click the toolbox's
-   **Launch game** button. Do not use either Steam/TapTap bypass mode for this test.
-4. Keep the toolbox open. Verify that Steam creates a new game process and the
-   actual game window reaches its start screen.
-5. Check a **newly timestamped** log for this launch under
-   `AstralParty_ModLoader/logs/cesium-loader-*.log`. It should report native
-   `version.dll` loading, bypass switches off, and a successful summary for the
-   enabled mods. A previous session's successful log does not verify this launch.
+1. 打开工具箱，添加或选择包含 `AstralParty_CN.exe` 的游戏目录。从 Wine 的 **Z:** 盘进入 `game_dir` 对应的 Linux 路径。不要照搬游戏前缀中的 **S:** 盘路径：两个前缀的盘符映射可能不同，Windows Steam 库的自动检测也不一定能找到原生 Steam。
+2. 确认工具箱能识别 CesiumLoader 及其版本。
+3. 在「概览」选择「从 **Steam** 启动」，点击工具箱的「**启动游戏**」按钮。本次测试不要使用 Steam/TapTap 绕过方式。
+4. 保持工具箱打开，确认 Steam 创建了新的游戏进程，且实际游戏窗口到达开始界面。
+5. 检查 `AstralParty_ModLoader/logs/cesium-loader-*.log` 下**时间对应本次启动的新日志**。日志应记录原生 `version.dll` 已加载、绕过开关关闭，启用的模组加载成功。旧会话的成功日志不能证明这次启动成功。
 
-An invocation of the Steam URL alone is not proof that the game started. Steam's
-`logs/console_log.txt` can distinguish URI receipt, `CreatingProcess`, and
-`WaitingGameWindow`; confirm the actual game window as well.
+仅收到 Steam URL 不代表游戏已经启动。Steam 的 `logs/console_log.txt` 可区分 URI 接收、`CreatingProcess` 和 `WaitingGameWindow` 等阶段，还需确认实际游戏窗口。
 
-## Known limitations and troubleshooting
+## 已知限制与排障
 
-- **The toolbox may report the game as stopped while it is running.** Windows
-  process enumeration in one Wine prefix does not reliably see the game in the
-  other prefix. Do not rely on this status as a safety check: fully exit the game
-  before changing loader/mod files or managing game data.
-- **X11 monitor/input errors can terminate the toolbox.** `BadRRCrtc` in RANDR
-  `RRGetCrtcInfo`, and `XI_BadDevice`, were observed under niri/xwayland-satellite,
-  including after long runs. Restart the toolbox after a crash. Include your
-  compositor, monitor layout/scaling, and recent display/input changes in reports;
-  the exact trigger was not isolated. This recipe is not a permanent fix for those
-  failures, and disabling the compositor or GPU globally is not part of it.
-- **A blank or black toolbox window is not evidence of loader failure.** Check the
-  toolbox-only `d3d9=b` setting and retain Proton's default WebView2 compatibility
-  settings. WebView2 must be installed in the toolbox prefix, not just the game
-  prefix.
-- **The button reaches Steam, but no game window appears.** If Steam stays at
-  `CheckShaderDepotManifest` without creating the game process, exit other games
-  normally, fully exit Steam, reopen it, and try the toolbox button again. This
-  stall was observed in an existing Steam session; a subsequent launch completed
-  after restarting Steam. Do not work around it by enabling Steam bypass or
-  repeatedly reinstalling the loader.
+- **游戏运行时，工具箱可能仍显示未运行。** 一个 Wine 前缀中的 Windows 进程枚举不能可靠识别另一个前缀里的游戏。不要把此状态当作安全检查：修改加载器／模组文件或管理游戏数据前，务必完全退出游戏。
+- **X11 显示器或输入错误可能导致工具箱退出。** 在 niri/xwayland-satellite 下观察到过 RANDR `RRGetCrtcInfo` 的 `BadRRCrtc`，以及 `XI_BadDevice`，部分发生在长时间运行之后。崩溃后可重新打开工具箱；反馈时请提供合成器、显示器布局／缩放及近期显示器或输入设备变化。具体触发条件尚未确认，本文并未永久修复这些故障，也不要求全局关闭合成器或 GPU。
+- **工具箱空白或黑屏不等于加载器失效。** 检查工具箱专用的 `d3d9=b`，保留 Proton 默认的 WebView2 兼容性设置。WebView2 必须安装在工具箱前缀中，仅装在游戏前缀里不够。
+- **按钮已交给 Steam，但没有游戏窗口。** 如果 Steam 一直停在 `CheckShaderDepotManifest`，没有创建游戏进程，请先正常退出其他游戏，再完全退出并重新打开 Steam，然后重试工具箱按钮。已有 Steam 会话中曾出现此问题，重启 Steam 后成功启动了游戏。不要通过启用 Steam 绕过或反复重装加载器来处理。
 
-## Updates and removal
+## 更新与卸载
 
-Follow the [normal update instructions](../README.md#安装), preserving the
-independent prefix and its toolbox data. A different release is a new compatibility
-test; the result above does not certify future Proton, WebView2, or toolbox versions.
+按[常规更新说明](../README.md#安装)操作，保留独立前缀及其中的工具箱数据。更换版本后需要重新验证兼容性；上述结果不保证未来的 Proton、WebView2 或工具箱版本也能工作。
 
-To remove the loader, first exit the game and use the toolbox's normal uninstall
-flow. See [loader recovery](loader-recovery.md) for the distinction between disabling
-and uninstalling it. Remove the executable-specific `version` registry value added
-above, or restore its previous value if it existed. The application-menu entry and
-shell launcher can be removed separately.
+卸载加载器前先退出游戏，再使用工具箱的常规卸载功能。「停用」与「卸载」的区别见[加载器恢复说明](loader-recovery.md)。删除前面添加的 EXE 专用 `version` 注册表值；如果此前已有该值，则恢复原值。应用菜单入口和 shell 启动器可以单独移除。
 
-Before deleting the toolbox directory, preserve any wanted replay library and
-configuration inside its prefix. Do **not** delete Steam's `compatdata/2622000` or
-the original `LocalLow/feimo` directory as part of removing the toolbox. The data link
-is not a backup of that directory.
+删除工具箱目录前，先保留其前缀中需要的回放库和配置。**不要**因卸载工具箱而删除 Steam 的 `compatdata/2622000` 或游戏原始 `LocalLow/feimo` 目录；前面的数据链接并不是备份。
