@@ -98,7 +98,7 @@
       if(asset.startsWith('UT_Item_StandingPainting_'))return '立绘物品图标';
       return asset;
     },
-    imageUrl(path){return 'https://characters.aspatoys.hiynet.localhost/'+encodeURIComponent(this.selected)+'/'+String(path).split(/[\\/]/).map(encodeURIComponent).join('/');},
+    imageUrl(path){return assetUrl('characters', this.selected, ...String(path).split(/[\\/]/));},
     renderDetail(){
       const samePackage=this.viewPackage===this.selected;
       const galleryScroll=samePackage?($('csFrameGrid')?.scrollTop||0):0;
@@ -208,5 +208,5 @@
     stop(){clearTimeout(this.timer);this.timer=null;this.playing=false;if($('csPlay'))$('csPlay').textContent='播放预览';}
   };
   window.CharacterSkinsModule=module;
-  document.addEventListener('DOMContentLoaded',()=>module.init());
+  if (!host.isLinux) document.addEventListener('DOMContentLoaded',()=>module.init());
 })();

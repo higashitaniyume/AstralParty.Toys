@@ -3,6 +3,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // Apply i18n translations to DOM
   window.i18n?.applyDOM();
 
+  if (host.isLinux) {
+    showPage('home', { immediate: true });
+    return;
+  }
+
+  for (const image of document.querySelectorAll('[data-lobby-asset]')) {
+    image.src = assetUrl('assets', ...image.dataset.lobbyAsset.split('/'));
+  }
+
   // Initialize Replay Module
   if (window.ReplayModule) {
     window.ReplayModule.init();

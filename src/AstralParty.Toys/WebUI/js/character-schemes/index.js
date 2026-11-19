@@ -1,5 +1,5 @@
 // character-schemes/index.js - Bootstrap
 (() => {
   'use strict';
-  document.addEventListener("DOMContentLoaded", () => window.CharacterSchemesModule.init());
+  if (!host.isLinux) document.addEventListener("DOMContentLoaded", () => window.CharacterSchemesModule.init());
 })();

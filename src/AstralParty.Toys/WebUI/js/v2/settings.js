@@ -2,6 +2,7 @@
 // 数据仍由原版保存：语言 / 动画（i18n、localStorage）、游戏目录（GameLibModule）、回放库设置（AppState.librarySettings）、版本（VersionModule）。
 // 版本详情、更新日志两个弹窗沿用原版。
 (function () {
+  if (host.isLinux) return;
   const G = { scan: null, tab: 'ui', logs: [], logsAsked: false, logsLoaded: false };   // 扫描状态：{ mode, running, message, current, candidates }
   const U = () => window.V2UI;
   const I = () => window.V2UI.ICON;
@@ -481,11 +482,11 @@
     const vm = window.VersionModule;
     if (vm?.render) { const o = vm.render; vm.render = function (...a) { const r = o.apply(this, a); render(); return r; }; }
     // 加了游戏目录后，扫描结果里的「已添加」要跟着变
-    window.chrome?.webview?.addEventListener('message', e => {
-      if (e.data?.type === 'appUninstallInfo') return openUninstall(e.data.payload || {});
-      if (e.data?.type === 'appUninstallResult') return showUninstallResult(e.data.payload || {});
-      if (e.data?.type !== 'gameProfiles' || !G.scan?.candidates) return;
-      const dirs = new Set((e.data.payload?.profiles || []).map(p => String(p.directory).toLowerCase()));
+    host.onMessage(msg => {
+      if (msg?.type === 'appUninstallInfo') return openUninstall(msg.payload || {});
+      if (msg?.type === 'appUninstallResult') return showUninstallResult(msg.payload || {});
+      if (msg?.type !== 'gameProfiles' || !G.scan?.candidates) return;
+      const dirs = new Set((msg.payload?.profiles || []).map(p => String(p.directory).toLowerCase()));
       G.scan.candidates.forEach(c => { if (dirs.has(String(c.directory).toLowerCase())) c.alreadyAdded = true; });
       setTimeout(render);
     });

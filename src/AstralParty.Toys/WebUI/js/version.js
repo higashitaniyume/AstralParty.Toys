@@ -4,13 +4,12 @@
 // 所以"自己 dotnet build 的"也一样说得清是哪一版、哪个提交、什么配置，
 // 而不是给一个脱离上下文的数字。这里只负责显示，不猜任何版本。
 (function () {
-  // 纯浏览器里打开 index.html 预览时没有宿主：如实说"没有宿主"，而不是一直显示"读取中"
-  const HOST_AVAILABLE = Boolean(window.chrome?.webview);
 
   const VersionModule = {
     info: null,
 
     init() {
+      if (host.isLinux) return;
       $('appVersionChip')?.addEventListener('click', () => this.showDetails());
       $('dockVersionBtn')?.addEventListener('click', () => this.showDetails());
       $('aboutVersionDetailBtn')?.addEventListener('click', () => this.showDetails());
@@ -18,12 +17,13 @@
       // 大厅「公告位」更新卡片：关闭（记住这一版不再提示）/ 查看完整日志
       $('lobbyWhatsNewClose')?.addEventListener('click', () => this.dismissWhatsNew());
       $('lobbyWhatsNewMore')?.addEventListener('click', () => this.requestChangelog('app'));
-      if (!HOST_AVAILABLE) this.render(null);
+      if (!host.available) this.render(null);
       // 有宿主时保留「读取中」，等待真实版本消息；初始化延迟不代表版本缺失。
     },
 
     render(payload) {
       this.info = payload || null;
+      if (host.isLinux) return;
       const chipValue = $('appVersionChipValue');
       const chipCommit = $('appVersionChipCommit');
       const dockValue = $('dockVersionValue');
@@ -170,8 +170,9 @@
 
     /// 打开更新日志弹窗并切到指定 Tab（'app' | 'loader'）。
     requestChangelog(tab) {
+      if (host.isLinux) return;
       tab = tab === 'loader' ? 'loader' : 'app';
-      if (!HOST_AVAILABLE) {
+      if (!host.available) {
         openModal('更新日志', '<p class="changelog-empty">在 AstralParty.Toys 程序窗口里打开这一页才能查看更新日志。</p>');
         return;
       }
@@ -253,7 +254,7 @@
     // ======================== 大厅「公告位」：更新卡片（按版本只弹一次） ========================
     // 存 changelogSeenVersion：当前版本 != 存的值就显示；点「知道了」写入当前版本；更新后自然再现一次。
     maybeShowWhatsNew() {
-      if (!HOST_AVAILABLE) return;
+      if (!host.available) return;
       const v = this.info?.version;
       if (!v) return;
       if (window.localStorage.getItem('changelogSeenVersion') === v) return;

@@ -107,6 +107,10 @@ body.page-home-active .page-container { height: auto; }
 #homeView.in-game-lobby::before, #homeView.in-game-lobby::after { display: none; }
 #marketView { display: block; overflow-y: auto; }
 #marketView.hidden { display: none !important; }
+
+/* Native Linux uses system decorations and only exposes the overview. */
+:root[data-host="linux"] { --v2-side: 0px; --v2-top: 0px; }
+:root[data-host="linux"] .global-header { display: none; }
 .v2-legacy[hidden] { display: none !important; }
 
 /* 自绘标题栏（仿 BazaarPlusPlus）：图标 名称 版本 …… 链接 │ 窗口按钮。系统标题栏已在 HybridWindow.xaml 隐藏 */
@@ -209,6 +213,23 @@ body.v2-maximized .v2-win .restore { display: block; }
 .v2-split { display: inline-flex; }
 .v2-split .v2-btn:first-child { border-radius: 8px 0 0 8px; }
 .v2-split .v2-btn:last-child { border-radius: 0 8px 8px 0; padding: 0 8px; border-left: 1px solid rgba(0, 0, 0, .25); }
+
+.v2-linux-game { flex: 1; min-width: 0; }
+.v2-linux-actions { flex-wrap: wrap; }
+.v2-linux-target { overflow-wrap: anywhere; }
+:root[data-host="linux"] .v2-notice span { overflow-wrap: anywhere; white-space: pre-line; }
+.v2-linux-log {
+  margin: 0 18px 12px;
+  padding: 12px;
+  max-height: 18rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--v2-well);
+  border: 1px solid var(--v2-border);
+  border-radius: 8px;
+  font: 12px/1.5 var(--v2-mono);
+}
 
 details.v2-card > summary { list-style: none; display: flex; align-items: center; padding: 14px 18px; cursor: pointer; }
 details.v2-card > summary::-webkit-details-marker { display: none; }
