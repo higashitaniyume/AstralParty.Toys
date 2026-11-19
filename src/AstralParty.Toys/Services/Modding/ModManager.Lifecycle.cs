@@ -135,27 +135,6 @@ public sealed partial class ModManager
         return (ok, failed.ToArray());
     }
 
-    /// <summary>按文件名定位 mod（DLL 路径 + 文件夹名 + 所在根目录）。
-    /// 新布局: {root}\{FolderName}\{FolderName}.dll; 旧布局: {root}\{FileName}.dll。
-    /// 先找 <c>mods</c>（启用的），再找同级的 <c>disabled_mods</c>（停用的）。</summary>
-    private static (string? Dll, string? DirectoryName, string Root) ResolveModPath(string modsDir, string fileName)
-    {
-        if (string.IsNullOrWhiteSpace(fileName)) return (null, null, modsDir);
-        var loaderRoot = Path.GetDirectoryName(modsDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
-                         ?? modsDir;
-        var stem = Path.GetFileNameWithoutExtension(fileName);
-        foreach (var root in new[] { modsDir, Path.Combine(loaderRoot, DisabledModsFolderName) })
-        {
-            // 新布局优先
-            var inFolder = Path.Combine(root, stem, fileName);
-            if (File.Exists(inFolder)) return (inFolder, stem, root);
-            // 旧布局平铺
-            var flat = Path.Combine(root, fileName);
-            if (File.Exists(flat)) return (flat, null, root);
-        }
-        return (null, null, modsDir);
-    }
-
     /// <summary>从游戏 mods / disabled_mods 目录删除一个 mod（含整个模组文件夹）。</summary>
     public ModEntryInfo? DeleteMod(string gameDirectory, string fileName)
     {

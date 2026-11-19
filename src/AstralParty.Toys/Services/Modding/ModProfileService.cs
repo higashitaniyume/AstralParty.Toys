@@ -1,4 +1,3 @@
-using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using AstralParty.Toys.Models;
@@ -13,20 +12,10 @@ namespace AstralParty.Toys.Services.Modding;
 /// <c>&lt;数据根&gt;\state\mod-profiles.json</c>，不放进游戏的 <c>AstralParty_ModLoader</c>
 /// （完整卸载会删掉整个目录，方案不该跟着丢）。
 /// </summary>
-public sealed class ModProfileService
+public sealed partial class ModProfileService
 {
-    public const string ProfilesFileName = "mod-profiles.json";
-
-    /// <summary>方案名规则（唯一来源：宿主把同一个正则下发给页面做实时校验）。
-    /// 允许中文、字母、数字、空格、下划线与连字符，1–32 个字符。</summary>
-    public const string NamePattern = @"^[\p{L}\p{N} _-]{1,32}$";
-
-    public const int MaxNameLength = 32;
-    public const int MaxNoteLength = 256;
-
     private static readonly object Gate = new();
     private static readonly Regex NameRegex = new(NamePattern, RegexOptions.CultureInvariant);
-    private static readonly UTF8Encoding Utf8NoBom = new(false);
 
     private readonly ModManager _modManager;
     private readonly ModRollbackJournal _journal;
@@ -41,8 +30,7 @@ public sealed class ModProfileService
     /// <summary>当前游戏目录（可为空：只能看方案列表，不能捕获 / 套用）。</summary>
     public string GameDirectory { get; }
 
-    public string ProfilesPath =>
-        Path.Combine(_modManager.ProfileDirectory, ToysPaths.StateFolderName, ProfilesFileName);
+    public string ProfilesPath => GetStorePath(_modManager.ProfileDirectory);
 
     public ModRollbackJournal Journal => _journal;
 
@@ -55,30 +43,14 @@ public sealed class ModProfileService
 
     private ModProfileStore LoadCore()
     {
-        var store = TryRead(ProfilesPath) ?? TryRead(ProfilesPath + ".bak");
+        var store = ReadStore(ProfilesPath);
         if (store is null)
         {
             if (File.Exists(ProfilesPath))
                 ToysLog.Warn("mods", $"方案文件无法解析，已按空列表处理：{ProfilesPath}");
             return new ModProfileStore();
         }
-        Normalize(store);
         return store;
-    }
-
-    private static ModProfileStore? TryRead(string path)
-    {
-        try
-        {
-            if (!File.Exists(path)) return null;
-            var text = File.ReadAllText(path);
-            if (string.IsNullOrWhiteSpace(text)) return null;
-            return JsonSerializer.Deserialize<ModProfileStore>(text, ModProfileJson.Options);
-        }
-        catch
-        {
-            return null;
-        }
     }
 
     public List<ModProfileSummary> List()
@@ -86,8 +58,7 @@ public sealed class ModProfileService
         lock (Gate)
         {
             var store = LoadCore();
-            var mods = CurrentMods();
-            return store.Profiles.Select(p => Summary(p, store.Active, mods)).ToList();
+            return Summarize(store, GameDirectory, _modManager.GetInstalledMods(GameDirectory), ReadSummaryLoaderConfig());
         }
     }
 
@@ -438,38 +409,6 @@ public sealed class ModProfileService
 
     private static string Now() => DateTime.UtcNow.ToString("o");
 
-    private void Normalize(ModProfileStore store)
-    {
-        store.Profiles ??= new List<ModProfile>();
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var kept = new List<ModProfile>();
-        foreach (var profile in store.Profiles)
-        {
-            if (profile is null) continue;
-            var name = (profile.Name ?? "").Trim();
-            if (name.Length == 0 || name.Length > MaxNameLength) continue;
-            if (!seen.Add(name)) continue;
-            profile.Name = name;
-            profile.Note = ClampNote(profile.Note);
-            profile.Mods ??= new List<ModProfileMod>();
-            var modSeen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            profile.Mods = profile.Mods
-                .Where(m => m is not null && !string.IsNullOrWhiteSpace(m.Name))
-                .Where(m => modSeen.Add(m.Name.Trim()))
-                .ToList();
-            foreach (var mod in profile.Mods) mod.Name = mod.Name.Trim();
-            profile.Loader ??= new ModProfileLoaderSettings();
-            kept.Add(profile);
-        }
-        store.Profiles = kept;
-
-        if (!string.IsNullOrEmpty(store.Active))
-        {
-            var active = kept.FirstOrDefault(p => string.Equals(p.Name, store.Active.Trim(), StringComparison.OrdinalIgnoreCase));
-            store.Active = active?.Name ?? "";
-        }
-    }
-
     private static ModProfile? FindCore(ModProfileStore store, string? name)
     {
         var value = (name ?? "").Trim();
@@ -484,37 +423,10 @@ public sealed class ModProfileService
         ToysConfigStore.WriteAtomic(ProfilesPath, JsonSerializer.Serialize(store, ModProfileJson.Options));
     }
 
-    private Dictionary<string, ModEntryInfo> CurrentMods()
-    {
-        var map = new Dictionary<string, ModEntryInfo>(StringComparer.OrdinalIgnoreCase);
-        if (string.IsNullOrWhiteSpace(GameDirectory)) return map;
-        foreach (var mod in _modManager.GetInstalledMods(GameDirectory))
-        {
-            if (!string.IsNullOrWhiteSpace(mod.Name)) map[mod.Name] = mod;
-        }
-        return map;
-    }
+    private Dictionary<string, ModEntryInfo> CurrentMods() => IndexMods(_modManager.GetInstalledMods(GameDirectory));
 
-    /// <summary>有效启用状态：目录在 <c>mods</c> 里 **且** sidecar 没有写 enabled=false（加载器两者都看）。</summary>
-    private static bool EffectiveEnabled(ModEntryInfo mod) => !mod.DisabledFolder && mod.Enabled;
 
-    private (string? Text, bool HasBom) ReadConfigState(string fileName)
-    {
-        if (string.IsNullOrWhiteSpace(GameDirectory)) return (null, false);
-        var path = _modManager.ModConfigPath(GameDirectory, fileName);
-        if (path is null) return (null, false);
-        try
-        {
-            var bytes = File.ReadAllBytes(path);
-            var bom = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
-            var text = Utf8NoBom.GetString(bytes, bom ? 3 : 0, bytes.Length - (bom ? 3 : 0));
-            return (text, bom);
-        }
-        catch
-        {
-            return (null, false);
-        }
-    }
+    private (string? Text, bool HasBom) ReadConfigState(string fileName) => ReadConfigState(GameDirectory, fileName);
 
     private ModProfile BuildProfile(string name, bool includeConfigs, bool includeLoader)
     {
@@ -557,61 +469,14 @@ public sealed class ModProfileService
 
     private ModProfileSummary Summary(ModProfile profile, string active, Dictionary<string, ModEntryInfo> mods)
     {
-        var missing = 0;
-        foreach (var mod in profile.Mods)
-        {
-            if (!mods.ContainsKey(mod.Name)) missing++;
-        }
-
-        var problem = "";
-        if (string.IsNullOrWhiteSpace(GameDirectory) || !Directory.Exists(GameDirectory))
-            problem = "还没有选择游戏目录。";
-        else if (!Directory.Exists(Path.Combine(GameDirectory, ModManager.LoaderFolderName)))
-            problem = "这个游戏目录里没有加载器。";
-        else if (profile.Mods.Count == 0 && !profile.IncludesLoader)
-            problem = "方案里没有记录任何内容。";
-
-        return new ModProfileSummary
-        {
-            Name = profile.Name,
-            Note = profile.Note,
-            UpdatedAtUtc = profile.UpdatedAtUtc,
-            Active = string.Equals(active, profile.Name, StringComparison.OrdinalIgnoreCase),
-            ModCount = profile.Mods.Count,
-            EnabledCount = profile.Mods.Count(m => m.Enabled),
-            MissingCount = missing,
-            Dirty = problem.Length == 0 && IsDirty(profile, mods),
-            IncludesLoader = profile.IncludesLoader,
-            IncludesConfigs = profile.IncludesConfigs,
-            Problem = problem
-        };
+        var gameExists = Directory.Exists(GameDirectory);
+        var loaderExists = gameExists && Directory.Exists(Path.Combine(GameDirectory, ModManager.LoaderFolderName));
+        var loader = loaderExists && profile.IncludesLoader ? ReadSummaryLoaderConfig() : null;
+        return SummarizeProfile(profile, active, mods, GameDirectory, gameExists, loaderExists, loader);
     }
 
-    private bool IsDirty(ModProfile profile, Dictionary<string, ModEntryInfo> mods)
-    {
-        foreach (var mod in profile.Mods)
-        {
-            if (!mods.TryGetValue(mod.Name, out var current)) continue;   // 缺失不算改动
-            if (EffectiveEnabled(current) != mod.Enabled) return true;
-            if (profile.IncludesConfigs && mod.Config is not null)
-            {
-                var (text, hasBom) = ReadConfigState(current.FileName);
-                if (!string.Equals(text, mod.Config, StringComparison.Ordinal) || hasBom != mod.ConfigHasBom)
-                    return true;
-            }
-        }
-
-        if (profile.IncludesLoader && !string.IsNullOrWhiteSpace(GameDirectory))
-        {
-            var loaderPath = _modManager.LoaderConfigPath(GameDirectory);
-            if (File.Exists(loaderPath))
-            {
-                var current = _modManager.ReadLoaderConfig(GameDirectory);
-                if (profile.Loader.DescribeDifferences(current).Count > 0) return true;
-            }
-        }
-        return false;
-    }
+    private LoaderConfig? ReadSummaryLoaderConfig()
+        => File.Exists(_modManager.LoaderConfigPath(GameDirectory)) ? _modManager.ReadLoaderConfig(GameDirectory) : null;
 
     private ModProfilePlan BuildPlan(ModProfile profile, Dictionary<string, ModEntryInfo> mods)
     {
@@ -720,9 +585,4 @@ public sealed class ModProfileService
         if (!IsValidName(name, out var error)) throw new InvalidOperationException(error);
     }
 
-    private static string ClampNote(string? note)
-    {
-        var text = (note ?? "").Trim();
-        return text.Length <= MaxNoteLength ? text : text[..MaxNoteLength];
-    }
 }

@@ -20,85 +20,13 @@ public sealed partial class ModManager
 
     /// <summary>加载器配置完整路径。</summary>
     public string LoaderConfigPath(string gameDirectory)
-        => Path.Combine(gameDirectory, LoaderFolderName, ConfigFileName);
+        => LoaderConfigFilePath(gameDirectory);
 
     /// <summary>读取加载器配置; 文件缺失时用内置模板的默认值。</summary>
     public LoaderConfig ReadLoaderConfig(string gameDirectory)
     {
-        var path = LoaderConfigPath(gameDirectory);
-        var defaults = new LoaderConfig();
-        try
-        {
-            if (!File.Exists(path)) return defaults;
-            var json = StripJsonComments(File.ReadAllText(path));
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-            if (root.TryGetProperty("enabled", out var e) && e.ValueKind == JsonValueKind.True) defaults.Enabled = true;
-            if (root.TryGetProperty("enabled", out e) && e.ValueKind == JsonValueKind.False) defaults.Enabled = false;
-            if (root.TryGetProperty("useManagedBootstrap", out var m) && m.ValueKind == JsonValueKind.True) defaults.UseManagedBootstrap = true;
-            if (root.TryGetProperty("useManagedBootstrap", out m) && m.ValueKind == JsonValueKind.False) defaults.UseManagedBootstrap = false;
-            if (root.TryGetProperty("bootstrapAssembly", out var ba) && ba.ValueKind == JsonValueKind.String) defaults.BootstrapAssembly = ba.GetString()!;
-            if (root.TryGetProperty("bootstrapType", out var bt) && bt.ValueKind == JsonValueKind.String) defaults.BootstrapType = bt.GetString()!;
-            if (root.TryGetProperty("bootstrapMethod", out var bm) && bm.ValueKind == JsonValueKind.String) defaults.BootstrapMethod = bm.GetString()!;
-            if (root.TryGetProperty("gameAssemblyTimeoutSec", out var gt) && gt.ValueKind == JsonValueKind.Number) defaults.GameAssemblyTimeoutSec = gt.GetInt32();
-            if (root.TryGetProperty("domainTimeoutSec", out var dt) && dt.ValueKind == JsonValueKind.Number) defaults.DomainTimeoutSec = dt.GetInt32();
-            if (root.TryGetProperty("hybridclrTimeoutSec", out var ht) && ht.ValueKind == JsonValueKind.Number) defaults.HybridclrTimeoutSec = ht.GetInt32();
-            if (root.TryGetProperty("consoleEnabled", out var ce) && ce.ValueKind == JsonValueKind.True) defaults.ConsoleEnabled = true;
-            if (root.TryGetProperty("consoleEnabled", out ce) && ce.ValueKind == JsonValueKind.False) defaults.ConsoleEnabled = false;
-            if (root.TryGetProperty("consoleTopmost", out var ct) && ct.ValueKind == JsonValueKind.True) defaults.ConsoleTopmost = true;
-            if (root.TryGetProperty("consoleTopmost", out ct) && ct.ValueKind == JsonValueKind.False) defaults.ConsoleTopmost = false;
-            if (root.TryGetProperty("debugShell", out var ds) && ds.ValueKind == JsonValueKind.True) defaults.DebugShell = true;
-            if (root.TryGetProperty("debugShell", out ds) && ds.ValueKind == JsonValueKind.False) defaults.DebugShell = false;
-            if (root.TryGetProperty("forwardActivityLog", out var fa) && fa.ValueKind == JsonValueKind.True) defaults.ForwardActivityLog = true;
-            if (root.TryGetProperty("forwardActivityLog", out fa) && fa.ValueKind == JsonValueKind.False) defaults.ForwardActivityLog = false;
-            if (root.TryGetProperty("speedhackBaseSpeed", out var sp) && sp.ValueKind == JsonValueKind.Number) defaults.SpeedhackBaseSpeed = sp.GetDouble();
-            if (root.TryGetProperty("speedControlEnabled", out var sc) && sc.ValueKind == JsonValueKind.True) defaults.SpeedControlEnabled = true;
-            if (root.TryGetProperty("speedControlEnabled", out sc) && sc.ValueKind == JsonValueKind.False) defaults.SpeedControlEnabled = false;
-            if (root.TryGetProperty("windowControlEnabled", out var wc) && wc.ValueKind == JsonValueKind.True) defaults.WindowControlEnabled = true;
-            if (root.TryGetProperty("windowControlEnabled", out wc) && wc.ValueKind == JsonValueKind.False) defaults.WindowControlEnabled = false;
-            if (root.TryGetProperty("audioControlEnabled", out var ac) && ac.ValueKind == JsonValueKind.True) defaults.AudioControlEnabled = true;
-            if (root.TryGetProperty("audioControlEnabled", out ac) && ac.ValueKind == JsonValueKind.False) defaults.AudioControlEnabled = false;
-            // 排查类开关(加载器原生层): 崩溃转储 / 卡死看门狗 / 日志级别 / 等待调试器
-            if (root.TryGetProperty("crashDumpEnabled", out var cde) && cde.ValueKind == JsonValueKind.True) defaults.CrashDumpEnabled = true;
-            if (root.TryGetProperty("crashDumpEnabled", out cde) && cde.ValueKind == JsonValueKind.False) defaults.CrashDumpEnabled = false;
-            if (root.TryGetProperty("crashDumpFullMemory", out var cdf) && cdf.ValueKind == JsonValueKind.True) defaults.CrashDumpFullMemory = true;
-            if (root.TryGetProperty("crashDumpFullMemory", out cdf) && cdf.ValueKind == JsonValueKind.False) defaults.CrashDumpFullMemory = false;
-            if (root.TryGetProperty("nativeWatchdogEnabled", out var nwe) && nwe.ValueKind == JsonValueKind.True) defaults.NativeWatchdogEnabled = true;
-            if (root.TryGetProperty("nativeWatchdogEnabled", out nwe) && nwe.ValueKind == JsonValueKind.False) defaults.NativeWatchdogEnabled = false;
-            if (root.TryGetProperty("nativeWatchdogTimeoutSec", out var nwt) && nwt.ValueKind == JsonValueKind.Number) defaults.NativeWatchdogTimeoutSec = nwt.GetInt32();
-            if (root.TryGetProperty("logLevel", out var ll) && ll.ValueKind == JsonValueKind.String) defaults.LogLevel = ll.GetString()!;
-            if (root.TryGetProperty("debugWaitForDebugger", out var dwd) && dwd.ValueKind == JsonValueKind.True) defaults.DebugWaitForDebugger = true;
-            if (root.TryGetProperty("debugWaitForDebugger", out dwd) && dwd.ValueKind == JsonValueKind.False) defaults.DebugWaitForDebugger = false;
-            if (root.TryGetProperty("debugWaitTimeoutSec", out var dwt) && dwt.ValueKind == JsonValueKind.Number) defaults.DebugWaitTimeoutSec = dwt.GetInt32();
-            if (root.TryGetProperty("steamBypassEnabled", out var sb) && sb.ValueKind == JsonValueKind.True) defaults.SteamBypassEnabled = true;
-            if (root.TryGetProperty("steamBypassEnabled", out sb) && sb.ValueKind == JsonValueKind.False) defaults.SteamBypassEnabled = false;
-            if (root.TryGetProperty("steamBypassRestartCheck", out var sr) && sr.ValueKind == JsonValueKind.True) defaults.SteamBypassRestartCheck = true;
-            if (root.TryGetProperty("steamBypassRestartCheck", out sr) && sr.ValueKind == JsonValueKind.False) defaults.SteamBypassRestartCheck = false;
-            if (root.TryGetProperty("steamBypassMatchmaking", out var sm) && sm.ValueKind == JsonValueKind.True) defaults.SteamBypassMatchmaking = true;
-            if (root.TryGetProperty("steamBypassMatchmaking", out sm) && sm.ValueKind == JsonValueKind.False) defaults.SteamBypassMatchmaking = false;
-            if (root.TryGetProperty("steamBypassLobbyQuery", out var sq) && sq.ValueKind == JsonValueKind.True) defaults.SteamBypassLobbyQuery = true;
-            if (root.TryGetProperty("steamBypassLobbyQuery", out sq) && sq.ValueKind == JsonValueKind.False) defaults.SteamBypassLobbyQuery = false;
-            if (root.TryGetProperty("steamBypassLobbyHasValue", out var sh) && sh.ValueKind == JsonValueKind.True) defaults.SteamBypassLobbyHasValue = true;
-            if (root.TryGetProperty("steamBypassLobbyHasValue", out sh) && sh.ValueKind == JsonValueKind.False) defaults.SteamBypassLobbyHasValue = false;
-            if (root.TryGetProperty("steamBypassLobbyMethods", out var sl) && sl.ValueKind == JsonValueKind.True) defaults.SteamBypassLobbyMethods = true;
-            if (root.TryGetProperty("steamBypassLobbyMethods", out sl) && sl.ValueKind == JsonValueKind.False) defaults.SteamBypassLobbyMethods = false;
-            if (root.TryGetProperty("steamBypassTaskCtorMode", out var st) && st.ValueKind == JsonValueKind.String) defaults.SteamBypassTaskCtorMode = st.GetString()!;
-            if (root.TryGetProperty("tapTapBypassEnabled", out var tbe) && tbe.ValueKind == JsonValueKind.True) defaults.TapTapBypassEnabled = true;
-            if (root.TryGetProperty("tapTapBypassEnabled", out tbe) && tbe.ValueKind == JsonValueKind.False) defaults.TapTapBypassEnabled = false;
-            if (root.TryGetProperty("tapTapBypassRestartCheck", out var tbr) && tbr.ValueKind == JsonValueKind.True) defaults.TapTapBypassRestartCheck = true;
-            if (root.TryGetProperty("tapTapBypassRestartCheck", out tbr) && tbr.ValueKind == JsonValueKind.False) defaults.TapTapBypassRestartCheck = false;
-            if (root.TryGetProperty("tapTapBypassLogin", out var tbl) && tbl.ValueKind == JsonValueKind.True) defaults.TapTapBypassLogin = true;
-            if (root.TryGetProperty("tapTapBypassLogin", out tbl) && tbl.ValueKind == JsonValueKind.False) defaults.TapTapBypassLogin = false;
-            if (root.TryGetProperty("sdkVersion", out var sv) && sv.ValueKind == JsonValueKind.String) defaults.SdkVersion = sv.GetString()!;
-            if (root.TryGetProperty("profile", out var pf) && pf.ValueKind == JsonValueKind.String) defaults.Profile = pf.GetString()!;
-            if (root.TryGetProperty("profileWindowTitle", out var pwt) && pwt.ValueKind == JsonValueKind.True) defaults.ProfileWindowTitle = true;
-            if (root.TryGetProperty("profileWindowTitle", out pwt) && pwt.ValueKind == JsonValueKind.False) defaults.ProfileWindowTitle = false;
-        }
-        catch
-        {
-            // 损坏配置按默认值返回(加载器同样容错)
-        }
-        return defaults;
+        TryReadLoaderConfig(gameDirectory, out var config, out _);
+        return config;
     }
 
     /// <summary>保存加载器配置(写回 doorstop_config.json, 无注释)。
@@ -167,23 +95,6 @@ public sealed partial class ModManager
         WriteAllBytesProtected(LoaderConfigPath(gameDirectory), System.Text.Encoding.UTF8.GetBytes(json));
     }
 
-    /// <summary>日志级别规范化：与加载器 <c>normalize_log_level</c> 同口径（忽略大小写，
-    /// <c>warning</c> 归到 <c>Warn</c>，认不出的回退 <c>inherit</c>）。</summary>
-    public static string NormalizeLogLevel(string? level)
-    {
-        switch ((level ?? "").Trim().ToLowerInvariant())
-        {
-            case "inherit": return "inherit";
-            case "debug": return "Debug";
-            case "info": return "Info";
-            case "warn":
-            case "warning": return "Warn";
-            case "error": return "Error";
-            case "fatal": return "Fatal";
-            default: return "inherit";
-        }
-    }
-
     /// <summary>首页「启动方式」单选框要写的那一组键 —— 它们是**一套**，必须同开同关（见
     /// <see cref="SetSteamBypassProfile"/> 的说明：只关主开关不足以恢复原版行为）。</summary>
     public static readonly string[] SteamBypassProfileKeys =
@@ -192,13 +103,6 @@ public sealed partial class ModManager
         "steamBypassMatchmaking",  // 阶段2/3/方案B: CreateLobbyAsync / JoinLobbyAsync -> 已完成的空 Task
         "steamBypassLobbyQuery"    // 阶段5: LobbyQuery.RequestAsync -> 结果为空 Lobby[] 的已完成 Task
     ];
-
-    /// <summary>这套绕过当前是否**有任何一个**是开着的（首页单选框据此显示"绕过 Steam 启动"）。
-    ///
-    /// 用"任一为真"而不是只看主开关：只要还有一部分 hook 在起作用，Steam 那边的行为就已经不是原版了
-    /// （比如主开关关了、匹配绕过还开着 → 照样不建真大厅），此时首页绝不能显示成「从 Steam 启动」。</summary>
-    public static bool IsSteamBypassActive(LoaderConfig config)
-        => config.SteamBypassEnabled || config.SteamBypassMatchmaking || config.SteamBypassLobbyQuery;
 
     /// <summary>把「Steam 绕过」这一套开关写成同一个值：开 = 绕过模式（不装 Steam 也能玩），关 = 完全原版行为。
     /// 注释、其它键、缩进统统原样保留（就地替换字面量，不整体重写）。
@@ -290,10 +194,6 @@ public sealed partial class ModManager
         "tapTapBypassEnabled",
         "tapTapBypassRestartCheck"
     ];
-
-    /// <summary>这套 TapTap 绕过当前是否有任何一个是开着的。</summary>
-    public static bool IsTapTapBypassActive(LoaderConfig config)
-        => config.TapTapBypassEnabled || config.TapTapBypassRestartCheck;
 
     /// <summary>把「TapTap 绕过」这一套开关写成同一个值：开 = 绕过模式，关 = 完全原版行为。
     /// 保留注释、其它键与缩进（就地替换字面量，不整体重写）。</summary>

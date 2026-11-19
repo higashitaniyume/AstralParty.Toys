@@ -10,7 +10,7 @@ namespace AstralParty.Toys.Services;
 /// 只有 WebView2 用户数据目录和多开实例留在 %LOCALAPPDATA%：前者带锁文件、后者的路径要和游戏进程
 /// 保持稳定，都不能跟着数据根走。
 /// </summary>
-public static class ToysPaths
+public static partial class ToysPaths
 {
     /// <summary>默认数据文件夹（位于用户「文档」下）。</summary>
     public const string DefaultFolderName = "AstralParty.Toys";
@@ -28,7 +28,6 @@ public static class ToysPaths
     public const string CacheFolderName = "cache";
     public const string LogsFolderName = "logs";
     public const string InstallHistoryFolderName = "install-history";
-    public const string StateFolderName = "state";
     public const string BackgroundsFolderName = "backgrounds";
     public const string ToolsFolderName = "tools";
     public const string SpeedhackFolderName = "speedhack";

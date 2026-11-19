@@ -1,15 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.IO.Compression;
-using System.Linq;
-using System.Net.Http;
-using System.Security.Cryptography;
-using System.Text.Json;
-using System.Text.Json.Nodes;
-using AstralParty.Toys.Models;
-using AstralParty.Toys.Services.Common;
+﻿using AstralParty.Toys.Models;
 using AstralParty.Toys.Services.Speedhack;
 
 namespace AstralParty.Toys.Services.Modding;
@@ -24,62 +13,33 @@ public sealed partial class ModManager
         PruneHistoryIfDue();   // 每 6 小时最多一次：install-history 不无限长
         try
         {
+            var directory = GetStoredGameDirectory();
+            var autoDetectedDirectory = "";
+            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+                directory = autoDetectedDirectory = SpeedhackManager.DetectGameDirectory() ?? "";
+            var exeFound = directory.Length > 0 && SpeedhackManager.ContainsGameExe(directory) is not null;
+            status = ReadDiskStatus(directory, exeFound, SpeedhackManager.IsGameRunning(), out var manifest);
+            status.AutoDetectedDirectory = autoDetectedDirectory;
             status.BundleLoaderPresent = HasEmbeddedLoader;
             status.BundleConfigPresent = HasEmbeddedConfig;
             status.BundleSdkPresent = HasEmbeddedSdk;
             status.BundleSampleModPresent = HasEmbeddedSampleMod;
-
-            var directory = GetStoredGameDirectory();
-            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
-            {
-                directory = SpeedhackManager.DetectGameDirectory() ?? "";
-                if (!string.IsNullOrWhiteSpace(directory)) status.AutoDetectedDirectory = directory;
-            }
-            status.GameDirectory = directory;
-            status.GameExeFound = !string.IsNullOrEmpty(directory) && SpeedhackManager.ContainsGameExe(directory) is not null;
-
-            if (!string.IsNullOrEmpty(directory) && Directory.Exists(directory))
-            {
-                var dllPath = Path.Combine(directory, LoaderDllName);
-                status.LoaderPath = dllPath;
-                status.LoaderPresent = File.Exists(dllPath);
-                if (status.LoaderPresent)
-                {
-                    status.LoaderMatchesBundle = MatchesEmbeddedLoader(dllPath);
-                    // 来源判定见 ClassifyLoaderOrigin：点「安装」装的是内置哈希，点「从 GitHub 更新」装的是
-                    // 清单里记的哈希 —— 后者也是本工具装的，只是版本和本程序内置的不同。
-                    status.LoaderOrigin = ClassifyLoaderOrigin(directory, dllPath);
-                    status.LoaderManaged = status.LoaderOrigin.Length > 0;
-                    status.Installed = true;
-                }
-            }
-
-            status.GameRunning = SpeedhackManager.IsGameRunning();
-
-            // 版本来自游戏安装清单；受管理的 DLL 在清单缺失时可使用本地安装历史。
-            // 两份可靠记录都缺失时显示未知，不从日志或 SDK 版本猜加载器版本。
-            status.InstalledVersion = status.Installed
-                ? (status.LoaderManaged ? ReadCurrentInstallationVersion(directory) : ReadInstalledVersion(directory)) : "";
+            status.BundleHash = EmbeddedLoaderHash ?? "";
             status.EmbeddedVersion = EmbeddedVersion;
-            status.InstalledSdkVersion = !string.IsNullOrEmpty(directory) && Directory.Exists(directory) &&
-                                         ModManager.TryReadInstalledSdkVersion(directory, out var installedSdk)
-                ? installedSdk
-                : "";
             status.EmbeddedSdkVersion = EmbeddedSdkVersion;
 
-            // mod 列表 / SDK 列表（安装目录存在才扫）
-            var loaderRoot = string.IsNullOrEmpty(directory) ? "" : Path.Combine(directory, LoaderFolderName);
-            status.LoaderRoot = loaderRoot;
-            if (loaderRoot.Length > 0)
+            var retained = directory.Length > 0 ? ReadRetainedInstallation(directory) : null;
+            if (status.LoaderPresent)
             {
-                status.LoaderRootExists = Directory.Exists(loaderRoot);
-                status.Mods = ScanMods(Path.Combine(loaderRoot, ModsFolderName), Path.Combine(loaderRoot, DisabledModsFolderName));
-                status.Sdk = ScanMods(Path.Combine(loaderRoot, SdkFolderName));
+                status.LoaderOrigin = ClassifyLoaderOrigin(directory, status.LoaderPath, manifest, retained);
+                status.LoaderManaged = status.LoaderOrigin.Length > 0;
+                status.LoaderMatchesBundle = status.LoaderOrigin == "bundle";
+                if (status.LoaderManaged && status.InstalledVersion.Length == 0 && retained is { Removed: false })
+                    status.InstalledVersion = retained.Version;
             }
 
-            ApplyRetainedStatus(status);
-            status.BundleHash = EmbeddedLoaderHash ?? "";
-            status.Message = BuildStatusMessage(status) + (status.GameRunning
+            ApplyRetainedStatus(status, manifest, retained);
+            status.Message = BuildStatusMessage(status) + (status.GameRunning == true
                 ? " 游戏正在运行：安装、更新、停用或恢复要重启游戏才生效，version.dll 被占用时请完全退出游戏再操作。" : "");
         }
         catch (Exception ex)
@@ -116,106 +76,4 @@ public sealed partial class ModManager
             ? $"加载器已就绪，与内置版本一致（{mods}）。"
             : $"加载器已就绪（{mods}）。";
     }
-
-    /// <summary>扫描 mod 目录。给了 <paramref name="disabledDirectory"/> 时把停用的 mod 一起列出来：
-    /// 启用的排在前面，停用的强制 <see cref="ModEntryInfo.Enabled"/> = false 并标记来源目录。</summary>
-    private static List<ModEntryInfo> ScanMods(string directory, string? disabledDirectory = null)
-    {
-        var list = ScanModsIn(directory, disabled: false);
-        if (string.IsNullOrEmpty(disabledDirectory)) return list;
-        foreach (var entry in ScanModsIn(disabledDirectory, disabled: true))
-        {
-            if (list.Any(m => string.Equals(m.Name, entry.Name, StringComparison.OrdinalIgnoreCase))) continue;
-            list.Add(entry);
-        }
-        return list;
-    }
-
-    private static List<ModEntryInfo> ScanModsIn(string directory, bool disabled)
-    {
-        var list = new List<ModEntryInfo>();
-        try
-        {
-            if (!Directory.Exists(directory)) return list;
-            // 新布局: {ModId}\{ModId}.dll (每 mod 一个文件夹, sidecar 在文件夹内)
-            foreach (var sub in Directory.EnumerateDirectories(directory).OrderBy(d => d, StringComparer.OrdinalIgnoreCase))
-            {
-                var dirName = Path.GetFileName(sub);
-                var dllPath = Path.Combine(sub, dirName + ".dll");
-                if (!File.Exists(dllPath)) continue;   // 文件夹里没有同名 dll, 不是 mod 文件夹
-                list.Add(ScanModEntry(dllPath, dirName, disabled));
-            }
-            // 旧布局兼容: 根下平铺的 .dll (sidecar 在同级)
-            foreach (var file in Directory.EnumerateFiles(directory, "*.dll").OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
-            {
-                if (list.Any(m => string.Equals(m.Name, Path.GetFileNameWithoutExtension(file), StringComparison.OrdinalIgnoreCase)))
-                    continue;
-                list.Add(ScanModEntry(file, null, disabled));
-            }
-        }
-        catch
-        {
-            // 扫描失败按空列表处理
-        }
-        return list;
-    }
-
-    private static ModEntryInfo ScanModEntry(string file, string? directoryName, bool disabled = false)
-    {
-        var info = new FileInfo(file);
-        var entry = new ModEntryInfo
-        {
-            Name = Path.GetFileNameWithoutExtension(file),
-            FileName = Path.GetFileName(file),
-            DirectoryName = directoryName,
-            SizeBytes = info.Length,
-            ModifiedUtc = info.LastWriteTimeUtc,
-            DisabledFolder = disabled
-        };
-        // 同名 sidecar(新布局: mod 文件夹内 {Name}.json; 旧布局: 同目录 {Name}.json):
-        // {id,name,version,author,description,permissions,sdkVersion,dependencies}
-        var sidecar = Path.ChangeExtension(file, ".json");
-        if (File.Exists(sidecar))
-        {
-            try
-            {
-                using var doc = JsonDocument.Parse(File.ReadAllText(sidecar));
-                var root = doc.RootElement;
-                entry.Id = root.TryGetProperty("id", out var i) ? i.GetString() ?? "" : "";
-                entry.DisplayName = root.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
-                entry.Version = root.TryGetProperty("version", out var v) ? v.GetString() ?? "" : "";
-                entry.Author = root.TryGetProperty("author", out var a) ? a.GetString() ?? "" : "";
-                entry.Description = root.TryGetProperty("description", out var d) ? d.GetString() ?? "" : "";
-                entry.SdkVersion = root.TryGetProperty("sdkVersion", out var s) ? s.GetString() ?? "" : "";
-                if (root.TryGetProperty("platforms", out var plats) && plats.ValueKind == JsonValueKind.Array)
-                {
-                    var declared = new List<string>();
-                    foreach (var item in plats.EnumerateArray())
-                    {
-                        if (item.ValueKind == JsonValueKind.String) declared.Add(item.GetString() ?? "");
-                    }
-                    entry.Platforms = ModPlatforms.Normalize(declared);
-                }
-                entry.Enabled = !root.TryGetProperty("enabled", out var en) || en.ValueKind != JsonValueKind.False;
-                entry.Permissions = root.TryGetProperty("permissions", out var p) && p.ValueKind == JsonValueKind.Number
-                    ? p.GetInt32() : 0;
-                if (root.TryGetProperty("dependencies", out var deps) && deps.ValueKind == JsonValueKind.Array)
-                {
-                    foreach (var dep in deps.EnumerateArray())
-                    {
-                        var id = dep.TryGetProperty("id", out var dId) ? dId.GetString() ?? "" : "";
-                        var minV = dep.TryGetProperty("minVersion", out var dMin) ? dMin.GetString() ?? "" : "";
-                        if (!string.IsNullOrEmpty(id))
-                            entry.Dependencies.Add(new ModDependencyInfo { Id = id, MinVersion = minV });
-                    }
-                }
-            }
-            catch
-            {
-                // sidecar 损坏按无 sidecar 处理
-            }
-        }
-        return entry;
-    }
-
 }

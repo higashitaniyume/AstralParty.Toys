@@ -10,7 +10,7 @@ public sealed class ModStatus
     public string GameDirectory { get; set; } = "";
     public string AutoDetectedDirectory { get; set; } = "";
     public bool GameExeFound { get; set; }
-    public bool GameRunning { get; set; }
+    public bool? GameRunning { get; set; }
     public bool Installed { get; set; }
     public bool LoaderPresent { get; set; }
     public bool LoaderDisabled { get; set; }
@@ -46,6 +46,8 @@ public sealed class ModStatus
     public List<ModEntryInfo> Mods { get; set; } = new();
     public List<ModEntryInfo> Sdk { get; set; } = new();
 
+#if WINDOWS
     public string RunningInstallHint => ModManager.DescribeRunningInstall();
     public string RunningUninstallHint => ModManager.DescribeRunningUninstall();
+#endif
 }

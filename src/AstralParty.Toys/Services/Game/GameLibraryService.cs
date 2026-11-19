@@ -7,7 +7,7 @@ namespace AstralParty.Toys.Services.Game;
 /// 多个游戏位置（国服 / 国际服 / TapTap 端…）的统一存放处，外加"当前正在操作的游戏"指针。
 /// 模组页与变速器页都以这里的「当前游戏」为准（HybridWindow 负责把它同步进两个管理器各自的状态文件）。
 /// </summary>
-public sealed class GameLibraryService
+public sealed partial class GameLibraryService
 {
     private readonly string? _profileDirectoryOverride;
     private readonly object _gate = new();
@@ -253,24 +253,6 @@ public sealed class GameLibraryService
         return "custom";
     }
 
-    public static string EditionLabel(string edition) => edition switch
-    {
-        "cn" => "国服",
-        "global" => "国际服",
-        "taptap" => "TapTap",
-        _ => "自定义"
-    };
-
-    private static string DefaultLabel(string edition, string directory)
-    {
-        var name = EditionLabel(edition);
-        if (edition == "custom")
-        {
-            var leaf = SafeLeafName(directory);
-            return string.IsNullOrEmpty(leaf) ? "吉星派对" : leaf;
-        }
-        return $"吉星派对 · {name}";
-    }
 
     // ============================== 系统搜索 ==============================
 
@@ -495,22 +477,11 @@ public sealed class GameLibraryService
         catch { return Array.Empty<string>(); }
     }
 
-    private GameProfileView ToView(GameProfile profile, bool active)
+    private static GameProfileView ToView(GameProfile profile, bool active)
     {
         var exists = Directory.Exists(profile.Directory);
         var exe = exists ? DetectExe(profile.Directory) : null;
-        return new GameProfileView
-        {
-            Id = profile.Id,
-            Label = profile.Label,
-            Directory = profile.Directory,
-            Edition = profile.Edition,
-            EditionLabel = EditionLabel(profile.Edition),
-            Active = active,
-            DirectoryExists = exists,
-            Valid = exists && ValidateUnityStructure(profile.Directory),
-            ExeName = exe
-        };
+        return DescribeProfile(profile, active, exists, exists && ValidateUnityStructure(profile.Directory), exe);
     }
 
     private static string NormalizePath(string path)
@@ -523,12 +494,6 @@ public sealed class GameLibraryService
     {
         try { return Path.GetFullPath(path); }
         catch { return null; }
-    }
-
-    private static string SafeLeafName(string path)
-    {
-        try { return new DirectoryInfo(path.TrimEnd('\\', '/')).Name; }
-        catch { return ""; }
     }
 
     private static string NewId() => Guid.NewGuid().ToString("N")[..8];

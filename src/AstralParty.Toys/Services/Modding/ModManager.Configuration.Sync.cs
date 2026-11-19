@@ -24,29 +24,6 @@ public sealed partial class ModManager
         return comment >= 0 && comment < index;
     }
 
-    /// <summary>从配置文本里取 sdkVersion（容错：解析失败 / 没有该字段返回空串）。
-    ///
-    /// ★ 必须自行剥 UTF-8 BOM：本方法有两类调用方 —— File.ReadAllText（会剥 BOM）与
-    /// ReadSdkVersionFromConfigBytes（Encoding.UTF8.GetString，**不剥** BOM）。带 BOM 的文本直接交给
-    /// JsonDocument.Parse 会抛异常，于是内嵌模板的 sdkVersion 被读成空串，"把旧配置抬到随包 SDK 版本"
-    /// 这条升级逻辑就静默失效（新版内置 mod 会被加载器判 SdkVersionTooNew 拒绝加载）。
-    /// C++ 加载器侧的 jsonc.h 同样显式剥 BOM（记事本保存 UTF-8 会加 BOM），两边行为保持一致。</summary>
-    private static string ParseSdkVersionFromText(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text)) return "";
-        try
-        {
-            using var doc = JsonDocument.Parse(StripJsonComments(text.TrimStart('\uFEFF')));
-            return doc.RootElement.TryGetProperty("sdkVersion", out var sv) && sv.ValueKind == JsonValueKind.String
-                ? sv.GetString() ?? ""
-                : "";
-        }
-        catch
-        {
-            return "";
-        }
-    }
-
     /// <summary>从 doorstop_config.json 的字节里取 sdkVersion（容错，失败返回空串）。</summary>
     private static string ReadSdkVersionFromConfigBytes(byte[]? bytes)
     {
@@ -82,47 +59,6 @@ public sealed partial class ModManager
         return 0;
     }
 
-    /// <summary>读取当前加载器实际用于 mod 版本校验的 SDK 版本。
-    ///
-    /// 优先取 <c>doorstop_config.json</c> 的 <c>sdkVersion</c>（加载器真正读取并用于拒绝 mod 的值）；
-    /// 配置缺失或没有该字段时回退到 <c>sdk/CesiumLoader.SDK.dll</c> 的文件版本。
-    /// 两者都读不到（例如还没安装加载器）返回 false，调用方应跳过检查。</summary>
-    public static bool TryReadInstalledSdkVersion(string gameDirectory, out string version)
-    {
-        version = "";
-        try
-        {
-            if (string.IsNullOrWhiteSpace(gameDirectory)) return false;
-
-            var configPath = Path.Combine(gameDirectory, LoaderFolderName, ConfigFileName);
-            if (File.Exists(configPath))
-            {
-                var fromConfig = ParseSdkVersionFromText(File.ReadAllText(configPath));
-                if (!string.IsNullOrEmpty(fromConfig))
-                {
-                    version = fromConfig;
-                    return true;
-                }
-            }
-
-            var sdkDll = Path.Combine(gameDirectory, LoaderFolderName, SdkFolderName, SdkDllName);
-            if (File.Exists(sdkDll))
-            {
-                var normalized = NormalizeSdkVersion(FileVersionInfo.GetVersionInfo(sdkDll).FileVersion);
-                if (!string.IsNullOrEmpty(normalized))
-                {
-                    version = normalized;
-                    return true;
-                }
-            }
-        }
-        catch
-        {
-            // 读不到就当未知：不能因为配置损坏阻止所有模组安装。
-        }
-        return false;
-    }
-
     /// <summary>mod 声明的 SDK 版本是否高于当前加载器可提供的版本（空值不拦）。</summary>
     public static bool IsSdkIncompatible(string? requiredSdk, string? installedSdk)
         => !string.IsNullOrWhiteSpace(requiredSdk)
@@ -132,18 +68,6 @@ public sealed partial class ModManager
     /// <summary>给安装结果界面用的 SDK 版本不兼容说明。</summary>
     public static string DescribeSdkMismatch(string modName, string requiredSdk, string installedSdk)
         => $"{modName} 要求 SDK {requiredSdk}，当前加载器为 {installedSdk}。请先更新加载器，或安装支持当前 SDK 的旧版本。";
-
-    /// <summary>把 <c>3.2.0.0</c> 这类文件版本规范化成三段；无法解析时保留原值。</summary>
-    private static string NormalizeSdkVersion(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value)) return "";
-        var trimmed = value.Trim();
-        var parts = trimmed.Split('.');
-        if (parts.Length < 3) return trimmed;
-        for (var i = 0; i < 3; i++)
-            if (!int.TryParse(parts[i], out _)) return trimmed;
-        return parts[0] + "." + parts[1] + "." + parts[2];
-    }
 
     /// <summary>把已有 doorstop_config.json 的 sdkVersion 抬到随包版本（只升不降），其余字段与注释原样保留。
     ///

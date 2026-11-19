@@ -80,8 +80,6 @@ public sealed partial class ModManager
         return text.Trim();
     }
 
-    public const string InstalledManifestFileName = "cesium-loader.json";
-
     private static readonly HttpClient Http = CreateHttpClient();
 
     private static HttpClient CreateHttpClient()
@@ -89,46 +87,6 @@ public sealed partial class ModManager
         var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
         client.DefaultRequestHeaders.UserAgent.ParseAdd("AstralParty.Toys/" + typeof(ModManager).Assembly.GetName().Version);
         return client;
-    }
-
-    /// <summary>读「已安装版本」—— 唯一来源是安装 / 更新时写下的清单
-    /// <c>AstralParty_ModLoader\cesium-loader.json</c>（见 <see cref="WriteInstalledManifest"/>）。
-    ///
-    /// ★ 这里刻意**不**做任何推测：不问加载器日志、也不拿配置里的 sdkVersion 顶替。
-    ///   猜测出来的版本号会被界面当成权威值显示给用户，而"版本"恰恰是 mod 管理器最不能含糊的信息 ——
-    ///   读不到就返回空串，由界面如实显示「版本未知，重新安装一次即可记录」。
-    ///   0.4.7 之前装的加载器没有这份清单，重新安装（或点「从 GitHub 更新」）一次就会补上。</summary>
-    private static string ReadInstalledVersion(string gameDirectory)
-    {
-        try
-        {
-            var manifestPath = Path.Combine(gameDirectory, LoaderFolderName, InstalledManifestFileName);
-            if (!File.Exists(manifestPath)) return "";
-            using var document = JsonDocument.Parse(File.ReadAllText(manifestPath));
-            return document.RootElement.TryGetProperty("version", out var element) ? element.GetString() ?? "" : "";
-        }
-        catch
-        {
-            return "";
-        }
-    }
-
-    /// <summary>安装清单里记录的 version.dll SHA256（没有清单 / 没有该条目 / 清单损坏 → 空串）。</summary>
-    private static string ReadManifestLoaderHash(string gameDirectory)
-    {
-        try
-        {
-            var manifestPath = Path.Combine(gameDirectory, LoaderFolderName, InstalledManifestFileName);
-            if (!File.Exists(manifestPath)) return "";
-            using var document = JsonDocument.Parse(File.ReadAllText(manifestPath));
-            if (!document.RootElement.TryGetProperty("files", out var files) || files.ValueKind != JsonValueKind.Object)
-                return "";
-            return files.TryGetProperty(LoaderDllName, out var hash) ? hash.GetString() ?? "" : "";
-        }
-        catch
-        {
-            return "";
-        }
     }
 
     /// <summary>把 Release tag（如 <c>modloader-3.3.2</c>）转成版本号（<c>3.3.2</c>）。

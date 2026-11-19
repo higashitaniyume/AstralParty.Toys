@@ -142,7 +142,7 @@ public partial class HybridWindow
             _modManager.SetFontModConfig(gameDirectory, family, applyToAll);
             op.Commit();
 
-            var running = _modManager.GetStatus().GameRunning;
+            var running = _modManager.GetStatus().GameRunning == true;
             Post(new
             {
                 type = "fontModApplied",

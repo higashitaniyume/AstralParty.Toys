@@ -21,28 +21,7 @@ namespace AstralParty.Toys.Services.Modding;
 /// </summary>
 public sealed partial class ModManager
 {
-    public const string LoaderDllName = "version.dll";
-    public const string LoaderFolderName = "AstralParty_ModLoader";
-    public const string ModsFolderName = "mods";
-    /// <summary>停用的 mod 搬到这里：加载器只扫 mods，等于彻底不进游戏，DLL 也不会被游戏进程占用。</summary>
-    public const string DisabledModsFolderName = "disabled_mods";
-    public const string SdkFolderName = "sdk";
-    public const string LogsFolderName = "logs";
-    public const string ConfigFileName = "doorstop_config.json";
-    public const string SdkDllName = "CesiumLoader.SDK.dll";
     public const string SampleModDllName = "ActivityLogMod.dll";
-
-    /// <summary>加载器内置变速的倍率下限 = 1.0：加载器不支持减速，低于 1.0 的请求会被忽略。
-    /// 与加载器 speedhack.h 的 kSpeedMin / SDK SpeedHack.MinSpeed 保持一致。</summary>
-    public const double MinBaseSpeed = 1.0;
-
-    /// <summary>加载器内置变速的倍率上限，与 speedhack.h 的 kSpeedMax 一致。</summary>
-    public const double MaxBaseSpeed = 100.0;
-
-    /// <summary>加载器各类超时（等待调试器 / 看门狗判定）的合法范围，与加载器 config.cpp 的
-    /// <c>read_timeout_sec</c> 一致：越界会被加载器静默回退成默认值。</summary>
-    public const int MinTimeoutSec = 1;
-    public const int MaxTimeoutSec = 3600;
 
     /// <summary>
     /// 随程序集内置的 mod（ModId，顺序即安装顺序）。资源名 = {ModId}.dll / {ModId}.json。
@@ -251,30 +230,21 @@ public sealed partial class ModManager
     ///   点「从 GitHub 更新」装的是比本程序内置更新的发布包，磁盘上的文件当然和内置的不同 ——
     ///   只比内置哈希，就会把本工具自己刚装上去的加载器说成"别人的文件"，小白用户看不懂，
     ///   老用户还会因此以为更新失败了。判据换成「内置哈希 **或** 清单哈希」之后，两者都算自己人。</summary>
-    private string ClassifyLoaderOrigin(string gameDirectory, string dllPath)
+    private string ClassifyLoaderOrigin(string gameDirectory, string dllPath,
+        InstalledManifest? manifest = null, InstallationRecord? record = null)
     {
         if (MatchesEmbeddedLoader(dllPath)) return "bundle";
-        var manifestHash = CurrentLoaderHash(gameDirectory, ReadRetainedInstallation(gameDirectory));
+        if (manifest is null)
+        {
+            manifest = ReadInstalledManifest(gameDirectory);
+            record = ReadRetainedInstallation(gameDirectory);
+        }
+        var manifestHash = CurrentLoaderHash(gameDirectory, record, manifest.Value);
         return manifestHash.Length > 0 && MatchesHash(dllPath, manifestHash) ? "installed" : "";
     }
 
     private static bool MatchesEmbeddedLoader(string path)
         => EmbeddedLoaderHash is not null && MatchesHash(path, EmbeddedLoaderHash);
-
-    /// <summary>文件 SHA256 是否等于给定的十六进制哈希（读不到文件 / 哈希串非法 → false）。</summary>
-    private static bool MatchesHash(string path, string expectedHex)
-    {
-        try
-        {
-            using var stream = File.OpenRead(path);
-            return CryptographicOperations.FixedTimeEquals(
-                SHA256.HashData(stream), Convert.FromHexString(expectedHex));
-        }
-        catch
-        {
-            return false;
-        }
-    }
 
     private static void WriteAllBytesProtected(string path, byte[] bytes)
     {
@@ -284,14 +254,6 @@ public sealed partial class ModManager
 
     public static void OpenInExplorer(string path)
         => SpeedhackManager.OpenInExplorer(path);
-
-    // ============================== mod 目录（启用 / 停用） ==============================
-
-    /// <summary>启用的 mod 目录：<c>AstralParty_ModLoader\mods</c>。</summary>
-    public static string ModsRoot(string gameDirectory) => Path.Combine(gameDirectory, LoaderFolderName, ModsFolderName);
-
-    /// <summary>停用的 mod 目录：<c>AstralParty_ModLoader\disabled_mods</c>。</summary>
-    public static string DisabledModsRoot(string gameDirectory) => Path.Combine(gameDirectory, LoaderFolderName, DisabledModsFolderName);
 
     /// <summary>
     /// 这个 mod 的内容该写回哪个根目录：已经在 <c>disabled_mods</c> 里的 mod 保持原位，

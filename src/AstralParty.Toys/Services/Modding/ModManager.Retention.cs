@@ -75,11 +75,12 @@ public sealed partial class ModManager
     private InstallationRecord CaptureInstallation(string directory)
     {
         var previous = ReadRetainedInstallation(directory);
+        var manifest = ReadInstalledManifest(directory);
         var record = new InstallationRecord
         {
             GameDirectory = Path.GetFullPath(directory),
-            Version = ReadInstalledVersion(directory),
-            LoaderHash = previous?.LoaderHash is { Length: > 0 } savedHash ? savedHash : ReadManifestLoaderHash(directory),
+            Version = manifest.Version,
+            LoaderHash = previous?.LoaderHash is { Length: > 0 } savedHash ? savedHash : manifest.LoaderHash,
             PackageHash = previous?.PackageHash ?? "",
             Disabled = previous?.Disabled == true,
             Removed = previous?.Removed == true,
@@ -181,7 +182,7 @@ public sealed partial class ModManager
 
     private string ReadCurrentInstallationVersion(string directory)
     {
-        var version = ReadInstalledVersion(directory);
+        var version = ReadInstalledManifest(directory).Version;
         if (version.Length > 0) return version;
         var record = ReadRetainedInstallation(directory);
         return record is { Removed: false } ? record.Version : "";
@@ -190,14 +191,11 @@ public sealed partial class ModManager
     private bool IsRetainedDisabled(string directory) => ReadRetainedInstallation(directory) is { Disabled: true, Removed: false }
         && !File.Exists(Path.Combine(directory, LoaderDllName));
 
-    private void ApplyRetainedStatus(ModStatus status)
+    private static void ApplyRetainedStatus(ModStatus status, InstalledManifest manifest, InstallationRecord? record)
     {
-        if (status.GameDirectory.Length == 0) return;
-        var record = ReadRetainedInstallation(status.GameDirectory);
         if (!status.LoaderPresent && status.LoaderRootExists && record?.Removed != true)
         {
-            status.InstalledVersion = ReadInstalledVersion(status.GameDirectory);
-            if (status.InstalledVersion.Length == 0) status.InstalledVersion = record?.Version ?? "";
+            status.InstalledVersion = manifest.Version.Length > 0 ? manifest.Version : record?.Version ?? "";
             status.LoaderDisabled = record?.Disabled == true;
             status.CanRestoreLoader = status.InstalledVersion.Length > 0 || record?.LoaderHash.Length > 0;
             status.LoaderMissing = true;
@@ -261,10 +259,9 @@ public sealed partial class ModManager
             throw new InvalidOperationException("加载器目录已缺失，请使用安装功能恢复完整组件。");
         var record = ReadRetainedInstallation(gameDirectory);
         if (record?.Removed == true) throw new InvalidOperationException("加载器已完整卸载，请重新安装。");
-        var installedVersion = ReadInstalledVersion(gameDirectory);
-        var installedHash = ReadManifestLoaderHash(gameDirectory);
-        var version = installedVersion.Length > 0 ? installedVersion : record?.Version ?? "";
-        var expected = CurrentLoaderHash(gameDirectory, record);
+        var manifest = ReadInstalledManifest(gameDirectory);
+        var version = manifest.Version.Length > 0 ? manifest.Version : record?.Version ?? "";
+        var expected = CurrentLoaderHash(gameDirectory, record, manifest);
         byte[]? dll = null;
         var source = "本地备份";
         var packageHash = record?.PackageHash ?? "";
@@ -305,8 +302,7 @@ public sealed partial class ModManager
         }
         CacheBytes(dll);
         cancellationToken.ThrowIfCancellationRequested();
-        if (File.Exists(target) || ReadInstalledVersion(gameDirectory) != installedVersion
-            || ReadManifestLoaderHash(gameDirectory) != installedHash
+        if (File.Exists(target) || ReadInstalledManifest(gameDirectory) != manifest
             || ReadRetainedInstallation(gameDirectory)?.UpdatedUtc != record?.UpdatedUtc)
             throw new InvalidOperationException("下载期间安装状态发生变化，请刷新后重试。");
         using var operation = BeginRetainedOperation(gameDirectory, "restore-loader", dll);
@@ -321,15 +317,14 @@ public sealed partial class ModManager
         return $"已从{source}恢复 version.dll（{(version.Length > 0 ? version : "原安装版本")}），重启游戏后生效。";
     }
 
-    private string CurrentLoaderHash(string directory, InstallationRecord? record)
+    private static string CurrentLoaderHash(string directory, InstallationRecord? record, InstalledManifest installed)
     {
-        var manifestHash = ReadManifestLoaderHash(directory);
         var manifest = Path.Combine(directory, LoaderFolderName, InstalledManifestFileName);
         var relative = LoaderFolderName + "/" + InstalledManifestFileName;
-        if (record is not null && record.LoaderHash.Length > 0 && record.Version == ReadInstalledVersion(directory)
+        if (record is not null && record.LoaderHash.Length > 0 && record.Version == installed.Version
             && record.Files.TryGetValue(relative, out var hash) && MatchesHash(manifest, hash))
             return record.LoaderHash;
-        return manifestHash.Length > 0 ? manifestHash : record?.LoaderHash ?? "";
+        return installed.LoaderHash.Length > 0 ? installed.LoaderHash : record?.LoaderHash ?? "";
     }
 
     private static byte[] ReadRestorePackage(byte[] package, string version)

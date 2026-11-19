@@ -143,69 +143,6 @@ public sealed partial class ModManager
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
-    /// <summary>剥掉 JSON 里的 // 与 /* */ 注释(加载器配置文件带注释, System.Text.Json 不认)。</summary>
-    private static string StripJsonComments(string json)
-    {
-        if (string.IsNullOrEmpty(json)) return json;
-        var sb = new System.Text.StringBuilder(json.Length);
-        var inString = false;
-        var i = 0;
-        while (i < json.Length)
-        {
-            var c = json[i];
-            if (inString)
-            {
-                sb.Append(c);
-                if (c == '\\' && i + 1 < json.Length) { sb.Append(json[i + 1]); i += 2; continue; }
-                if (c == '"') inString = false;
-                i++;
-                continue;
-            }
-            if (c == '"') { inString = true; sb.Append(c); i++; continue; }
-            if (c == '/' && i + 1 < json.Length && json[i + 1] == '/')
-            {
-                while (i < json.Length && json[i] != '\n') i++;
-                continue;
-            }
-            if (c == '/' && i + 1 < json.Length && json[i + 1] == '*')
-            {
-                i += 2;
-                while (i + 1 < json.Length && !(json[i] == '*' && json[i + 1] == '/')) i++;
-                i += 2;
-                continue;
-            }
-            sb.Append(c);
-            i++;
-        }
-        return sb.ToString();
-    }
-
-    /// <summary>
-    /// mod 配置文件名(与 mod 的 DLL 同目录)。SDK 的 <c>ModConfig</c> 就是按
-    /// <c>modDirectory\config.json</c> 落盘的, 所以这里必须同名同目录 —— 否则 mod 读的
-    /// 和 Toys 写的是两个文件, 界面上改了配置游戏里根本不生效。
-    /// </summary>
-    private const string ModConfigFileName = "config.json";
-
-    /// <summary>mod 玩家配置的落盘位置(<c>configs\{ModId}.json</c>; 不要求已存在)。
-    /// 与加载器 SDK 的 <c>ModConfig.ResolvePath</c> 一致: configs 下同名文件存在时 mod 只读它。</summary>
-    private static string ModConfigWritePath(string gameDirectory, string fileName)
-    {
-        var modsDir = ModsRoot(gameDirectory);
-        var (_, directoryName, _) = ResolveModPath(modsDir, fileName);
-        var modId = directoryName ?? Path.GetFileNameWithoutExtension(fileName);
-        return Path.Combine(gameDirectory, LoaderFolderName, "configs", modId + ".json");
-    }
-
-    /// <summary>模组目录里那份 config.json(随包默认值; 旧安装的玩家配置也可能还停在这里), 仅用于读取兼容。</summary>
-    private static string PackagedModConfigPath(string gameDirectory, string fileName)
-    {
-        var modsDir = ModsRoot(gameDirectory);
-        var (_, directoryName, root) = ResolveModPath(modsDir, fileName);
-        var folder = directoryName ?? Path.GetFileNameWithoutExtension(fileName);
-        return Path.Combine(root, folder, ModConfigFileName);
-    }
-
     /// <summary>
     /// 模组目录里那份 <c>config.json</c>(随包默认值, 也是个别模组直接读的位置);
     /// 模组没装(新布局的文件夹不存在)时返回 null, 避免凭空建一个没有 DLL 的模组目录。
@@ -253,13 +190,7 @@ public sealed partial class ModManager
     /// 两处都不存在则返回 null。
     /// </summary>
     public string? ModConfigPath(string gameDirectory, string fileName)
-    {
-        if (string.IsNullOrWhiteSpace(gameDirectory) || string.IsNullOrWhiteSpace(fileName)) return null;
-        var path = ModConfigWritePath(gameDirectory, fileName);
-        if (File.Exists(path)) return path;
-        var packaged = PackagedModConfigPath(gameDirectory, fileName);
-        return File.Exists(packaged) ? packaged : null;
-    }
+        => LocateModConfig(gameDirectory, fileName);
 
     /// <summary>读取 mod 配置内容(configs\{ModId}.json; 尚未迁到 configs 的旧安装读模组目录那份); 不存在返回空串。</summary>
     public string ReadModConfig(string gameDirectory, string fileName)

@@ -53,8 +53,13 @@ public static class AppInfo
             Runtime = RuntimeInformation.FrameworkDescription,
             Architecture = RuntimeInformation.ProcessArchitecture.ToString(),
             OperatingSystem = RuntimeInformation.OSDescription,
+#if WINDOWS
             EmbeddedLoaderVersion = ModManager.BundleLoaderVersion,
             EmbeddedSdkVersion = ModManager.BundleSdkVersion,
+#else
+            EmbeddedLoaderVersion = loaderStatus?.EmbeddedVersion ?? "",
+            EmbeddedSdkVersion = loaderStatus?.EmbeddedSdkVersion ?? "",
+#endif
             AssemblyTime = GetAssemblyFileTime(assembly),
             AppDirectory = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar)
         };
@@ -100,7 +105,7 @@ public static class AppInfo
             Append(text, "加载器 SDK", info.InstalledSdkVersion.Length > 0 ? info.InstalledSdkVersion : "（未读取到）");
             Append(text, "游戏目录", info.GameDirectory);
             Append(text, "已装模组", $"{info.InstalledModCount} 个");
-            Append(text, "游戏进程", info.GameRunning ? "运行中" : "未运行");
+            Append(text, "游戏进程", info.GameRunning switch { true => "运行中", false => "未运行", null => "未确认" });
         }
         Append(text, "运行时", $"{info.Runtime} · {info.Architecture}");
         Append(text, "操作系统", info.OperatingSystem);
@@ -128,6 +133,7 @@ public static class AppInfo
         {
             "bundle" => "随本程序安装",
             "installed" => "通过本程序更新",
+            "manifest" => "与安装清单一致",
             _ => "来源不明"
         };
         var state = info.LoaderDisabled ? "已停用" : info.LoaderPresent ? origin : "文件缺失";
@@ -213,7 +219,7 @@ public sealed class AppVersionInfo
     public string GameDirectory { get; set; } = "";
 
     /// <summary>游戏进程是否正在运行。</summary>
-    public bool GameRunning { get; set; }
+    public bool? GameRunning { get; set; }
 
     /// <summary>游戏目录里是否存在 version.dll。</summary>
     public bool LoaderPresent { get; set; }
