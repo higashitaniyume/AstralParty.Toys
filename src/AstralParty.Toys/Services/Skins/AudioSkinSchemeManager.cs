@@ -347,6 +347,7 @@ public sealed partial class AudioSkinSchemeManager
         }
 
         var cacheDir = AudioCacheDirectory(gameDirectory);
+        var gameIndex = GameAudioIndex.TryLoad(gameDirectory);
         var items = new List<AudioSkinCatalogItem>(catalog.Count);
 
         foreach (var c in catalog)
@@ -379,6 +380,11 @@ public sealed partial class AudioSkinSchemeManager
                 {
                     hasOriginal = true;
                 }
+            }
+            // 已从游戏建立索引的条目：试听时才转换
+            if (!hasOriginal && gameIndex != null && gameIndex.Entries.ContainsKey(c.Id))
+            {
+                hasOriginal = true;
             }
             if (!hasOriginal && !string.IsNullOrEmpty(c.RelOgg))
             {

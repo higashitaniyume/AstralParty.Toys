@@ -158,11 +158,11 @@
       <span class="v2-muted">${Math.round((X.progress || 0) * 100)}%</span><br><span class="v2-muted">${esc(X.message || '')}</span>
       <div class="v2-bar" style="max-width:none;margin-top:8px"><div style="width:${(X.progress || 0) * 100}%"></div></div></div>`;
     if (!aItems().length || extracted()) return '';
-    // 实测（1.3.2）：「从游戏提取」并不真的解包游戏，只从事先导出的 audio-export 文件夹复制；找不到就是 0 个
-    if (K.extractEmpty) return `<div class="v2-notice">${I().info}<span style="flex:1">刚才提取到 <b>0 个</b>：这台电脑上没有事先导出的 audio-export 文件夹，
-      所以暂时<b>听不了原版</b>。替换、静音、调音量都不受影响。</span>
+    // 准备 = 从这台电脑上安装的游戏里找出原版音频的位置（不转换）；试听某一条时宿主才转换
+    if (K.extractEmpty) return `<div class="v2-notice">${I().info}<span style="flex:1">刚才<b>没有找到原版音频</b>${K.extractProblem ? '：' + esc(K.extractProblem) : ''}。
+      替换、静音、调音量都不受影响。</span>
       <button class="v2-btn line" data-v2s="audioPrep">了解详情…</button></div>`;
-    return `<div class="v2-notice">${I().info}<span style="flex:1">暂时<b>听不了原版</b>：需要事先导出好的原版音频（替换、静音、调音量都不受影响）</span>
+    return `<div class="v2-notice">${I().info}<span style="flex:1">暂时<b>听不了原版</b>：先从游戏里找出原版音频（约 2 秒，替换、静音、调音量都不受影响）</span>
       <button class="v2-btn line" data-v2s="audioPrep">准备原版音频…</button></div>`;
   }
 
@@ -178,8 +178,8 @@
     return frameHead(action) + prepBanner() + inner + `
     <details class="v2-card" style="margin-top:14px"><summary><div class="t"><b>更多</b><small>原版音频包、方案目录</small></div>${I().down}</summary>
       <div class="v2-adv">
-        <div class="v2-row"><span class="n">导出原版音频包</span><span class="d">把整理好的原版音频打成 ZIP，换电脑时直接导入</span><button class="v2-btn line" data-v2s="audioExportOriginal" ${extracted() ? '' : 'disabled'}>导出</button></div>
-        <div class="v2-row"><span class="n">重新整理原版音频</span><span class="d">游戏更新后，原版音频可能有变化</span><button class="v2-btn line" data-v2s="audioPrep">整理…</button></div>
+        <div class="v2-row"><span class="n">导出原版音频包</span><span class="d">把原版音频打成 ZIP，只用来试听对比，不是替换方案（会先把没试听过的都转换一遍，约 100 MB）</span><button class="v2-btn line" data-v2s="audioExportOriginal" ${extracted() ? '' : 'disabled'}>导出</button></div>
+        <div class="v2-row"><span class="n">重新准备原版音频</span><span class="d">游戏更新后原版音频可能有变化，重新从游戏里找一遍</span><button class="v2-btn line" data-v2s="audioPrep">准备…</button></div>
         <div class="v2-row"><span class="n">打开方案目录</span><span class="d">所有音效方案存放的位置</span><button class="v2-btn line" data-v2s="audioFolder">打开</button></div>
       </div></details>`;
   }
@@ -215,6 +215,7 @@
         ${isDefault ? '' : `<div class="v2-seg">${segBtns(K.aStatus, [['all', '全部'], ['changed', '已改动'], ['mute', '已静音']], 'data-v2s-astatus')}</div>`}
         ${voice ? `<select id="v2sAChar" class="v2-select"><option value="all">全部角色</option>${chars.map(c => `<option ${K.aChar === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select>` : ''}
         <label class="v2-search">${I().search}<input id="v2sAQ" placeholder="音效名、#编号、角色" value="${esc(K.aQ)}"></label>
+        ${isDefault ? '' : `<button class="v2-btn line" data-v2s="audioBatch" title="一次选多个音频文件，按文件名对应到音效">${I().upload}批量替换…</button>`}
       </div>
       <div class="v2-card">${list.slice(0, K.aLimit).map(i => `
         <div class="v2-mod v2-audio ${i.action === 'mute' ? 'off' : ''}">
@@ -233,6 +234,70 @@
       </div>`}`;
   }
 
+  // 试听自己播：原版模块的 playAudio 用 textContent 改按钮上的 ▶/⏸，会把这里按钮里的图标一起抹掉；
+  // 它的 play() 被拒绝时也不发任何事件，按钮会一直停在「播放中」。
+  // 播放中显示 ■ 并变粉；播完、出错、再点一次或换一条时恢复 ▶
+  let preview = null; // { audio, btn }
+  function setPlayIcon(b, on) {
+    b.classList.toggle('on', on);
+    const svg = b.querySelector('svg');
+    if (svg) svg.outerHTML = on ? I().stop : I().play;
+  }
+  function stopPreview() {
+    if (!preview) return;
+    const { audio, btn } = preview;
+    preview = null;
+    audio.pause();
+    setPlayIcon(btn, false);
+  }
+  function playPreview(el) {
+    const again = preview?.btn === el;
+    stopPreview();
+    AU()?.currentAudio?.pause?.(); // 原版页面上可能还有一条在放
+    if (again) return;
+    const audio = new Audio(el.dataset.v2sPlay);
+    preview = { audio, btn: el };
+    setPlayIcon(el, true);
+    const done = () => { if (preview?.audio === audio) stopPreview(); };
+    // 出错时 error 事件和 play() 被拒绝会各来一次，只提示一次
+    const fail = msg => { if (preview?.audio !== audio) return; done(); post({ type: 'toast', message: msg }); };
+    audio.addEventListener('ended', done);
+    audio.addEventListener('error', () => fail('音频播放失败，请确认文件是否存在或格式是否受支持'));
+    audio.play().catch(err => { if (err?.name !== 'AbortError') fail('音频播放失败：' + (err?.message || err)); });
+  }
+
+  // 批量替换第二步：宿主按文件名对好后发来结果，确认了才真正写进方案
+  function batchConfirmDialog(d) {
+    const matches = d.matches || [], skipped = d.skipped || [];
+    const replaced = new Set(aItems().filter(i => i.action === 'replace').map(i => i.id));
+    const cancel = () => { U().closeModal(); post({ type: 'audioSkinsBatchCancel' }); };
+    Object.assign(U().modalActions, {
+      v2sBatchOk: () => { U().closeModal(); post({ type: 'audioSkinsBatchApply', token: d.token }); },
+      v2sBatchCancel: cancel,
+    });
+    const row = (a, b, c = '') => `<div style="display:flex;gap:10px;padding:6px 0;border-top:1px solid var(--v2-border);font-size:13px">
+      <span style="flex:1;min-width:0">${a}</span><span class="v2-muted" style="flex:1;min-width:0;overflow-wrap:anywhere">${b}</span>${c}</div>`;
+    U().openModal(`
+      <div class="v2-modal-head"><b>批量替换</b><button class="v2-icon-btn" data-v2modal="v2sBatchCancel">${I().x}</button></div>
+      <div style="padding:16px 18px;max-height:60vh;overflow:auto">
+        <p style="margin:0 0 10px">${matches.length ? `对上 <b>${matches.length}</b> 个文件，确认后替换下面这些音效` : '<b>一个文件都没有对上</b>，方案没有改动'}
+          ${skipped.length ? `，另有 <b>${skipped.length}</b> 个没对上` : ''}。</p>
+        ${matches.map(m => row(`<span class="v2-muted">#${m.id}</span> ${esc(m.label)}`, '← ' + esc(m.file),
+          replaced.has(m.id) ? '<span class="v2-badge">覆盖原来的替换</span>' : '')).join('')}
+        ${skipped.length ? `<p style="margin:14px 0 4px"><b>没对上的文件</b></p>
+          ${skipped.map(s => row(esc(s.file), esc(s.reason))).join('')}` : ''}
+        <div class="v2-notice" style="margin:14px 0 0">${I().info}<span>文件名可以是音效名（<span style="font-family:var(--v2-mono)">Voice_101_achieve.wav</span>）、
+          编号（<span style="font-family:var(--v2-mono)">1010101.ogg</span>）或「编号_音效名」。
+          用「导出原版音频包」导出的文件改好后，不改名就能直接批量换回来。</span></div></div>
+      <div class="v2-modal-foot"><span class="v2-top-spacer"></span>
+        <button class="v2-btn ghost" data-v2modal="v2sBatchCancel">${matches.length ? '取消' : '关闭'}</button>
+        ${matches.length ? `<button class="v2-btn primary" data-v2modal="v2sBatchOk">替换 ${matches.length} 条</button>` : ''}</div>`);
+    U().setModalCancel(cancel);
+  }
+  window.chrome?.webview?.addEventListener('message', e => {
+    if (e.data?.type === 'audioSkinBatchPreview') batchConfirmDialog(e.data.payload || {});
+  });
+
   function audioPrepDialog() {
     Object.assign(U().modalActions, {
       v2sExtract: () => { U().closeModal(); post({ type: 'audioSkinsExtractGameAudio' }); },
@@ -241,17 +306,18 @@
     U().openModal(`
       <div class="v2-modal-head"><b>准备原版音频</b><button class="v2-icon-btn" data-v2modal="close">${I().x}</button></div>
       <div style="padding:16px 18px">
-        <p style="margin:0 0 10px">想「试听原版」，要先把约 1,300 个原版音频放进游戏目录的 <span style="font-family:var(--v2-mono)">AstralParty_ModLoader\\audio-cache\\</span>。</p>
-        <div class="v2-notice" style="margin:0 0 10px">${I().info}<span><b>目前的限制：</b>「从游戏提取」其实<b>不会解包游戏</b>，
-          只会从一个事先导出好的 <span style="font-family:var(--v2-mono)">audio-export</span> 文件夹里复制。这个文件夹和原版音频包目前都没有公开，
-          所以在大多数电脑上会提取到 0 个。</span></div>
-        <ul class="v2-confirm-lines" style="margin:0">
-          <li>如果你从别处拿到了别人导出的 <b>audio-export</b> 文件夹，放进游戏目录（或 AstralParty_ModLoader 里）再点「尝试提取」</li>
-          <li>如果你拿到了<b>原版音频包 ZIP</b>，点「导入音频包 ZIP」</li>
-          <li>两样都没有也没关系：替换、静音、调音量都能正常用，只是听不了原版对比</li></ul></div>
+        <p style="margin:0 0 10px">想「试听原版」，要先从<b>这台电脑上安装的游戏</b>里找出原版音频。</p>
+        <ul class="v2-confirm-lines" style="margin:0 0 10px">
+          <li>只<b>读</b>游戏文件，不会修改游戏</li>
+          <li>「开始准备」只记下每条音效在游戏文件里的位置，约 1～2 秒，几乎不占空间</li>
+          <li>试听某一条时才把它转换成 ogg，存进游戏目录的 <span style="font-family:var(--v2-mono)">AstralParty_ModLoader\\audio-cache\\</span></li>
+          <li>游戏更新后，在「更多」里点「重新准备原版音频」</li></ul>
+        <div class="v2-notice" style="margin:0">${I().info}<span>找不到时，先启动一次游戏完成资源更新再试，
+          或者导入别人用「导出原版音频包」导出的 ZIP。<b>原版音频包只用来试听对比，不会改变游戏里的声音</b>；
+          别人做好的替换方案，要在「新建方案 ▾ → 导入别人分享的方案」里导入。</span></div></div>
       <div class="v2-modal-foot"><button class="v2-btn ghost" data-v2modal="close">关闭</button><span class="v2-top-spacer"></span>
-        <button class="v2-btn line" data-v2modal="v2sImportOrig">${I().upload}导入音频包 ZIP…</button>
-        <button class="v2-btn line" data-v2modal="v2sExtract">尝试提取</button></div>`);
+        <button class="v2-btn line" data-v2modal="v2sImportOrig">${I().upload}导入原版音频包（ZIP）…</button>
+        <button class="v2-btn line" data-v2modal="v2sExtract">开始准备</button></div>`);
   }
 
   function selectAudio(id) {
@@ -476,8 +542,9 @@
           { key: 'author', label: '作者' }, { key: 'description', label: '简介', multiline: true }],
         onOk: v => post({ type: 'audioSkinsCreate', id: v.id, name: v.name || v.id, author: v.author, description: v.description }),
       }) },
-      { label: '导入方案 ZIP…', icon: I().upload, fn: () => post({ type: 'audioSkinsImportZip' }) },
+      { label: '导入别人分享的方案（ZIP）…', icon: I().upload, fn: () => post({ type: 'audioSkinsImportZip' }) },
     ]),
+    audioBatch: () => post({ type: 'audioSkinsBatchPick', schemeId: K.audioScheme }),
     audioPrep: audioPrepDialog,
     audioExportOriginal: () => post({ type: 'audioSkinsExportOriginalZip' }),
     audioFolder: () => post({ type: 'audioSkinsOpenFolder' }),
@@ -500,7 +567,7 @@
           onOk: v => post({ type: 'audioSkinsUpdateMeta', id: p.id, name: v.name, author: v.author, description: v.description }),
         }) },
         { label: '复制为新方案…', icon: I().copy, fn: actions.audioDuplicate },
-        { label: '导出方案 ZIP', icon: I().download, disabled: isDefault, fn: () => post({ type: 'audioSkinsExportZip', id: p.id }) },
+        { label: '导出方案 ZIP（分享给别人）', icon: I().download, disabled: isDefault, fn: () => post({ type: 'audioSkinsExportZip', id: p.id }) },
         '-',
         { label: '删除方案…', icon: I().trash, disabled: isDefault, fn: () => confirm({
           title: `删除音效方案「${esc(p.name || p.id)}」？`,
@@ -525,7 +592,7 @@
   function audioItemMenu(anchor, i) {
     const base = { schemeId: K.audioScheme, configId: i.id, eventName: i.name };
     U().openMenu(anchor, [
-      { label: '替换音频（.wav）…', icon: I().upload, fn: () => post({ type: 'audioSkinsPickAndReplace', ...base, volume: 1.0 }) },
+      { label: '替换音频（wav / ogg / mp3）…', icon: I().upload, fn: () => post({ type: 'audioSkinsPickAndReplace', ...base, volume: 1.0 }) },
       { label: i.action === 'mute' ? '取消静音' : '静音', icon: I().dot, fn: () => post({ type: 'audioSkinsSetMute', ...base, mute: i.action !== 'mute' }) },
       { label: '导出这条原版音频', icon: I().download, disabled: !i.hasOriginal, fn: () => post({ type: 'audioSkinsExportSingleOriginal', id: i.id, name: i.name }) },
       '-',
@@ -550,7 +617,7 @@
     if ((el = q('[data-v2s-audio]'))) return selectAudio(el.dataset.v2sAudio);
     if ((el = q('[data-v2s-acat]'))) { K.aCat = el.dataset.v2sAcat; K.aChar = 'all'; K.aLimit = 200; return render(); }
     if ((el = q('[data-v2s-astatus]'))) { K.aStatus = el.dataset.v2sAstatus; K.aLimit = 200; return render(); }
-    if ((el = q('[data-v2s-play]'))) { if (!el.disabled && el.dataset.v2sPlay) AU()?.playAudio(el.dataset.v2sPlay, el); return; }
+    if ((el = q('[data-v2s-play]'))) { if (!el.disabled && el.dataset.v2sPlay) playPreview(el); return; }
     if ((el = q('[data-v2s-aitem]'))) { const i = aItems().find(x => String(x.id) === el.dataset.v2sAitem); if (i) audioItemMenu(el, i); return; }
     if ((el = q('[data-v2s-rmenu]'))) {
       const m = (rStatus()?.mods || []).find(x => x.id === el.dataset.v2sRmenu); if (!m) return;
@@ -593,11 +660,12 @@
       obj[name] = function (...args) { before?.(name, args); const r = orig.apply(this, args); render(); return r; };
     });
   }
-  // 宿主提取完不管拿到几个都提示「已同步并就绪 N 个」；N = 0 时这句话会让人以为成功了，换成实话
+  // 宿主准备失败时提示「没有找到原版音频：原因」；记下原因，显示在列表上方的提示里
   const origToast = window.toast;
   if (typeof origToast === 'function') {
     window.toast = function (msg, ...rest) {
-      if (/^已同步并就绪 0 个原版音频/.test(String(msg))) msg = '没有提取到原版音频：电脑上没有事先导出的 audio-export 文件夹（替换、静音不受影响）';
+      const m = /没有找到原版音频：(.+)$/.exec(String(msg));
+      if (m) K.extractProblem = m[1];
       return origToast.call(this, msg, ...rest);
     };
   }
