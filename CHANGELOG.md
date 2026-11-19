@@ -2,6 +2,10 @@
 
 本文件按版本记录 `AstralParty.Toys` 的功能变更。版本号与 GitHub 发布 tag 一一对应（如 `v0.2.0`），发布产物由 [release.yml](.github/workflows/release.yml) 在打 tag 时自动构建。
 
+## Unreleased
+
+- Add an experimental [native Linux overview](docs/linux-native.md) for Steam installations: select an edition, inspect the loader and its latest log, manage the supported CesiumLoader release and launch through Steam. The Windows toolbox and its release packages remain available.
+
 ## [v2.4.2] - 2026-11-18
 
 ### 修复

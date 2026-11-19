@@ -1,6 +1,6 @@
 # Linux 安装部署指南（Proton，实验性）
 
-AstralParty.Toys 是基于 WPF 和 WebView2 的 Windows 应用。本文通过 Proton 运行 Windows 发布包，**不提供原生 Linux 构建，也不代表 Linux 已成为官方支持的平台**。
+This guide runs the **Windows WPF/WebView2 release** under Proton. For the native Linux overview, loader management and normal Steam launch without a toolbox prefix, see the [native Linux guide](linux-native.md). Neither route implies official Linux support.
 
 以下步骤来自一次社区实测安装。其他发行版、Proton 构建、软件版本和 Steam 安装方式的表现可能不同。
 
