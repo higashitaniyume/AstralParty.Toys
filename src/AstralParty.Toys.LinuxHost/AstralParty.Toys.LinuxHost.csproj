@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <WindowsSource>$(MSBuildThisFileDirectory)../AstralParty.Toys</WindowsSource>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(WindowsSource)/Models/LoaderConfig.cs;$(WindowsSource)/Models/ModDependencyInfo.cs;$(WindowsSource)/Models/ModEntryInfo.cs;$(WindowsSource)/Models/ModPlatforms.cs;$(WindowsSource)/Models/ModStatus.cs" Link="Shared/Models/%(Filename)%(Extension)" />
+    <Compile Include="$(WindowsSource)/Services/App/AppInfo.cs;$(WindowsSource)/Services/Common/InspectionFiles.cs;$(WindowsSource)/Services/Common/ToysPaths.Names.cs;$(WindowsSource)/Services/Game/GameLibraryModels.cs;$(WindowsSource)/Services/Game/GameLibraryService.Metadata.cs;$(WindowsSource)/Services/Modding/ModManager.Inventory.cs;$(WindowsSource)/Services/Modding/ModManager.ReadConfig.cs;$(WindowsSource)/Services/Modding/ModProfileModels.cs;$(WindowsSource)/Services/Modding/ModProfileService.Read.cs" Link="Shared/Services/%(Filename)%(Extension)" />
+    <EmbeddedResource Include="../../linux/loader-release.json" LogicalName="AstralParty.Toys.LinuxHost.LoaderRelease.json" />
+    <EmbeddedResource Include="$(CesiumLoaderArchive)" LogicalName="AstralParty.Toys.LinuxHost.CesiumLoader.zip" Condition="'$(CesiumLoaderArchive)' != ''" />
+  </ItemGroup>
+
+  <Target Name="RequireCesiumLoaderArchive" BeforeTargets="PrepareForBuild">
+    <Error Condition="!Exists('$(CesiumLoaderArchive)')" Text="The pinned CesiumLoader archive is required. Run the Linux build script, which verifies the archive and passes -p:CesiumLoaderArchive with its absolute path." />
+  </Target>
+
+  <Target Name="ReadApplicationVersion" BeforeTargets="GetAssemblyVersion">
+    <XmlPeek XmlInputPath="$(WindowsSource)/AstralParty.Toys.csproj" Query="/Project/PropertyGroup/Version/text()">
+      <Output TaskParameter="Result" PropertyName="Version" />
+    </XmlPeek>
+  </Target>
+</Project>

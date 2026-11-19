@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=AstralParty.Toys (Linux)
+Comment=Manage the Astral Party Steam installation and CesiumLoader
+Exec=astralparty-toys-linux
+TryExec=astralparty-toys-linux
+Icon=com.github.higashitaniyume.astralparty-toys-linux
+Terminal=false
+Categories=Game;

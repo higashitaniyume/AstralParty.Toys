@@ -1,0 +1,13 @@
+[package]
+name = "astralparty-toys-linux"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.90"
+publish = false
+
+[dependencies]
+serde_json = "1"
+tauri = { version = "2", features = ["custom-protocol"] }
+
+[build-dependencies]
+tauri-build = "2"
