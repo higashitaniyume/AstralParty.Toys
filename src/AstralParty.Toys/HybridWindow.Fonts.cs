@@ -1,4 +1,6 @@
 using System.Drawing.Text;
+using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Windows;
@@ -86,7 +88,7 @@ public partial class HybridWindow
                     disabled,
                     fontFamily = family,
                     applyToAllFonts = applyToAll,
-                    fonts = GetSystemFontCards()
+                    fonts = GetSystemFontCards(gameDirectory)
                 }
             });
         }
@@ -171,36 +173,65 @@ public partial class HybridWindow
     }
 
     /// <summary>
-    /// 系统字体目录。第一次枚举要读每个字体的字形表（判断是否含中文），
-    /// 大概一两秒；结果缓存到进程结束（运行中装字体的场景很少，重开 TOYS 即可刷新）。
+    /// 系统字体目录。名字来源优先级：
+    /// 1) FontMod 导出的 Unity 实际可识别列表（游戏跑过一次后就有）；
+    /// 2) GDI 家族名与 WPF 家族名的并集（游戏没跑过时的降级，仍由模组侧探测兜底）。
+    /// 只有用游戏自己枚举出来的名字，才不会“选了却变成雅黑”。WPF 家族只用于显示名、
+    /// 中文判定与字重变体。第一次枚举要读字形表，约一两秒；结果缓存到进程结束。
     /// </summary>
-    private static List<SystemFontCard> GetSystemFontCards()
+    private static List<SystemFontCard> GetSystemFontCards(string gameDirectory)
     {
         var cached = _systemFontCards;
         if (cached != null) return cached;
 
-        // GDI 家族名比 WPF 多（WPF 把字重收进同一个 family），变体能不能在游戏里选，
-        // 取决于系统有没有把它注册成独立家族名。
-        var gdi = GetGdiFamilyNames();
+        var gameNames = ReadGameFontNames(gameDirectory);
+        var gdiMap = GetGdiFamilyNameMap();
+        var gdiNames = new HashSet<string>(gdiMap.Keys, StringComparer.OrdinalIgnoreCase);
+        var wpf = BuildWpfFamilyMap();
+
+        var wpfNames = new List<string>();
+        foreach (var family in wpf.Values)
+        {
+            try { if (!string.IsNullOrWhiteSpace(family.Source)) wpfNames.Add(family.Source); }
+            catch { }
+        }
+
+        // 以游戏导出的列表为准；读不到时用两套系统名字的并集，再由模组侧单名字探测拦掉不认识的。
+        IEnumerable<string> sourceNames = gameNames != null && gameNames.Count > 0
+            ? gameNames
+            : gdiMap.Values.Concat(wpfNames).Distinct(StringComparer.OrdinalIgnoreCase);
+
         var cards = new List<SystemFontCard>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var family in Fonts.SystemFontFamilies)
+        foreach (string familyName in sourceNames)
         {
-            string source;
-            try { source = family.Source; }
-            catch { continue; }
-            if (string.IsNullOrWhiteSpace(source) || !seen.Add(source)) continue;
+            if (string.IsNullOrWhiteSpace(familyName) || !seen.Add(familyName)) continue;
+
+            string key = NormalizeFontName(familyName);
+            FontFamily? wpfFamily;
+            wpf.TryGetValue(key, out wpfFamily);
 
             var cjk = false;
-            try { cjk = SupportsChinese(family); }
-            catch { }
+            if (wpfFamily != null)
+            {
+                try { cjk = SupportsChinese(wpfFamily); }
+                catch { }
+            }
 
             cards.Add(new SystemFontCard
             {
-                Family = source,
-                Display = DisplayName(family, source),
+                Family = familyName,
+                Display = wpfFamily != null ? DisplayName(wpfFamily, familyName) : familyName,
                 Cjk = cjk,
-                Variants = BuildVariants(family, source, gdi)
+                Variants = wpfFamily != null
+                    ? BuildVariants(wpfFamily, familyName, gdiNames)
+                    : new List<SystemFontVariant>
+                      {
+                          new SystemFontVariant
+                          {
+                              Label = "常规", Family = familyName, Weight = 400, Style = "normal", Available = true
+                          }
+                      }
             });
         }
 
@@ -212,6 +243,53 @@ public partial class HybridWindow
 
         _systemFontCards = cards;
         return cards;
+    }
+
+    /// <summary>读 FontMod 导出的游戏可识别字体名（<loader>\data\FontMod-installed-fonts.json）。</summary>
+    private static List<string>? ReadGameFontNames(string gameDirectory)
+    {
+        try
+        {
+            string path = Path.Combine(gameDirectory, ModManager.LoaderFolderName, "data", "FontMod-installed-fonts.json");
+            if (!File.Exists(path)) return null;
+            using var doc = JsonDocument.Parse(File.ReadAllBytes(path));
+            var list = new List<string>();
+            foreach (var element in doc.RootElement.EnumerateArray())
+            {
+                string name = element.GetString() ?? "";
+                if (!string.IsNullOrWhiteSpace(name)) list.Add(name);
+            }
+            return list.Count > 0 ? list : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>WPF 家族按归一化名字（含本地化名）建索引，只用于显示/判定，不写进配置。</summary>
+    private static Dictionary<string, FontFamily> BuildWpfFamilyMap()
+    {
+        var map = new Dictionary<string, FontFamily>(StringComparer.OrdinalIgnoreCase);
+        foreach (var family in Fonts.SystemFontFamilies)
+        {
+            string source;
+            try { source = family.Source; }
+            catch { continue; }
+            if (string.IsNullOrWhiteSpace(source)) continue;
+            map[NormalizeFontName(source)] = family;
+
+            try
+            {
+                foreach (var pair in family.FamilyNames)
+                {
+                    if (!string.IsNullOrWhiteSpace(pair.Value))
+                        map[NormalizeFontName(pair.Value)] = family;
+                }
+            }
+            catch { }
+        }
+        return map;
     }
 
     /// <summary>
@@ -307,19 +385,23 @@ public partial class HybridWindow
         return variants;
     }
 
-    private static HashSet<string> GetGdiFamilyNames()
+    /// <summary>
+    /// GDI 家族名（归一化 -> 原始名）。Unity 认的就是这套名字，所以字体页以它为枚举源。
+    /// </summary>
+    private static Dictionary<string, string> GetGdiFamilyNameMap()
     {
-        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         try
         {
             using var collection = new InstalledFontCollection();
             foreach (var family in collection.Families)
             {
-                set.Add(NormalizeFontName(family.Name));
+                if (string.IsNullOrWhiteSpace(family.Name)) continue;
+                map[NormalizeFontName(family.Name)] = family.Name;
             }
         }
         catch { }
-        return set;
+        return map;
     }
 
     private static string NormalizeFontName(string name)
