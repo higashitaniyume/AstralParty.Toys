@@ -170,6 +170,7 @@ public partial class HybridWindow
                         readme = detail.Readme,
                         coverUrl = cover ?? "",
                         featured = detail.Featured,
+                        createdAt = detail.CreatedAt,
                         updatedAt = detail.UpdatedAt,
                         latestVersion = detail.LatestVersion,
                         downloads = detail.Downloads,

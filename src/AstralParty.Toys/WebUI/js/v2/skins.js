@@ -80,7 +80,8 @@
       ? String(c.cardId || '').includes(q.slice(1)) : [c.cardName, c.fileName, c.assetKey, String(c.cardId || '')].some(v => String(v ?? '').toLowerCase().includes(q)))));
     const cat = (k, l) => `<button class="${K.cardCat === k ? 'on' : ''}" data-v2s-cat="${k}">${l} <span class="v2-muted">${k === 'all' ? cards.length : cards.filter(c => c.category === k).length}</span></button>`;
     const custom = cards.filter(c => c.isCustomized).length;
-    const meta = [p.description, p.author && '作者 ' + p.author, p.lastModified && '修改于 ' + new Date(p.lastModified).toLocaleDateString('zh-CN')].filter(Boolean).map(esc).join(' · ');
+    const modified = fmtMinute(p.lastModified);
+    const meta = [p.description, p.author && '作者 ' + p.author, modified !== '—' && '修改于 ' + modified].filter(Boolean).map(esc).join(' · ');
     return `<div class="v2-head">${crumb(pName(p), 'cardBack')}<span class="v2-top-spacer"></span>
         ${on ? '<span class="v2-badge pink">当前方案 · 重启游戏生效</span>' : `<button class="v2-btn primary" data-v2s="cardApply">${I().check}设为当前皮肤</button>`}
         <button class="v2-icon-btn" data-v2s="cardSchemeMenu" data-v2menu title="更多">${I().more}</button></div>
@@ -201,7 +202,8 @@
     const cat = (k, l) => `<button class="${K.aCat === k ? 'on' : ''}" data-v2s-acat="${k}">${l} <span class="v2-muted">${count(k)}</span></button>`;
     const tag = i => i.action === 'replace' ? `<span class="v2-badge">已替换：${esc(i.customFile || '自定义音频')}</span>`
       : i.action === 'mute' ? '<span class="v2-badge off">已静音</span>' : i.action === 'redirect' ? `<span class="v2-tag">重定向 #${esc(i.redirectId)}</span>` : '';
-    const meta = [p.description, p.author && '作者 ' + p.author, p.lastModified && '更新于 ' + String(p.lastModified).slice(0, 10)].filter(Boolean).map(esc).join(' · ');
+    const modified = fmtMinute(p.lastModified);
+    const meta = [p.description, p.author && '作者 ' + p.author, modified !== '—' && '更新于 ' + modified].filter(Boolean).map(esc).join(' · ');
     return `<div class="v2-head">${crumb(p.name || p.id, 'audioBack')}<span class="v2-top-spacer"></span>
         ${on ? '<span class="v2-badge pink">当前方案 · 重启游戏生效</span>' : `<button class="v2-btn primary" data-v2s="audioApply">${I().check}设为当前方案</button>`}
         <button class="v2-icon-btn" data-v2s="audioSchemeMenu" data-v2menu title="更多">${I().more}</button></div>

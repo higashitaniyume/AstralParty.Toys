@@ -101,7 +101,7 @@
       facts.push(fmtBytes(entry.sizeBytes));
 
       if (entry.directoryName) facts.push(`mods\\${entry.directoryName}\\`);
-      if (entry.modifiedUtc) facts.push(new Date(entry.modifiedUtc).toLocaleString('zh-CN'));
+      if (entry.modifiedUtc) facts.push(fmtMinute(entry.modifiedUtc));
 
       const deps = (entry.dependencies || []).length
         ? '依赖：' + entry.dependencies
@@ -132,7 +132,7 @@
     },
     sdkRow(entry) {
       const facts = [fmtBytes(entry.sizeBytes)];
-      if (entry.modifiedUtc) facts.push(new Date(entry.modifiedUtc).toLocaleString('zh-CN'));
+      if (entry.modifiedUtc) facts.push(fmtMinute(entry.modifiedUtc));
       return `<article class="mod-card">
         <div class="mod-card-main">
           <div class="mod-card-name-row">

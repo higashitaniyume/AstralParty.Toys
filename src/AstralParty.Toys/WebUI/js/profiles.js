@@ -231,7 +231,7 @@
         ? t('profile.meta', {
             replays: Number(p.replays) || 0,
             size: fmtBytes(p.bytes),
-            last: p.lastWrite ? new Date(p.lastWrite).toLocaleString() : t('profile.never_used')
+            last: p.lastWrite ? fmtMinute(p.lastWrite) : t('profile.never_used')
           })
         : t('profile.missing_tag');
 

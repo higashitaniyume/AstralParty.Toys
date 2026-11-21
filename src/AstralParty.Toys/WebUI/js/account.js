@@ -6,7 +6,7 @@
   const el = id => document.getElementById(id);
   const state = { visible: false, consent: false, consentChecked: false, privacyOpen: false, tutorialChecking: false, requestId: 0, availability: {}, uid: '', player: null, stats: null, statsCapturedAt: null, details: {}, detailLoading: {}, friends: null, matches: null, matchesCapturedAt: null, matchesLoading: false, matchesFailed: false, matchesAttempt: 0, stale: true, status: 'disconnected', diagnostic: '', capturedAt: null, cooldownTimer: null, bound: false };
   const active = () => ['connected', 'refreshing', 'connecting'].includes(state.status);
-  const date = value => value ? new Date(value).toLocaleString(window.i18n?.currentLocale?.()) : '—';
+  const date = value => fmtMinute(value);
   function clearData() { state.player = null; state.stats = null; state.statsCapturedAt = null; state.details = {}; state.detailLoading = {}; state.friends = null; state.matches = null; state.matchesCapturedAt = null; state.matchesLoading = false; state.matchesFailed = false; state.matchesAttempt = 0; state.capturedAt = null; state.stale = true; }
   function credentialLocation() {
     const root = state.availability.credentialRoot;

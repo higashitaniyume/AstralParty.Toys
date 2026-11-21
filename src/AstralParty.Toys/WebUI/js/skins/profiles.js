@@ -172,7 +172,7 @@
         if ($('skinCardCountTag')) $('skinCardCountTag').textContent = `${p.cardCount} 张卡面`;
         if ($('skinAuthorTag')) $('skinAuthorTag').textContent = `作者: ${p.author || '未知'}`;
         if ($('skinDateTag')) {
-          const dt = p.lastModified ? new Date(p.lastModified).toLocaleDateString('zh-CN') : '—';
+          const dt = fmtMinute(p.lastModified);
           $('skinDateTag').textContent = `修改时间: ${dt}`;
         }
       }

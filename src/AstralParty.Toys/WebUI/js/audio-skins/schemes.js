@@ -295,7 +295,7 @@
       if ($('audioRuleCountTag')) $('audioRuleCountTag').textContent = `${profile.ruleCount || 0} 项规则`;
       if ($('audioAuthorTag')) $('audioAuthorTag').textContent = `作者: ${profile.author || '—'}`;
       if ($('audioDateTag')) {
-        const d = profile.lastModified ? new Date(profile.lastModified).toLocaleDateString() : '—';
+        const d = fmtMinute(profile.lastModified);
         $('audioDateTag').textContent = `更新: ${d}`;
       }
     },

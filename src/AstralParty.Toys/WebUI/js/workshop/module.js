@@ -55,7 +55,6 @@
   };
 
   const t = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
-  const locale = () => window.i18n?.currentLocale?.() || 'zh-CN';
 
   function formatBytes(bytes) {
     const value = Number(bytes || 0);
@@ -66,10 +65,7 @@
   }
 
   function formatDate(value) {
-    if (!value) return '—';
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return '—';
-    return parsed.toLocaleDateString(locale());
+    return fmtMinute(value);
   }
 
   function compareVersions(left, right) {
@@ -587,6 +583,13 @@
     return /^https?:\/\//i.test(text) ? text : '';
   }
 
+  /** 市场网页的模组页；#comments 直达网页上的「给作者留言」页签。 */
+  function commentUrl(modId) {
+    const base = String(state.baseUrl || AppState.librarySettings?.workshopUrl || 'https://forge.hiynet.com').replace(/\/+$/, '');
+    if (!/^https?:\/\//i.test(base) || !modId) return '';
+    return `${base}/mods/${encodeURIComponent(modId)}#comments`;
+  }
+
   function openDetail(id, tab) {
     if (state.consent !== 'granted') {
       openConsentModal();
@@ -697,6 +700,7 @@
         ${fact(t('workshop.latest'), latest ? `v${esc(latest.version)}` : '—', 'is-mono')}
         ${fact(t('workshop.package_size'), latest ? formatBytes(latest.sizeBytes) : '—')}
         ${fact(t('workshop.downloads'), fmt(mod.downloads))}
+        ${fact(t('workshop.created'), formatDate(mod.createdAt))}
         ${fact(t('workshop.updated'), formatDate(mod.updatedAt))}
         ${fact(t('workshop.repository'), repository)}
         ${fact(
@@ -911,6 +915,7 @@
   }
 
   function detailHeroMarkup(mod) {
+    const comments = commentUrl(mod.id);
     return `
       <div class="workshop-detail-hero">
         <div class="workshop-detail-cover">${coverMarkup(mod)}</div>
@@ -940,6 +945,15 @@
               builtIn: mod.builtIn
             })}
             <span id="workshopDetailAction">${detailActionMarkup(mod)}</span>
+            ${
+              comments
+                ? `<a class="secondary-btn" style="text-decoration:none" href="${esc(
+                    comments
+                  )}" target="_blank" rel="noopener noreferrer">${esc(
+                    t('workshop.comments')
+                  )}</a>`
+                : ''
+            }
           </div>
           ${window.StickerModule?.placeholder ? window.StickerModule.placeholder(mod.id) : ''}
           <div class="workshop-progress hidden" id="workshopDetailProgress">
@@ -1487,6 +1501,7 @@
       const mod = payload.mod;
       if (!mod) return;
 
+      if (payload.baseUrl) state.baseUrl = payload.baseUrl;
       state.detailError = '';
       state.detail = mod;
       state.detailId = mod.id;
