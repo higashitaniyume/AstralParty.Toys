@@ -376,7 +376,7 @@ public sealed class LoaderRecoveryTests
         using var h = new Harness(); h.Install();
         var manifest = Path.Combine(h.Game, ModManager.LoaderFolderName, ModManager.InstalledManifestFileName);
         File.Delete(manifest); Directory.CreateDirectory(manifest);
-        Assert.Throws<IOException>(() => h.Manager.Install(h.Game, false, false, allowDowngrade: true));
+        Assert.Throws<IOException>(() => h.Manager.Install(h.Game, false, allowDowngrade: true));
         var failed = Directory.GetFiles(Path.Combine(h.Profile, "install-history", "games"), "*.json", SearchOption.AllDirectories)
             .Select(File.ReadAllText).Where(s => s.Contains("\"failed\""));
         Assert.Single(failed);

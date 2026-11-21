@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -42,28 +42,6 @@ public sealed partial class ModManager
 
     /// <summary>CesiumLoader 仓库（取仓库根 CHANGELOG.md 当作加载器更新日志）。</summary>
     public const string LoaderRepo = "higashitaniyume/CesiumLoader";
-
-    /// <summary>内嵌的加载器更新日志（<c>Resources\ModLoader\loader-changelog.md</c>）：CI 打包时写入
-    /// CesiumLoader 仓库根 CHANGELOG.md 的内容。本地开发构建里是占位内容 → 返回空串，只作离线兜底。</summary>
-    public static string BundledLoaderChangelog => ReadBundledLoaderChangelog();
-
-    private static string ReadBundledLoaderChangelog()
-    {
-        try
-        {
-            using var stream = Assembly.GetManifestResourceStream(ResourcePrefix + "loader-changelog.md");
-            if (stream is null) return "";
-            using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
-            var text = reader.ReadToEnd().Trim();
-            // CI 没写入真实内容时是占位符，不当作有效日志
-            if (text.Length == 0 || text.StartsWith("<!-- placeholder", StringComparison.OrdinalIgnoreCase)) return "";
-            return text;
-        }
-        catch
-        {
-            return "";
-        }
-    }
 
     /// <summary>去 GitHub 取指定仓库根目录 CHANGELOG.md（raw），并应用设置中选择的 GitHub 镜像。
     /// 失败抛异常，由调用方兜底内嵌。</summary>
@@ -434,8 +412,10 @@ public sealed partial class ModManager
         }
     }
 
-    /// <summary>校验发布包内容：文件齐全 + SHA256 与清单一致（未发布清单时仅校验存在）。</summary>
-    private static void ValidatePackage(byte[] zipBytes, LoaderPackageInfo manifest)
+    /// <summary>校验发布包内容：路径安全 / 重复条目 / 大小上限 + 必需文件齐全，
+    /// 再逐个核对**清单里声明的每个文件**（存在 + SHA256 一致；老包清单没写哈希时只校验存在）。
+    /// 返回清单没有覆盖到的文件数（这些文件仍会安装，但无法校验哈希，调用方记一条警告）。</summary>
+    private static int ValidatePackage(byte[] zipBytes, LoaderPackageInfo manifest)
     {
         using var stream = new MemoryStream(zipBytes);
         using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
@@ -451,40 +431,46 @@ public sealed partial class ModManager
                 throw new InvalidDataException("发布包包含不安全路径、重复文件或超过大小限制。");
         }
 
-        // 必需文件：加载器 / 配置 / SDK
-        var requiredRelative = new List<string>
-        {
-            "version.dll",
-            "AstralParty_ModLoader/doorstop_config.json",
-            "AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll"
-        };
-        // 包内 mod：以发布包内容为准，mods\{ModId}\ 下的文件全部纳入校验。
-        requiredRelative.AddRange(archive.Entries
-            .Where(e => IsPackageModEntry(e.FullName)
-                        && !string.IsNullOrEmpty(e.Name))
-            .Select(e => e.FullName));
-        if (requiredRelative.Count == 3)
+        // 必需文件：加载器 / 配置模板 / SDK
+        foreach (var relative in new[] { LoaderDllName, PackageConfigEntry, PackageSdkEntry })
+            if (archive.GetEntry(relative) is null)
+                throw new InvalidDataException($"发布包缺少文件：{relative}");
+        // 包内 mod：以发布包内容为准，mods\{ModId}\ 下的文件全部安装。
+        if (!archive.Entries.Any(e => IsPackageModEntry(e.FullName) && !string.IsNullOrEmpty(e.Name)))
             throw new InvalidDataException("发布包里没有任何 mod（AstralParty_ModLoader/mods/ 为空），已停止安装。");
 
-        foreach (var relative in requiredRelative)
+        // 清单里声明的文件必须真的在包里，且内容一致（这是「导入发布包」唯一的内容凭证）
+        foreach (var pair in manifest.Files)
         {
-            var entry = archive.GetEntry(relative);
-            if (entry is null) throw new InvalidDataException($"发布包缺少文件：{relative}");
-            if (manifest.Files.TryGetValue(relative, out var expected) && expected.Length > 0)
-            {
-                using var entryStream = entry.Open();
-                using var sha = SHA256.Create();
-                var actual = Convert.ToHexString(sha.ComputeHash(entryStream)).ToLowerInvariant();
-                if (!string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidDataException($"发布包校验失败：{relative} 哈希不一致。");
-            }
+            var entry = archive.GetEntry(pair.Key);
+            if (entry is null) throw new InvalidDataException($"发布包缺少清单里声明的文件：{pair.Key}");
+            if (string.IsNullOrEmpty(pair.Value)) continue;
+            using var entryStream = entry.Open();
+            using var sha = SHA256.Create();
+            var actual = Convert.ToHexString(sha.ComputeHash(entryStream)).ToLowerInvariant();
+            if (!string.Equals(actual, pair.Value, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException($"发布包校验失败：{pair.Key} 哈希不一致。");
         }
+
+        // 清单本身不列自己；其余没被清单覆盖的文件（旧包 / 手工打包）只计数，不阻断安装
+        return archive.Entries.Count(e => !string.IsNullOrEmpty(e.Name)
+            && !e.FullName.Replace('\\', '/').Equals(InstalledManifestFileName, StringComparison.OrdinalIgnoreCase)
+            && !manifest.Files.ContainsKey(e.FullName.Replace('\\', '/')));
     }
 
-    /// <summary>把发布包内容写入游戏目录（version.dll + doorstop_config + sdk + mods + sidecar + 清单）。游戏运行中覆盖 version.dll 会因占用失败。
-    /// 包内版本比游戏目录已装的更旧时（降级）默认拒绝，需要 allowDowngrade 显式放行。</summary>
-    public void InstallPackage(string gameDirectory, byte[] zipBytes, bool overwriteDll, bool allowDowngrade = false,
-        LoaderProgressCallback? progress = null)
+    /// <summary>
+    /// 安装 CesiumLoader 发布包：先按包内清单逐文件校验哈希，再**按包内布局整包解压**到游戏目录
+    /// —— <c>version.dll</c> / <c>version.pdb</c> / <c>CesiumLoader-NOTICE.txt</c> /
+    /// <c>CesiumLoader-LICENSE.txt</c> / <c>README.txt</c> / <c>CHANGELOG.md</c> 落游戏 exe 目录，
+    /// <c>cesium-loader.json</c> 与 <c>AstralParty_ModLoader\**</c>（sdk / bootstrap / mods / …）
+    /// 落加载器目录。「安装 / 重新安装内置版本」也走这里，包来自程序集内嵌资源。
+    ///
+    /// 包内版本比游戏目录已装的更旧时（降级）默认拒绝，需要 allowDowngrade 显式放行；
+    /// 游戏目录里那个不属于本工具的 version.dll 需要 overwriteDll 确认。
+    /// 通用名文件（README.txt / CHANGELOG.md）遇到不是本工具落的同名文件时跳过并返回给调用方，绝不覆盖玩家文件。
+    /// </summary>
+    public LoaderInstallResult InstallPackage(string gameDirectory, byte[] zipBytes, bool overwriteDll,
+        bool allowDowngrade = false, LoaderProgressCallback? progress = null)
     {
         if (string.IsNullOrWhiteSpace(gameDirectory))
             throw new ArgumentException("请先选择游戏目录。");
@@ -496,13 +482,19 @@ public sealed partial class ModManager
         progress?.Invoke("verify", 5, "正在校验发布包…");
         var manifest = ParsePackageManifest(zipBytes)
             ?? throw new InvalidDataException("发布包缺少清单（cesium-loader.json），已停止安装。");
-        ValidatePackage(zipBytes, manifest);
+        var unlistedFiles = ValidatePackage(zipBytes, manifest);
+        if (unlistedFiles > 0)
+            ToysLog.Warn("modloader", $"发布包清单没有覆盖 {unlistedFiles} 个文件，这些文件按包内内容安装（未做哈希校验）。");
         ToysLog.Info("modloader",
             $"开始安装 CesiumLoader {manifest.Version}（发布包 {FormatBytes(zipBytes.Length)}，目标 {gameDirectory}）");
 
-        // 降级闸门（与 Install 同一条规则）：包内版本比游戏目录已装的更旧 → 默认拒绝。
-        // 已装版本从安装清单读，老安装（没有清单）退回读加载器日志。
-        var installedBeforePackage = ReadCurrentInstallationVersion(gameDirectory);
+        // 降级闸门（内嵌安装与导入发布包同一条规则）：包内版本比游戏目录已装的更旧 → 默认拒绝。
+        // 已装版本从游戏目录里的安装清单读，清单缺失（老安装）时退回 Toys 的安装历史。
+        // ★ 但只有目录里**还留着加载器**时才谈得上「已装」：文件被手工删干净之后历史仍在数据根里，
+        //   那时装回旧版本是重新安装而不是降级，不能拦（否则用户会看到「明明删干净了还说已装 3.8.10」）。
+        var installedBeforePackage = HasLoaderOnDisk(gameDirectory)
+            ? ReadCurrentInstallationVersion(gameDirectory)
+            : "";
         var packageVersion = manifest.Version;
         if (!allowDowngrade && packageVersion.Length > 0 && installedBeforePackage.Length > 0
             && CompareSemVer(packageVersion, installedBeforePackage) < 0)
@@ -517,6 +509,7 @@ public sealed partial class ModManager
                 "如确定要覆盖，请勾选「允许覆盖其它 version.dll」。");
 
         var remainDisabled = IsRetainedDisabled(gameDirectory);
+        var previousInstallation = ReadRetainedInstallation(gameDirectory);
         using var retained = BeginRetainedOperation(gameDirectory, "install-package", zipBytes);
         // Cache individual input files before any game mutation, so even a partial install is recoverable.
         using (var cacheArchive = new ZipArchive(new MemoryStream(zipBytes), ZipArchiveMode.Read))
@@ -525,31 +518,30 @@ public sealed partial class ModManager
                 if (entry.Length > 64 * 1024 * 1024) throw new InvalidDataException("发布包文件超过大小限制。");
                 CacheBytes(ReadEntryBytes(entry));
             }
+
+        var skipped = new List<string>();
         try
         {
-            progress?.Invoke("install", 20, "正在写入加载器文件…");
+            progress?.Invoke("install", 30, "正在解压发布包…");
             using var stream = new MemoryStream(zipBytes);
             using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
 
             var loaderRoot = Path.Combine(gameDirectory, LoaderFolderName);
+            Directory.CreateDirectory(loaderRoot);
             Directory.CreateDirectory(Path.Combine(loaderRoot, ModsFolderName));
             Directory.CreateDirectory(Path.Combine(loaderRoot, DisabledModsFolderName));
             Directory.CreateDirectory(Path.Combine(loaderRoot, SdkFolderName));
             Directory.CreateDirectory(Path.Combine(loaderRoot, LogsFolderName));
 
-            // version.dll → 游戏 exe 目录（Doorstop 代理）
-            if (!remainDisabled) ExtractEntryToFile(archive, "version.dll", targetDll);
-            // version.dll 的同名符号文件（.pdb，与 dll 成对）：调试器在 dll 同目录自动找它，
-            // 崩溃栈能还原成文件行号。老发布包不带 .pdb → 缺失时静默跳过。
-            ExtractOptionalEntryToFile(archive, "version.pdb", Path.ChangeExtension(targetDll, ".pdb"));
-            // doorstop_config.json → AstralParty_ModLoader\
-            // 已存在则保留用户配置(变速/开关等), 不覆盖; 不存在才从包提取。
             var configPath = Path.Combine(loaderRoot, ConfigFileName);
             var isNewConfig = !File.Exists(configPath);
-            if (isNewConfig)
-                ExtractEntryToFile(archive, "AstralParty_ModLoader/doorstop_config.json", configPath);
+
+            // 包内每个文件条目按布局落地；doorstop 已存在就不覆盖，mods 走「保留用户设置」的规则
+            ExtractPackageEntries(archive, gameDirectory, loaderRoot, remainDisabled,
+                CaptureInstalledModsEnabled(loaderRoot), previousInstallation, skipped);
+
             // 老配置可能停在旧 SDK 号（不覆盖用户配置）：抬到随包版本，否则新版内置 mod 会被拒绝加载
-            var packageConfigEntry = archive.GetEntry("AstralParty_ModLoader/doorstop_config.json");
+            var packageConfigEntry = archive.GetEntry(PackageConfigEntry);
             SyncLoaderConfigSdkVersion(configPath,
                 packageConfigEntry is null ? "" : ReadSdkVersionFromConfigBytes(ReadEntryBytes(packageConfigEntry)));
             // 老配置里没有 Steam 绕过开关：补齐（只追加缺失的键，不动用户已有值与注释）
@@ -560,30 +552,11 @@ public sealed partial class ModManager
             // 模板可能默认开启绕过，须同时关闭主开关、匹配和房间列表查询。
             if (isNewConfig && !SetSteamBypassProfile(gameDirectory, enabled: false))
                 throw new InvalidDataException("无法设置首次安装的 Steam 启动方式，加载器配置不完整。");
-            // SDK
-            ExtractEntryToFile(archive, "AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll",
-                Path.Combine(loaderRoot, SdkFolderName, SdkDllName));
-            // SDK 的同名符号文件（同上；老发布包没有就跳过）
-            ExtractOptionalEntryToFile(archive, "AstralParty_ModLoader/sdk/CesiumLoader.SDK.pdb",
-                Path.Combine(loaderRoot, SdkFolderName, Path.ChangeExtension(SdkDllName, ".pdb")));
-            // bootstrap\：托管引导（仅 doorstop_config 的 useManagedBootstrap=true 时才加载）。
-            // 包内有就整套装（dll + 同名 pdb）；老发布包没有该目录则跳过。
-            ExtractDirectoryEntries(archive, "AstralParty_ModLoader/bootstrap/", loaderRoot);
-            // mod：每 mod 一个文件夹，发布包里有什么就装什么；
-            // 同时拒绝含 ".." 的条目，避免 zip 路径穿越写出 mods\ 之外。
-            // ★ 保留用户已有 mod 的 enabled 开关与 config.json，避免更新加载器时重置用户设置。
-            progress?.Invoke("install", 45, "正在安装随包模组…");
-            var preservedModEnabled = CaptureInstalledModsEnabled(loaderRoot);
-            ExtractModDirectoryEntries(archive, PackageModsPrefix, loaderRoot, preservedModEnabled);
 
-            // 写入安装清单（记录版本，供 GetStatus 显示/对比）
+            // 安装清单由包内那份直接落盘（见 ExtractPackageEntries）；这里只确认它确实写进去了
             progress?.Invoke("install", 85, "正在写入安装清单…");
-            var manifestEntry = archive.GetEntry(InstalledManifestFileName);
-            if (manifestEntry is not null)
-            {
-                using var reader = new StreamReader(manifestEntry.Open());
-                File.WriteAllText(Path.Combine(loaderRoot, InstalledManifestFileName), reader.ReadToEnd());
-            }
+            if (!File.Exists(Path.Combine(loaderRoot, InstalledManifestFileName)))
+                throw new InvalidDataException($"发布包缺少清单文件：{InstalledManifestFileName}");
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -596,24 +569,136 @@ public sealed partial class ModManager
         SaveStoredGameDirectory(gameDirectory);
         using var completedZip = new ZipArchive(new MemoryStream(zipBytes), ZipArchiveMode.Read);
         retained.Complete(manifest.Version, HashBytes(ReadEntryBytes(completedZip.GetEntry(LoaderDllName)!)), remainDisabled, packageHash: HashBytes(zipBytes));
+        if (skipped.Count > 0)
+            ToysLog.Info("modloader", $"保留了游戏目录里原有的同名文件（未覆盖）：{string.Join("、", skipped)}");
         ToysLog.Info("modloader",
             $"CesiumLoader {manifest.Version} 安装完成" + (remainDisabled ? "（保留停用状态）" : ""));
         progress?.Invoke("done", 100, "加载器安装完成");
+        return new LoaderInstallResult(manifest.Version, skipped);
     }
 
-    private static void ExtractEntryToFile(ZipArchive archive, string entryName, string targetPath)
+    /// <summary>
+    /// 把发布包里的每个文件条目按包内布局落地（zip 布局 = 游戏目录布局）。
+    /// <list type="bullet">
+    ///   <item>根级 <c>version.dll</c> / <c>version.pdb</c> / NOTICE / LICENSE / README.txt / CHANGELOG.md → 游戏 exe 目录；
+    ///         加载器处于「停用」状态时 <c>version.dll</c> 不写回；通用名文件遇到陌生同名文件时跳过并记入
+    ///         <paramref name="skipped"/>，绝不覆盖玩家自己的文件；</item>
+    ///   <item><c>cesium-loader.json</c> → 加载器目录根（安装清单，版本来源）；</item>
+    ///   <item><c>AstralParty_ModLoader\**</c> → 加载器目录下同相对路径。其中
+    ///         <c>doorstop_config.json</c> 已存在则不覆盖（保留用户配置），<c>mods\**</c> 走模组落地规则
+    ///         （不覆盖已有 <c>config.json</c>、保留 <c>enabled</c>、停用的模组留在 <c>disabled_mods</c>）。</item>
+    /// </list>
+    /// </summary>
+    private static void ExtractPackageEntries(ZipArchive archive, string gameDirectory, string loaderRoot,
+        bool remainDisabled, IReadOnlyDictionary<string, bool> preservedModEnabled,
+        InstallationRecord? previousInstallation, List<string> skipped)
     {
-        var entry = archive.GetEntry(entryName)
-            ?? throw new InvalidDataException($"发布包缺少文件：{entryName}");
-        WriteAllBytesProtected(targetPath, ReadEntryBytes(entry));
-    }
+        var installedBefore = new HashSet<string>(
+            previousInstallation?.Files.Keys ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>提取可选条目：发布包里没有该条目就静默跳过（老发布包不带 .pdb 符号文件）。</summary>
-    private static void ExtractOptionalEntryToFile(ZipArchive archive, string entryName, string targetPath)
-    {
-        var entry = archive.GetEntry(entryName);
-        if (entry is null || string.IsNullOrEmpty(entry.Name)) return;
-        WriteAllBytesProtected(targetPath, ReadEntryBytes(entry));
+        foreach (var entry in archive.Entries)
+        {
+            if (string.IsNullOrEmpty(entry.Name)) continue;   // 目录条目（logs\ 等目录已由调用方建好）
+            var path = entry.FullName.Replace('\\', '/');
+            if (path.Contains("..", StringComparison.Ordinal) || Path.IsPathRooted(path))
+                throw new InvalidDataException($"发布包含有非法路径：{entry.FullName}");
+
+            // ── 安装清单（包内根级文件）→ 加载器目录根，而不是游戏 exe 目录 ────────
+            if (path.Equals(InstalledManifestFileName, StringComparison.OrdinalIgnoreCase))
+            {
+                WriteAllBytesProtected(Path.Combine(loaderRoot, InstalledManifestFileName), ReadEntryBytes(entry));
+                continue;
+            }
+
+            // ── 其余根级文件：落在游戏 exe 目录 ─────────────────────────────────
+            if (!path.Contains('/'))
+            {
+                var target = Path.Combine(gameDirectory, path);
+                if (path.Equals(LoaderDllName, StringComparison.OrdinalIgnoreCase) && remainDisabled)
+                    continue;   // 加载器停用中：不把 version.dll 写回去
+                // 通用名文件只覆盖本工具落过的那一份：玩家自己放的 README.txt / CHANGELOG.md 一律不动
+                if (IsGenericRootFileName(path) && File.Exists(target) && !installedBefore.Contains(path))
+                {
+                    var packageBytes = ReadEntryBytes(entry);
+                    if (!MatchesHash(target, HashBytes(packageBytes)))
+                    {
+                        skipped.Add(path);
+                        continue;
+                    }
+                }
+                WriteAllBytesProtected(target, ReadEntryBytes(entry));
+                continue;
+            }
+
+            // ── 包内加载器目录之外的内容：原样落到加载器目录下 ────────────────
+            if (!path.StartsWith(PackageLoaderPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                var otherRelative = path.Replace('/', Path.DirectorySeparatorChar);
+                if (!IsSafeRelativePath(otherRelative))
+                    throw new InvalidDataException($"发布包含有非法路径：{entry.FullName}");
+                var otherTarget = Path.Combine(loaderRoot, otherRelative);
+                Directory.CreateDirectory(Path.GetDirectoryName(otherTarget)!);
+                WriteAllBytesProtected(otherTarget, ReadEntryBytes(entry));
+                continue;
+            }
+
+            // ── AstralParty_ModLoader\** ─────────────────────────────────────
+            var relative = path.Substring(PackageLoaderPrefix.Length).Replace('/', Path.DirectorySeparatorChar);
+            if (!IsSafeRelativePath(relative))
+                throw new InvalidDataException($"发布包含有非法路径：{entry.FullName}");
+
+            if (relative.Equals(ConfigFileName, StringComparison.OrdinalIgnoreCase))
+            {
+                // 已存在则保留用户配置（变速 / 开关等），随后调用方单独抬 sdkVersion、补新键
+                var configPath = Path.Combine(loaderRoot, ConfigFileName);
+                if (!File.Exists(configPath)) WriteAllBytesProtected(configPath, ReadEntryBytes(entry));
+                continue;
+            }
+
+            if (relative.StartsWith(ModsFolderName + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+            {
+                var segments = relative.Split(Path.DirectorySeparatorChar);
+                // 停用的 mod 已经躺在 disabled_mods 里：这次更新写回原处，不能借机把它放回 mods（等于偷偷重新启用）
+                var targetRoot = segments.Length > 2
+                                 && Directory.Exists(Path.Combine(loaderRoot, DisabledModsFolderName, segments[1]))
+                    ? DisabledModsFolderName
+                    : ModsFolderName;
+                var modRelative = segments.Length > 2
+                    ? Path.Combine(new[] { targetRoot, segments[1] }.Concat(segments.Skip(2)).ToArray())
+                    : relative;
+                var target = Path.Combine(loaderRoot, modRelative);
+                var fileName = Path.GetFileName(target);
+
+                // 1. 保留已有 mod 配置（config.json）：发布包内默认配置不覆盖用户已调整的值
+                if (fileName.Equals(ModConfigFileName, StringComparison.OrdinalIgnoreCase) && File.Exists(target))
+                    continue;
+
+                var bytes = ReadEntryBytes(entry);
+
+                // 2. sidecar：用户先前设置过启用/禁用状态就保留
+                if (fileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
+                    && !fileName.Equals(ModConfigFileName, StringComparison.OrdinalIgnoreCase))
+                {
+                    var modId = Path.GetFileNameWithoutExtension(fileName);
+                    var parentDir = Path.GetFileName(Path.GetDirectoryName(target));
+                    if (preservedModEnabled.TryGetValue(modId, out var previousEnabled) ||
+                        (!string.IsNullOrEmpty(parentDir) && preservedModEnabled.TryGetValue(parentDir, out previousEnabled)))
+                    {
+                        bytes = System.Text.Encoding.UTF8.GetBytes(
+                            SetJsonBool(System.Text.Encoding.UTF8.GetString(bytes), "enabled", previousEnabled));
+                    }
+                }
+
+                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                WriteAllBytesProtected(target, bytes);
+                continue;
+            }
+
+            // 其余加载器目录内容（sdk\、bootstrap\、NOTICE / LICENSE、日志目录里的文件等）原样落地
+            var fileTarget = Path.Combine(loaderRoot, relative);
+            Directory.CreateDirectory(Path.GetDirectoryName(fileTarget)!);
+            WriteAllBytesProtected(fileTarget, ReadEntryBytes(entry));
+        }
     }
 
     /// <summary>收集两个 mod 目录下所有已装 mod 的用户启用状态（显式设置了 enabled 的）。
@@ -685,78 +770,6 @@ public sealed partial class ModManager
                 }
             }
             catch { }
-        }
-    }
-
-    /// <summary>把 zip 内 mods 前缀下的全部文件条目提取到 loaderRoot，保留目录层级。
-    /// 保留用户已装 mod 的 enabled 开关状态（不因发布包更新重置为默认启用），且不覆盖已存在的 mod config.json。</summary>
-    private static void ExtractModDirectoryEntries(ZipArchive archive, string entryPrefix, string loaderRoot, IReadOnlyDictionary<string, bool> preservedEnabled)
-    {
-        var packageRootLength = LoaderFolderName.Length + 1;   // 去掉 "AstralParty_ModLoader/" 前缀
-        foreach (var entry in archive.Entries)
-        {
-            if (!entry.FullName.StartsWith(entryPrefix, StringComparison.OrdinalIgnoreCase)) continue;
-            if (string.IsNullOrEmpty(entry.Name)) continue;   // 目录条目
-            var relative = entry.FullName.Substring(packageRootLength).Replace('/', Path.DirectorySeparatorChar);
-            if (!IsSafeRelativePath(relative))
-                throw new InvalidDataException($"发布包含有非法路径：{entry.FullName}");
-            // 停用的 mod 已经躺在 disabled_mods 里：这次更新写回原处，不能借机把它放回 mods(等于偷偷重新启用)
-            var segments = relative.Split(Path.DirectorySeparatorChar);
-            var targetRoot = ModsFolderName;
-            if (segments.Length > 2 && segments[0].Equals(ModsFolderName, StringComparison.OrdinalIgnoreCase))
-            {
-                var folderName = segments[1];
-                if (Directory.Exists(Path.Combine(loaderRoot, DisabledModsFolderName, folderName)))
-                    targetRoot = DisabledModsFolderName;
-                relative = Path.Combine(new[] { targetRoot, folderName }.Concat(segments.Skip(2)).ToArray());
-            }
-            var target = Path.Combine(loaderRoot, relative);
-            var fileName = Path.GetFileName(target);
-
-            // 1. 保留已有 mod 配置（config.json）：发布包内默认配置不覆盖用户已调整的值
-            if (string.Equals(fileName, ModConfigFileName, StringComparison.OrdinalIgnoreCase) && File.Exists(target))
-            {
-                continue;
-            }
-
-            var bytes = ReadEntryBytes(entry);
-
-            // 2. 如果是 sidecar 文件且用户先前设置过启用/禁用：保留其状态
-            if (fileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(fileName, ModConfigFileName, StringComparison.OrdinalIgnoreCase))
-            {
-                var modId = Path.GetFileNameWithoutExtension(fileName);
-                var parentDir = Path.GetFileName(Path.GetDirectoryName(target));
-                if (preservedEnabled.TryGetValue(modId, out var previousEnabled) ||
-                    (!string.IsNullOrEmpty(parentDir) && preservedEnabled.TryGetValue(parentDir, out previousEnabled)))
-                {
-                    var jsonText = System.Text.Encoding.UTF8.GetString(bytes);
-                    var updatedJson = SetJsonBool(jsonText, "enabled", previousEnabled);
-                    bytes = System.Text.Encoding.UTF8.GetBytes(updatedJson);
-                }
-            }
-
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            WriteAllBytesProtected(target, bytes);
-        }
-    }
-
-    /// <summary>把 zip 内某个前缀（如 AstralParty_ModLoader/mods/ 或 …/bootstrap/）下的全部文件条目
-    /// 提取到 loaderRoot 下的同名相对路径，保留目录层级。包里没有该前缀下的文件时不报错（可选组件）。
-    /// 拒绝含 ".." 或绝对路径的条目，避免 zip 路径穿越写出 loaderRoot 之外。</summary>
-    private static void ExtractDirectoryEntries(ZipArchive archive, string entryPrefix, string loaderRoot)
-    {
-        var packageRootLength = LoaderFolderName.Length + 1;   // 去掉 "AstralParty_ModLoader/" 前缀
-        foreach (var entry in archive.Entries)
-        {
-            if (!entry.FullName.StartsWith(entryPrefix, StringComparison.OrdinalIgnoreCase)) continue;
-            if (string.IsNullOrEmpty(entry.Name)) continue;   // 目录条目
-            var relative = entry.FullName.Substring(packageRootLength).Replace('/', Path.DirectorySeparatorChar);
-            if (!IsSafeRelativePath(relative))
-                throw new InvalidDataException($"发布包含有非法路径：{entry.FullName}");
-            var target = Path.Combine(loaderRoot, relative);
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            WriteAllBytesProtected(target, ReadEntryBytes(entry));
         }
     }
 

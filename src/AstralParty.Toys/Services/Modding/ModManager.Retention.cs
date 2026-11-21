@@ -1,4 +1,4 @@
-﻿using System.IO.Compression;
+using System.IO.Compression;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -90,7 +90,10 @@ public sealed partial class ModManager
             record.Version = EmbeddedVersion;
         var root = Path.Combine(directory, LoaderFolderName);
         var files = new List<string>();
-        foreach (var name in new[] { LoaderDllName, "version.pdb" })
+        // 发布包落在游戏 exe 目录的文件：version.dll / version.pdb / NOTICE / LICENSE 按名字认定，
+        // README.txt / CHANGELOG.md 这类通用名只有在安装记录里出现过（= 本工具落过）才算 ——
+        // 备份与回滚都不该把玩家自己的同名文件卷进来。
+        foreach (var name in RootFilesOwnedByLoader(previous).Distinct(StringComparer.OrdinalIgnoreCase))
             if (File.Exists(Path.Combine(directory, name))) files.Add(Path.Combine(directory, name));
         if (Directory.Exists(root))
         {
@@ -157,16 +160,6 @@ public sealed partial class ModManager
         }
     }
 
-    private static void SetInstalledLoaderHash(string directory, string hash)
-    {
-        var path = Path.Combine(directory, LoaderFolderName, InstalledManifestFileName);
-        if (!File.Exists(path)) return;
-        var manifest = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path))!;
-        manifest["files"] ??= new System.Text.Json.Nodes.JsonObject();
-        manifest["files"]![LoaderDllName] = hash.ToLowerInvariant();
-        AtomicWrite(path, System.Text.Encoding.UTF8.GetBytes(manifest.ToJsonString(HistoryJson)));
-    }
-
     /// <summary>
     /// 不切换当前游戏，查某个目录里的加载器（卸载弹窗要列出所有目录）。
     /// 只有加载器文件夹、没有 dll（停用 / 缺失）时也算本工具的，和 Uninstall 的判断一致。
@@ -187,8 +180,11 @@ public sealed partial class ModManager
         return record is { Removed: false } ? record.Version : "";
     }
 
+    /// <summary>加载器是否处于「停用但保留」状态：历史记录说停用过、version.dll 不在、**加载器目录还在**。
+    /// 目录都不在了（玩家手工删干净）就不算停用 —— 否则重装时不会写回 version.dll，界面却说装好了。</summary>
     private bool IsRetainedDisabled(string directory) => ReadRetainedInstallation(directory) is { Disabled: true, Removed: false }
-        && !File.Exists(Path.Combine(directory, LoaderDllName));
+        && !File.Exists(Path.Combine(directory, LoaderDllName))
+        && Directory.Exists(Path.Combine(directory, LoaderFolderName));
 
     private void ApplyRetainedStatus(ModStatus status)
     {

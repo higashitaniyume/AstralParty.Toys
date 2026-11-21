@@ -189,7 +189,7 @@ public partial class HybridWindow
                     payload = new
                     {
                         status,
-                        builtInMods = ModManager.EmbeddedBuiltInModIdList,
+                        builtInMods = ModManager.BuiltInModIds,
                         mirrorType = _libraryService.Settings.GitHubMirrorType,
                         customMirrorUrl = _libraryService.Settings.CustomGitHubMirrorUrl
                     }
@@ -253,7 +253,7 @@ public partial class HybridWindow
         }
     }
 
-    private void HandleModInstall(bool overwriteDll, bool includeSample, bool allowDowngrade)
+    private void HandleModInstall(bool overwriteDll, bool allowDowngrade)
     {
         if (_modInstallRunning)
         {
@@ -261,21 +261,25 @@ public partial class HybridWindow
             return;
         }
         _modInstallRunning = true;
-        _ = InstallModLoaderAsync(overwriteDll, includeSample, allowDowngrade);
+        _ = InstallModLoaderAsync(overwriteDll, allowDowngrade);
     }
 
     private bool _modInstallRunning;
 
-    /// <summary>安装内置加载器：写文件放到后台线程，进度经 <see cref="LoaderProgressReporter"/> 实时回给界面。</summary>
-    private async Task InstallModLoaderAsync(bool overwriteDll, bool includeSample, bool allowDowngrade)
+    /// <summary>安装内置加载器：解压内嵌的发布包放到后台线程，进度经 <see cref="LoaderProgressReporter"/> 实时回给界面。</summary>
+    private async Task InstallModLoaderAsync(bool overwriteDll, bool allowDowngrade)
     {
         try
         {
             var directory = RequireModGameDirectory();
             var reporter = LoaderProgressReporter();
-            await Task.Run(() => _modManager.Install(directory, overwriteDll, includeSample, allowDowngrade, reporter))
+            var result = await Task.Run(() => _modManager.Install(directory, overwriteDll, allowDowngrade, reporter))
                 .ConfigureAwait(true);
-            Post(new { type = "toast", message = ModManager.DescribeInstalled() });
+            var message = ModManager.DescribeInstalled();
+            // 发布包里的 README.txt / CHANGELOG.md 这类通用名文件撞上玩家自己的文件时会被保留，得说一声
+            if (result.HasSkippedFiles)
+                message += $"；游戏目录里原有的 {string.Join("、", result.SkippedFiles)} 已保留，未覆盖。";
+            Post(new { type = "toast", message = message });
             _ = PostSteamBypassSyncAsync();   // 刚装/更新完，首页的启动方式单选框跟上新配置
         }
         catch (Exception ex)

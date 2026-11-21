@@ -33,12 +33,17 @@ public sealed class ReleaseWorkflowTests
     }
 
     [Fact]
-    public void Release_UsesLatestLoaderWithoutBundledSkins()
+    public void Release_EmbedsTheWholeLatestLoaderPackage()
     {
         var workflow = ReadWorkflow();
         Assert.Contains("releases/latest/download/cesium-loader.zip", workflow);
         Assert.DoesNotContain("cesium-default-skins.zip", workflow);
-        Assert.Contains("if ((Test-Path $packagedChangelog) -and", workflow);
+        // 整包内嵌：拷进 Resources\ModLoader\cesium-loader.zip，并按包内清单校验
+        Assert.Contains("Resources/ModLoader", workflow);
+        Assert.Contains("cesium-loader.json", workflow);
+        // 不再逐文件同步，也不再单独同步加载器版本号 / 更新日志（都在运行时从包里读）
+        Assert.DoesNotContain("loader-changelog.md", workflow);
+        Assert.DoesNotContain("BuiltInMods.props", workflow);
     }
 
     [Fact]

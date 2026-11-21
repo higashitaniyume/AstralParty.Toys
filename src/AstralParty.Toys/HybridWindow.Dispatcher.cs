@@ -424,9 +424,7 @@ public partial class HybridWindow
                                        modOverwriteElement.GetBoolean();
                     var modAllowDowngrade = root.TryGetProperty("allowDowngrade", out var modDowngradeElement) &&
                                             modDowngradeElement.GetBoolean();
-                    var includeSample = root.TryGetProperty("includeSample", out var includeSampleElement) &&
-                                        includeSampleElement.GetBoolean();
-                    HandleModInstall(modOverwrite, includeSample, modAllowDowngrade);
+                    HandleModInstall(modOverwrite, modAllowDowngrade);
                     break;
                 case "modDisableLoader":
                     await HandleLoaderRecoveryAsync(false);

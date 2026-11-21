@@ -25,6 +25,6 @@ Player.log 里是 `Unsupported video codec 'VP9'`）也会藏掉主题背景、�
 
 ## 其他
 
-工具箱不把它放进加载器的内置模组清单（`BuiltInMods.props` 由发布流程从 CesiumLoader 发布包同步），
+工具箱不把它放进加载器的内置模组清单（内置清单直接来自 CesiumLoader 发布包里的 `mods\` 目录），
 而是在「自定义 → 主页背景」第一次设置背景时装进游戏的 `AstralParty_ModLoader\mods\HomeBackgroundMod\`。
 更新时：替换这里的 dll / json，改上面的版本和 SHA-256。

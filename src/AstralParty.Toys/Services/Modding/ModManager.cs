@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO.Compression;
 using System.Net.Http;
 using System.Reflection;
@@ -45,46 +45,8 @@ public sealed partial class ModManager
     public const int MaxTimeoutSec = 3600;
 
     /// <summary>
-    /// 随程序集内置的 mod（ModId，顺序即安装顺序）。资源名 = {ModId}.dll / {ModId}.json。
-    ///
-    /// 从按 BuiltInMods.props 公开分发清单编入的资源中枚举，
-    /// 内嵌安装、发布包安装与 CI 同步均遵循这份清单。
-    /// </summary>
-    public static readonly IReadOnlyList<string> BuiltInModIds = DiscoverBuiltInModIds();
-
-    /// <summary>扫内嵌资源名, 认出所有 "<c>*Mod.dll</c>"（与公开分发清单中的资源一致）。</summary>
-    private static string[] DiscoverBuiltInModIds()
-    {
-        try
-        {
-            var ids = new List<string>();
-            foreach (var name in typeof(ModManager).Assembly.GetManifestResourceNames())
-            {
-                if (!name.StartsWith(ResourcePrefix, StringComparison.Ordinal)) continue;
-                var tail = name.Substring(ResourcePrefix.Length);
-                if (!tail.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)) continue;
-                var id = tail.Substring(0, tail.Length - 4);
-                // 以 "Mod" 结尾 = 内置 mod; 这样自动排除 version.dll / CesiumLoader.SDK.dll 等非 mod 资源
-                if (!id.EndsWith("Mod", StringComparison.Ordinal)) continue;
-                if (!ids.Contains(id)) ids.Add(id);
-            }
-            ids.Sort(StringComparer.Ordinal);   // 顺序稳定, 便于对比与测试
-            return ids.ToArray();
-        }
-        catch
-        {
-            return Array.Empty<string>();
-        }
-    }
-
-    private const string ResourcePrefix = "AstralParty.Toys.ModLoader.";
-
-    /// <summary>发布包（cesium-loader.zip）内 mod 条目的前缀；zip 内路径统一用正斜杠。</summary>
-    private const string PackageModsPrefix = "AstralParty_ModLoader/mods/";
-
-    /// <summary>
     /// 是否是发布包里的模组条目。安装以发布包内容为准：包内 mods\{ModId}\ 下的
-    /// 文件全部安装，不再按 Toys 的公开分发清单过滤（清单只决定随程序内置哪些 mod）。
+    /// 文件全部安装，Toys 侧不再有另一份过滤清单（内置 mod 清单就是从这份包派生出来的）。
     /// </summary>
     private static bool IsPackageModEntry(string path)
     {
@@ -92,89 +54,6 @@ public sealed partial class ModManager
         var relative = path.Substring(PackageModsPrefix.Length);
         var separator = relative.IndexOf('/');
         return separator > 0 && separator < relative.Length - 1;
-    }
-
-    /// <summary>内嵌加载器版本号；来源：构建时下载的 cesium-loader.json 里 version 字段（CI 自动更新），本地开发构建为 dev-local。</summary>
-    private static readonly string EmbeddedVersion = ReadEmbeddedVersion();
-
-    private static string ReadEmbeddedVersion()
-    {
-        try
-        {
-            using var stream = typeof(ModManager).Assembly.GetManifestResourceStream(ResourcePrefix + "loader-version.json");
-            if (stream is null) return "";
-            using var reader = new StreamReader(stream);
-            var raw = reader.ReadToEnd().Trim().Trim('"');
-            return string.IsNullOrWhiteSpace(raw) || raw == "unknown" ? "" : raw;
-        }
-        catch
-        {
-            return "";
-        }
-    }
-
-    private static readonly Assembly Assembly = typeof(ModManager).Assembly;
-
-    private static readonly byte[]? EmbeddedLoaderDll = ReadEmbeddedResource(LoaderDllName);
-    private static readonly byte[]? EmbeddedConfig = ReadEmbeddedResource(ConfigFileName);
-    private static readonly byte[]? EmbeddedSdkDll = ReadEmbeddedResource(SdkDllName);
-
-    /// <summary>内置 mod 的内嵌资源（DLL + 可选 sidecar）。资源缺失的 mod 会被跳过，不影响其它 mod。</summary>
-    private static readonly IReadOnlyList<BuiltInModResource> EmbeddedBuiltInMods = ReadBuiltInMods();
-
-    /// <summary>内置 doorstop_config.json 模板里声明的 SDK 版本（加载器用它校验 mod 声明的 SdkVersion）。</summary>
-    private static readonly string EmbeddedSdkVersion = ReadSdkVersionFromConfigBytes(EmbeddedConfig);
-
-    private static readonly string? EmbeddedLoaderHash = EmbeddedLoaderDll is null
-        ? null
-        : Convert.ToHexString(SHA256.HashData(EmbeddedLoaderDll));
-
-    /// <summary>一个内置 mod 的内嵌资源：DLL + 可选 sidecar + 可选数据文件（mods\{ModId}\data\*）。</summary>
-    private readonly record struct BuiltInModResource(
-        string Id,
-        byte[] Dll,
-        byte[]? Sidecar,
-        IReadOnlyDictionary<string, byte[]> Data);
-
-    private static BuiltInModResource[] ReadBuiltInMods()
-    {
-        var list = new List<BuiltInModResource>();
-        string[] resources;
-        try { resources = Assembly.GetManifestResourceNames(); }
-        catch { resources = Array.Empty<string>(); }
-
-        foreach (var id in BuiltInModIds)
-        {
-            var dll = ReadEmbeddedResource(id + ".dll");
-            if (dll is null) continue;   // 该 mod 未随程序集分发 → 跳过
-            list.Add(new BuiltInModResource(id, dll, ReadEmbeddedResource(id + ".json"), ReadEmbeddedData(id, resources)));
-        }
-        return list.ToArray();
-    }
-
-    /// <summary>读取某个 mod 的数据包资源（资源名 data.{ModId}.{文件名}）。</summary>
-    private static IReadOnlyDictionary<string, byte[]> ReadEmbeddedData(string id, string[] resourceNames)
-    {
-        var map = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
-        var prefix = ResourcePrefix + "data." + id + ".";
-        foreach (var name in resourceNames)
-        {
-            if (!name.StartsWith(prefix, StringComparison.Ordinal)) continue;
-            var fileName = name.Substring(prefix.Length);
-            if (fileName.Length == 0) continue;
-            var bytes = ReadEmbeddedResource("data." + id + "." + fileName);
-            if (bytes is not null) map[fileName] = bytes;
-        }
-        return map;
-    }
-
-    private static byte[]? ReadEmbeddedResource(string name)
-    {
-        using var stream = Assembly.GetManifestResourceStream(ResourcePrefix + name);
-        if (stream is null) return null;
-        using var memory = new MemoryStream();
-        stream.CopyTo(memory);
-        return memory.ToArray();
     }
 
     private readonly string? _profileDirectoryOverride;
@@ -192,22 +71,6 @@ public sealed partial class ModManager
     /// </summary>
     public string ProfileDirectory =>
         _profileDirectoryOverride ?? SpeedhackManager.ResolveProfileDirectory();
-
-    public static bool HasEmbeddedLoader => EmbeddedLoaderDll is not null;
-    public static bool HasEmbeddedConfig => EmbeddedConfig is not null;
-    public static bool HasEmbeddedSdk => EmbeddedSdkDll is not null;
-    /// <summary>程序集里是否带了内置 mod（至少一个）。</summary>
-    public static bool HasEmbeddedBuiltInMods => EmbeddedBuiltInMods.Count > 0;
-    /// <summary>内置 mod 里是否包含行为日志（ActivityLogMod）——兼容旧判定。</summary>
-    public static bool HasEmbeddedSampleMod => EmbeddedBuiltInMods.Any(m => m.Id == SampleModDllName.Replace(".dll", ""));
-    /// <summary>程序集里实际带上的内置 mod id（界面/诊断显示用）。</summary>
-    public static IReadOnlyList<string> EmbeddedBuiltInModIdList => EmbeddedBuiltInMods.Select(m => m.Id).ToArray();
-
-    /// <summary>内置配置模板声明的 SDK 版本（界面/测试核对用；空 = 模板缺失或没写该字段）。</summary>
-    public static string BundleSdkVersion => EmbeddedSdkVersion;
-
-    /// <summary>随程序集内置的加载器版本号（界面显示"内置版本"用；空 = 本地开发构建没内嵌发布包）。</summary>
-    public static string BundleLoaderVersion => EmbeddedVersion;
 
     private string StateFilePath => Path.Combine(ProfileDirectory, ToysPaths.StateFolderName, "modloader-state.json");
 
@@ -261,6 +124,18 @@ public sealed partial class ModManager
     private static bool MatchesEmbeddedLoader(string path)
         => EmbeddedLoaderHash is not null && MatchesHash(path, EmbeddedLoaderHash);
 
+    /// <summary>
+    /// 游戏目录里是否还留着加载器（<c>version.dll</c> 或 <c>AstralParty_ModLoader\</c> 任一存在）。
+    ///
+    /// 用来判断「安装历史里的版本号还算不算已装」：加载器历史记在数据根
+    /// （<c>install-history\games\&lt;游戏目录哈希&gt;\current.json</c>），玩家手工把游戏目录里的
+    /// 加载器删干净**不会**清掉它。若只看历史，删干净之后再装回内置版本就会被当成
+    /// 「比已装的更旧」拦住 —— 那不是降级，是往空目录里重新安装。
+    /// </summary>
+    private static bool HasLoaderOnDisk(string gameDirectory)
+        => File.Exists(Path.Combine(gameDirectory, LoaderDllName))
+           || Directory.Exists(Path.Combine(gameDirectory, LoaderFolderName));
+
     /// <summary>文件 SHA256 是否等于给定的十六进制哈希（读不到文件 / 哈希串非法 → false）。</summary>
     private static bool MatchesHash(string path, string expectedHex)
     {
@@ -292,16 +167,5 @@ public sealed partial class ModManager
 
     /// <summary>停用的 mod 目录：<c>AstralParty_ModLoader\disabled_mods</c>。</summary>
     public static string DisabledModsRoot(string gameDirectory) => Path.Combine(gameDirectory, LoaderFolderName, DisabledModsFolderName);
-
-    /// <summary>
-    /// 这个 mod 的内容该写回哪个根目录：已经在 <c>disabled_mods</c> 里的 mod 保持原位，
-    /// 更新加载器 / 重装内置模组 / 重新导入都不能把它悄悄搬回 <c>mods</c>（否则停用就白点了）。
-    /// </summary>
-    private static string ResolveModRoot(string loaderRoot, string folderName)
-    {
-        if (!string.IsNullOrEmpty(folderName) && Directory.Exists(Path.Combine(loaderRoot, DisabledModsFolderName, folderName)))
-            return Path.Combine(loaderRoot, DisabledModsFolderName);
-        return Path.Combine(loaderRoot, ModsFolderName);
-    }
 }
 

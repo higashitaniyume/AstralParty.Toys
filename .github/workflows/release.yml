@@ -59,8 +59,8 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      # 内嵌 Mod 加载器始终取自 CesiumLoader 最新 Release（github.com/higashitaniyume/CesiumLoader）
-      # 下载 cesium-loader.zip → 解压 → 覆盖 Resources\ModLoader\ 后构建，无需手动同步。
+      # 内嵌 Mod 加载器始终取自 CesiumLoader 最新 Release（github.com/higashitaniyume/CesiumLoader）：
+      # 直接把这个发布包塞进 Resources\ModLoader\ 后构建，无需手动同步，也不再逐文件挑选。
       - name: Fetch latest CesiumLoader package
         shell: pwsh
         run: |
@@ -84,74 +84,29 @@ jobs:
             }
           }
           if (-not $downloaded) { throw "Failed to download CesiumLoader package." }
-          $extract = "$env:TEMP/cesium-loader-latest"
-          if (Test-Path $extract) { Remove-Item $extract -Recurse -Force }
-          Expand-Archive -Path $zipPath -DestinationPath $extract -Force
+          # 直接把整包塞进 Resources\ModLoader\：程序集只内嵌这一个 CesiumLoader 发布包，
+          # 「安装 / 重新安装内置版本」= 解压它（与「导入发布包」同一条代码路径）。
+          # 包内版本号、SDK 版本、内置 mod 清单与加载器更新日志都在运行时从包里读，
+          # 因此这里不需要再逐文件同步，也不存在第二份会和发布包漂移的清单。
           $resources = "src/AstralParty.Toys/Resources/ModLoader"
-          # 加载器 + SDK + 配置模板。
-          # ★ doorstop_config.json 必须一起同步：ModManager 的 EmbeddedSdkVersion 就是从这个内嵌模板里读的，
-          #   安装/更新时用它把用户已装配置的 sdkVersion 抬到随包版本。若模板停在旧 SDK 号，用户配置也停在旧的，
-          #   而新版内置 mod 声明的是新 SdkVersion —— 加载器会判 SdkVersionTooNew 把内置 mod 全部拒绝加载。
-          #   同时它也是全新安装写进游戏目录的那份模板（含 Steam 绕过等开关）。
-          $targets = @(
-            @{ From = "$extract/version.dll"; To = "$resources/version.dll" },
-            @{ From = "$extract/AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll"; To = "$resources/CesiumLoader.SDK.dll" },
-            @{ From = "$extract/AstralParty_ModLoader/doorstop_config.json"; To = "$resources/doorstop_config.json" }
-          )
-          foreach ($t in $targets) {
-            if (-not (Test-Path $t.From)) { throw "解压包缺少文件: $($t.From)" }
-            Copy-Item $t.From $t.To -Force
-          }
+          $target = "$resources/cesium-loader.zip"
+          Copy-Item $zipPath $target -Force
 
-          # 仅同步公开分发清单中的模组，与程序集内嵌资源使用同一来源。
-          [xml]$modProject = Get-Content "src/AstralParty.Toys/BuiltInMods.props" -Raw
-          $modIds = @(([string]$modProject.Project.ItemGroup.BuiltInMod.Include).Split(';'))
-          if ($modIds.Count -eq 0) { throw "公开模组清单为空" }
-          $modsRoot = "$extract/AstralParty_ModLoader/mods"
-          foreach ($id in $modIds) {
-            $modDirectory = Join-Path $modsRoot $id
-            foreach ($extension in @('dll', 'json')) {
-              $source = Join-Path $modDirectory "$id.$extension"
-              if (-not (Test-Path $source)) { throw "发布包缺少公开模组文件: $source" }
-              Copy-Item $source "$resources/$id.$extension" -Force
-            }
-            # 模组数据包（语言翻译等）：整目录同步，作为内嵌资源随程序集分发。
-            $dataSource = Join-Path $modDirectory 'data'
-            $dataTarget = Join-Path $resources "data/$id"
-            if (Test-Path $dataTarget) { Remove-Item $dataTarget -Recurse -Force }
-            if (Test-Path $dataSource) { Copy-Item $dataSource $dataTarget -Recurse -Force }
-          }
-          Write-Host "内置 mod: $($modIds -join ', ')"
-          # 记录内嵌加载器版本（ModManager 读取显示/更新对比）
-          if (Test-Path "$extract/cesium-loader.json") {
-            $manifest = Get-Content "$extract/cesium-loader.json" -Raw | ConvertFrom-Json
-            $version = if ($manifest.version) { $manifest.version } else { "unknown" }
-          } else {
-            $version = "unknown"
-          }
-          Set-Content -Path "src/AstralParty.Toys/Resources/ModLoader/loader-version.json" -Value ($version | ConvertTo-Json) -Encoding UTF8
-          Write-Host "内嵌加载器版本: $version"
-
-          # 加载器更新日志：优先用发布包内 CHANGELOG.md（版本对版），包里没有时退回仓库根拉，
-          # 都取不到写占位符（运行时会经镜像去拉根 CHANGELOG.md）。
-          $changelogPath = "src/AstralParty.Toys/Resources/ModLoader/loader-changelog.md"
-          $packagedChangelog = "$extract/CHANGELOG.md"
-          if ((Test-Path $packagedChangelog) -and (Get-Item $packagedChangelog).Length -gt 0) {
-            Copy-Item $packagedChangelog $changelogPath -Force
-            Write-Host "加载器更新日志: 已从发布包内 CHANGELOG.md 同步"
-          } else {
-            try {
-              $rawUrl = "https://raw.githubusercontent.com/higashitaniyume/CesiumLoader/master/CHANGELOG.md"
-              $md = Invoke-WebRequest -Uri $rawUrl -UseBasicParsing -OutFile temp-loader-changelog.md -PassThru
-              if (-not (Test-Path temp-loader-changelog.md) -or (Get-Item temp-loader-changelog.md).Length -eq 0) { throw "仓库根 CHANGELOG.md 为空" }
-              Copy-Item temp-loader-changelog.md $changelogPath -Force
-              Write-Host "加载器更新日志: 发布包内无 CHANGELOG.md，已写入仓库根 CHANGELOG.md"
-            } catch {
-              Set-Content -Path $changelogPath -Value "<!-- placeholder: 取发布包内 CHANGELOG.md 与仓库根 CHANGELOG.md 均失败，运行时改为经镜像拉取。 -->`n" -Encoding UTF8
-              Write-Host "加载器更新日志: 取包内与仓库根 CHANGELOG.md 均失败（$($_.Exception.Message)），已写占位符"
-            }
-            if (Test-Path temp-loader-changelog.md) { Remove-Item temp-loader-changelog.md -Force }
-          }
+          # 坏包不能塞进程序集：必须有清单与 version.dll，且清单里声明的每个文件都在包里。
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $archive = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path $target))
+          try {
+            $entryNames = @($archive.Entries | ForEach-Object { $_.FullName })
+            if ($entryNames -notcontains "cesium-loader.json") { throw "发布包缺少 cesium-loader.json 清单" }
+            if ($entryNames -notcontains "version.dll") { throw "发布包缺少 version.dll" }
+            $manifestEntry = $archive.Entries | Where-Object { $_.FullName -eq "cesium-loader.json" }
+            $reader = New-Object System.IO.StreamReader($manifestEntry.Open())
+            try { $manifest = $reader.ReadToEnd() | ConvertFrom-Json } finally { $reader.Dispose() }
+            $missing = @($manifest.files.PSObject.Properties.Name | Where-Object { $entryNames -notcontains $_ })
+            if ($missing.Count -gt 0) { throw "发布包清单里声明的文件缺失: $($missing -join ', ')" }
+            $modFiles = @($entryNames | Where-Object { $_ -match '^AstralParty_ModLoader/mods/[^/]+/[^/]+' })
+            Write-Host "内嵌发布包: CesiumLoader $($manifest.version)（$($entryNames.Count) 个条目，mods 下 $($modFiles.Count) 个文件）"
+          } finally { $archive.Dispose() }
 
           Get-ChildItem "src/AstralParty.Toys/Resources/ModLoader" | Select-Object Name, Length
 

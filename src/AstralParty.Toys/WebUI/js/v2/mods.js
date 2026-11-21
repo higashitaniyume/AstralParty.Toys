@@ -550,7 +550,7 @@
     openMods: () => post({ type: 'modOpenModsFolder' }),
     openLogs: () => post({ type: 'modOpenLogsFolder' }),
     openGame: () => post({ type: 'speedhackOpenGameDir' }),
-    install: () => post({ type: 'modInstall', overwriteDll: false, allowDowngrade: false, includeSample: true }),
+    install: () => post({ type: 'modInstall', overwriteDll: false, allowDowngrade: false }),
     restore: () => MM()?.startRecovery(true),
     update: () => { const st = status(), foreign = st?.installed && !st?.loaderManaged; post({ type: 'modDownloadUpdate', overwriteDll: !!foreign, allowDowngrade: false }); },
     check: () => {
@@ -587,7 +587,7 @@
     reinstall: () => {
       const s = status(), foreign = s.installed && !s.loaderManaged;
       const downgrade = s.installedVersion && s.embeddedVersion && cmpVer(s.installedVersion, s.embeddedVersion) > 0;
-      U().modalActions.confirmYes = () => { U().closeModal(); post({ type: 'modInstall', overwriteDll: foreign, allowDowngrade: !!downgrade, includeSample: true }); };
+      U().modalActions.confirmYes = () => { U().closeModal(); post({ type: 'modInstall', overwriteDll: foreign, allowDowngrade: !!downgrade }); };
       const m = U().openModal(`
         <div class="v2-confirm"><div class="v2-confirm-icon" style="background:rgba(250,204,21,.12);color:var(--gp-gold)">${I().download}</div>
           <div><b class="v2-confirm-title">安装程序内置的 v${esc(s.embeddedVersion || '?')}？</b>

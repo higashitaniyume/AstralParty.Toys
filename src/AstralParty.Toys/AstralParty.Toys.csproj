@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="BuiltInMods.props" />
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
@@ -32,25 +31,20 @@
     <EmbeddedResource Include="Resources\SpeedhackTools\version.dll;Resources\SpeedhackTools\speedhack_config.json">
       <LogicalName>AstralParty.Toys.SpeedhackTools.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
-    <!-- 内置加载器组件: 加载器/SDK/内置 mod 的 sidecar 都以「内嵌资源」编译进程序集。
-         更新方式: 用 CesiumLoader 仓库的 tools\package-modloader.ps1 打包后, 把包内
-         version.dll / sdk\CesiumLoader.SDK.dll / mods\{ModId}\* 覆盖到 Resources\ModLoader\,
-         loader-version.json 写包内 cesium-loader.json 的 version。CI 也会在打 tag 时自动同步
+    <!-- 内置加载器组件 = **整个 CesiumLoader 发布包**（cesium-loader.zip），一个内嵌资源搞定。
+         「安装 / 重新安装内置版本」与「导入发布包」走同一条代码路径：先按包内 cesium-loader.json
+         校验哈希，再按包内布局解压（version.dll / SDK / bootstrap / mods（含 sidecar、data、sounds、pdb）
+         / doorstop 模板 / NOTICE、LICENSE、README、CHANGELOG）。
+         包内版本号、SDK 版本、内置 mod 清单与加载器更新日志都由 ModManager 直接从包里读，所以
+         不存在第二份需要同步的清单。
+         更新方式：用 CesiumLoader 仓库的 tools\package-modloader.ps1 产出 cesium-loader.zip，
+         拷成 Resources\ModLoader\cesium-loader.zip；CI 打 tag 时会自动换成最新 Release 的包
          (.github/workflows/release.yml 的 "Fetch latest CesiumLoader package")。 -->
-    <!-- 加载器/SDK/配置模板/版本与日志: 固定文件, 显式列出。 -->
-    <EmbeddedResource Include="Resources\ModLoader\version.dll;Resources\ModLoader\doorstop_config.json;Resources\ModLoader\CesiumLoader.SDK.dll;Resources\ModLoader\loader-version.json;Resources\ModLoader\loader-changelog.md">
-      <LogicalName>AstralParty.Toys.ModLoader.%(Filename)%(Extension)</LogicalName>
+    <EmbeddedResource Include="Resources\ModLoader\cesium-loader.zip">
+      <LogicalName>AstralParty.Toys.ModLoader.cesium-loader.zip</LogicalName>
     </EmbeddedResource>
-    <!-- 内置资源仅来自 BuiltInMods.props 中的公开分发清单。 -->
     <EmbeddedResource Include="Resources\Skins\character-image-sizes.json" LogicalName="AstralParty.Toys.CharacterImageSizes.json" />
     <EmbeddedResource Include="Resources\AudioCatalog.json" LogicalName="AstralParty.Toys.AudioCatalog.json" />
-    <EmbeddedResource Include="@(BuiltInMod->'Resources\ModLoader\%(Identity).dll');@(BuiltInMod->'Resources\ModLoader\%(Identity).json')">
-      <LogicalName>AstralParty.Toys.ModLoader.%(Filename)%(Extension)</LogicalName>
-    </EmbeddedResource>
-    <!-- 模组数据包（语言翻译等）：资源名 data.{ModId}.{文件名}，安装时写到 mods\{ModId}\data\。 -->
-    <EmbeddedResource Include="Resources\ModLoader\data\LanguageUnlockMod\*">
-      <LogicalName>AstralParty.Toys.ModLoader.data.LanguageUnlockMod.%(Filename)%(Extension)</LogicalName>
-    </EmbeddedResource>
     <!-- 第三方模组「自定义主页背景」（TenkinMori，MIT）：不进加载器内置清单（发布流程会从 CesiumLoader 发布包同步那份清单），
          由「自定义 → 主页背景」第一次设置时装进游戏。说明见 Resources\ThirdPartyMods\HomeBackgroundMod\README.md。 -->
     <EmbeddedResource Include="Resources\ThirdPartyMods\HomeBackgroundMod\*" Exclude="Resources\ThirdPartyMods\HomeBackgroundMod\README.md;Resources\ThirdPartyMods\HomeBackgroundMod\*.patch">

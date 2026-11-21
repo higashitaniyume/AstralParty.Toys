@@ -59,8 +59,7 @@
         post({
           type: 'modInstall',
           overwriteDll: $('modOverwriteCheck')?.checked === true,
-          allowDowngrade: $('modDowngradeCheck')?.checked === true,
-          includeSample: $('modIncludeSampleCheck')?.checked !== false
+          allowDowngrade: $('modDowngradeCheck')?.checked === true
         });
       });
       $('modUninstallBtn')?.addEventListener('click', () => this.openUninstallConfirm());

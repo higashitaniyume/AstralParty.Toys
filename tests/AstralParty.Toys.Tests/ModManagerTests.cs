@@ -12,28 +12,52 @@ namespace AstralParty.Toys.Tests;
 public sealed class ModManagerTests
 {
     [Fact]
-    public void EmbeddedResources_AreComplete()
+    public void EmbeddedPackage_IsComplete()
     {
-        Assert.True(ModManager.HasEmbeddedLoader, "内置 version.dll 资源缺失");
-        Assert.True(ModManager.HasEmbeddedConfig, "内置 doorstop_config.json 资源缺失");
-        Assert.True(ModManager.HasEmbeddedSdk, "内置 SDK 资源缺失");
-        Assert.True(ModManager.HasEmbeddedSampleMod, "内置示例 mod 资源缺失");
-        // 内置 mod 一个都不能少: 资源缺失会在 ReadBuiltInMods 里被静默跳过, 所以这里按列表逐一对齐
-        Assert.True(ModManager.HasEmbeddedBuiltInMods, "内置 mod 资源缺失");
-        // ★ 回归(0.5.3 真机 bug): 内置 mod 清单曾经在 ModManager 里写死成三个,
-        //   导致 CombatOddsMod 的资源虽然打进了程序集、安装时却被漏掉。
-        //   这里逐个点名 —— 清单必须来自内嵌资源, 少一个都要红。
-        Assert.Contains("ActivityLogMod", ModManager.EmbeddedBuiltInModIdList);
-        Assert.Contains("FreeCameraMod", ModManager.EmbeddedBuiltInModIdList);
-        Assert.Contains("SpeedHackMod", ModManager.EmbeddedBuiltInModIdList);
-        Assert.Contains("CombatOddsMod", ModManager.EmbeddedBuiltInModIdList);
-        Assert.Contains("PveWaveForecastMod", ModManager.EmbeddedBuiltInModIdList);
-        Assert.Contains("StarCoinShopMod", ModManager.EmbeddedBuiltInModIdList);
-        Assert.Contains("CharacterTransparencyMod", ModManager.EmbeddedBuiltInModIdList);
-        Assert.Contains("ShopRelicPeekMod", ModManager.EmbeddedBuiltInModIdList);
-        Assert.Contains("FontMod", ModManager.EmbeddedBuiltInModIdList);
-        // 清单与安装用的那份必须是同一个来源(扫描内嵌资源), 不能各自维护
-        Assert.Equal(ModManager.BuiltInModIds, ModManager.EmbeddedBuiltInModIdList);
+        // 内置加载器现在就是**一整个 CesiumLoader 发布包**（cesium-loader.zip），
+        // 「安装内置版本」= 解压这份包，所以这里的断言都从包本身派生。
+        Assert.True(ModManager.HasEmbeddedPackage, "内置发布包资源缺失");
+        Assert.True(ModManager.HasEmbeddedLoader, "发布包里没有 version.dll");
+        Assert.True(ModManager.HasEmbeddedConfig, "发布包里没有 doorstop_config.json");
+        Assert.True(ModManager.HasEmbeddedSdk, "发布包里没有 CesiumLoader.SDK.dll");
+        Assert.True(ModManager.HasEmbeddedBuiltInMods, "发布包里没有任何内置 mod");
+        Assert.True(ModManager.HasEmbeddedSampleMod, "发布包里没有 ActivityLogMod（行为日志）");
+        Assert.False(string.IsNullOrWhiteSpace(ModManager.BundleLoaderVersion), "读不出包内版本号");
+        Assert.False(string.IsNullOrWhiteSpace(ModManager.BundleSdkVersion), "读不出包内 SDK 版本");
+        Assert.False(string.IsNullOrWhiteSpace(ModManager.BundledLoaderChangelog), "读不出包内加载器更新日志");
+
+        var manifest = ModManager.EmbeddedPackageManifest;
+        Assert.NotNull(manifest);
+        Assert.Equal(ModManager.BundleLoaderVersion, manifest!.Version);
+        Assert.Contains("version.dll", manifest.Files.Keys);
+
+        // ★ 回归(2.4.3): 加载器发布包里已有的内置 mod 曾经在 Toys 侧漏装（PinnedRelicsMod / PvePanelMod /
+        //   AngelModeUnlockMod 只存在于加载器包，Toys 的 BuiltInMods.props 没有）。现在清单**直接来自包**，
+        //   这里再点名一次，并核对清单与包内 mods\ 目录完全一致。
+        Assert.Contains("ActivityLogMod", ModManager.BuiltInModIds);
+        Assert.Contains("CombatOddsMod", ModManager.BuiltInModIds);
+        Assert.Contains("FontMod", ModManager.BuiltInModIds);
+        Assert.Contains("PinnedRelicsMod", ModManager.BuiltInModIds);
+        Assert.Contains("PvePanelMod", ModManager.BuiltInModIds);
+        Assert.Contains("AngelModeUnlockMod", ModManager.BuiltInModIds);
+
+        using var stream = new MemoryStream(ModManager.EmbeddedPackageBytes!);
+        using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
+        const string prefix = "AstralParty_ModLoader/mods/";
+        var packagedIds = archive.Entries
+            .Where(e => !string.IsNullOrEmpty(e.Name) && e.FullName.StartsWith(prefix, StringComparison.Ordinal))
+            .Select(e => e.FullName.Substring(prefix.Length).Split('/')[0])
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(id => id, StringComparer.Ordinal)
+            .ToArray();
+        Assert.NotEmpty(packagedIds);
+        Assert.Equal(packagedIds, ModManager.BuiltInModIds);
+        // 每个内置 mod 都要有成对的 dll + sidecar，否则装出来就是个半残的模组
+        foreach (var id in packagedIds)
+        {
+            Assert.True(archive.GetEntry($"{prefix}{id}/{id}.dll") is not null, $"{id} 缺 dll");
+            Assert.True(archive.GetEntry($"{prefix}{id}/{id}.json") is not null, $"{id} 缺 sidecar");
+        }
     }
 
     [Fact]
@@ -47,7 +71,7 @@ public sealed class ModManagerTests
         Assert.True(status.GameExeFound, "未识别出假 exe 目录");
         Assert.False(status.Installed);
 
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: true);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
 
         status = harness.Manager.GetStatus();
         Assert.True(status.Installed);
@@ -78,18 +102,105 @@ public sealed class ModManagerTests
     }
 
     [Fact]
-    public void Install_WithoutSample_LeavesModsEmpty()
+    public void Install_InstallsEveryBuiltInModFromPackage()
     {
         using var harness = new ModHarness("ap-mod-install-nosample");
         harness.Manager.SaveStoredGameDirectory(harness.GameDirectory);
 
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
 
+        // 内置安装 = 解压发布包：包里的内置模组全都要落地（不再有「只装加载器」的选项）
         var status = harness.Manager.GetStatus();
-        Assert.Empty(status.Mods);
+        Assert.NotEmpty(ModManager.BuiltInModIds);
+        Assert.Equal(ModManager.BuiltInModIds.Count, status.Mods.Count);
+        foreach (var id in ModManager.BuiltInModIds)
+            Assert.True(File.Exists(Path.Combine(
+                harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName, id, id + ".dll")), $"{id} 未落地");
         Assert.Single(status.Sdk); // SDK 始终安装
         Assert.True(File.Exists(Path.Combine(
             harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ConfigFileName)), "doorstop_config.json 始终安装");
+    }
+
+    [Fact]
+    public void Install_ExtractsWholePackageIncludingRootFilesAndSymbols()
+    {
+        using var harness = new ModHarness("ap-mod-install-wholesale");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
+
+        var game = harness.GameDirectory;
+        var loaderRoot = Path.Combine(game, ModManager.LoaderFolderName);
+
+        // 包内根级文件 → 游戏 exe 目录（整包解压，不再只挑 version.dll）
+        Assert.True(File.Exists(Path.Combine(game, "version.pdb")), "version.pdb 未安装");
+        Assert.True(File.Exists(Path.Combine(game, ModManager.NoticeFileName)), "CesiumLoader-NOTICE.txt 未安装");
+        Assert.True(File.Exists(Path.Combine(game, ModManager.LicenseFileName)), "CesiumLoader-LICENSE.txt 未安装");
+        Assert.True(File.Exists(Path.Combine(game, "README.txt")), "README.txt 未安装");
+        Assert.True(File.Exists(Path.Combine(game, "CHANGELOG.md")), "CHANGELOG.md 未安装");
+
+        // 包内 AstralParty_ModLoader\** → 加载器目录（bootstrap / 许可 / SDK 符号与 XML 文档都照装）
+        Assert.True(File.Exists(Path.Combine(loaderRoot, ModManager.NoticeFileName)));
+        Assert.True(File.Exists(Path.Combine(loaderRoot, ModManager.LicenseFileName)));
+        Assert.True(File.Exists(Path.Combine(loaderRoot, "bootstrap", "CesiumLoader.Bootstrap.dll")), "bootstrap 未安装");
+        Assert.True(File.Exists(Path.Combine(loaderRoot, ModManager.SdkFolderName, "CesiumLoader.SDK.pdb")));
+        Assert.True(File.Exists(Path.Combine(loaderRoot, ModManager.SdkFolderName, "CesiumLoader.SDK.xml")));
+
+        // 内置 mod 的符号文件也随包落地（旧的内嵌实现只装 dll/json/data）
+        Assert.True(File.Exists(Path.Combine(loaderRoot, ModManager.ModsFolderName,
+            "ActivityLogMod", "ActivityLogMod.pdb")));
+    }
+
+    [Fact]
+    public void InstallPackage_KeepsPlayerOwnGenericRootFile()
+    {
+        using var harness = new ModHarness("ap-mod-root-collision");
+        var readme = Path.Combine(harness.GameDirectory, "README.txt");
+        File.WriteAllText(readme, "玩家自己的说明");
+
+        var result = harness.Manager.InstallPackage(harness.GameDirectory,
+            BuildFakePackage("9.0.0", includeSymbols: true,
+                extraEntries: new[] { ("README.txt", System.Text.Encoding.UTF8.GetBytes("包内说明")) }),
+            overwriteDll: false);
+
+        Assert.True(result.HasSkippedFiles);
+        Assert.Contains("README.txt", result.SkippedFiles);
+        Assert.Equal("玩家自己的说明", File.ReadAllText(readme));   // 玩家的文件没被覆盖
+        // 加载器自己的文件照常安装
+        Assert.True(File.Exists(Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ConfigFileName)));
+    }
+
+    [Fact]
+    public void Uninstall_KeepsPlayerOwnRootFiles_RemovesLoaderOwned()
+    {
+        using var harness = new ModHarness("ap-mod-uninstall-root-files");
+        var readme = Path.Combine(harness.GameDirectory, "README.txt");
+        File.WriteAllText(readme, "玩家自己的说明");
+
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
+        harness.Manager.Uninstall(harness.GameDirectory, force: false);
+
+        // 本工具落的根级文件随卸载清掉
+        Assert.False(File.Exists(Path.Combine(harness.GameDirectory, ModManager.NoticeFileName)));
+        Assert.False(File.Exists(Path.Combine(harness.GameDirectory, ModManager.LicenseFileName)));
+        Assert.False(File.Exists(Path.Combine(harness.GameDirectory, "version.pdb")));
+        // 从来不是本工具落的同名文件必须原样保留
+        Assert.True(File.Exists(readme), "玩家自己的 README.txt 不能被卸载删掉");
+        Assert.Equal("玩家自己的说明", File.ReadAllText(readme));
+    }
+
+    [Fact]
+    public void Install_RecordsPackageHash_SoBuiltInVersionIsRollbackable()
+    {
+        using var harness = new ModHarness("ap-mod-embedded-history");
+        harness.Manager.SaveStoredGameDirectory(harness.GameDirectory);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
+        // 再装一个更新的包，内置版本应当作为「可回滚版本」留在安装历史里
+        harness.Manager.InstallPackage(harness.GameDirectory, BuildFakePackage("99.0.0"),
+            overwriteDll: true, allowDowngrade: true);
+
+        var versions = harness.Manager.GetRetainedVersions(harness.GameDirectory);
+        var builtIn = Assert.Single(versions, v => v.Version == ModManager.BundleLoaderVersion);
+        Assert.True(builtIn.PackageAvailable, "内置版本应记录发布包哈希，才能整包回滚");
+        Assert.False(string.IsNullOrEmpty(builtIn.PackageHash));
     }
 
     [Fact]
@@ -99,9 +210,9 @@ public sealed class ModManagerTests
         File.WriteAllBytes(Path.Combine(harness.GameDirectory, "version.dll"), [1, 2, 3, 4, 5, 6, 7, 8]);
 
         Assert.Throws<InvalidOperationException>(
-            () => harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: true));
+            () => harness.Manager.Install(harness.GameDirectory, overwriteDll: false));
 
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: true);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true);
         Assert.True(harness.Manager.GetStatus().LoaderMatchesBundle, "覆盖安装后哈希应一致");
     }
 
@@ -109,7 +220,7 @@ public sealed class ModManagerTests
     public void Install_WritesBuiltInModDataFiles()
     {
         using var harness = new ModHarness("ap-mod-data-files");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: true);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
 
         var dataDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName,
             ModManager.ModsFolderName, "LanguageUnlockMod", "data");
@@ -117,9 +228,17 @@ public sealed class ModManagerTests
         Assert.True(File.Exists(Path.Combine(dataDir, "en.pack")));
         Assert.True(File.Exists(Path.Combine(dataDir, "ja.xml")));
 
+        // PVE 面板的图标资源同样随程序集内置（资源名 data.PvePanelMod.{文件名}）
+        var panelDataDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName,
+            ModManager.ModsFolderName, "PvePanelMod", "data");
+        Assert.True(Directory.Exists(panelDataDir), "PvePanelMod 数据目录缺失");
+        Assert.True(File.Exists(Path.Combine(panelDataDir, "relicbase_Purple.png")));
+        Assert.True(File.Exists(Path.Combine(panelDataDir, "star_on.png")));
+
         var manifest = File.ReadAllText(Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName,
             ModManager.InstalledManifestFileName));
         Assert.Contains("LanguageUnlockMod/data/en.pack", manifest);
+        Assert.Contains("PvePanelMod/data/relicbase_Purple.png", manifest);
     }
 
     [Fact]
@@ -139,7 +258,7 @@ public sealed class ModManagerTests
     public void Uninstall_RemovesLoaderAndFolder()
     {
         using var harness = new ModHarness("ap-mod-uninstall");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: true);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         Assert.True(harness.Manager.GetStatus().Installed);
 
         var result = harness.Manager.Uninstall(harness.GameDirectory, force: false);
@@ -174,7 +293,7 @@ public sealed class ModManagerTests
     public void ImportMod_CopiesIntoModsAndAppearsInList()
     {
         using var harness = new ModHarness("ap-mod-import");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
 
         var source = harness.Sandbox.WriteFile("my-custom-mod.dll", new byte[] { 0x4D, 0x5A, 0x00, 0x01, 0x02, 0x03 });
         var entry = harness.Manager.ImportMod(harness.GameDirectory, source);
@@ -195,7 +314,7 @@ public sealed class ModManagerTests
     public void DeleteMod_RemovesFromMods()
     {
         using var harness = new ModHarness("ap-mod-delete");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: true);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         Assert.Equal(ModManager.BuiltInModIds.Count, harness.Manager.GetStatus().Mods.Count);
 
         // 逐个删掉内置 mod，最后 mods 目录应为空
@@ -214,7 +333,7 @@ public sealed class ModManagerTests
         using var harness = new ModHarness("ap-mod-reject");
         // 没有 exe 的目录
         Assert.Throws<InvalidOperationException>(
-            () => harness.Manager.Install(harness.Sandbox.EnsureDirectory("empty"), overwriteDll: false, includeSampleMod: true));
+            () => harness.Manager.Install(harness.Sandbox.EnsureDirectory("empty"), overwriteDll: false));
     }
 
     [Fact]
@@ -235,7 +354,7 @@ public sealed class ModManagerTests
     {
         using var harness = new ModHarness("ap-mod-manifest");
         harness.Manager.SaveStoredGameDirectory(harness.GameDirectory);
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.InstallLoaderOnly();
 
         // 放一个带完整 sidecar 的 mod（新格式: id/name/version/permissions/sdkVersion/dependencies）
         var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
@@ -264,7 +383,7 @@ public sealed class ModManagerTests
     {
         using var harness = new ModHarness("ap-mod-folderlayout");
         harness.Manager.SaveStoredGameDirectory(harness.GameDirectory);
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.InstallLoaderOnly();
 
         // 新布局: mods\MyMod\MyMod.dll + MyMod.json(sidecar 在 mod 文件夹内)
         var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
@@ -288,7 +407,7 @@ public sealed class ModManagerTests
     {
         using var harness = new ModHarness("ap-mod-nonmodfolder");
         harness.Manager.SaveStoredGameDirectory(harness.GameDirectory);
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.InstallLoaderOnly();
 
         var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
         // 文件夹里没有同名 dll → 不是 mod 文件夹, 应忽略
@@ -308,7 +427,7 @@ public sealed class ModManagerTests
     public void DeleteMod_FolderLayout_RemovesWholeFolder()
     {
         using var harness = new ModHarness("ap-mod-del-folder");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.InstallLoaderOnly();
 
         var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
         var modFolder = Path.Combine(modsDir, "MyMod");
@@ -329,7 +448,7 @@ public sealed class ModManagerTests
     {
         using var harness = new ModHarness("ap-mod-badsidecar");
         harness.Manager.SaveStoredGameDirectory(harness.GameDirectory);
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.InstallLoaderOnly();
 
         var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
         harness.Sandbox.WriteFile(Path.Combine(modsDir, "Broken.dll"), new byte[] { 0x4D, 0x5A, 0x01 });
@@ -347,7 +466,7 @@ public sealed class ModManagerTests
     public void ToggleMod_DisablesAndEnablesViaSidecar()
     {
         using var harness = new ModHarness("ap-mod-toggle");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.InstallLoaderOnly();
 
         // 放一个 mod + sidecar
         var modsDir = ModsDir(harness);
@@ -380,7 +499,7 @@ public sealed class ModManagerTests
     public void ToggleMod_WithoutSidecar_CreatesOne()
     {
         using var harness = new ModHarness("ap-mod-toggle-nosidecar");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.InstallLoaderOnly();
 
         var modsDir = ModsDir(harness);
         var disabledDir = DisabledModsDir(harness);
@@ -403,7 +522,7 @@ public sealed class ModManagerTests
     public void ToggleMod_FolderLayout_MovesWholeModFolderAndDeleteFindsIt()
     {
         using var harness = new ModHarness("ap-mod-toggle-folder");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.InstallLoaderOnly();
 
         var modsDir = ModsDir(harness);
         var disabledDir = DisabledModsDir(harness);
@@ -438,7 +557,7 @@ public sealed class ModManagerTests
     public void ToggleMods_BatchContinuesAfterFailure()
     {
         using var harness = new ModHarness("ap-mod-toggle-batch");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.InstallLoaderOnly();
         var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
         harness.Sandbox.WriteFile(Path.Combine(modsDir, "A.dll"), new byte[] { 0x4D, 0x5A });
         harness.Sandbox.WriteFile(Path.Combine(modsDir, "B.dll"), new byte[] { 0x4D, 0x5A });
@@ -456,7 +575,7 @@ public sealed class ModManagerTests
     public void DeleteMods_BatchContinuesAfterFailure()
     {
         using var harness = new ModHarness("ap-mod-delete-batch");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.InstallLoaderOnly();
         var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
         harness.Sandbox.WriteFile(Path.Combine(modsDir, "A.dll"), new byte[] { 0x4D, 0x5A });
         harness.Sandbox.WriteFile(Path.Combine(modsDir, "B.dll"), new byte[] { 0x4D, 0x5A });
@@ -473,7 +592,7 @@ public sealed class ModManagerTests
     public void ModConfig_OpenCreatesFileAndReturnsPath()
     {
         using var harness = new ModHarness("ap-mod-config");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
         harness.Sandbox.WriteFile(Path.Combine(modsDir, "CfgMod.dll"), new byte[] { 0x4D, 0x5A });
 
@@ -491,7 +610,7 @@ public sealed class ModManagerTests
     public void ModConfig_LivesInConfigsFolder_AndSeedsFromPackagedDefault()
     {
         using var harness = new ModHarness("ap-mod-config-path");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var loaderRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
         var modDir = Path.Combine(loaderRoot, ModManager.ModsFolderName, "CfgMod");
         harness.Sandbox.WriteFile(Path.Combine(modDir, "CfgMod.dll"), new byte[] { 0x4D, 0x5A });
@@ -524,7 +643,7 @@ public sealed class ModManagerTests
     public void ModConfig_DualWriteFollowsDisabledFolderAndSkipsMissingMods()
     {
         using var harness = new ModHarness("ap-mod-config-dualwrite");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var loaderRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
         var modsDir = Path.Combine(loaderRoot, ModManager.ModsFolderName);
         harness.Sandbox.WriteFile(Path.Combine(modsDir, "CfgMod", "CfgMod.dll"), new byte[] { 0x4D, 0x5A });
@@ -554,7 +673,7 @@ public sealed class ModManagerTests
     public void SetFontModConfig_PreservesCommentsAndOtherKeys()
     {
         using var harness = new ModHarness("ap-fontmod-config");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var modDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName, "FontMod");
         harness.Sandbox.WriteFile(Path.Combine(modDir, "FontMod.dll"), new byte[] { 0x4D, 0x5A });
         // 玩家配置在 configs\FontMod.json(加载器优先读这里)
@@ -580,7 +699,7 @@ public sealed class ModManagerTests
     public void SetFontModConfig_CreatesDefaultsWhenMissing()
     {
         using var harness = new ModHarness("ap-fontmod-config-new");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var modDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName, "FontMod");
         harness.Sandbox.WriteFile(Path.Combine(modDir, "FontMod.dll"), new byte[] { 0x4D, 0x5A });
 
@@ -596,7 +715,7 @@ public sealed class ModManagerTests
     public void SetFontModConfig_WritesExistingLegacyConfigInPlace()
     {
         using var harness = new ModHarness("ap-fontmod-config-legacy");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var loaderRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
         var modDir = Path.Combine(loaderRoot, ModManager.ModsFolderName, "FontMod");
         harness.Sandbox.WriteFile(Path.Combine(modDir, "FontMod.dll"), new byte[] { 0x4D, 0x5A });
@@ -626,7 +745,7 @@ public sealed class ModManagerTests
         File.WriteAllText(Path.Combine(harness.GameDirectory, "speedhack_config.json"), "{}");
 
         Assert.True(ModManager.HasSpeedhackInstalled(harness.GameDirectory), "应检测到变速器");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: true);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true);
         Assert.True(harness.Manager.GetStatus().Installed);
         Assert.Equal("{}", File.ReadAllText(Path.Combine(harness.GameDirectory, "speedhack_config.json")));
     }
@@ -648,7 +767,7 @@ public sealed class ModManagerTests
     public void ImportSdk_ImportsReleaseLayoutsWithoutTools(string sdkEntry)
     {
         using var harness = new ModHarness("ap-sdk-import");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var sdkPath = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, "sdk", ModManager.SdkDllName);
         var sdk = File.ReadAllBytes(sdkPath);
         var zip = Path.Combine(harness.GameDirectory, "sdk.zip");
@@ -668,7 +787,7 @@ public sealed class ModManagerTests
     public void ImportSdk_InvalidArchiveDoesNotReplaceSdk(string entry)
     {
         using var harness = new ModHarness("ap-sdk-invalid");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var sdkPath = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, "sdk", ModManager.SdkDllName);
         var before = File.ReadAllBytes(sdkPath);
         var zip = Path.Combine(harness.GameDirectory, "invalid.zip");
@@ -682,7 +801,7 @@ public sealed class ModManagerTests
     public void ImportSdk_DuplicateEntriesAreRejectedBeforeWriting()
     {
         using var harness = new ModHarness("ap-sdk-dupes");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var sdkPath = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, "sdk", ModManager.SdkDllName);
         var before = File.ReadAllBytes(sdkPath);
         var zip = Path.Combine(harness.GameDirectory, "duplicate.zip");
@@ -707,7 +826,7 @@ public sealed class ModManagerTests
     public void ImportSdk_DirectDllPreservesModsAndConfig()
     {
         using var harness = new ModHarness("ap-sdk-direct");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: true);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var sdkPath = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, "sdk", ModManager.SdkDllName);
         var configPath = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ConfigFileName);
         var before = File.ReadAllBytes(configPath);
@@ -740,7 +859,7 @@ public sealed class ModManagerTests
     public void SetSpeedhack_EnablesAndDisablesViaConfig()
     {
         using var harness = new ModHarness("ap-mod-speedhack");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
 
         // 默认 1.0 = 未启用
         Assert.Equal(1.0, harness.Manager.ReadLoaderConfig(harness.GameDirectory).SpeedhackBaseSpeed);
@@ -762,14 +881,14 @@ public sealed class ModManagerTests
     public void Install_PreservesExistingUserConfig()
     {
         using var harness = new ModHarness("ap-mod-preserve-cfg");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
 
         // 用户设置变速 2.0
         harness.Manager.SetSpeedhack(harness.GameDirectory, 2.0);
         Assert.Equal(2.0, harness.Manager.ReadLoaderConfig(harness.GameDirectory).SpeedhackBaseSpeed);
 
         // 重新安装加载器 → doorstop_config 必须保留(不重置用户设置)
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: true);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true);
         Assert.Equal(2.0, harness.Manager.ReadLoaderConfig(harness.GameDirectory).SpeedhackBaseSpeed);
     }
 
@@ -777,7 +896,7 @@ public sealed class ModManagerTests
     public void InstallPackage_PreservesExistingUserConfig()
     {
         using var harness = new ModHarness("ap-mod-pkg-preserve");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
 
         // 用户设置变速 2.0
         harness.Manager.SetSpeedhack(harness.GameDirectory, 2.0);
@@ -792,7 +911,7 @@ public sealed class ModManagerTests
     public void Install_RaisesSdkVersion_ButKeepsUserSettings()
     {
         using var harness = new ModHarness("ap-mod-sdk-sync");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: true);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         harness.Manager.SetSpeedhack(harness.GameDirectory, 2.0);
 
         var bundle = ModManager.BundleSdkVersion;
@@ -804,7 +923,7 @@ public sealed class ModManagerTests
         Assert.Equal("2.1.0", harness.Manager.ReadLoaderConfig(harness.GameDirectory).SdkVersion);
 
         // 重新安装 → sdkVersion 必须抬到随包版本, 否则加载器会拒绝加载新版内置 mod; 用户设置照旧
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: true);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true);
 
         var config = harness.Manager.ReadLoaderConfig(harness.GameDirectory);
         Assert.Equal(bundle, config.SdkVersion);
@@ -815,7 +934,7 @@ public sealed class ModManagerTests
     public void Install_DoesNotDowngradeNewerSdkVersion()
     {
         using var harness = new ModHarness("ap-mod-sdk-nodowngrade");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
 
         var bundle = ModManager.BundleSdkVersion;
         Assert.False(string.IsNullOrEmpty(bundle), "内置 doorstop_config.json 模板没有 sdkVersion");
@@ -824,7 +943,7 @@ public sealed class ModManagerTests
         var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
         File.WriteAllText(path, File.ReadAllText(path).Replace(bundle, "9.9.9"));
 
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true);
         Assert.Equal("9.9.9", harness.Manager.ReadLoaderConfig(harness.GameDirectory).SdkVersion);
     }
 
@@ -832,7 +951,7 @@ public sealed class ModManagerTests
     public void InstallPackage_RaisesSdkVersion_FromPackage()
     {
         using var harness = new ModHarness("ap-mod-pkg-sdk-sync");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         harness.Manager.SetSpeedhack(harness.GameDirectory, 2.0);
 
         // 老配置停在旧 SDK 号 → 从发布包更新时抬到包内声明的版本
@@ -851,7 +970,7 @@ public sealed class ModManagerTests
     public void InstallPackage_WithoutSdkVersion_LeavesConfigAlone()
     {
         using var harness = new ModHarness("ap-mod-pkg-sdk-keep");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var before = harness.Manager.ReadLoaderConfig(harness.GameDirectory).SdkVersion;
         Assert.False(string.IsNullOrEmpty(before), "内置 doorstop_config.json 模板没有 sdkVersion");
 
@@ -870,7 +989,7 @@ public sealed class ModManagerTests
         if (fromPackage)
             harness.Manager.InstallPackage(harness.GameDirectory, BuildFakePackage("9.0.0"), overwriteDll: false);
         else
-            harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+            harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
 
         var config = harness.Manager.ReadLoaderConfig(harness.GameDirectory);
         Assert.False(config.SteamBypassEnabled);
@@ -887,13 +1006,13 @@ public sealed class ModManagerTests
     public void Reinstall_PreservesSteamLaunchChoice(bool fromPackage, bool bypass)
     {
         using var harness = new ModHarness("ap-mod-keep-steam-choice");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         Assert.True(harness.Manager.SetSteamBypassProfile(harness.GameDirectory, bypass));
 
         if (fromPackage)
             harness.Manager.InstallPackage(harness.GameDirectory, BuildFakePackage("9.0.0"), overwriteDll: true);
         else
-            harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: false);
+            harness.Manager.Install(harness.GameDirectory, overwriteDll: true);
 
         var config = harness.Manager.ReadLoaderConfig(harness.GameDirectory);
         Assert.Equal(bypass, config.SteamBypassEnabled);
@@ -907,7 +1026,7 @@ public sealed class ModManagerTests
     public void Install_AddsMissingSteamBypassKeys_ButKeepsUserValuesAndComments()
     {
         using var harness = new ModHarness("ap-mod-steam-keys-add");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
 
         // 模拟"旧版内置模板装出来的配置": 没有 steamBypass 键; 用户已把主开关关掉过, 还写了自己的注释
@@ -915,7 +1034,7 @@ public sealed class ModManagerTests
             "{\n  // 这是我自己写的注释\n  \"enabled\": true,\n  \"speedhackBaseSpeed\": 2.0,\n"
             + "  \"steamBypassEnabled\": false,\n  \"sdkVersion\": \"2.1.7\"\n}");
 
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true);
 
         var config = harness.Manager.ReadLoaderConfig(harness.GameDirectory);
         Assert.False(config.SteamBypassEnabled);              // 用户显式关掉的值必须原样保留
@@ -942,12 +1061,12 @@ public sealed class ModManagerTests
     public void Install_LeavesFullySpecifiedSteamKeysUntouched()
     {
         using var harness = new ModHarness("ap-mod-steam-keys-keep");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
 
         // 新模板装出来的配置 7 个键都在 → 再次安装必须一字不改(幂等)
         var before = File.ReadAllText(path);
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true);
         Assert.Equal(before, File.ReadAllText(path));
     }
 
@@ -955,7 +1074,7 @@ public sealed class ModManagerTests
     public void InstallPackage_AddsMissingSteamBypassKeys()
     {
         using var harness = new ModHarness("ap-mod-pkg-steam-keys");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
         File.WriteAllText(path, "{\n  \"enabled\": true,\n  \"sdkVersion\": \"2.1.7\"\n}");
 
@@ -980,7 +1099,7 @@ public sealed class ModManagerTests
     public void Install_AddsMissingProfileWindowTitle_ButKeepsUserValuesAndComments()
     {
         using var harness = new ModHarness("ap-mod-window-title-add");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
 
         // 模拟旧版模板装出来的配置：没有 profileWindowTitle；用户还写了自己的注释和其它设置
@@ -988,7 +1107,7 @@ public sealed class ModManagerTests
             "{\n  // 这是我自己写的注释\n  \"enabled\": true,\n  \"speedhackBaseSpeed\": 2.0,\n"
             + "  \"profile\": \"P2\",\n  \"sdkVersion\": \"2.1.7\"\n}");
 
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true);
 
         var config = harness.Manager.ReadLoaderConfig(harness.GameDirectory);
         Assert.True(config.ProfileWindowTitle);               // 缺失 → 补成默认（开）
@@ -1006,12 +1125,12 @@ public sealed class ModManagerTests
     public void Install_KeepsProfileWindowTitleTurnedOff()
     {
         using var harness = new ModHarness("ap-mod-window-title-keep");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
 
         Assert.True(harness.Manager.SetProfileWindowTitle(harness.GameDirectory, false));
 
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true);
 
         Assert.False(harness.Manager.ReadLoaderConfig(harness.GameDirectory).ProfileWindowTitle);
         Assert.Contains("\"profileWindowTitle\": false", File.ReadAllText(path));
@@ -1021,7 +1140,7 @@ public sealed class ModManagerTests
     public void InstallPackage_AddsMissingProfileWindowTitle()
     {
         using var harness = new ModHarness("ap-mod-pkg-window-title");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
         File.WriteAllText(path, "{\n  \"enabled\": true,\n  \"sdkVersion\": \"2.1.7\"\n}");
 
@@ -1043,7 +1162,7 @@ public sealed class ModManagerTests
     public void SetSteamBypassProfile_FlipsTheWholeSet_AndKeepsComments()
     {
         using var harness = new ModHarness("ap-mod-set-steam-bypass");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
 
         // 用户主动选择绕过后，再验证切回 Steam 时整套开关关闭且保留注释。
@@ -1080,7 +1199,7 @@ public sealed class ModManagerTests
     public void SetSteamBypassProfile_IsIdempotent_AndCountsAlreadyTargetAsSuccess()
     {
         using var harness = new ModHarness("ap-mod-set-steam-bypass-idem");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
         var before = File.ReadAllText(path);
 
@@ -1098,7 +1217,7 @@ public sealed class ModManagerTests
     public void SetTapTapBypassProfile_FlipsTheSet_AndKeepsComments()
     {
         using var harness = new ModHarness("ap-mod-set-taptap-bypass");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
 
         Assert.True(harness.Manager.SetTapTapBypassProfile(harness.GameDirectory, true));
@@ -1145,7 +1264,7 @@ public sealed class ModManagerTests
     public void SetSteamBypassProfile_NormalizesAPartiallyOnConfig()
     {
         using var harness = new ModHarness("ap-mod-set-steam-bypass-hybrid");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
 
         // 混合状态（用户启用绕过后只手动关了主开关）→ 一次「从 Steam 启动」必须把整套收拾干净
@@ -1177,7 +1296,7 @@ public sealed class ModManagerTests
     public void SetSteamBypassProfile_ReturnsFalse_WhenKeysMissing_AndLeavesFileUntouched()
     {
         using var harness = new ModHarness("ap-mod-set-steam-bypass-nokey");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
 
         var text = "{\n  // 老模板：没有 steamBypass 这一组键\n  \"enabled\": true\n}";
@@ -1192,7 +1311,7 @@ public sealed class ModManagerTests
     public void SetSteamBypassProfile_DoesNotRewriteCommentMentions()
     {
         using var harness = new ModHarness("ap-mod-set-steam-bypass-comment");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
 
         // 只有**注释里**提到这些键（真实键不存在）：就地替换会先命中注释 —— 自检必须拦住，不能写盘
@@ -1208,7 +1327,7 @@ public sealed class ModManagerTests
     public void SetSteamBypassProfile_PreservesUtf8Bom()
     {
         using var harness = new ModHarness("ap-mod-set-steam-bypass-bom");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
 
         // 用户在记事本里存过一遍 → 文件带 BOM；改写后 BOM 必须还在（加载器两侧都会剥 BOM，但别去动它）
@@ -1233,11 +1352,67 @@ public sealed class ModManagerTests
         File.WriteAllText(manifestPath, node.ToJsonString());
     }
 
+    /// <summary>模拟玩家手工把加载器删干净：version.dll / version.pdb / AstralParty_ModLoader 全删。
+    /// 注意 Toys 自己的安装历史（数据根 install-history）不会被玩家的手动删除清掉。</summary>
+    private static void DeleteLoaderFiles(ModHarness harness)
+    {
+        foreach (var name in new[] { ModManager.LoaderDllName, "version.pdb" })
+        {
+            var path = Path.Combine(harness.GameDirectory, name);
+            if (File.Exists(path)) File.Delete(path);
+        }
+        var root = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
+        if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+    }
+
+    [Fact]
+    public void Install_AfterManualDeletion_IsNotBlockedAsDowngrade()
+    {
+        using var harness = new ModHarness("ap-mod-manual-delete-reinstall");
+        harness.Manager.SaveStoredGameDirectory(harness.GameDirectory);
+        // 先装一个更新版本的发布包：安装历史里留下 9.9.9
+        harness.Manager.InstallPackage(harness.GameDirectory, BuildFakePackage("9.9.9"), overwriteDll: false);
+
+        // 玩家把加载器整个删掉（游戏目录空了，但 Toys 的安装历史还在）
+        DeleteLoaderFiles(harness);
+
+        // 内置版本比历史里的 9.9.9 旧，可目录是空的 —— 这是重新安装，不是降级，不该拦
+        var result = harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
+        Assert.Equal(ModManager.BundleLoaderVersion, result.Version);
+        Assert.Equal(ModManager.BundleLoaderVersion, harness.Manager.GetStatus().InstalledVersion);
+    }
+
+    [Fact]
+    public void InstallPackage_AfterManualDeletion_IsNotBlockedAsDowngrade()
+    {
+        using var harness = new ModHarness("ap-mod-pkg-manual-delete");
+        harness.Manager.InstallPackage(harness.GameDirectory, BuildFakePackage("9.9.9"), overwriteDll: false);
+        DeleteLoaderFiles(harness);
+
+        var result = harness.Manager.InstallPackage(harness.GameDirectory, BuildFakePackage("9.1.0"), overwriteDll: false);
+        Assert.Equal("9.1.0", result.Version);
+    }
+
+    [Fact]
+    public void Install_AfterDisabledThenManualDeletion_WritesLoaderDllAgain()
+    {
+        using var harness = new ModHarness("ap-mod-disabled-then-deleted");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
+        // 用「停用加载器」停用（只删 version.dll，目录与历史都留着 Disabled=true）
+        harness.Manager.DisableLoader(harness.GameDirectory);
+        // 玩家随后把整个加载器目录也删了：目录都不在了就不再算「停用保留」，重装必须写回 version.dll
+        DeleteLoaderFiles(harness);
+
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
+        Assert.True(File.Exists(Path.Combine(harness.GameDirectory, ModManager.LoaderDllName)),
+            "加载器目录被手工删掉后重装，必须重新写 version.dll");
+    }
+
     [Fact]
     public void GetStatus_ReportsUnknownVersion_WhenManifestMissing()
     {
         using var harness = new ModHarness("ap-mod-version-unknown");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
 
         // 模拟旧安装：既没有游戏清单，也没有本地安装历史。
         // 即使日志有版本行也不回读，缺少可靠记录时如实显示未知。
@@ -1257,7 +1432,7 @@ public sealed class ModManagerTests
     public void GetStatus_ReadsInstalledVersionFromManifestOnly()
     {
         using var harness = new ModHarness("ap-mod-version-manifest-only");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
 
         // 同时存在清单与日志（且日志是另一个版本）→ 仍然只认清单
         var loaderRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
@@ -1272,16 +1447,16 @@ public sealed class ModManagerTests
     public void Install_RefusesDowngrade_UnlessExplicitlyAllowed()
     {
         using var harness = new ModHarness("ap-mod-downgrade-block");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         OverwriteManifestVersion(harness, "9.9.9");   // 假装已装了更新的加载器
 
         var ex = Assert.Throws<InvalidOperationException>(() =>
-            harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: false));
+            harness.Manager.Install(harness.GameDirectory, overwriteDll: true));
         Assert.Contains("降级", ex.Message);
         Assert.Contains("9.9.9", ex.Message);
 
         // 显式放行才允许降级
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: false, allowDowngrade: true);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, allowDowngrade: true);
         Assert.Equal(ModManager.BundleLoaderVersion, harness.Manager.GetStatus().InstalledVersion);
     }
 
@@ -1289,7 +1464,7 @@ public sealed class ModManagerTests
     public void InstallPackage_RefusesDowngrade_UnlessExplicitlyAllowed()
     {
         using var harness = new ModHarness("ap-mod-pkg-downgrade-block");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         OverwriteManifestVersion(harness, "9.9.9");
 
         // 发布包 5.0.0 < 已装 9.9.9 → 降级，默认拒绝
@@ -1306,7 +1481,7 @@ public sealed class ModManagerTests
     public void GetStatus_DoesNotSubstituteConfiguredSdkVersionForInstalledVersion()
     {
         using var harness = new ModHarness("ap-mod-version-config-ignored");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
 
         Directory.Delete(harness.Sandbox.Combine("profile", "install-history"), recursive: true);
         // 老安装（没有清单和历史）+ 配置里手写着另一个 sdkVersion：
@@ -1323,7 +1498,7 @@ public sealed class ModManagerTests
     public void Install_WithoutManifest_DoesNotBlockOnUnknownInstalledVersion()
     {
         using var harness = new ModHarness("ap-mod-no-manifest-install");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
 
         var loaderRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
         File.Delete(Path.Combine(loaderRoot, "cesium-loader.json"));   // 没有清单 → 版本未知
@@ -1331,7 +1506,7 @@ public sealed class ModManagerTests
         // 用户手改配置里的 sdkVersion（比如为了绕过 mod 的 SDK 校验）→ 不能因此把安装当成"降级"拦住
         File.WriteAllText(configPath, File.ReadAllText(configPath).Replace($"\"{ModManager.BundleSdkVersion}\"", "\"9.9.9\""));
 
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true);
         Assert.Equal(ModManager.BundleLoaderVersion, harness.Manager.GetStatus().InstalledVersion);   // 重装后清单回来了
     }
 
@@ -1383,7 +1558,7 @@ public sealed class ModManagerTests
     public void ReadLoaderConfig_ParsesCommentedFile()
     {
         using var harness = new ModHarness("ap-mod-cfg-read");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
 
         // 写一份带注释的 doorstop_config.json（加载器真实格式）
         var path = harness.Manager.LoaderConfigPath(harness.GameDirectory);
@@ -1403,7 +1578,7 @@ public sealed class ModManagerTests
     public void SaveLoaderConfig_RoundTripsAndValidatesSpeed()
     {
         using var harness = new ModHarness("ap-mod-cfg-save");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
 
         var config = new LoaderConfig { SpeedhackBaseSpeed = 3.0, ConsoleTopmost = false, SpeedControlEnabled = false, DebugShell = false, TapTapBypassEnabled = true };
         harness.Manager.SaveLoaderConfig(harness.GameDirectory, config);
@@ -1465,7 +1640,7 @@ public sealed class ModManagerTests
     public void ModEntryInfo_ExposesPermissionsForWarning()
     {
         using var harness = new ModHarness("ap-mod-perm-warn");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
 
         // 声明「操作游戏」(GameActions=2) 的 mod
@@ -1491,7 +1666,7 @@ public sealed class ModManagerTests
     public void ModEntryInfo_DefaultPermissionsZero_WhenSidecarMissing()
     {
         using var harness = new ModHarness("ap-mod-perm-zero");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
 
         // 无 sidecar 的 mod → permissions 为 0(无声明, 不警告)
@@ -1505,7 +1680,7 @@ public sealed class ModManagerTests
     public void ModConfigFields_RoundTripByKind()
     {
         using var harness = new ModHarness("ap-mod-fields");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: false);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
         var modsDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
         harness.Sandbox.WriteFile(Path.Combine(modsDir, "FieldMod.dll"), new byte[] { 0x4D, 0x5A });
 
@@ -1800,16 +1975,10 @@ public sealed class ModManagerTests
 
         var modsRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
         Assert.True(File.Exists(Path.Combine(modsRoot, "ActivityLogMod", "ActivityLogMod.dll")));
-        // 发布包里有什么就装什么: 不在 Toys 公开分发清单里的 OptionalMod 也要落地。
+        // 发布包里有什么就装什么: 不在内置清单里的 OptionalMod 也要落地。
         Assert.True(File.Exists(Path.Combine(modsRoot, "OptionalMod", "OptionalMod.dll")));
         Assert.True(File.Exists(Path.Combine(modsRoot, "OptionalMod", "OptionalMod.json")));
         Assert.True(File.Exists(Path.Combine(modsRoot, "OptionalMod", "OptionalMod.pdb")));
-        Assert.Equal(23, ModManager.EmbeddedBuiltInModIdList.Count);
-        Assert.Equal(new[] { "ActivityLogMod", "AudioSkinMod", "AutoThanksMod", "CardSkinMod",
-            "CharacterTransparencyMod", "ChatDurationMod", "CombatOddsMod", "FontMod", "ForkDirectionMod", "FreeCameraMod", "HideHudMod",
-            "HomeBottomBarMod", "LanguageUnlockMod", "MapPeekMod", "PveWaveForecastMod", "QuickChatPlusMod", "ShopRelicPeekMod", "SpeedHackMod", "StarCoinShopMod", "TurnClockMod",
-            "TurnFocusMod", "UnlockFrameRateMod", "UpdateNoticeMod" },
-            ModManager.EmbeddedBuiltInModIdList);
     }
 
     [Fact]
@@ -1909,7 +2078,7 @@ public sealed class ModManagerTests
     public void Install_PreservesModEnabledState_AcrossReinstalls()
     {
         using var harness = new ModHarness("ap-mod-install-preserve-enabled");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: true);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
 
         // 默认情况下所有内置 mod 均处于启用状态
         var status = harness.Manager.GetStatus();
@@ -1923,7 +2092,7 @@ public sealed class ModManagerTests
         Assert.False(status.Mods.First(m => m.Name == "ActivityLogMod").Enabled);
 
         // 重新安装/更新内置加载器（模拟覆盖更新）
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: true);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true);
 
         // 验证：已禁用的 mod 状态得到保留，未改动的 mod 依然保持启用
         status = harness.Manager.GetStatus();
@@ -1932,7 +2101,7 @@ public sealed class ModManagerTests
 
         // 重新开启后再更新，依然保持开启
         harness.Manager.ToggleMod(harness.GameDirectory, "ActivityLogMod.dll", true);
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: true, includeSampleMod: true);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true);
         status = harness.Manager.GetStatus();
         Assert.True(status.Mods.First(m => m.Name == "ActivityLogMod").Enabled);
     }
@@ -1941,7 +2110,7 @@ public sealed class ModManagerTests
     public void InstallPackage_PreservesModEnabledState()
     {
         using var harness = new ModHarness("ap-mod-pkg-preserve-enabled");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: true);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
 
         // 用户禁用 ActivityLogMod
         harness.Manager.ToggleMod(harness.GameDirectory, "ActivityLogMod.dll", false);
@@ -1962,7 +2131,7 @@ public sealed class ModManagerTests
     public void InstallPackage_PreservesExistingModConfigFile()
     {
         using var harness = new ModHarness("ap-mod-pkg-preserve-config");
-        harness.Manager.Install(harness.GameDirectory, overwriteDll: false, includeSampleMod: true);
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
 
         // 用户给 ActivityLogMod 写入自定义配置
         var modDir = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName, "ActivityLogMod");
@@ -2011,6 +2180,17 @@ public sealed class ModManagerTests
         public TestSandbox Sandbox { get; }
         public string GameDirectory { get; }
         public ModManager Manager { get; }
+
+        /// <summary>装好加载器但清空 mods\，得到「只有加载器」的干净环境。
+        /// 内置包现在一律连内置模组一起装（不再有「只装加载器」的选项），所以需要隔离环境的用例
+        /// 自己把 mods\ 清掉，而不是让产品保留一个只为测试存在的开关。</summary>
+        public void InstallLoaderOnly()
+        {
+            Manager.Install(GameDirectory, overwriteDll: false);
+            var modsRoot = Path.Combine(GameDirectory, ModManager.LoaderFolderName, ModManager.ModsFolderName);
+            if (Directory.Exists(modsRoot)) Directory.Delete(modsRoot, recursive: true);
+            Directory.CreateDirectory(modsRoot);
+        }
 
         public void Dispose() => Sandbox.Dispose();
     }

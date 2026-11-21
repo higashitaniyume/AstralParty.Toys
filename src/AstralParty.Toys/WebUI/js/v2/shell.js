@@ -498,7 +498,7 @@
     clearTimeout(Guide.installTimer);
     // 宿主出错会发 error；万一什么都没回，两分钟后解锁按钮（和原版 setBusy 的兜底一样）
     Guide.installTimer = setTimeout(() => { Guide.installing = false; renderHome(); }, 120000);
-    post({ type: 'modInstall', overwriteDll: false, allowDowngrade: false, includeSample: true });   // 和模组页的安装按钮同一条消息
+    post({ type: 'modInstall', overwriteDll: false, allowDowngrade: false });   // 和模组页的安装按钮同一条消息
     renderHome();
   }
 
