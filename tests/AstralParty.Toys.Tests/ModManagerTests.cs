@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Security.Cryptography;
 using AstralParty.Toys.Models;
 using AstralParty.Toys.Tests.Support;
 
@@ -2104,6 +2105,68 @@ public sealed class ModManagerTests
         harness.Manager.Install(harness.GameDirectory, overwriteDll: true);
         status = harness.Manager.GetStatus();
         Assert.True(status.Mods.First(m => m.Name == "ActivityLogMod").Enabled);
+    }
+
+    /// <summary>
+    /// 安装内置加载器 = 把发布包**写进去**，不是同步/清空 mods 目录：
+    /// 第三方模组（目录布局、旧式平铺 dll、停用目录里的）、它们的配置，以及内置模组被用户改过的配置
+    /// 都必须原样留着；只有「包内有同名条目」的文件才会被覆盖。
+    /// </summary>
+    [Fact]
+    public void Install_KeepsThirdPartyModsAndUserConfigsIntact()
+    {
+        using var harness = new ModHarness("ap-mod-keep-third-party");
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: false);
+
+        var loaderRoot = Path.Combine(harness.GameDirectory, ModManager.LoaderFolderName);
+        var modsDir = Path.Combine(loaderRoot, ModManager.ModsFolderName);
+        var disabledDir = Path.Combine(loaderRoot, ModManager.DisabledModsFolderName);
+
+        // 第三方模组：目录布局（dll + sidecar + 自己的 config.json）
+        var thirdPartyDir = Path.Combine(modsDir, "MyThirdPartyMod");
+        Directory.CreateDirectory(thirdPartyDir);
+        var thirdPartyDll = harness.Sandbox.WriteFile(
+            Path.Combine(thirdPartyDir, "MyThirdPartyMod.dll"), new byte[] { 0x4D, 0x5A, 0x11, 0x22 });
+        File.WriteAllText(Path.Combine(thirdPartyDir, "MyThirdPartyMod.json"),
+            "{\"id\":\"MyThirdPartyMod\",\"version\":\"1.0.0\"}");
+        var thirdPartyConfig = Path.Combine(thirdPartyDir, "config.json");
+        File.WriteAllText(thirdPartyConfig, "{ \"myOption\": 42 }");
+
+        // 旧式平铺的第三方 dll，以及停在停用目录里的第三方模组
+        var looseDll = harness.Sandbox.WriteFile(Path.Combine(modsDir, "LooseThirdParty.dll"), new byte[] { 0x4D, 0x5A, 0x33 });
+        var disabledThirdDir = Path.Combine(disabledDir, "DisabledThirdParty");
+        Directory.CreateDirectory(disabledThirdDir);
+        var disabledThirdDll = harness.Sandbox.WriteFile(
+            Path.Combine(disabledThirdDir, "DisabledThirdParty.dll"), new byte[] { 0x4D, 0x5A, 0x44 });
+
+        // 内置模组：用户改过的 config.json，以及被用户停用的 ActivityLogMod
+        var fontConfig = Path.Combine(modsDir, "FontMod", "config.json");
+        File.WriteAllText(fontConfig, "{ \"fontFamily\": \"用户自己填的\" }");
+        harness.Manager.ToggleMod(harness.GameDirectory, "ActivityLogMod.dll", false);
+
+        var thirdPartyHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(thirdPartyDll)));
+        var looseHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(looseDll)));
+        var disabledHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(disabledThirdDll)));
+
+        // 重新安装内置版本（覆盖安装）
+        harness.Manager.Install(harness.GameDirectory, overwriteDll: true);
+
+        // 第三方模组一个都没少、内容也没变
+        Assert.True(File.Exists(thirdPartyDll), "第三方模组的 dll 被删了");
+        Assert.Equal(thirdPartyHash, Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(thirdPartyDll))));
+        Assert.Equal("{ \"myOption\": 42 }", File.ReadAllText(thirdPartyConfig));
+        Assert.Equal(looseHash, Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(looseDll))));
+        Assert.Equal(disabledHash, Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(disabledThirdDll))));
+
+        // 内置模组被用户改过的配置保留；被停用的内置模组仍在 disabled_mods，不会被搬回 mods
+        Assert.Equal("{ \"fontFamily\": \"用户自己填的\" }", File.ReadAllText(fontConfig));
+        Assert.True(File.Exists(Path.Combine(disabledDir, "ActivityLogMod", "ActivityLogMod.dll")), "停用的内置模组被搬回了 mods");
+        Assert.False(Directory.Exists(Path.Combine(modsDir, "ActivityLogMod")));
+
+        // 状态里第三方模组照常出现
+        var status = harness.Manager.GetStatus();
+        Assert.Contains(status.Mods, m => m.DirectoryName == "MyThirdPartyMod");
+        Assert.Contains(status.Mods, m => m.FileName == "LooseThirdParty.dll");
     }
 
     [Fact]
