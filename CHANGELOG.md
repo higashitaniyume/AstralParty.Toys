@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [v2.4.4] - 2026-11-21
+
 ### 加载器安装
 
 - 「安装 / 重新安装内置版本」与「导入发布包」现在是同一条路径：工具箱把随程序内置的 CesiumLoader 发布包按包内清单逐文件校验后整包解压到游戏目录。装进去的内容与手动解压发布包一致——加载器、SDK、`bootstrap\`、内置模组（含各自的符号文件、图标与示例音）、`doorstop_config.json` 模板，以及游戏目录里的 `README.txt`、`CHANGELOG.md`、`CesiumLoader-NOTICE.txt`、`CesiumLoader-LICENSE.txt` 与 `version.pdb` 符号文件。
