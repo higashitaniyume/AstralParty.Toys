@@ -53,7 +53,16 @@ public static class ToysEnvironment
         Add("工作目录", () => TrimTrailingSeparators(Environment.CurrentDirectory));
         Add("区域", () => $"{CultureInfo.CurrentCulture.Name} / UI {CultureInfo.CurrentUICulture.Name}");
         Add("管理员", () => elevated ? "是" : "否");
-        Add("WebView2", () => CoreWebView2Environment.GetAvailableBrowserVersionString());
+
+        // 运行时可能来自系统安装（Evergreen），也可能来自 WEBVIEW2_BROWSER_EXECUTABLE_FOLDER
+        // 指定的固定版本目录；日志里要能分清是哪种，出问题时才知道该看哪里。
+        var runtime = WebView2Runtime.ResolveFromEnvironment();
+        if (runtime.UsesFixedVersion)
+            Add("WebView2", () => $"固定版本 · {runtime.BrowserExecutableFolder}");
+        else
+            Add("WebView2", () => CoreWebView2Environment.GetAvailableBrowserVersionString());
+        if (runtime.Warning is not null)
+            Add("WebView2 环境变量", () => runtime.Warning!);
 
         return lines;
     }

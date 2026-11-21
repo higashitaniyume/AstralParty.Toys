@@ -2,6 +2,12 @@
 
 本文件按版本记录 `AstralParty.Toys` 的功能变更。版本号与 GitHub 发布 tag 一一对应（如 `v0.2.0`），发布产物由 [release.yml](.github/workflows/release.yml) 在打 tag 时自动构建。
 
+## [Unreleased]
+
+### 运行环境
+
+- 支持用环境变量 `WEBVIEW2_BROWSER_EXECUTABLE_FOLDER` 指定固定版本（便携版）WebView2 运行时的目录：没有安装 Evergreen 运行时、或想钉死运行时的机器可以直接使用解压好的固定版本运行时。变量指向的目录无效时回退到系统安装的运行时，并在运行日志里说明原因。
+
 ## [v2.4.3] - 2026-11-19
 
 ### 自定义

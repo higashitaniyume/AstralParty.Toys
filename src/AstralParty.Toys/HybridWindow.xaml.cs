@@ -44,6 +44,8 @@ public partial class HybridWindow : Window
     private bool _webRootIsEmbedded;
     /// <summary>主界面启动失败的原始原因；打开引导页时显示给用户。</summary>
     private string? _startupFailure;
+    /// <summary>WebView2 运行时环境变量设了却不可用时的说明，启动失败时一并带上。</summary>
+    private string? _startupWarning;
     private readonly Dictionary<string, string> _replayLibrary = new(StringComparer.Ordinal);
     private CancellationTokenSource? _deepScanCts;
     /// <summary>回放下载的取消源：同一时刻只允许一个下载，见 <see cref="HandleReplayDownloadAsync"/>。</summary>
@@ -87,7 +89,27 @@ public partial class HybridWindow : Window
             // WebView2 的用户数据目录必须留在本地：里面有锁文件和缓存，不能跟着数据文件夹走。
             var userDataDirectory = ToysPaths.WebView2Directory;
             Directory.CreateDirectory(userDataDirectory);
-            _webEnvironment = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataDirectory);
+
+            // 默认用系统安装的 Evergreen 运行时；设了 WEBVIEW2_BROWSER_EXECUTABLE_FOLDER
+            // 就用该目录里的固定版本（便携版）运行时。见 WebView2Runtime。
+            var runtime = WebView2Runtime.ResolveFromEnvironment();
+            if (runtime.Warning is not null)
+            {
+                _startupWarning = runtime.Warning;
+                // WebView2 加载器自己也会读这个变量，而且优先于 CreateAsync 的参数：
+                // 不清掉的话「回退到系统运行时」不会生效，加载器仍会去那个无效目录找。
+                Environment.SetEnvironmentVariable(WebView2Runtime.BrowserExecutableFolderVariable, null);
+                ToysLog.Warn("web", $"{runtime.Warning}（已回退到系统安装的 WebView2 运行时）");
+            }
+            else if (runtime.UsesFixedVersion)
+            {
+                ToysLog.Info("web", $"使用指定目录的 WebView2 运行时：{runtime.BrowserExecutableFolder}");
+            }
+
+            _webEnvironment = await CoreWebView2Environment.CreateAsync(
+                browserExecutableFolder: runtime.BrowserExecutableFolder,
+                userDataFolder: userDataDirectory);
+            ToysLog.Info("web", $"WebView2 运行时版本：{_webEnvironment.BrowserVersionString}");
             await WebView.EnsureCoreWebView2Async(_webEnvironment);
             if (useDiskWebRoot)
             {
@@ -148,9 +170,10 @@ public partial class HybridWindow : Window
         }
         catch (Exception ex)
         {
+            ToysLog.Error("web", "主界面启动失败", ex);
             StartupDetail.Text = $"主界面启动失败：{ex.Message}";
             ClassicButton.Visibility = Visibility.Visible;
-            _startupFailure = ex.Message;
+            _startupFailure = _startupWarning is null ? ex.Message : $"{ex.Message}\n{_startupWarning}";
         }
     }
 
