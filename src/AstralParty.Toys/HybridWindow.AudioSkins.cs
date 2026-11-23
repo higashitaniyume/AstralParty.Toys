@@ -14,6 +14,9 @@ public partial class HybridWindow
 {
     private readonly AudioSkinSchemeManager _audioSkins = new();
 
+    /// <summary>批量替换等待页面确认的结果（选文件后、点「替换」前）。</summary>
+    private (string Token, string SchemeId, List<AudioBatchMatch> Matches)? _pendingAudioBatch;
+
     private void HandleAudioSkinMessage(string type, JsonElement root)
     {
         var game = ResolveAudioGameDirectory();
@@ -133,6 +136,63 @@ public partial class HybridWindow
                 }
                 break;
 
+            case "audioSkinsBatchPick":
+                {
+                    // 第一步：选文件、按文件名对应条目，把结果发给页面确认（还不改方案）
+                    var schemeId = root.TryGetProperty("schemeId", out var bsElem) ? bsElem.GetString() ?? "" : "";
+                    if (string.IsNullOrEmpty(schemeId) || string.Equals(schemeId, "default", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Post(new { type = "error", message = "官方原版方案不能替换，请先复制为新方案" });
+                        break;
+                    }
+                    var dialog = new OpenFileDialog
+                    {
+                        Title = "批量替换：选择音频文件（可多选）",
+                        Filter = "音频文件 (*.wav;*.ogg;*.mp3)|*.wav;*.ogg;*.mp3|所有文件 (*.*)|*.*",
+                        Multiselect = true
+                    };
+                    if (dialog.ShowDialog(this) != true) break;
+
+                    var (matches, skipped) = _audioSkins.MatchBatchFiles(dialog.FileNames);
+                    var token = Guid.NewGuid().ToString("N");
+                    _pendingAudioBatch = (token, schemeId, matches);
+                    Post(new
+                    {
+                        type = "audioSkinBatchPreview",
+                        payload = new
+                        {
+                            token,
+                            schemeId,
+                            matches = matches.Select(m => new { id = m.Id, label = m.Label, name = m.Name, file = Path.GetFileName(m.FilePath) }),
+                            skipped = skipped.Select(s => new { file = Path.GetFileName(s.FilePath), reason = s.Reason })
+                        }
+                    });
+                }
+                break;
+
+            case "audioSkinsBatchApply":
+                {
+                    // 第二步：页面确认后才写进方案。只认上一步留下的结果，页面只传回令牌
+                    var token = root.TryGetProperty("token", out var tkElem) ? tkElem.GetString() ?? "" : "";
+                    var pending = _pendingAudioBatch;
+                    _pendingAudioBatch = null;
+                    if (pending == null || pending.Value.Token != token)
+                    {
+                        Post(new { type = "error", message = "批量替换已过期，请重新选择文件" });
+                        break;
+                    }
+                    var failed = new List<string>();
+                    int done = _audioSkins.ApplyBatchReplace(game, pending.Value.SchemeId, pending.Value.Matches, failed);
+                    PushAudioSkinItems(game, pending.Value.SchemeId);
+                    PushAudioSkinProfiles(game);
+                    Post(new { type = "toast", message = failed.Count == 0 ? $"已批量替换 {done} 条音效" : $"已替换 {done} 条，{failed.Count} 个文件读取失败：{failed[0]}" });
+                }
+                break;
+
+            case "audioSkinsBatchCancel":
+                _pendingAudioBatch = null;
+                break;
+
             case "audioSkinsRevertAudio":
                 if (root.TryGetProperty("schemeId", out var rscElem) && root.TryGetProperty("configId", out var rcfgElem))
                 {
@@ -213,13 +273,19 @@ public partial class HybridWindow
                     try
                     {
                         Post(new { type = "audioSkinExtractProgress", payload = new { message = "正在准备提取游戏音频…", progress = 0.05 } });
-                        int extracted = _audioSkins.ExtractGameAudio(game, (msg, prog) =>
+                        var prepared = _audioSkins.PrepareOriginalAudio(game, (msg, prog) =>
                         {
                             Post(new { type = "audioSkinExtractProgress", payload = new { message = msg, progress = prog } });
                         });
                         var active = _audioSkins.GetActiveSchemeId(game);
                         PushAudioSkinItems(game, active);
-                        Post(new { type = "toast", message = $"已同步并就绪 {extracted} 个原版音频！" });
+                        Post(new
+                        {
+                            type = "toast",
+                            message = prepared.Ready > 0
+                                ? $"已找到 {prepared.Ready} / {prepared.Total} 个原版音频，试听时再转换"
+                                : $"没有找到原版音频：{prepared.Problem ?? "游戏文件里没有对应的声音"}"
+                        });
                         Post(new { type = "audioSkinExtractDone" });
                     }
                     catch (Exception ex)
@@ -301,9 +367,7 @@ public partial class HybridWindow
                 {
                     var id = root.TryGetProperty("id", out var idProp) ? idProp.GetInt32() : 0;
                     var name = root.TryGetProperty("name", out var nProp) ? nProp.GetString() ?? "" : "";
-                    var cacheDir = AudioSkinSchemeManager.AudioCacheDirectory(game);
-                    var targetFile = Path.Combine(cacheDir, $"{id}.ogg");
-                    if (!File.Exists(targetFile)) targetFile = Path.Combine(cacheDir, $"{id}.wav");
+                    var targetFile = GameAudioIndex.EnsureOriginal(game, id, out var originalProblem) ?? "";
                     if (!File.Exists(targetFile))
                     {
                         var catItem = _audioSkins.LoadCatalog().FirstOrDefault(x => x.Id == id);
@@ -340,7 +404,7 @@ public partial class HybridWindow
                     }
                     else
                     {
-                        Post(new { type = "error", message = "未找到该音频的原版文件" });
+                        Post(new { type = "error", message = "未找到该音频的原版文件" + (originalProblem != null ? "：" + originalProblem : "") });
                     }
                 }
                 break;
@@ -443,10 +507,10 @@ public partial class HybridWindow
             else if (parts.Length >= 2 && string.Equals(parts[0], "original", StringComparison.OrdinalIgnoreCase))
             {
                 var id = Uri.UnescapeDataString(parts[1]);
-                var cacheDir = AudioSkinSchemeManager.AudioCacheDirectory(gameDirectory);
-                var oggPath = Path.Combine(cacheDir, $"{id}.ogg");
-                var wavPath = Path.Combine(cacheDir, $"{id}.wav");
-                var targetFile = File.Exists(oggPath) ? oggPath : (File.Exists(wavPath) ? wavPath : null);
+                // 缓存里有就直接用；没有但已建立索引的，现场从游戏资源转换一次（约十几毫秒）
+                var targetFile = int.TryParse(id, out var previewId)
+                    ? GameAudioIndex.EnsureOriginal(gameDirectory, previewId, out _)
+                    : null;
 
                 if (targetFile == null && int.TryParse(id, out var numId))
                 {

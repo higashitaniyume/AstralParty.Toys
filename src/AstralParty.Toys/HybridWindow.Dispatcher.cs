@@ -751,6 +751,9 @@ public partial class HybridWindow
                 case "audioSkinsExtractGameAudio":
                 case "audioSkinsExportOriginalZip":
                 case "audioSkinsExportSingleOriginal":
+                case "audioSkinsBatchPick":
+                case "audioSkinsBatchApply":
+                case "audioSkinsBatchCancel":
                     HandleAudioSkinMessage(type, root);
                     break;
                 // 自定义 → 主页背景（第三方模组 HomeBackgroundMod）
