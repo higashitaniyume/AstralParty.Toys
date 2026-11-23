@@ -1649,6 +1649,23 @@
       "原生音频控制通道（UDP + 加载器 audio 目录）": "Native audio control channel (UDP + loader audio folder)",
       "卡死判定时间必须在 1 ~ 3600 秒之间": "Hang detection threshold must be between 1 and 3600 seconds",
       "等待调试器超时必须在 1 ~ 3600 秒之间": "Debugger wait timeout must be between 1 and 3600 seconds",
-      "高级选项（排查 · 转储与看门狗 · Steam 绕过细节 · 引导 · 超时）": "Advanced options (troubleshooting · dumps and watchdog · Steam bypass details · bootstrap · timeouts)"
+      "高级选项（排查 · 转储与看门狗 · Steam 绕过细节 · 引导 · 超时）": "Advanced options (troubleshooting · dumps and watchdog · Steam bypass details · bootstrap · timeouts)",
+      "从 GitHub 下载默认包…": "Download Default Pack from GitHub…",
+      "从 GitHub 下载最新默认包…": "Download the Latest Default Pack from GitHub…",
+      "从 GitHub 下载默认包": "Download Default Pack from GitHub",
+      "正在确认 GitHub 上的最新默认包…": "Checking the latest default pack on GitHub…",
+      "正在确认最新版本…": "Checking the latest version…",
+      "正在下载默认包…": "Downloading the default pack…",
+      "默认包": "Default pack",
+      "还没有下载 —— 新建方案要先有它": "Not downloaded yet — new profiles need it first",
+      "本地默认包：": "Local default pack: ",
+      "本地还没有默认包，新建方案需要先下载它": "There's no local default pack yet; new profiles need it first",
+      "GitHub 最新：": "Latest on GitHub: ",
+      "暂时查不到 GitHub 上的最新版本，将直接下载最新发布包": "Can't determine the latest version on GitHub right now; the latest release asset will be downloaded directly",
+      "下载会覆盖 default 里的同名图片，不会切换当前方案": "Downloading overwrites same-named images in default; the current profile is not switched",
+      "本地已经是最新版本，不需要重复下载": "The local copy is already the latest version; no need to download again",
+      "仍然重新下载": "Download Again Anyway",
+      "下载最新默认包": "Download Latest Default Pack",
+      "下载": "Download"
   };
 })();

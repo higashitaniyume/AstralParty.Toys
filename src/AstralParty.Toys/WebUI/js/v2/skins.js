@@ -8,6 +8,7 @@
     cardScheme: null, cardCat: 'all', cardQ: '',
     audioScheme: null, aCat: 'all', aStatus: 'all', aChar: 'all', aQ: '', aLimit: 200, extract: null,
     resP: null, resOp: null, resLog: [],
+    cardPack: null, defaultPack: null,
   };
   const U = () => window.V2UI;
   const I = () => window.V2UI.ICON;
@@ -53,6 +54,49 @@
   const special = n => n === '__game_default__' || String(n).toLowerCase() === 'default';
   const pName = p => p.name === '__game_default__' ? '游戏默认' : (p.displayName || p.name);
 
+  /* ---------- 默认包（GitHub 下载） ---------- */
+  const packState = () => K.cardPack || null;
+  const localPack = () => K.defaultPack || null;
+  const packDesc = () => localPack()?.version ? `已下载 ${localPack().version}` : '还没有下载 —— 新建方案要先有它';
+  // 进度条：文案与百分比分两个节点，中文文案和数字各自本地化，宿主只回报纯数据
+  function packStrip() {
+    if (!packState()) return '';
+    return `<div class="v2-card v2-packstrip" id="v2sPackStrip"><span class="v2-muted" id="v2sPackLabel"></span>
+      <span class="v2-muted" id="v2sPackPercent"></span><span class="v2-top-spacer"></span>
+      <button class="v2-btn line" data-v2s="cardPackCancel">取消</button></div>`;
+  }
+  // 逐百分比只改这两个节点，不整页重画（卡面网格有几百张图，重画会闪）
+  function paintPackStrip() {
+    const label = $('v2sPackLabel'), percent = $('v2sPackPercent');
+    const p = packState();
+    if (!p) return;
+    if (label) label.textContent = p.phase === 'check' ? '正在确认 GitHub 上的最新默认包…' : '正在下载默认包…';
+    if (percent) percent.textContent = p.percent >= 0 ? ` ${p.percent}%` : '';
+  }
+
+  // 「从 GitHub 下载默认包」确认弹窗：说清本地/最新版本，已是最新时让用户自己决定要不要重下
+  function packPlanModal(p) {
+    const local = p?.local || null, latest = p?.latest || null;
+    const same = !!(local?.version && latest?.version && local.version === latest.version);
+    if (p?.error) console.warn('[skins] 无法确认最新默认包版本：' + p.error);
+    const lines = [
+      local?.version ? `本地默认包：<b>${esc(local.version)}</b>` : '本地还没有默认包，新建方案需要先下载它',
+      latest?.version ? `GitHub 最新：<b>${esc(latest.version)}</b>` : '暂时查不到 GitHub 上的最新版本，将直接下载最新发布包',
+      '下载会覆盖 default 里的同名图片，不会切换当前方案',
+      same ? '本地已经是最新版本，不需要重复下载' : '',
+    ];
+    Object.assign(U().modalActions, {
+      v2sPackGo: () => { U().closeModal(); post({ type: 'skinsDownloadDefault', overwrite: true }); },
+    });
+    U().openModal(`
+      <div class="v2-modal-head"><b>从 GitHub 下载默认包</b><button class="v2-icon-btn" data-v2modal="close">${I().x}</button></div>
+      <ul class="v2-confirm-lines">${lines.filter(Boolean).map(l => `<li>${l}</li>`).join('')}</ul>
+      <div class="v2-modal-foot"><span class="v2-top-spacer"></span>
+        <button class="v2-btn ghost" data-v2modal="close">取消</button>
+        <button class="v2-btn primary" data-v2modal="v2sPackGo">${same ? '仍然重新下载' : '下载最新默认包'}</button>
+      </div>`, 'narrow');
+  }
+
   function cardsList() {
     const action = `<button class="v2-btn primary" data-v2s="cardAddMenu" data-v2menu>${I().plus}新建方案${I().down}</button>`;
     if (!SK()) return frameHead(action) + skelSchemes();
@@ -64,9 +108,12 @@
         <div class="thumb" style="background:${p.name === '__game_default__' ? 'linear-gradient(135deg,#2d3558,#1f2438)' : thumbBg(p.name)}">${esc(pName(p).slice(0, 1))}${on ? '<span class="v2-badge pink">使用中</span>' : ''}</div>
         <div class="info"><b title="${esc(pName(p))}">${esc(pName(p))}</b><small>${sub}</small></div></button>`;
     }).join('')}</div>` : skelSchemes();
-    return frameHead(action) + inner
+    return frameHead(action) + packStrip() + inner
     + `<details class="v2-card" style="margin-top:14px"><summary><div class="t"><b>更多</b><small>皮肤目录</small></div>${I().down}</summary>
-      <div class="v2-adv"><div class="v2-row"><span class="n">打开皮肤目录</span><span class="d">所有卡牌方案存放的位置</span><button class="v2-btn line" data-v2s="cardFolder">打开</button></div></div></details>`;
+      <div class="v2-adv">
+        <div class="v2-row"><span class="n">默认包</span><span class="d">${esc(packDesc())}</span><button class="v2-btn line" data-v2s="cardPackPlan">${localPack() ? '检查更新' : '下载'}</button></div>
+        <div class="v2-row"><span class="n">打开皮肤目录</span><span class="d">所有卡牌方案存放的位置</span><button class="v2-btn line" data-v2s="cardFolder">打开</button></div>
+      </div></details>`;
   }
 
   function cardScheme() {
@@ -85,6 +132,7 @@
     return `<div class="v2-head">${crumb(pName(p), 'cardBack')}<span class="v2-top-spacer"></span>
         ${on ? '<span class="v2-badge pink">当前方案 · 重启游戏生效</span>' : `<button class="v2-btn primary" data-v2s="cardApply">${I().check}设为当前皮肤</button>`}
         <button class="v2-icon-btn" data-v2s="cardSchemeMenu" data-v2menu title="更多">${I().more}</button></div>
+      ${packStrip()}
       ${meta ? `<p class="v2-muted" style="margin:-10px 0 14px">${meta}</p>` : ''}
       ${p.name === '__game_default__' ? '<div class="v2-card v2-empty">游戏默认方案只使用游戏内部卡面，不需要外部图片。</div>' : !loaded ? skelCards() : `
       <div class="v2-toolbar"><div class="v2-seg">${cat('all', '全部')}${CATS.map(c => cat(c, c)).join('')}</div>
@@ -388,6 +436,27 @@
     const m = e.data;
     if (m?.type === 'homeBgStatus') { K.hb = m.payload || null; if (tab() === 'homebg') render(); }
     else if (m?.type === 'homeBgBusy') { K.hbBusy = !!m.payload?.busy; K.hbBusyMsg = m.payload?.message || ''; if (tab() === 'homebg') render(); }
+    // 默认包：版本信息随方案列表一起下发，界面据此显示「已下载 3.8.10」与「检查更新 / 下载」
+    else if (m?.type === 'skinsProfiles') {
+      const next = m.payload?.defaultPack || null;
+      const changed = (next?.version || '') !== (localPack()?.version || '');
+      K.defaultPack = next;
+      // 只在版本真的变了的时候重画，免得别的皮肤操作把搜索框里的输入顶掉
+      if (changed && tab() === 'cards') render();
+    }
+    else if (m?.type === 'skinsDefaultPackPlan') {
+      const p = m.payload || {};
+      // 正在下载时不再弹确认框（页头已经有进度和取消）
+      if (tab() === 'cards' && !p.running && !packState()) packPlanModal(p);
+    }
+    else if (m?.type === 'skinsDownloadState') {
+      const wasRunning = !!packState();
+      const payload = m.payload || {};
+      K.cardPack = payload.running ? payload : null;
+      if (tab() !== 'cards') return;
+      // 开始 / 结束时整页重画（要插入或移除进度条），下载中只补文字
+      if (wasRunning !== !!payload.running) render(); else paintPackStrip();
+    }
   });
 
   /* ---------- 渲染 ---------- */
@@ -414,6 +483,8 @@
     // 资源包日志每次重画后贴到底部，方便看最新进度（和原版 rmpLog 行为一致）
     const logEl = $('v2ResLog');
     if (logEl) logEl.scrollTop = logEl.scrollHeight;
+    // 进度条内容是宿主回报的纯数据，重画后补上文字（不放进模板里，避免逐百分比重画整页）
+    paintPackStrip();
   }
 
   // 给 v2-characters.js 用
@@ -439,9 +510,13 @@
         // 从当前游戏已安装的 default 方案复制；没有默认包时由宿主提示先下载
         onOk: v => post({ type: 'skinsDuplicate', source: 'default', newName: v.newName, displayName: v.displayName || v.newName, author: v.author, description: v.description }),
       }) },
+      { label: '从 GitHub 下载默认包…', icon: I().download, fn: () => actions.cardPackPlan() },
       { label: '导入方案 ZIP…', icon: I().upload, fn: () => post({ type: 'skinsImportZip' }) },
       { label: '导入旧式皮肤包…', icon: I().upload, fn: () => post({ type: 'skinsImportLegacyZip' }) },
     ]),
+    // 默认包要联网拿，先问宿主「本地是哪版、GitHub 最新是哪版」，再由弹窗确认
+    cardPackPlan: () => post({ type: 'skinsDefaultPackInfo' }),
+    cardPackCancel: () => post({ type: 'skinsCancelDefaultPack' }),
     cardFolder: () => post({ type: 'skinsOpenFolder' }),
     cardBack: () => { K.cardScheme = null; render(); },
     cardApply: () => post({ type: 'skinsSetActive', name: K.cardScheme }),
@@ -458,8 +533,7 @@
         { label: '导出 ZIP', icon: I().download, disabled: gd || !p.cardCount, fn: () => post({ type: 'skinsExportZip', name: p.name }) },
         { label: '打开方案目录', icon: I().folder, disabled: gd, fn: () => post({ type: 'skinsOpenFolder', name: p.name }) },
         ...(isDefault ? ['-',
-          { label: '从 GitHub 下载最新默认包…', icon: I().download, fn: () => confirm({ title: '下载最新默认包？', ok: '下载',
-            lines: ['从最新 Release 下载默认包，<b>覆盖 default 里的同名图片</b>', '不会切换当前方案'], onOk: () => post({ type: 'skinsDownloadDefault' }) }) }] : []),
+          { label: '从 GitHub 下载最新默认包…', icon: I().download, fn: () => actions.cardPackPlan() }] : []),
         '-',
         { label: '删除方案…', icon: I().trash, disabled: sp, fn: () => confirm({
           title: `删除卡牌方案「${esc(pName(p))}」？`,

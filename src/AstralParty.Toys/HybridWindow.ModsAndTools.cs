@@ -899,13 +899,18 @@ public partial class HybridWindow
             var directory = _modManager.GetStatus().GameDirectory;
             if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
             {
-                Post(new { type = "skinsProfiles", payload = new { installed = false, activeSkin = "default", profiles = Array.Empty<SkinProfile>() } });
+                Post(new { type = "skinsProfiles", payload = new { installed = false, activeSkin = "default", profiles = Array.Empty<SkinProfile>(), defaultPack = (object?)null } });
                 return;
             }
 
             var profiles = _skinManager.GetProfiles(directory);
             var activeSkin = _skinManager.GetActiveSkin(directory);
-            Post(new { type = "skinsProfiles", payload = new { installed = true, activeSkin, profiles } });
+            // 上次从 GitHub 下载的是哪个版本的默认包（没下载过就是 null，界面据此显示「还没有下载」）
+            var pack = DefaultSkinPack.ReadRecord(_libraryService.DataRoot);
+            object? defaultPack = pack is null
+                ? null
+                : new { version = pack.Version, tag = pack.Tag, downloadedAt = pack.DownloadedAt };
+            Post(new { type = "skinsProfiles", payload = new { installed = true, activeSkin, profiles, defaultPack } });
         }
         catch (Exception ex)
         {
@@ -1000,60 +1005,127 @@ public partial class HybridWindow
         catch (Exception ex) { Post(new { type = "toast", message = "导出失败：" + ex.Message }); }
     }
     private bool _skinDownloadRunning;
+    private CancellationTokenSource? _skinDownloadCancel;
+
+    /// <summary>把「本地已装的默认包版本 + GitHub 最新版本」发给界面，由界面决定要不要下载。
+    /// 只读操作：不改游戏目录，也不下载包体。版本查不到时照旧给出 latest 别名候选（界面会如实说明）。</summary>
+    private async Task PushDefaultSkinPackPlanAsync()
+    {
+        string dataRoot;
+        try
+        {
+            _ = RequireModGameDirectory();
+            dataRoot = _libraryService.DataRoot;
+        }
+        catch (Exception ex)
+        {
+            // 没有游戏目录就没什么可下载的：直接报错，不弹「版本」弹窗（那里的文案会误导）
+            Post(new { type = "error", message = ex.Message });
+            return;
+        }
+
+        var settings = _libraryService.Settings;
+        var plan = await DefaultSkinPack
+            .PlanAsync(settings.GitHubMirrorType, settings.CustomGitHubMirrorUrl, dataRoot)
+            .ConfigureAwait(true);
+        Post(new { type = "skinsDefaultPackPlan", payload = BuildDefaultSkinPackPlanPayload(plan) });
+    }
+
+    private object BuildDefaultSkinPackPlanPayload(DefaultSkinPack.Plan plan) => new
+    {
+        local = plan.Local is null ? null : new { version = plan.Local.Version, tag = plan.Local.Tag, downloadedAt = plan.Local.DownloadedAt },
+        latest = string.IsNullOrEmpty(plan.LatestVersion) ? null : new { version = plan.LatestVersion, tag = plan.LatestTag },
+        error = plan.Error,
+        running = _skinDownloadRunning
+    };
+
+    /// <summary>下载最新默认皮肤包并安装成 <c>skins\default</c>。
+    ///
+    /// 地址按「Release 里的 version.json → tag 拼版本化资产 → 同 tag 稳定名 → latest 别名」的顺序尝试，
+    /// 每条都先走设置里的 GitHub 镜像、失败回退直连；下载完先做内容预检，再交给
+    /// <see cref="SkinManager.ImportSkinZip"/> 落地，并记下这次装的是哪个版本。
+    /// 整个过程中游戏目录只在「下载 + 预检都通过」之后才被写入，所以取消 / 失败都不会留下半个包。</summary>
     private async Task DownloadDefaultSkinsAsync(bool overwrite)
     {
         if (_skinDownloadRunning) return;
         string? temporary = null;
+        CancellationTokenSource? cancel = null;
         try
         {
             var directory = RequireModGameDirectory();
             var defaultDirectory = Path.Combine(_skinManager.GetSkinsDirectory(directory), "default");
             if (Directory.Exists(defaultDirectory) && Directory.EnumerateFiles(defaultDirectory).Any()
                 && !overwrite) { Post(new { type = "skinsDownloadConfirm" }); return; }
+
+            var settings = _libraryService.Settings;
+            var dataRoot = _libraryService.DataRoot;
+
             _skinDownloadRunning = true;
-            Post(new { type = "skinsDownloadState", payload = new { running = true } });
+            cancel = new CancellationTokenSource();
+            _skinDownloadCancel = cancel;
+            PostSkinDownloadState(phase: "check", percent: -1, version: "", running: true);
+
+            var plan = await DefaultSkinPack
+                .PlanAsync(settings.GitHubMirrorType, settings.CustomGitHubMirrorUrl, dataRoot, cancellationToken: cancel.Token)
+                .ConfigureAwait(true);
+            var version = plan.LatestVersion;
+            PostSkinDownloadState(phase: "download", percent: -1, version, running: true);
+
             temporary = Path.Combine(Path.GetTempPath(), "cesium-default-skins-" + Guid.NewGuid().ToString("N") + ".zip");
-            using var client = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromMinutes(5) };
-            using var response = await client.GetAsync("https://github.com/higashitaniyume/CesiumLoader/releases/latest/download/cesium-default-skins.zip", System.Net.Http.HttpCompletionOption.ResponseHeadersRead);
-            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-                throw new InvalidOperationException("最新 Release 尚未提供默认皮肤包，请先发布包含 cesium-default-skins.zip 的版本。");
-            response.EnsureSuccessStatusCode();
-            using (var input = await response.Content.ReadAsStreamAsync())
-            using (var output = File.Create(temporary))
-            {
-                var buffer = new byte[81920]; long total = 0; int count;
-                while ((count = await input.ReadAsync(buffer)) > 0)
-                {
-                    total += count;
-                    if (total > 256L * 1024 * 1024) throw new InvalidOperationException("默认皮肤包超过 256 MB");
-                    await output.WriteAsync(buffer.AsMemory(0, count));
-                }
-            }
-            // 下载完整后再导入，只允许 default 下的图片和元数据。
-            using (var archive = System.IO.Compression.ZipFile.OpenRead(temporary))
-            {
-                var entries = archive.Entries.Where(e => !string.IsNullOrEmpty(e.Name)).ToArray();
-                if (!entries.Any(e => Path.GetExtension(e.Name).Equals(".png", StringComparison.OrdinalIgnoreCase))) throw new InvalidOperationException("默认包中没有卡面图片");
-                foreach (var entry in entries)
-                {
-                    var relative = entry.FullName.Replace('\\', '/');
-                    if (!relative.StartsWith("AstralParty_ModLoader/skins/default/", StringComparison.Ordinal)
-                        || entry.Length > 32L * 1024 * 1024) throw new InvalidOperationException("默认包内容不符合预期");
-                }
-                if (entries.Sum(e => e.Length) > 512L * 1024 * 1024) throw new InvalidOperationException("默认包解压体积过大");
-            }
+            var result = await DefaultSkinPack.DownloadAsync(
+                plan,
+                temporary,
+                settings.GitHubMirrorType,
+                settings.CustomGitHubMirrorUrl,
+                percent => PostSkinDownloadState(phase: "download", percent, version, running: true),
+                cancellationToken: cancel.Token).ConfigureAwait(true);
+
+            DefaultSkinPack.ValidateZip(temporary);
             _skinManager.ImportSkinZip(directory, temporary);
+            if (!DefaultSkinPack.TryWriteRecord(dataRoot, new DefaultSkinPack.Record
+                {
+                    Version = version,
+                    Tag = plan.LatestTag,
+                    Url = result.Url,
+                    Sha256 = result.Sha256,
+                    DownloadedAt = DateTimeOffset.UtcNow.ToString("O")
+                }))
+                ToysLog.Warn("skins", "默认包已安装，但版本记录写入失败（下次仍会显示为未下载）。");
+
             PushSkinProfiles();
-            Post(new { type = "toast", message = "默认皮肤包已下载并安装，可选择 default 方案使用。" });
+            Post(new
+            {
+                type = "toast",
+                message = string.IsNullOrEmpty(version)
+                    ? "默认皮肤包已下载并安装，可选择 default 方案使用。"
+                    : $"默认皮肤包 {version} 已下载并安装，可选择 default 方案使用。"
+            });
         }
-        catch (Exception ex) { Post(new { type = "toast", message = "下载默认包失败：" + ex.Message }); }
+        catch (OperationCanceledException)
+        {
+            Post(new { type = "toast", message = "已取消下载默认包。" });
+        }
+        catch (Exception ex)
+        {
+            ToysLog.Warn("skins", "下载默认皮肤包失败：" + ex.Message);
+            Post(new { type = "toast", message = "下载默认包失败：" + ex.Message });
+        }
         finally
         {
             _skinDownloadRunning = false;
-            Post(new { type = "skinsDownloadState", payload = new { running = false } });
-            if (temporary != null && File.Exists(temporary)) File.Delete(temporary);
+            _skinDownloadCancel = null;
+            cancel?.Dispose();
+            PostSkinDownloadState(phase: "idle", percent: -1, version: "", running: false);
+            if (temporary != null && File.Exists(temporary))
+            {
+                try { File.Delete(temporary); } catch { /* 临时文件删不掉不影响结果 */ }
+            }
         }
     }
+
+    /// <summary>下载进度只回报纯数据，界面自己拼「正在下载默认包… 42%」，避免把中文和百分比焊死在宿主里。</summary>
+    private void PostSkinDownloadState(string phase, int percent, string version, bool running) =>
+        Post(new { type = "skinsDownloadState", payload = new { phase, percent, version, running } });
     private (string Token, string Directory, string Skin, string File, System.Windows.Media.Imaging.BitmapSource Image)? _pendingSkinCrop;
     private void HandleSaveSkinCrop(JsonElement root)
     {

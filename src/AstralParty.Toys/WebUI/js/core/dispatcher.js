@@ -349,7 +349,13 @@ host?.addEventListener('message', event => {
       break;
     case 'skinsDownloadState': {
       const button = $('skinDownloadDefaultBtn');
-      if (button) { button.disabled = !!msg.payload?.running; button.textContent = msg.payload?.running ? '正在下载…' : '下载默认包'; }
+      if (button) {
+        const p = msg.payload || {};
+        button.disabled = !!p.running;
+        button.textContent = !p.running ? '下载默认包'
+          : p.phase === 'check' ? '正在确认最新版本…'
+          : p.percent >= 0 ? `正在下载… ${p.percent}%` : '正在下载…';
+      }
       break;
     }
     case 'skinsAnimationState':

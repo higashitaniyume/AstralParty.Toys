@@ -219,6 +219,8 @@ details.v2-card > summary svg { width: 18px; height: 18px; color: var(--gp-text-
 details.v2-card[open] > summary svg { transform: rotate(180deg); }
 .v2-adv .v2-row .n { width: 140px; flex: none; }
 .v2-adv .v2-row .d { flex: 1; color: var(--gp-text-muted); font-size: 13px; }
+/* 默认包下载进度条（卡牌页）：只在下载期间出现，逐百分比只改其中两个文字节点 */
+.v2-packstrip { display: flex; align-items: center; gap: 10px; padding: 10px 14px; font-size: 13px; }
 
 /* 菜单是 body 直属的浮层：必须压在弹窗（z-index 400）之上，否则在弹窗里点「更多」会被遮住 */
 .v2-menu { position: fixed; z-index: 600; min-width: 200px; padding: 4px; background: var(--v2-float); border: 1px solid var(--v2-border-strong); border-radius: 10px; box-shadow: 0 12px 32px rgba(0, 0, 0, .5); display: none; }

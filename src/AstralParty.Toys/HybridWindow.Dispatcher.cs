@@ -784,6 +784,13 @@ public partial class HybridWindow
                 case "skinsDownloadDefault":
                     await DownloadDefaultSkinsAsync(root.TryGetProperty("overwrite", out var skinOverwrite) && skinOverwrite.GetBoolean());
                     break;
+                case "skinsDefaultPackInfo":
+                    await PushDefaultSkinPackPlanAsync();
+                    break;
+                case "skinsCancelDefaultPack":
+                    // 取消随时可用（包括动态卡面转换进行中）：下载写的是临时文件，取消不会动游戏目录。
+                    _skinDownloadCancel?.Cancel();
+                    break;
                 case "skinsExportZip":
                     HandleExportSkin(root, false);
                     break;

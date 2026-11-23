@@ -2584,6 +2584,26 @@
       {
         "s": "；缺失：{0}",
         "t": "; missing: {0}"
+      },
+      {
+        "s": "默认皮肤包 {0} 已下载并安装，可选择 default 方案使用。",
+        "t": "Default skin pack {0} downloaded and installed; pick the default profile to use it."
+      },
+      {
+        "s": "默认皮肤包已下载并安装，可选择 default 方案使用。",
+        "t": "Default skin pack downloaded and installed; pick the default profile to use it."
+      },
+      {
+        "s": "已取消下载默认包。",
+        "t": "Default pack download cancelled."
+      },
+      {
+        "s": "已下载 {0}",
+        "t": "Downloaded {0}"
+      },
+      {
+        "s": "正在下载… {0}%",
+        "t": "Downloading… {0}%"
       }
   ];
 })();
