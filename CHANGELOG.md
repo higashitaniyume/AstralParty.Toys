@@ -2,12 +2,16 @@
 
 本文件按版本记录 `AstralParty.Toys` 的功能变更。版本号与 GitHub 发布 tag 一一对应（如 `v0.2.0`），发布产物由 [release.yml](.github/workflows/release.yml) 在打 tag 时自动构建。
 
-## [Unreleased]
+## [v2.4.5] - 2026-11-23
 
 ### 模组配置
 
 - 模组配置统一放在模组自己的目录里：`mods\<ModId>\config.json`（停用模组是 `disabled_mods\<ModId>\config.json`）。模组页的配置编辑与皮肤、字体、主页背景、音效方案页都读写这一份，改完立刻生效。
 - 旧版集中目录 `AstralParty_ModLoader\configs\` 不再读写：加载器启动时会把它整个改名为 `configs.bak`，里面的设置不再生效。要沿用旧值，把 `configs.bak\<ModId>.json` 改名成 `mods\<ModId>\config.json` 即可。
+
+### 加载器
+
+- 随包 CesiumLoader 更新至 4.0.0：模组配置只认模组目录里的 `config.json`，启动时把加载器目录下的 `configs` 整个改名 `configs.bak`。在「模组」页安装 / 重新安装内置版本，或点「检查更新」升级加载器之后，上面的配置位置才会生效。
 
 ### 卡牌皮肤
 
