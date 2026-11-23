@@ -91,8 +91,9 @@ public sealed partial class ModManager
         }
     }
 
-    /// <summary>安装清单里记录的 version.dll SHA256（没有清单 / 没有该条目 / 清单损坏 → 空串）。</summary>
-    private static string ReadManifestLoaderHash(string gameDirectory)
+    /// <summary>安装清单里记录的某个文件的 SHA256（没有清单 / 没有该条目 / 清单损坏 → 空串）。
+    /// 拆分后原生层有两个文件（version.dll 代理 + CesiumLoader.dll 核心），都要能按名字查。</summary>
+    private static string ReadManifestFileHash(string gameDirectory, string fileName)
     {
         try
         {
@@ -101,13 +102,16 @@ public sealed partial class ModManager
             using var document = JsonDocument.Parse(File.ReadAllText(manifestPath));
             if (!document.RootElement.TryGetProperty("files", out var files) || files.ValueKind != JsonValueKind.Object)
                 return "";
-            return files.TryGetProperty(LoaderDllName, out var hash) ? hash.GetString() ?? "" : "";
+            return files.TryGetProperty(fileName, out var hash) ? hash.GetString() ?? "" : "";
         }
         catch
         {
             return "";
         }
     }
+
+    /// <summary>安装清单里记录的 version.dll SHA256。</summary>
+    private static string ReadManifestLoaderHash(string gameDirectory) => ReadManifestFileHash(gameDirectory, LoaderDllName);
 
     /// <summary>把 Release tag（如 <c>modloader-3.3.2</c>）转成版本号（<c>3.3.2</c>）。
     /// 认 <c>modloader-</c> 前缀大小写与可选的 <c>v</c> 前缀；空 / null → 空串。</summary>

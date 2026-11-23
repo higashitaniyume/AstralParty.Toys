@@ -370,6 +370,7 @@
     if (!s) return '';
     if (s.bundleLoaderPresent === false) return '加载器：缺少内置文件';
     if (s.loaderMissing) return s.loaderDisabled ? '加载器已停用' : '加载器 DLL 缺失';
+    if (s.coreMissing) return '加载器核心缺失，模组不会加载';
     if (!s.installed) return '加载器未安装';
     if (!s.loaderManaged) return '加载器文件不属于本工具';
     const on = (s.mods || []).filter(m => m.enabled !== false).length;

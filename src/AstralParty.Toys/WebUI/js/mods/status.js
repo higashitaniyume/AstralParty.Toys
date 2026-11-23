@@ -63,11 +63,14 @@
         badgeClass = 'badge badge-danger';
         iconText = 'cancel';
         titleText = '程序缺少内置加载器文件';
-      } else if (status.loaderMissing) {
-        badgeText = status.loaderDisabled ? '已停用' : 'DLL 缺失';
+      } else if (status.loaderMissing || status.coreMissing) {
+        // coreMissing = version.dll 在、加载器核心缺失或损坏：游戏能启动，但不会加载任何模组
+        badgeText = status.coreMissing ? '核心缺失' : (status.loaderDisabled ? '已停用' : 'DLL 缺失');
         badgeClass = 'badge badge-event';
         iconText = 'extension';
-        titleText = status.canRestoreLoader ? '模组与配置已保留，可恢复加载器' : '加载器缺失且版本未知';
+        titleText = status.coreMissing
+          ? '加载器核心 CesiumLoader.dll 缺失或损坏，模组不会加载'
+          : (status.canRestoreLoader ? '模组与配置已保留，可恢复加载器' : '加载器缺失且版本未知');
       } else if (installed && !managed) {
         badgeText = '文件不属于本工具';
         badgeClass = 'badge badge-danger';
@@ -104,7 +107,7 @@
       const settingsBtn = $('modLoaderSettingsBtn');
       if (settingsBtn) settingsBtn.disabled = !installed && !status.loaderRootExists;
       $('modDisableLoaderBtn')?.classList.toggle('hidden', !installed || !managed);
-      $('modRestoreLoaderBtn')?.classList.toggle('hidden', !status.loaderMissing);
+      $('modRestoreLoaderBtn')?.classList.toggle('hidden', !status.loaderMissing && !status.coreMissing);
       if ($('modRestoreLoaderBtn')) $('modRestoreLoaderBtn').disabled = !status.canRestoreLoader;
       if (this.recoveryBusy) this.lockRecoveryButtons();
 

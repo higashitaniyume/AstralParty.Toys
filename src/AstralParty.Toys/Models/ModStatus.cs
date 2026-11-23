@@ -17,6 +17,20 @@ public sealed class ModStatus
     public bool LoaderMissing { get; set; }
     public bool CanRestoreLoader { get; set; }
 
+    /// <summary>加载器核心 <c>CesiumLoader.dll</c> 的完整路径（与 version.dll 同目录）。</summary>
+    public string CorePath { get; set; } = "";
+
+    /// <summary>盘上这个 version.dll 是不是"拆分后的薄代理"—— 它必须有同目录的核心才算完整。
+    /// 旧版单 DLL 加载器为 false：那种安装没有核心文件也是能用的，不能误报。</summary>
+    public bool LoaderRequiresCore { get; set; }
+
+    /// <summary>核心文件是否在盘上。</summary>
+    public bool CorePresent { get; set; }
+
+    /// <summary>代理在、核心缺失或损坏：游戏能启动，但不会加载任何模组。
+    /// 恢复入口据此打开（恢复会同时写回核心）。</summary>
+    public bool CoreMissing { get; set; }
+
     /// <summary>磁盘上的 version.dll 是否与随程序集内置的那份逐字节一致。</summary>
     public bool LoaderMatchesBundle { get; set; }
 

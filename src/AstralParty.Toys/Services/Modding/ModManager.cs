@@ -132,6 +132,32 @@ public sealed partial class ModManager
     private static bool MatchesEmbeddedLoader(string path)
         => EmbeddedLoaderHash is not null && MatchesHash(path, EmbeddedLoaderHash);
 
+    /// <summary>拆分后的薄代理里一定带这个契约导出名（旧版单 DLL 加载器完全没有这个字符串）。
+    /// 用它判断「盘上这个 version.dll 是否需要同目录的加载器核心」。
+    ///
+    /// 只**静态读文件字节**，绝不用 LoadLibrary + GetProcAddress 去探测：那会把加载器的 DllMain
+    /// 跑进 Toys 自己的进程（装 inline hook、起引导线程、开控制台），后果严重。</summary>
+    private const string SplitProxyMarker = "CesiumLoaderAbiVersion";
+
+    private static readonly byte[] SplitProxyMarkerBytes = System.Text.Encoding.ASCII.GetBytes(SplitProxyMarker);
+
+    /// <summary>盘上的 version.dll 是否"必须有核心"（= 拆分后的薄代理）。
+    /// 读不到文件时按 false 处理：读不到不等于核心缺失，不能误报。</summary>
+    private static bool RequiresCoreDll(string dllPath)
+    {
+        try
+        {
+            var bytes = File.ReadAllBytes(dllPath);
+            // 代理只有 ~40 KB，旧版单 DLL 也就 1 MB；再大就不可能是它，别把整个文件读进内存。
+            if (bytes.Length == 0 || bytes.Length > 8 * 1024 * 1024) return false;
+            return bytes.AsSpan().IndexOf(SplitProxyMarkerBytes) >= 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     /// <summary>
     /// 游戏目录里是否还留着加载器（<c>version.dll</c> 或 <c>AstralParty_ModLoader\</c> 任一存在）。
     ///

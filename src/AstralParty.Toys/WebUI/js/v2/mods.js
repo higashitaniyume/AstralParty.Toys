@@ -265,6 +265,10 @@
       : (latest() && s.installedVersion && cmpVer(latest(), s.installedVersion) > 0 ? latest() : '');
     if (s.bundleLoaderPresent === false) return { badge: '缺少内置文件', cls: 'warn', text: '本程序缺少内置加载器文件，无法安装，请使用完整发布包', act: null };
     if (!s.gameDirectory) return { badge: '未找到游戏', cls: 'warn', text: '还没找到游戏目录，在下面「高级操作」里自动检测或手动选择', act: 'adv' };
+    // coreMissing: version.dll 在、加载器核心缺失或损坏 —— 界面按"已安装"显示会误导，必须单独说清楚
+    if (s.coreMissing) return { badge: '核心缺失', cls: 'off',
+      text: 'version.dll 在，但加载器核心 CesiumLoader.dll 缺失或损坏 —— 游戏能启动，只是不会加载任何模组。点「恢复加载器」把它补回来',
+      act: 'restore' };
     if (s.loaderMissing) return { badge: s.loaderDisabled ? '已停用' : 'DLL 缺失', cls: 'off',
       text: s.canRestoreLoader ? `模组与配置都还在，可以恢复加载器（保留版本 ${s.installedVersion ? 'v' + s.installedVersion : '未知'}）` : '保留的组件读不出加载器版本，请重新安装或更新', act: 'restore' };
     if (!s.installed) return { badge: '未安装', cls: 'off', text: '安装后加载器和内置模组会一起装进游戏目录', act: 'install' };

@@ -27,7 +27,8 @@ public sealed class LoaderRecoveryTests
         }
         public string Dll => Path.Combine(Game, "version.dll");
         public string Files => Path.Combine(Profile, "install-history", "files");
-        public void Install(string version = "9.1.0") => Manager.InstallPackage(Game, Package(version), false);
+        public void Install(string version = "9.1.0", bool withCore = false)
+            => Manager.InstallPackage(Game, Package(version, withCore: withCore), false);
         public void Dispose() => Sandbox.Dispose();
     }
     private sealed class Handler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
@@ -38,17 +39,22 @@ public sealed class LoaderRecoveryTests
         { Calls++; Url = request.RequestUri!.AbsoluteUri; return Task.FromResult(respond(request)); }
     }
     private static string Hash(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
-    private static byte[] Package(string version, bool badHash = false, string? extraPath = null, string build = "")
+    /// <summary>模拟发布包。<paramref name="withCore"/> = 拆分后的布局：version.dll 是薄代理，
+    /// 同目录还有加载器核心 CesiumLoader.dll（旧包没有这个条目）。</summary>
+    private static byte[] Package(string version, bool badHash = false, string? extraPath = null, string build = "", bool withCore = false)
     {
+        // 拆分后的代理里带着契约导出名 —— 状态判定就是靠这个字符串静态认出"这个 version.dll 需要核心"。
+        var proxyText = (withCore ? "CesiumLoaderAbiVersion proxy " : "loader ") + version + build;
         var files = new Dictionary<string, byte[]>
         {
-            ["version.dll"] = Encoding.UTF8.GetBytes("loader " + version + build),
+            ["version.dll"] = Encoding.UTF8.GetBytes(proxyText),
             ["version.pdb"] = [9, 1, 5],
             ["AstralParty_ModLoader/doorstop_config.json"] = Encoding.UTF8.GetBytes("{\"sdkVersion\":\"9.0.0\"}"),
             ["AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll"] = [1, 2, 3],
             ["AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.dll"] = Encoding.UTF8.GetBytes("mod " + version),
             ["AstralParty_ModLoader/mods/ActivityLogMod/ActivityLogMod.json"] = Encoding.UTF8.GetBytes("{}")
         };
+        if (withCore) files["CesiumLoader.dll"] = Encoding.UTF8.GetBytes("core " + version + build);
         var hashes = files.ToDictionary(p => p.Key, p => Hash(p.Value));
         if (badHash) hashes["version.dll"] = new string('0', 64);
         files["cesium-loader.json"] = JsonSerializer.SerializeToUtf8Bytes(new { version, files = hashes });
@@ -467,5 +473,87 @@ public sealed class LoaderRecoveryTests
         Assert.Equal(expectedUrl, handler.Url);
         var manifest = ModManager.ParsePackageManifest(bytes);
         Assert.Equal("9.2.0", manifest?.Version);
+    }
+
+    // ────────── 拆分后的「代理 + 核心」布局 ──────────
+
+    [Fact]
+    public void MissingCore_IsReportedOnlyForTheSplitProxy()
+    {
+        using var split = new Harness();
+        split.Install(withCore: true);
+        var status = split.Manager.GetStatus();
+        Assert.True(status.LoaderRequiresCore);
+        Assert.True(status.CorePresent);
+        Assert.False(status.CoreMissing);
+
+        File.Delete(Path.Combine(split.Game, ModManager.CoreDllName));
+        status = split.Manager.GetStatus();
+        Assert.True(status.CoreMissing, "代理在、核心缺时必须报出来");
+        Assert.True(status.CanRestoreLoader, "核心缺失也要能一键恢复");
+        Assert.Contains("CesiumLoader.dll", status.Message);
+
+        // 旧版单 DLL 安装没有核心文件也是完整的 —— 不能误报
+        using var legacy = new Harness();
+        legacy.Install();
+        var legacyStatus = legacy.Manager.GetStatus();
+        Assert.False(legacyStatus.LoaderRequiresCore);
+        Assert.False(legacyStatus.CoreMissing);
+    }
+
+    [Fact]
+    public async Task MissingCore_IsRestoredOfflineWithTheProxyLeftInPlace()
+    {
+        using var h = new Harness();
+        h.Install(withCore: true);
+        var core = Path.Combine(h.Game, ModManager.CoreDllName);
+        var coreBytes = File.ReadAllBytes(core);
+        var proxyBefore = File.ReadAllBytes(h.Dll);
+        File.Delete(core);
+        // 连核心的备份 blob 也删掉，逼它从缓存下来的发布包里取
+        File.Delete(Path.Combine(h.Files, Hash(coreBytes)));
+
+        using var handler = new Handler(_ => throw new Exception("must not fetch"));
+        using var http = new HttpClient(handler);
+        var message = await h.Manager.RestoreLoaderAsync(h.Game, http);
+
+        Assert.Equal(0, handler.Calls);
+        Assert.Equal(coreBytes, File.ReadAllBytes(core));
+        Assert.Equal(proxyBefore, File.ReadAllBytes(h.Dll));   // 代理原样没动
+        Assert.Contains("CesiumLoader.dll", message);
+        Assert.False(h.Manager.GetStatus().CoreMissing);
+    }
+
+    [Fact]
+    public async Task DamagedCore_IsReplacedFromLocalBlob()
+    {
+        using var h = new Harness();
+        h.Install(withCore: true);
+        var core = Path.Combine(h.Game, ModManager.CoreDllName);
+        var coreBytes = File.ReadAllBytes(core);
+        File.WriteAllBytes(core, [0, 0, 0]);   // 模拟被杀软截断 / 被替换
+        Assert.True(h.Manager.GetStatus().CoreMissing);
+
+        using var handler = new Handler(_ => throw new Exception("must not fetch"));
+        using var http = new HttpClient(handler);
+        await h.Manager.RestoreLoaderAsync(h.Game, http);
+
+        Assert.Equal(0, handler.Calls);
+        Assert.Equal(coreBytes, File.ReadAllBytes(core));
+        Assert.False(h.Manager.GetStatus().CoreMissing);
+    }
+
+    [Fact]
+    public void Uninstall_RemovesTheCoreDllToo()
+    {
+        using var h = new Harness();
+        h.Install(withCore: true);
+        var core = Path.Combine(h.Game, ModManager.CoreDllName);
+        Assert.True(File.Exists(core));
+
+        h.Manager.Uninstall(h.Game, force: false);
+
+        Assert.False(File.Exists(core), "卸载要连核心一起清掉，不能留个 ~1 MB 的死文件");
+        Assert.False(File.Exists(h.Dll));
     }
 }

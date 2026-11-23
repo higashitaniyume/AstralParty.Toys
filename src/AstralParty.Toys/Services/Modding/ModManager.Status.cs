@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -51,6 +51,14 @@ public sealed partial class ModManager
                     status.LoaderOrigin = ClassifyLoaderOrigin(directory, dllPath);
                     status.LoaderManaged = status.LoaderOrigin.Length > 0;
                     status.Installed = true;
+                    // 拆分后的加载器是「代理 + 核心」两个文件。代理在、核心缺失（或哈希对不上 =
+                    // 被杀软截断 / 被换过）时，游戏能启动但不会加载任何模组 —— 必须单独报出来，
+                    // 否则界面显示「已安装」，玩家只会看到「模组莫名其妙不生效」。
+                    status.CorePath = Path.Combine(directory, CoreDllName);
+                    status.LoaderRequiresCore = RequiresCoreDll(dllPath);
+                    status.CorePresent = File.Exists(status.CorePath);
+                    status.CoreMissing = status.LoaderRequiresCore
+                        && (!status.CorePresent || CoreHashMismatch(directory, status.CorePath));
                 }
             }
 
@@ -110,11 +118,24 @@ public sealed partial class ModManager
             : $"已加载 {enabledCount} 个模组（另有 {status.Mods.Count - enabledCount} 个停用）";
         if (!status.LoaderManaged)
             return $"游戏目录里的 version.dll 不是本工具装的（来源不明）——可能是旧版独立变速器或第三方文件，安装或卸载前请先确认。";
+        if (status.CoreMissing)
+            return "加载器核心 CesiumLoader.dll 缺失或已损坏：游戏能启动，但不会加载任何模组。" +
+                   "点「恢复加载器」把它补回来（会同时写回 version.dll），或重新安装完整加载器。" +
+                   "进程里没加载起核心时，原因写在游戏的 AstralParty_ModLoader\\logs\\proxy-*.log。";
         if (status.InstalledVersion.Length == 0)
             return $"加载器已就位，但这份安装没有版本清单 —— 重新安装一次就能纳入版本管理（{mods}）。";
         return string.Equals(status.InstalledVersion, status.EmbeddedVersion, StringComparison.OrdinalIgnoreCase)
             ? $"加载器已就绪，与内置版本一致（{mods}）。"
             : $"加载器已就绪（{mods}）。";
+    }
+
+    /// <summary>核心文件在盘上、但和安装清单里记的哈希不一致（被杀软截断 / 被替换过）→ 视为需要修复。
+    /// 清单里没有该条目（旧版安装 / 手工拷贝）→ 不算损坏，不误报。</summary>
+    private bool CoreHashMismatch(string directory, string corePath)
+    {
+        if (!File.Exists(corePath)) return false;
+        var expected = ReadManifestFileHash(directory, CoreDllName);
+        return IsSha256Hex(expected) && !MatchesHash(corePath, expected);
     }
 
     /// <summary>扫描 mod 目录。给了 <paramref name="disabledDirectory"/> 时把停用的 mod 一起列出来：
