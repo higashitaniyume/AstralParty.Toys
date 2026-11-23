@@ -39,7 +39,9 @@ public sealed class AccountSession : IAsyncDisposable
     {
         var bytes = Convert.FromBase64String(credentials.ConnectRequestBase64);
         var login = _protocol.Parse("ConnectC2S", bytes);
-        if (Text(login, "Auth") != "China" || Get(login, "China") == null || Get(login, "Dev") != null)
+        // CN signs in with China, the international client with Abroad (Steam channel through MaxSDK).
+        var region = LoginRegion(login);
+        if (region == null || (credentials.Region.Length > 0 && credentials.Region != region))
             throw new InvalidDataException("invalid_credentials");
         await _transport.ConnectAsync(ct).ConfigureAwait(false);
         var frame = await _transport.CallAsync(5001, bytes, ct).ConfigureAwait(false);
@@ -53,6 +55,15 @@ public sealed class AccountSession : IAsyncDisposable
         var result = ProjectPlayer(player!);
         _heartbeat = HeartbeatAsync();
         return result;
+    }
+
+    /// <summary>Login region of a credential's ConnectC2S message; null when it carries no usable auth.</summary>
+    public static string? LoginRegion(object? login)
+    {
+        var auth = login == null ? "" : Text(login, "Auth");
+        if (auth is not ("China" or "Abroad")) return null;
+        if (Get(login, auth) == null || Get(login, "Dev") != null) return null;
+        return auth == "China" ? "china" : "abroad";
     }
 
     public static AccountPlayer ProjectPlayer(object player)

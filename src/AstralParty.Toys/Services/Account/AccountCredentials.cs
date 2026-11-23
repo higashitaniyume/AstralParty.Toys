@@ -13,13 +13,22 @@ public sealed class AccountCredentials
     public int ProtocolVersion1 { get; init; } = 1;
     public int ProtocolVersion2 { get; init; }
     public int ProtocolVersion3 { get; init; }
+    // Declared by the Mod ("china" / "abroad"); empty in credentials written by earlier Mod versions.
+    public string Region { get; init; } = "";
 
     public const int MaxFileBytes = 64 * 1024;
     public static bool ValidUid(string? uid) => uid != null && Regex.IsMatch(uid, "^[1-9][0-9]{0,18}$") && long.TryParse(uid, out _);
 
-    // Explicit endpoint, verified in the CN client. Never trust an endpoint supplied by a credential file.
-    public static bool IsOfficialEndpoint(string host, int port) =>
-        string.Equals(host, "se-jump-cn-01.feimogames.com", StringComparison.OrdinalIgnoreCase) && port == 8800;
+    // The game resolves its login endpoint from its own remote config, so only the vendor's own
+    // jump hosts on the game port are accepted. Never trust an endpoint supplied by a credential file:
+    // the CN client uses se-jump-cn-01, the international client another se-jump-<area>-<n> host.
+    private static readonly Regex JumpHostPattern =
+        new(@"^se-jump-[a-z0-9]{2,4}-[0-9]{2}\.feimogames\.com$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    public static bool IsOfficialEndpoint(string? host, int port) =>
+        port == 8800 && host != null && JumpHostPattern.IsMatch(host);
+
+    public static bool ValidRegion(string? region) => region is "" or "china" or "abroad";
 
     public static string Root(string gameDirectory) => Path.Combine(gameDirectory, ModManager.LoaderFolderName, "usercredentials");
 
@@ -44,7 +53,7 @@ public sealed class AccountCredentials
         try
         {
             var value = JsonSerializer.Deserialize<AccountCredentials>(stream, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            if (value == null || !IsOfficialEndpoint(value.Host, value.Port) ||
+            if (value == null || !IsOfficialEndpoint(value.Host, value.Port) || !ValidRegion(value.Region) ||
                 string.IsNullOrWhiteSpace(value.ClientVersion) || value.ConnectRequestBase64.Length > MaxFileBytes ||
                 value.ProtocolVersion1 is < 0 or > 255 || value.ProtocolVersion2 is < 0 or > 255 || value.ProtocolVersion3 is < 0 or > 255 ||
                 Convert.FromBase64String(value.ConnectRequestBase64).Length == 0)

@@ -29,11 +29,44 @@ public sealed class MyAccountTests : IDisposable
     [Theory]
     [InlineData("se-jump-cn-01.feimogames.com", 8800, true)]
     [InlineData("SE-JUMP-CN-01.FEIMOGAMES.COM", 8800, true)]
+    [InlineData("se-jump-jp-01.feimogames.com", 8800, true)]
+    [InlineData("se-jump-fi-01.feimogames.com", 8800, true)]
     [InlineData("se-jump-cn-01.feimogames.com.attacker.invalid", 8800, false)]
+    [InlineData("se-jump-cn-01.feimogames.comm", 8800, false)]
+    [InlineData("evil-se-jump-cn-01.feimogames.com", 8800, false)]
+    [InlineData("se-jump-cn-1.feimogames.com", 8800, false)]
+    [InlineData("se-jump--01.feimogames.com", 8800, false)]
+    [InlineData("se-jump-cn-01x.feimogames.com", 8800, false)]
+    [InlineData("attacker.invalid", 8800, false)]
     [InlineData("127.0.0.1", 8800, false)]
     [InlineData("localhost", 8800, false)]
     [InlineData("se-jump-cn-01.feimogames.com", 80, false)]
+    [InlineData("se-jump-cn-01.feimogames.com", 8801, false)]
     public void OnlyVerifiedEndpointIsAccepted(string host, int port, bool expected) => Assert.Equal(expected, AccountCredentials.IsOfficialEndpoint(host, port));
+
+    [Theory]
+    [InlineData("", true)]
+    [InlineData("china", true)]
+    [InlineData("abroad", true)]
+    [InlineData("global", false)]
+    [InlineData("China", false)]
+    [InlineData(null, false)]
+    public void OnlyKnownRegionsAreAccepted(string? region, bool expected) => Assert.Equal(expected, AccountCredentials.ValidRegion(region));
+
+    [Theory]
+    [InlineData("China", true, false, "china")]
+    [InlineData("Abroad", false, true, "abroad")]
+    [InlineData("Steam", false, true, null)]
+    [InlineData("TapTap", false, true, null)]
+    [InlineData("Dev", true, false, null)]
+    [InlineData("China", false, false, null)]
+    [InlineData("Abroad", true, false, null)]
+    public void LoginRegionOnlyAcceptsTheDocumentedAuthOneof(string auth, bool china, bool abroad, string? expected)
+    {
+        var login = new { Auth = auth, China = china ? new { } : null, Abroad = abroad ? new { Sid = "s" } : null, Dev = (object?)null };
+        Assert.Equal(expected, AccountSession.LoginRegion(login));
+        Assert.Null(AccountSession.LoginRegion(null));
+    }
 
     private string WriteCredential(string uid, object value)
     {
@@ -44,8 +77,22 @@ public sealed class MyAccountTests : IDisposable
         return path;
     }
 
-    private static object Credential(string host = "se-jump-cn-01.feimogames.com", string token = "AQID") =>
-        new { host, port = 8800, clientVersion = "synthetic", connectRequestBase64 = token, protocolVersion1 = 3, protocolVersion2 = 3, protocolVersion3 = 0 };
+    private static object Credential(string host = "se-jump-cn-01.feimogames.com", string token = "AQID", string region = "") =>
+        new { host, port = 8800, clientVersion = "synthetic", connectRequestBase64 = token, protocolVersion1 = 3, protocolVersion2 = 3, protocolVersion3 = 0, region };
+
+    [Fact]
+    public void ReadsInternationalCredentialAndRejectsUnknownRegion()
+    {
+        WriteCredential("100", Credential("se-jump-jp-01.feimogames.com", "AQID", "abroad"));
+        WriteCredential("200", Credential("se-jump-jp-01.feimogames.com", "AQID", "global"));
+        WriteCredential("300", Credential("se-jump-jp-01.feimogames.com", "AQID"));
+        var credential = AccountCredentials.Read(_scratch, "100");
+        Assert.Equal("se-jump-jp-01.feimogames.com", credential.Host);
+        Assert.Equal("abroad", credential.Region);
+        // Credentials written by Mod 1.0.0 carry no region and stay readable.
+        Assert.Equal("", AccountCredentials.Read(_scratch, "300").Region);
+        Assert.Equal("invalid_credentials", Assert.Throws<InvalidDataException>(() => AccountCredentials.Read(_scratch, "200")).Message);
+    }
 
     [Fact]
     public void DiscoveryListsMultipleUidsWithoutParsingOrSelectingTheirCredentials()
