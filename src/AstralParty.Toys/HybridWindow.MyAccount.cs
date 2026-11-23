@@ -204,6 +204,12 @@ public partial class HybridWindow
             await Task.Delay(Timeout.InfiniteTimeSpan, lifetime.Token);
         }
         catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
+        // A rejected credential file (unreadable, malformed, or naming an address that cannot be dialed)
+        // is not a network failure; never echo its content in the reason.
+        catch (InvalidDataException)
+        {
+            if (generation == _myAccountGeneration) StopMyAccount("unavailable");
+        }
         catch (Exception error)
         {
             if (generation == _myAccountGeneration) StopMyAccount("connection_failed", error as AccountQueryException);

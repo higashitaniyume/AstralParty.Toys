@@ -29,20 +29,29 @@ public sealed class MyAccountTests : IDisposable
     [Theory]
     [InlineData("se-jump-cn-01.feimogames.com", 8800, true)]
     [InlineData("SE-JUMP-CN-01.FEIMOGAMES.COM", 8800, true)]
-    [InlineData("se-jump-jp-01.feimogames.com", 8800, true)]
-    [InlineData("se-jump-fi-01.feimogames.com", 8800, true)]
-    [InlineData("se-jump-cn-01.feimogames.com.attacker.invalid", 8800, false)]
-    [InlineData("se-jump-cn-01.feimogames.comm", 8800, false)]
-    [InlineData("evil-se-jump-cn-01.feimogames.com", 8800, false)]
-    [InlineData("se-jump-cn-1.feimogames.com", 8800, false)]
-    [InlineData("se-jump--01.feimogames.com", 8800, false)]
-    [InlineData("se-jump-cn-01x.feimogames.com", 8800, false)]
-    [InlineData("attacker.invalid", 8800, false)]
-    [InlineData("127.0.0.1", 8800, false)]
-    [InlineData("localhost", 8800, false)]
-    [InlineData("se-jump-cn-01.feimogames.com", 80, false)]
-    [InlineData("se-jump-cn-01.feimogames.com", 8801, false)]
-    public void OnlyVerifiedEndpointIsAccepted(string host, int port, bool expected) => Assert.Equal(expected, AccountCredentials.IsOfficialEndpoint(host, port));
+    [InlineData("game-int-01.star-engine.com", 8800, true)]
+    [InlineData("attacker.invalid", 8800, true)]
+    [InlineData("127.0.0.1", 8800, true)]
+    [InlineData("localhost", 8800, true)]
+    [InlineData("::1", 8800, true)]
+    [InlineData("game-int-01.star-engine.com", 8801, true)]
+    [InlineData("", 8800, false)]
+    [InlineData(null, 8800, false)]
+    [InlineData("bad host", 8800, false)]
+    [InlineData("host/path", 8800, false)]
+    [InlineData("user@host", 8800, false)]
+    [InlineData("host\n", 8800, false)]
+    [InlineData("game-int-01.star-engine.com", 0, false)]
+    [InlineData("game-int-01.star-engine.com", -1, false)]
+    [InlineData("game-int-01.star-engine.com", 65536, false)]
+    public void OnlySyntacticallyDialableEndpointsAreAccepted(string? host, int port, bool expected) => Assert.Equal(expected, AccountCredentials.ValidEndpoint(host, port));
+
+    [Fact]
+    public void HostLengthIsBounded()
+    {
+        Assert.True(AccountCredentials.ValidEndpoint(new string('a', 255), 8800));
+        Assert.False(AccountCredentials.ValidEndpoint(new string('a', 256), 8800));
+    }
 
     [Theory]
     [InlineData("", true)]
@@ -83,11 +92,11 @@ public sealed class MyAccountTests : IDisposable
     [Fact]
     public void ReadsInternationalCredentialAndRejectsUnknownRegion()
     {
-        WriteCredential("100", Credential("se-jump-jp-01.feimogames.com", "AQID", "abroad"));
-        WriteCredential("200", Credential("se-jump-jp-01.feimogames.com", "AQID", "global"));
-        WriteCredential("300", Credential("se-jump-jp-01.feimogames.com", "AQID"));
+        WriteCredential("100", Credential("game-int-01.star-engine.com", "AQID", "abroad"));
+        WriteCredential("200", Credential("game-int-01.star-engine.com", "AQID", "global"));
+        WriteCredential("300", Credential("game-int-01.star-engine.com", "AQID"));
         var credential = AccountCredentials.Read(_scratch, "100");
-        Assert.Equal("se-jump-jp-01.feimogames.com", credential.Host);
+        Assert.Equal("game-int-01.star-engine.com", credential.Host);
         Assert.Equal("abroad", credential.Region);
         // Credentials written by Mod 1.0.0 carry no region and stay readable.
         Assert.Equal("", AccountCredentials.Read(_scratch, "300").Region);
@@ -108,7 +117,7 @@ public sealed class MyAccountTests : IDisposable
     public void ReadsOnlyExplicitAccountAndNeverLeaksSecretsInValidationErrors()
     {
         WriteCredential("100", Credential());
-        WriteCredential("200", Credential("attacker.invalid", "SECRET_SENTINEL"));
+        WriteCredential("200", Credential("bad host", "SECRET_SENTINEL"));
         Assert.Equal("AQID", AccountCredentials.Read(_scratch, "100").ConnectRequestBase64);
         var error = Assert.Throws<InvalidDataException>(() => AccountCredentials.Read(_scratch, "200"));
         Assert.Equal("invalid_credentials", error.Message);

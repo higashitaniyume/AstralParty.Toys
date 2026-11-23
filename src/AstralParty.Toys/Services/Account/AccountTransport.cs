@@ -50,7 +50,7 @@ public sealed class AccountTransport(AccountCredentials credentials) : IAsyncDis
 
     public async Task ConnectAsync(CancellationToken ct)
     {
-        if (!AccountCredentials.IsOfficialEndpoint(credentials.Host, credentials.Port)) throw new InvalidDataException();
+        if (!AccountCredentials.ValidEndpoint(credentials.Host, credentials.Port)) throw new InvalidDataException();
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct, _lifetime.Token);
         deadline.CancelAfter(TimeSpan.FromSeconds(10));
         await _tcp.ConnectAsync(credentials.Host, credentials.Port, deadline.Token).ConfigureAwait(false);

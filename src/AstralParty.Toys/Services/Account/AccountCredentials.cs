@@ -19,14 +19,14 @@ public sealed class AccountCredentials
     public const int MaxFileBytes = 64 * 1024;
     public static bool ValidUid(string? uid) => uid != null && Regex.IsMatch(uid, "^[1-9][0-9]{0,18}$") && long.TryParse(uid, out _);
 
-    // The game resolves its login endpoint from its own remote config, so only the vendor's own
-    // jump hosts on the game port are accepted. Never trust an endpoint supplied by a credential file:
-    // the CN client uses se-jump-cn-01, the international client another se-jump-<area>-<n> host.
-    private static readonly Regex JumpHostPattern =
-        new(@"^se-jump-[a-z0-9]{2,4}-[0-9]{2}\.feimogames\.com$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    // The Mod captures the endpoint the running game is connected to, and the vendor resolves it from
+    // its own remote config (CN: se-jump-cn-01.feimogames.com, international: game-int-01.star-engine.com).
+    // Toys keeps no host list: whatever the credential names is dialed as written, and this only rejects
+    // values that cannot be a host name at all.
+    private static readonly Regex HostPattern = new(@"\A[A-Za-z0-9._:-]{1,255}\z", RegexOptions.CultureInvariant);
 
-    public static bool IsOfficialEndpoint(string? host, int port) =>
-        port == 8800 && host != null && JumpHostPattern.IsMatch(host);
+    public static bool ValidEndpoint(string? host, int port) =>
+        port is >= 1 and <= 65535 && host != null && HostPattern.IsMatch(host);
 
     public static bool ValidRegion(string? region) => region is "" or "china" or "abroad";
 
@@ -53,7 +53,7 @@ public sealed class AccountCredentials
         try
         {
             var value = JsonSerializer.Deserialize<AccountCredentials>(stream, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            if (value == null || !IsOfficialEndpoint(value.Host, value.Port) || !ValidRegion(value.Region) ||
+            if (value == null || !ValidEndpoint(value.Host, value.Port) || !ValidRegion(value.Region) ||
                 string.IsNullOrWhiteSpace(value.ClientVersion) || value.ConnectRequestBase64.Length > MaxFileBytes ||
                 value.ProtocolVersion1 is < 0 or > 255 || value.ProtocolVersion2 is < 0 or > 255 || value.ProtocolVersion3 is < 0 or > 255 ||
                 Convert.FromBase64String(value.ConnectRequestBase64).Length == 0)
