@@ -73,10 +73,10 @@ public sealed class CharacterSkinTests : IDisposable
         Assert.Single(Directory.GetDirectories(Path.Combine(manager.Root(root),".deleted")));
     }
     [Fact]
-    public void SetActiveUpdatesBothConfigLocationsAndKeepsComments()
+    public void SetActiveWritesModConfigAndKeepsComments()
     {
-        // CharacterSkinMod 直接按路径读 mods\CharacterSkinMod\config.json，
-        // Toys 必须连这一份一起写，否则界面上切换了皮肤游戏里却不生效。
+        // 4.0.0 起 CharacterSkinMod 的配置只有一处：mods\CharacterSkinMod\config.json
+        // （模组直接按路径读它，也是加载器 SDK 读的那份）。
         string modDir = Path.Combine(root, "AstralParty_ModLoader", "mods", "CharacterSkinMod");
         Directory.CreateDirectory(modDir);
         string packaged = Path.Combine(modDir, "config.json");
@@ -85,18 +85,16 @@ public sealed class CharacterSkinTests : IDisposable
         manager.Create(root, "blue", 114, 100114001, "蓝海晴");
         manager.SetActive(root, "blue", true);
 
-        string canonical = Path.Combine(root, "AstralParty_ModLoader", "configs", "CharacterSkinMod.json");
-        Assert.True(File.Exists(canonical));
         string text = File.ReadAllText(packaged);
-        Assert.Equal(File.ReadAllText(canonical), text);
         Assert.Contains("\"blue\"", text);
         Assert.Contains("_comments", text);
+        // 旧版集中目录不再被创建
+        Assert.False(File.Exists(Path.Combine(root, "AstralParty_ModLoader", "configs", "CharacterSkinMod.json")));
     }
     [Fact]
-    public void SetActiveWritesConfigsTooWhenModIsDisabled()
+    public void SetActiveWritesDisabledFolderConfigWhenModIsDisabled()
     {
-        // 停用的模组在 disabled_mods，但 configs 那份照写（加载器优先读它），
-        // 不能因为模组不在 mods 就漏掉。
+        // 停用的模组在 disabled_mods：配置跟着它写那边，不把它搬回 mods，也不写已废弃的 configs。
         string disabled = Path.Combine(root, "AstralParty_ModLoader", "disabled_mods", "CharacterSkinMod");
         Directory.CreateDirectory(disabled);
         string packaged = Path.Combine(disabled, "config.json");
@@ -104,10 +102,8 @@ public sealed class CharacterSkinTests : IDisposable
         manager.Create(root, "blue", 114, 100114001, "蓝海晴");
         manager.SetActive(root, "blue", true);
 
-        string canonical = Path.Combine(root, "AstralParty_ModLoader", "configs", "CharacterSkinMod.json");
-        Assert.True(File.Exists(canonical), "停用的模组也必须写 configs 配置");
-        Assert.Equal(File.ReadAllText(canonical), File.ReadAllText(packaged));
-        Assert.Contains("\"blue\"", File.ReadAllText(canonical));
+        Assert.Contains("\"blue\"", File.ReadAllText(packaged));
+        Assert.False(File.Exists(Path.Combine(root, "AstralParty_ModLoader", "configs", "CharacterSkinMod.json")));
         Assert.False(Directory.Exists(Path.Combine(root, "AstralParty_ModLoader", "mods", "CharacterSkinMod")));
     }
 }

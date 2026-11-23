@@ -64,13 +64,12 @@ public sealed partial class SkinManager
 
     public const string GameDefault = "__game_default__";
 
-    /// <summary>CardSkinMod 的玩家配置（configs\CardSkinMod.json；写入目标）。</summary>
+    /// <summary>CardSkinMod 的玩家配置（<c>mods\CardSkinMod\config.json</c>；4.0.0 起唯一位置）。</summary>
     public string GetModConfigPath(string gameDirectory) =>
         ModConfigLocator.Canonical(gameDirectory, "CardSkinMod");
 
     public string GetActiveSkin(string gameDirectory)
     {
-        // 读取兼容: configs 下没有时仍可能停在旧位置(mods\CardSkinMod\config.json)。
         var path = ModConfigLocator.ResolveForRead(gameDirectory, "CardSkinMod");
         if (!File.Exists(path)) return "default";
         var config = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(File.ReadAllText(path))!;
@@ -81,14 +80,13 @@ public sealed partial class SkinManager
     public void SetActiveSkin(string gameDirectory, string skinName)
     {
         if (string.IsNullOrWhiteSpace(skinName)) throw new ArgumentException("皮肤方案名称不能为空");
-        // 读取兼容: configs 下没有时仍可能停在旧位置(mods\CardSkinMod\config.json)。
         var readPath = ModConfigLocator.ResolveForRead(gameDirectory, "CardSkinMod");
         var config = File.Exists(readPath)
             ? JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(File.ReadAllText(readPath))!
             : new Dictionary<string, JsonElement>();
         config["Enabled"] = JsonSerializer.SerializeToElement(skinName != GameDefault);
         if (skinName != GameDefault) config["ActiveSkin"] = JsonSerializer.SerializeToElement(skinName);
-        // configs 与模组目录两份一起写（后者是 CardSkinMod 直接读的位置）
+        // 写到模组目录那份（CardSkinMod 读的就是它）
         ModConfigLocator.WriteText(gameDirectory, "CardSkinMod",
             JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true }));
     }

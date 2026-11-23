@@ -16,7 +16,7 @@ namespace AstralParty.Toys.Services.Modding;
 
 public sealed partial class ModManager
 {
-    // ============================== mod 配置表单 (configs\{ModId}.json 键值编辑) ==============================
+    // ============================== mod 配置表单 (mods\{ModId}\config.json 键值编辑) ==============================
 
     /// <summary>读取 mod 配置为表单字段列表(按 JSON 值类型分类); 文件不存在返回空列表。
     /// 每个字段带 name + kind(bool/number/string/key) + 当前值。
@@ -77,8 +77,8 @@ public sealed partial class ModManager
         => name.Length > 3 && name.EndsWith("Key", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>按表单字段保存 mod 配置(序列化回 JSON; 类型由字段 Kind 决定)。
-    /// 落盘 <b>两份</b>: <c>configs\{ModId}.json</c>(加载器优先读的位置) 与模组目录里的
-    /// <c>config.json</c>(个别模组仍直接读这份), 保证两边内容一致。
+    /// 落盘唯一位置：模组目录里的 <c>config.json</c>（启用 → <c>mods\{ModId}</c>，
+    /// 停用 → <c>disabled_mods\{ModId}</c>），与加载器 SDK 读取的位置完全一致。
     /// <c>_comments</c> 不来自表单，保存时从原文件原样带回并放在末尾；<c>other</c> 字段按 JSON 解析，
     /// 不会把嵌套对象/数组写成字符串。</summary>
     public void SaveModConfigFields(string gameDirectory, string fileName, List<ModConfigField> fields)
@@ -181,24 +181,18 @@ public sealed partial class ModManager
     }
 
     /// <summary>
-    /// mod 配置文件名(与 mod 的 DLL 同目录)。SDK 的 <c>ModConfig</c> 就是按
-    /// <c>modDirectory\config.json</c> 落盘的, 所以这里必须同名同目录 —— 否则 mod 读的
+    /// 模组配置文件名(与 mod 的 DLL 同目录)。SDK 的 <c>ModConfig</c> 就是按
+    /// <c>modDirectory\config.json</c> 落盘/读取的, 所以这里必须同名同目录 —— 否则 mod 读的
     /// 和 Toys 写的是两个文件, 界面上改了配置游戏里根本不生效。
     /// </summary>
     private const string ModConfigFileName = "config.json";
 
-    /// <summary>mod 玩家配置的落盘位置(<c>configs\{ModId}.json</c>; 不要求已存在)。
-    /// 与加载器 SDK 的 <c>ModConfig.ResolvePath</c> 一致: configs 下同名文件存在时 mod 只读它。</summary>
+    /// <summary>
+    /// mod 玩家配置的落盘位置：模组目录里的 <c>config.json</c>（启用 → <c>mods\{ModId}</c>，
+    /// 停用 → <c>disabled_mods\{ModId}</c>）。与加载器 SDK 的 <c>ModConfig.ResolvePath</c> 一致；
+    /// 旧版集中放的 <c>configs\{ModId}.json</c> 已在 4.0.0 废弃，不再读写。
+    /// </summary>
     private static string ModConfigWritePath(string gameDirectory, string fileName)
-    {
-        var modsDir = ModsRoot(gameDirectory);
-        var (_, directoryName, _) = ResolveModPath(modsDir, fileName);
-        var modId = directoryName ?? Path.GetFileNameWithoutExtension(fileName);
-        return Path.Combine(gameDirectory, LoaderFolderName, "configs", modId + ".json");
-    }
-
-    /// <summary>模组目录里那份 config.json(随包默认值; 旧安装的玩家配置也可能还停在这里), 仅用于读取兼容。</summary>
-    private static string PackagedModConfigPath(string gameDirectory, string fileName)
     {
         var modsDir = ModsRoot(gameDirectory);
         var (_, directoryName, root) = ResolveModPath(modsDir, fileName);
@@ -207,9 +201,9 @@ public sealed partial class ModManager
     }
 
     /// <summary>
-    /// 模组目录里那份 <c>config.json</c>(随包默认值, 也是个别模组直接读的位置);
-    /// 模组没装(新布局的文件夹不存在)时返回 null, 避免凭空建一个没有 DLL 的模组目录。
-    /// 停用的模组返回 <c>disabled_mods</c> 那份, 不把它搬回 <c>mods</c>。
+    /// 模组目录里那份 <c>config.json</c>（4.0.0 起这也是唯一位置）。
+    /// 模组没装（新布局的文件夹不存在）时返回 null，回滚日志据此判断"当时有没有这份文件"；
+    /// 停用的模组返回 <c>disabled_mods</c> 那份，不把它搬回 <c>mods</c>。
     /// </summary>
     public string? ModPackagedConfigPathFor(string gameDirectory, string fileName)
     {
@@ -222,8 +216,7 @@ public sealed partial class ModManager
     }
 
     /// <summary>
-    /// mod 配置双写: <c>configs\{ModId}.json</c>(加载器优先读) 与模组目录里的 <c>config.json</c>
-    /// (个别模组仍直接读这份) 各写一次, 字节完全相同。返回 configs 路径。
+    /// 写 mod 配置：只写模组目录里的 <c>config.json</c>（唯一位置）。返回该路径。
     /// </summary>
     public string WriteModConfigBytes(string gameDirectory, string fileName, byte[] bytes)
     {
@@ -233,35 +226,25 @@ public sealed partial class ModManager
         var path = ModConfigWritePath(gameDirectory, fileName);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         WriteAllBytesProtected(path, bytes);
-
-        var packaged = ModPackagedConfigPathFor(gameDirectory, fileName);
-        if (packaged is not null && !string.Equals(packaged, path, StringComparison.OrdinalIgnoreCase))
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(packaged)!);
-            WriteAllBytesProtected(packaged, bytes);
-        }
         return path;
     }
 
-    /// <summary>mod 配置双写(文本; <paramref name="bom"/> 为 true 时带 UTF-8 BOM)。返回 configs 路径。</summary>
+    /// <summary>写 mod 配置（文本; <paramref name="bom"/> 为 true 时带 UTF-8 BOM）。返回落盘路径。</summary>
     public string WriteModConfigText(string gameDirectory, string fileName, string text, bool bom)
         => WriteModConfigBytes(gameDirectory, fileName, new System.Text.UTF8Encoding(bom).GetBytes(text));
 
     /// <summary>
-    /// mod 配置文件路径(现行约定 <c>configs\{ModId}.json</c>)。只有 configs 下还没有、
-    /// 而模组目录里那份仍在时返回旧路径(读取兼容; 一旦保存就会写进 configs);
-    /// 两处都不存在则返回 null。
+    /// mod 配置文件路径（<c>mods\{ModId}\config.json</c>；停用模组取它当前所在的目录）。
+    /// 文件不存在则返回 null。
     /// </summary>
     public string? ModConfigPath(string gameDirectory, string fileName)
     {
         if (string.IsNullOrWhiteSpace(gameDirectory) || string.IsNullOrWhiteSpace(fileName)) return null;
         var path = ModConfigWritePath(gameDirectory, fileName);
-        if (File.Exists(path)) return path;
-        var packaged = PackagedModConfigPath(gameDirectory, fileName);
-        return File.Exists(packaged) ? packaged : null;
+        return File.Exists(path) ? path : null;
     }
 
-    /// <summary>读取 mod 配置内容(configs\{ModId}.json; 尚未迁到 configs 的旧安装读模组目录那份); 不存在返回空串。</summary>
+    /// <summary>读取 mod 配置内容（模组目录里的 config.json）；不存在返回空串。</summary>
     public string ReadModConfig(string gameDirectory, string fileName)
     {
         var path = ModConfigPath(gameDirectory, fileName);
@@ -271,8 +254,7 @@ public sealed partial class ModManager
 
     /// <summary>
     /// 确保 mod 配置文件存在并返回其路径（不打开资源管理器，纯文件逻辑，方便测试）：
-    /// 不存在则创建一份带注释的空配置；若只有模组目录里的那份 <c>mods\{ModId}\config.json</c>，
-    /// 先把它复制到 <c>configs\{ModId}.json</c>；随后把模组目录那份补齐，让两处内容一致。
+    /// 不存在则创建一份带注释的空配置。
     /// </summary>
     public string EnsureModConfig(string gameDirectory, string fileName)
     {
@@ -283,32 +265,7 @@ public sealed partial class ModManager
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
         if (!File.Exists(path))
-        {
-            var packaged = ModPackagedConfigPathFor(gameDirectory, fileName);
-            var migrated = false;
-            if (packaged is not null && File.Exists(packaged))
-            {
-                try { File.Copy(packaged, path); migrated = true; }
-                catch { migrated = false; }
-            }
-            if (!migrated)
-                File.WriteAllText(path, "{\n  // 配置说明见对应 mod 文档; 公开字段(public field)才会被读取\n}\n");
-        }
-
-        // 模组目录里那份也补一份：个别模组直接按路径读它，两处内容必须一致。
-        var packagedPath = ModPackagedConfigPathFor(gameDirectory, fileName);
-        if (packagedPath is not null && !File.Exists(packagedPath))
-        {
-            try
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(packagedPath)!);
-                File.Copy(path, packagedPath);
-            }
-            catch
-            {
-                // 补不上不影响 configs 那份（加载器优先读它）
-            }
-        }
+            File.WriteAllText(path, "{\n  // 配置说明见对应 mod 文档; 公开字段(public field)才会被读取\n}\n");
 
         return path;
     }
@@ -400,7 +357,7 @@ public sealed partial class ModManager
         if (string.IsNullOrWhiteSpace(gameDirectory))
             throw new ArgumentException("游戏目录无效。");
 
-        // 双写 configs\FontMod.json 与模组目录里的 config.json; 文本从现有那份带过来,
+        // 写模组目录里的 config.json（4.0.0 起唯一位置）; 文本从现有那份带过来,
         // 保证注释、空行与 1 / 1.0 这类写法不被重新序列化改掉。
         var readPath = ModConfigPath(gameDirectory, "FontMod.dll");
 

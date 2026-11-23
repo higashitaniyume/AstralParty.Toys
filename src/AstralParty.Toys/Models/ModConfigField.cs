@@ -1,6 +1,6 @@
 namespace AstralParty.Toys.Models;
 
-/// <summary>mod 配置表单字段（configs\{mod}.json 键值编辑）。</summary>
+/// <summary>mod 配置表单字段（mods\{ModId}\config.json 键值编辑）。</summary>
 public sealed class ModConfigField
 {
     public string Name { get; set; } = "";

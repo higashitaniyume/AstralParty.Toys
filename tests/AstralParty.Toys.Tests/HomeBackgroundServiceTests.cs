@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using AstralParty.Toys.Services.Common;
 using AstralParty.Toys.Services.Modding;
 using AstralParty.Toys.Services.Skins;
 using AstralParty.Toys.Tests.Support;
@@ -36,8 +37,8 @@ public sealed class HomeBackgroundServiceTests : IDisposable
 
     private string ModsDir => Path.Combine(_game, ModManager.LoaderFolderName, ModManager.ModsFolderName, HomeBackgroundService.ModId);
     private string DisabledDir => Path.Combine(_game, ModManager.LoaderFolderName, ModManager.DisabledModsFolderName, HomeBackgroundService.ModId);
-    /// <summary>玩家配置(加载器优先读的那份): configs\HomeBackgroundMod.json。</summary>
-    private string ConfigFile => Path.Combine(_game, ModManager.LoaderFolderName, "configs", HomeBackgroundService.ModId + ".json");
+    /// <summary>玩家配置（4.0.0 起唯一位置）：模组目录里的 config.json。</summary>
+    private string ConfigFile => ModConfigLocator.Canonical(_game, HomeBackgroundService.ModId);
 
     // ---------------------------------------------------------------- 造测试图片
 
@@ -272,30 +273,28 @@ public sealed class HomeBackgroundServiceTests : IDisposable
     }
 
     /// <summary>
-    /// 加载器（SDK 3.8.5）只要 configs\HomeBackgroundMod.json 存在就读它，不读 mods\…\config.json。
-    /// 从市场装过这个模组的人，配置就在 configs 里：工具箱必须直接改写这份，否则游戏里不会生效。
+    /// 4.0.0 起模组只读模组目录里的 config.json：旧版集中目录里的文件不再被读，
+    /// 工具箱也不再改写它（加载器启动时会把整个 configs 改名 configs.bak）。
     /// </summary>
     [Fact]
-    public void LegacyConfigInConfigsFolder_IsKeptInSync()
+    public void LegacyConfigsFolder_IsIgnoredAndNotRewritten()
     {
-        var legacy = Path.Combine(_game, ModManager.LoaderFolderName, "configs", "HomeBackgroundMod.json");
+        var legacy = Path.Combine(_game, ModManager.LoaderFolderName, "configs", HomeBackgroundService.ModId + ".json");
         Directory.CreateDirectory(Path.GetDirectoryName(legacy)!);
-        File.WriteAllText(legacy, "{\"enable\":true,\"hideThemeVideo\":true,\"video\":\"bg.mp4\",\"image\":\"assets/bg.png\"}");
+        File.WriteAllText(legacy, "{\"enable\":false,\"hideThemeVideo\":true,\"video\":\"bg.mp4\",\"image\":\"assets/x.png\"}");
+        var before = File.ReadAllText(legacy);
 
         _service.SetHideThemeVideo(_game, false);
 
-        using (var doc = JsonDocument.Parse(File.ReadAllText(legacy)))
-        {
-            Assert.False(doc.RootElement.GetProperty("hideThemeVideo").GetBoolean());
-            foreach (var key in new[] { "enable", "video", "image" }) Assert.True(doc.RootElement.TryGetProperty(key, out _));
-        }
-        Assert.False(_service.ReadConfig(_game).HideThemeVideo);
+        var current = ConfigFile;
+        Assert.True(File.Exists(current), "配置应写在模组目录里");
+        Assert.Contains("\"hideThemeVideo\": false", File.ReadAllText(current));
 
-        // 两份不一样时，以加载器读的 configs 那份为准
-        File.WriteAllText(legacy, "{\"enable\":false,\"hideThemeVideo\":true,\"video\":\"bg.mp4\",\"image\":\"assets/x.png\"}");
+        // 旧文件原样不动，也不再影响读到的配置
+        Assert.Equal(before, File.ReadAllText(legacy));
         var cfg = _service.ReadConfig(_game);
-        Assert.False(cfg.Enable);
-        Assert.Equal("assets/x.png", cfg.Image);
+        Assert.False(cfg.HideThemeVideo);
+        Assert.True(cfg.Enable);
     }
 
     [Fact]

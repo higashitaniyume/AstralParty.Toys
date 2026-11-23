@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using AstralParty.Toys.Models;
+using AstralParty.Toys.Services.Common;
 using AstralParty.Toys.Services.Modding;
 using AstralParty.Toys.Services.Speedhack;
 
@@ -193,33 +194,16 @@ public sealed class HomeBackgroundService
     internal sealed record Config(bool Enable, bool HideThemeVideo, string Video, string Image);
 
     /// <summary>
-    /// 加载器（SDK 3.8.5 的 ModConfig）实际读的那份：<c>configs\{ModId}.json</c> 存在就读它，
-    /// 否则才读 <c>mods\{ModId}\config.json</c>。工具箱读写都落在 configs（见 ModManager 的配置路径），
-    /// 所以从市场装的模组（没带 config.json、第一次运行才在 configs 里建）也能正常读到。
+    /// 配置位置：模组目录里的 <c>mods\{ModId}\config.json</c>（4.0.0 起唯一位置，
+    /// 也是加载器的 ModConfig 实际读取的那份）。工具箱读写都走 ModManager。
     /// </summary>
     internal static string ConfigPath(string game) =>
-        Path.Combine(LoaderRoot(game), "configs", ModId + ".json");
+        ModConfigLocator.Canonical(game, ModId);
 
     internal Config ReadConfig(string game)
     {
         bool enable = true, hide = true;
         string video = "bg.mp4", image = "assets/bg.png";
-        var external = ConfigPath(game);
-        if (File.Exists(external))
-        {
-            // 加载器读的是这份，就以它为准
-            try
-            {
-                using var doc = JsonDocument.Parse(File.ReadAllText(external), new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
-                var r = doc.RootElement;
-                if (r.TryGetProperty("enable", out var e) && e.ValueKind is JsonValueKind.True or JsonValueKind.False) enable = e.GetBoolean();
-                if (r.TryGetProperty("hideThemeVideo", out var h) && h.ValueKind is JsonValueKind.True or JsonValueKind.False) hide = h.GetBoolean();
-                if (r.TryGetProperty("video", out var v) && v.ValueKind == JsonValueKind.String && v.GetString() is { Length: > 0 } vs) video = vs;
-                if (r.TryGetProperty("image", out var i) && i.ValueKind == JsonValueKind.String && i.GetString() is { Length: > 0 } iss) image = iss;
-                return new Config(enable, hide, video, image);
-            }
-            catch { /* 坏了就退回下面的读法 */ }
-        }
         foreach (var f in _mods.ReadModConfigFields(game, ModFileName))
         {
             switch (f.Name)
@@ -235,7 +219,7 @@ public sealed class HomeBackgroundService
 
     /// <summary>
     /// 四个字段一起写（缺字段会被当成默认值）。走 ModManager 的配置写入，落点是
-    /// <c>configs\{ModId}.json</c> —— 加载器只优先读它，写到 mods 那份游戏里不会生效。
+    /// <c>mods\{ModId}\config.json</c> —— 加载器读的就是它。
     /// </summary>
     private void SaveConfig(string game, Config cfg)
     {

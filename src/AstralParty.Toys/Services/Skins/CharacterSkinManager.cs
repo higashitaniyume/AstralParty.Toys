@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -17,7 +17,7 @@ public sealed class CharacterSkinManager
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
     public string Root(string game) => Path.Combine(game, "AstralParty_ModLoader", "character-skins");
-    /// <summary>CharacterSkinMod 的玩家配置（configs\CharacterSkinMod.json；写入目标）。</summary>
+    /// <summary>CharacterSkinMod 的玩家配置（<c>mods\CharacterSkinMod\config.json</c>；4.0.0 起唯一位置）。</summary>
     public string Config(string game) => ModConfigLocator.Canonical(game, "CharacterSkinMod");
     public string Package(string game, string id)
     {
@@ -26,7 +26,6 @@ public sealed class CharacterSkinManager
     }
     public CharacterSkinSettings Settings(string game)
     {
-        // 读取兼容: configs 下没有时仍可能停在旧位置(mods\CharacterSkinMod\config.json)。
         var path = ModConfigLocator.ResolveForRead(game, "CharacterSkinMod");
         return File.Exists(path)
             ? JsonSerializer.Deserialize<CharacterSkinSettings>(File.ReadAllText(path), JsonOptions) ?? new()
@@ -92,8 +91,8 @@ public sealed class CharacterSkinManager
     }
 
     /// <summary>
-    /// 写回 CharacterSkinMod 的玩家配置。<b>两份都写</b>：<c>configs\CharacterSkinMod.json</c>
-    /// 与模组目录里的 <c>config.json</c>（模组直接按路径读后者）。
+    /// 写回 CharacterSkinMod 的玩家配置：模组目录里的 <c>config.json</c>（4.0.0 起唯一位置，
+    /// CharacterSkinMod 直接按路径读它）。
     /// </summary>
     public void SaveSettings(string game, CharacterSkinSettings settings)
         => ModConfigLocator.WriteText(game, "CharacterSkinMod", SerializeSettings(game, settings));

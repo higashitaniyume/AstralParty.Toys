@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+### 模组配置
+
+- 模组配置统一放在模组自己的目录里：`mods\<ModId>\config.json`（停用模组是 `disabled_mods\<ModId>\config.json`）。模组页的配置编辑与皮肤、字体、主页背景、音效方案页都读写这一份，改完立刻生效。
+- 旧版集中目录 `AstralParty_ModLoader\configs\` 不再读写：加载器启动时会把它整个改名为 `configs.bak`，里面的设置不再生效。要沿用旧值，把 `configs.bak\<ModId>.json` 改名成 `mods\<ModId>\config.json` 即可。
+
 ### 卡牌皮肤
 
 - 卡牌页「＋新建方案」下拉里新增「从 GitHub 下载默认包…」：从 CesiumLoader 最新 Release 下载卡面默认包，装成 `default` 方案，新建方案不必先自己找 ZIP 导入。

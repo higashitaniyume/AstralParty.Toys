@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -23,7 +23,7 @@ public sealed partial class AudioSkinSchemeManager
     public static string Root(string gameDirectory) =>
         Path.Combine(gameDirectory, "AstralParty_ModLoader", "audio-schemes");
 
-    /// <summary>AudioSkinMod 的玩家配置（configs\AudioSkinMod.json；写入目标）。</summary>
+    /// <summary>AudioSkinMod 的玩家配置（<c>mods\AudioSkinMod\config.json</c>；4.0.0 起唯一位置）。</summary>
     public static string ModConfigPath(string gameDirectory) =>
         ModConfigLocator.Canonical(gameDirectory, "AudioSkinMod");
 
@@ -96,7 +96,6 @@ public sealed partial class AudioSkinSchemeManager
 
     public string GetActiveSchemeId(string gameDirectory)
     {
-        // 读取兼容: configs 下没有时仍可能停在旧位置(mods\AudioSkinMod\config.json)。
         var cfgPath = ModConfigLocator.ResolveForRead(gameDirectory, "AudioSkinMod");
         if (File.Exists(cfgPath))
         {
@@ -117,8 +116,7 @@ public sealed partial class AudioSkinSchemeManager
     public void SetActiveScheme(string gameDirectory, string schemeId)
     {
         if (string.IsNullOrWhiteSpace(schemeId)) schemeId = "default";
-        // 读 configs 优先（没有时回退模组目录那份），写的时候两份都写：
-        // 加载器优先读 configs，模组目录那份也不能留旧值。
+        // 配置只有模组目录这一处（4.0.0 起）。
         var cfgPath = ModConfigLocator.ResolveForRead(gameDirectory, "AudioSkinMod");
 
         JsonObject root;

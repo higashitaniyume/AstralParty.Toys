@@ -233,9 +233,7 @@ public sealed class ModProfileTests
 
         var result = service2.Apply("共享");
         Assert.True(result.Ok, result.Message + " || " + string.Join(" | ", result.Failed) + " || " + string.Join(" | ", result.Skipped));
-        // 配置双写：configs 是加载器优先读的位置，模组目录里那份也要跟着换成方案里的内容
-        Assert.Equal("{\"a\":1}", File.ReadAllText(
-            Path.Combine(second, ModManager.LoaderFolderName, "configs", "ModA.json")));
+        // 配置只有模组目录这一处（4.0.0 起）：方案里的原文按新位置写回
         Assert.Equal("{\"a\":1}", File.ReadAllText(Path.Combine(mods2, "config.json")));
         Assert.Equal("共享", service2.Load().Active);
     }
