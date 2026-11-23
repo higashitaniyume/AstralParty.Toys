@@ -10,18 +10,26 @@ using Microsoft.Win32;
 namespace AstralParty.Toys.Services.Modding;
 
 /// <summary>
-/// 游戏 Mod 加载器（CesiumLoader version.dll Doorstop 式代理）与 mod 的安装 / 卸载 / 列表管理。
-/// 加载器本体 version.dll（Doorstop 式代理，UnityPlayer 导入 version.dll 时被优先加载）与
-/// 内置 SDK（CesiumLoader.SDK.dll）、内置 mod（见 <see cref="BuiltInModIds"/>：行为日志 / 自由相机 / 变速）、
-/// 各 mod 的 sidecar 元数据（*.json）以及 doorstop_config.json 以「内嵌资源」编译进程序集
+/// 游戏 Mod 加载器（CesiumLoader：version.dll 薄代理 + CesiumLoader.dll 核心）与 mod 的安装 / 卸载 / 列表管理。
+/// 加载器本体是两个原生 DLL：<c>version.dll</c>（Doorstop 式代理，UnityPlayer 导入它时被优先加载，
+/// 只负责转发系统 version.dll 的导出）与 <c>CesiumLoader.dll</c>（配置 / 变速 / 日志 / 模组编排；
+/// 由代理从**自身所在目录**加载）—— 两者必须在游戏 exe 目录里成对存在。
+/// 加上内置 SDK（CesiumLoader.SDK.dll）、内置 mod（见 <see cref="BuiltInModIds"/>）、
+/// 各 mod 的 sidecar 元数据（*.json）以及 doorstop_config.json，全部以「内嵌资源」编译进程序集
 /// （AstralParty.Toys.ModLoader.*）。
-/// 安装 = 把 version.dll 写为游戏 exe 目录下的 version.dll，并创建
+/// 安装 = 按发布包布局把两个 DLL 落到游戏 exe 目录，并创建
 /// AstralParty_ModLoader\{sdk,mods,logs} 目录结构 + 写入 doorstop_config.json；
 /// 卸载前校验 DLL 哈希，避免误删他人文件。
 /// </summary>
 public sealed partial class ModManager
 {
     public const string LoaderDllName = "version.dll";
+
+    /// <summary>加载器核心（与 <see cref="LoaderDllName"/> 同目录，由代理在后台线程加载）。
+    /// 两个文件必须成对安装/更新：只有代理时游戏照常启动但不加载任何模组，代理会在
+    /// <c>AstralParty_ModLoader\logs\proxy-*.log</c> 里写清楚原因。</summary>
+    public const string CoreDllName = "CesiumLoader.dll";
+
     public const string LoaderFolderName = "AstralParty_ModLoader";
     public const string ModsFolderName = "mods";
     /// <summary>停用的 mod 搬到这里：加载器只扫 mods，等于彻底不进游戏，DLL 也不会被游戏进程占用。</summary>

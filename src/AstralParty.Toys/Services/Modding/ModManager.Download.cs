@@ -460,8 +460,9 @@ public sealed partial class ModManager
 
     /// <summary>
     /// 安装 CesiumLoader 发布包：先按包内清单逐文件校验哈希，再**按包内布局整包解压**到游戏目录
-    /// —— <c>version.dll</c> / <c>version.pdb</c> / <c>CesiumLoader-NOTICE.txt</c> /
-    /// <c>CesiumLoader-LICENSE.txt</c> / <c>README.txt</c> / <c>CHANGELOG.md</c> 落游戏 exe 目录，
+    /// —— <c>version.dll</c>（代理）/ <c>CesiumLoader.dll</c>（核心）与两者同名的 <c>.pdb</c>，
+    /// 以及 <c>CesiumLoader-NOTICE.txt</c> / <c>CesiumLoader-LICENSE.txt</c> /
+    /// <c>README.txt</c> / <c>CHANGELOG.md</c> 落游戏 exe 目录，
     /// <c>cesium-loader.json</c> 与 <c>AstralParty_ModLoader\**</c>（sdk / bootstrap / mods / …）
     /// 落加载器目录。「安装 / 重新安装内置版本」也走这里，包来自程序集内嵌资源。
     ///
@@ -580,7 +581,8 @@ public sealed partial class ModManager
     /// <summary>
     /// 把发布包里的每个文件条目按包内布局落地（zip 布局 = 游戏目录布局）。
     /// <list type="bullet">
-    ///   <item>根级 <c>version.dll</c> / <c>version.pdb</c> / NOTICE / LICENSE / README.txt / CHANGELOG.md → 游戏 exe 目录；
+    ///   <item>根级 <c>version.dll</c> / <c>version.pdb</c> / <c>CesiumLoader.dll</c> / <c>CesiumLoader.pdb</c>
+    ///         / NOTICE / LICENSE / README.txt / CHANGELOG.md → 游戏 exe 目录；
     ///         加载器处于「停用」状态时 <c>version.dll</c> 不写回；通用名文件遇到陌生同名文件时跳过并记入
     ///         <paramref name="skipped"/>，绝不覆盖玩家自己的文件；</item>
     ///   <item><c>cesium-loader.json</c> → 加载器目录根（安装清单，版本来源）；</item>

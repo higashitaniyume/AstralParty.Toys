@@ -3,7 +3,8 @@ namespace AstralParty.Toys.Services.Modding;
 /// <summary>
 /// 发布包解压安装时「落在游戏 exe 目录」的那几个根级文件的规则。
 ///
-/// 发布包根目录是游戏目录布局：<c>version.dll</c> / <c>version.pdb</c> 是加载器本体，
+/// 发布包根目录是游戏目录布局：<c>version.dll</c>（薄代理）/ <c>CesiumLoader.dll</c>（加载器核心）
+/// 及两者同名的 <c>.pdb</c> 是加载器本体，
 /// <c>CesiumLoader-NOTICE.txt</c> / <c>CesiumLoader-LICENSE.txt</c> 是许可文件，
 /// <c>README.txt</c> / <c>CHANGELOG.md</c> 是通用名说明文件。
 /// 通用名文件可能和玩家自己放在游戏目录里的文件撞名，所以**只覆盖本工具落过的那一份**：
@@ -28,14 +29,19 @@ public sealed partial class ModManager
     /// <summary>
     /// 发布包落在游戏 exe 目录、且属于本工具的文件名（相对名）。用于卸载与安装快照：
     /// <list type="bullet">
-    ///   <item><c>version.dll</c> / <c>version.pdb</c> 与 <c>CesiumLoader-*</c> → 按名字直接认定；</item>
+    ///   <item><c>version.dll</c>（代理）/ <c>CesiumLoader.dll</c>（核心）及两者同名的 <c>.pdb</c>，
+    ///         与 <c>CesiumLoader-*</c> → 按名字直接认定；</item>
     ///   <item>通用名（README.txt / CHANGELOG.md）→ 只有安装记录里出现过（本工具落过）才算。</item>
     /// </list>
+    /// 两个 DLL 都要在这里列出：只列代理的话，卸载与回滚会留下核心文件 —— 它虽然因为缺代理而
+    /// 不生效，但会让「已彻底卸载」变成假话，之后手工排查也容易误判成"还装着"。
     /// </summary>
     private static IEnumerable<string> RootFilesOwnedByLoader(InstallationRecord? record)
     {
         yield return LoaderDllName;
         yield return Path.ChangeExtension(LoaderDllName, ".pdb");
+        yield return CoreDllName;
+        yield return Path.ChangeExtension(CoreDllName, ".pdb");
         yield return NoticeFileName;
         yield return LicenseFileName;
         if (record is null) yield break;

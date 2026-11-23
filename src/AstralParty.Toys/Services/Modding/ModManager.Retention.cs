@@ -200,7 +200,8 @@ public sealed partial class ModManager
         }
     }
 
-    /// <summary>备份并仅删除游戏根目录的 version.dll。</summary>
+    /// <summary>备份并仅删除游戏根目录的 version.dll（代理）。CesiumLoader.dll（核心）与加载器目录
+    /// 都保留：没有代理就不会加载核心，效果等同停用；想彻底清掉请用「卸载」。</summary>
     public string DisableLoader(string gameDirectory)
     {
         RequireLoaderGameDirectory(gameDirectory);
@@ -213,7 +214,8 @@ public sealed partial class ModManager
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         { throw new IOException("删除 version.dll 失败，请退出游戏并检查文件权限后重试。", ex); }
         operation.Complete(disabled: true);
-        return "仅 version.dll 已删除，模组、配置、SDK 和日志已保留。" +
+        return "仅 version.dll（代理）已删除；CesiumLoader.dll（核心）与模组、配置、SDK、日志都保留 —— "
+             + "没有代理时游戏不会加载核心，效果等同停用。" +
             (SpeedhackManager.IsGameRunning() ? "当前游戏进程仍加载着加载器，下次启动才停用。" : "可随时点击恢复 version.dll。");
     }
 
