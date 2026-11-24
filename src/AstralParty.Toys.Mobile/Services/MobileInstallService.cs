@@ -447,6 +447,11 @@ public sealed class MobileInstallService
             if (await fileSystem.ExistsAsync(to, cancellationToken))
                 return FailWith($"目标已存在，拒绝搬移以免嵌一层目录：{to}");
 
+            // 搬目录要写两边的父目录：游戏自建的 mods/ 会拒绝
+            if (await MobileDeviceAccess.DescribeLoaderWritabilityAsync(fileSystem, loaderRoot, cancellationToken)
+                    is { } blocked)
+                return FailWith(blocked);
+
             await fileSystem.MakeDirectoriesAsync(loaderRoot + "/" + toFolder, cancellationToken);
             await fileSystem.RenameAsync(from, to, cancellationToken);
 
@@ -558,6 +563,12 @@ public sealed class MobileInstallService
 
             var modRoot = $"{loaderRoot}/{folder}/{package.ModId}";
             var configPath = modRoot + "/config.json";
+
+            // 只有「新建模组目录」会被游戏自建的 2750 目录挡住；覆盖已有模组照常能写
+            if (!await fileSystem.ExistsAsync(modRoot, cancellationToken) &&
+                await MobileDeviceAccess.DescribeLoaderWritabilityAsync(fileSystem, loaderRoot, cancellationToken)
+                    is { } blocked)
+                return FailWith(blocked);
 
             byte[]? existingConfig = null;
             try

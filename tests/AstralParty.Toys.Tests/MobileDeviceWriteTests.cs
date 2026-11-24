@@ -63,6 +63,136 @@ public class MobileDeviceWriteTests
     [RealMobileWriteFact]
     public Task Android_ImportModPackage_RoundTrips() => ImportModPackageAsync("android");
 
+    [RealMobileWriteFact]
+    public Task Ios_SkinProfile_RoundTrips() => SkinProfileRoundTripAsync("ios");
+
+    [RealMobileWriteFact]
+    public Task Android_SkinProfile_RoundTrips() => SkinProfileRoundTripAsync("android");
+
+    /// <summary>
+    /// M5：往设备上导入一个卡面方案、激活、删除，并把 <c>CardSkinMod/config.json</c> 恢复原样。
+    /// 设备上没有 <c>CardSkinMod</c> 时只验证「导入能落盘 + 激活会给出可读原因」。
+    /// </summary>
+    private async Task SkinProfileRoundTripAsync(string kind)
+    {
+        var output = _output;
+        using var sandbox = new TestSandbox($"ap-mobile-skin-{kind}");
+
+        IDeviceChannel channel = kind == "ios" ? new IosChannel() : new AndroidChannel();
+        var targets = new MobileTargetStore(sandbox.Root);
+        var devices = new MobileDeviceService(sandbox.Root, [channel]);
+        await devices.DiscoverAsync();
+        var target = devices.GetTargets().FirstOrDefault(t => t.Kind == kind)
+                     ?? throw new InvalidOperationException($"没有 {kind} 设备");
+        if (kind == "android") target.AppId = "com.feimo.astralparty.haoyou";
+        targets.Upsert(target);
+
+        var skins = new MobileSkinService(channel);
+
+        const string profile = "ApSkinTestProfile";
+        var zip = Path.Combine(sandbox.Root, "skin-package.zip");
+        using (var archive = ZipFile.Open(zip, ZipArchiveMode.Create))
+        {
+            foreach (var name in new[] { "UT_HandCard_1.png", "UT_HandCard_2.png" })
+            {
+                var entry = archive.CreateEntry($"{profile}/{name}");
+                using var stream = entry.Open();
+                stream.Write([1, 2, 3, 4]);
+            }
+        }
+
+        // 注意：`?? throw` 之后 opened 已经是元组本身，不是 Nullable，不能再点 .Value
+        var (fs, root, _) = await MobileDeviceAccess.TryOpenRootAsync(channel, target, null)
+                            ?? throw new InvalidOperationException("找不到游戏容器");
+        var loaderRoot = root + MobilePaths.LoaderRelative;
+        var profileRoot = $"{loaderRoot}/skins/{profile}";
+        var configPath = $"{loaderRoot}/mods/CardSkinMod/config.json";
+
+        byte[]? configBackup = null;
+        var configExisted = false;
+        await using (fs)
+        {
+            configExisted = await fs.ExistsAsync(configPath);
+            if (configExisted)
+                configBackup = await fs.ReadAllBytesAsync(configPath);
+        }
+
+        var before = await skins.GetStateAsync(target);
+        output.WriteLine($"{kind} 导入前：{before.Profiles.Count} 个方案，CardSkinMod={before.CardSkinModPresent}，" +
+                         $"当前生效={before.ActiveSkin}，有默认池={before.HasDefaultPool}");
+        foreach (var issue in before.Issues) output.WriteLine("  · " + issue);
+        Assert.DoesNotContain(before.Profiles, p => p.Name == profile);
+
+        try
+        {
+            var imported = await skins.ImportAsync(target, zip, activate: true);
+            output.WriteLine($"导入结果：ok={imported.Ok} {imported.Message} {imported.Detail}");
+
+            if (!imported.Ok && imported.Message.Contains("2750"))
+            {
+                // 游戏先跑过一次：CesiumLoader/ 归游戏且组无写位，shell 建不了新目录，也 chmod/chown 不了
+                //（实测都是 Operation not permitted）。这是设备状态问题，不是本用例要验证的逻辑；
+                // 但工具必须给出能照做的说明，而不是一句 mkdir: Permission denied。
+                Assert.Contains("清除", imported.Message);
+                Assert.False((await skins.GetStateAsync(target)).Profiles.Any(p => p.Name == profile));
+                output.WriteLine("设备上的加载器目录由游戏创建（2750），本次只验证到「导入被明确拒绝并给出出路」");
+                return;
+            }
+
+            var afterImport = await skins.GetStateAsync(target);
+            var scheme = afterImport.Profiles.FirstOrDefault(p => p.Name == profile);
+            Assert.NotNull(scheme);
+            output.WriteLine($"导入后：方案 {scheme!.Name} 有 {scheme.CardCount} 张卡面，生效={afterImport.ActiveSkin}");
+            Assert.Equal(2, scheme.CardCount);
+
+            if (!before.CardSkinModPresent)
+            {
+                // 没有 CardSkinMod 时不许假装成功：方案落了盘，但激活必须说清原因
+                Assert.False(imported.Ok, "设备上没有 CardSkinMod，激活不应该报成功");
+                output.WriteLine("设备上没有 CardSkinMod，只验证到「导入落盘 + 激活有可读原因」");
+                return;
+            }
+
+            Assert.True(imported.Ok, "导入并激活失败：" + imported.Message);
+            Assert.Equal(profile, afterImport.ActiveSkin);
+            Assert.True(scheme.Active, "方案应处于生效态");
+
+            var backToDefault = await skins.SetActiveAsync(target, MobileSkinService.GameDefault);
+            Assert.True(backToDefault.Ok, "切回游戏默认失败：" + backToDefault.Message);
+            Assert.Equal(MobileSkinService.GameDefault, (await skins.GetStateAsync(target)).ActiveSkin);
+
+            // 生效中的方案拒绝删除：先切回默认了，这次应该成功
+            var deleted = await skins.DeleteAsync(target, profile);
+            Assert.True(deleted.Ok, "删除方案失败：" + deleted.Message);
+            Assert.False((await skins.GetStateAsync(target)).Profiles.Any(p => p.Name == profile));
+        }
+        finally
+        {
+            // 设备必须回到干净态：删掉测试方案，并把 config.json 恢复成导入前的样子（原来没有就删掉）
+            try
+            {
+                if (await MobileDeviceAccess.TryOpenRootAsync(channel, target, null) is not { } reopened)
+                    throw new InvalidOperationException("清理时找不到游戏容器");
+                var (cleanup, _, _) = reopened;
+                await using (cleanup)
+                {
+                    if (await cleanup.ExistsAsync(profileRoot))
+                        await cleanup.DeleteAsync(profileRoot);
+                    if (configExisted && configBackup is not null)
+                        await cleanup.WriteAllBytesAsync(configPath, configBackup);
+                    else if (!configExisted && await cleanup.ExistsAsync(configPath))
+                        await cleanup.DeleteAsync(configPath);
+                    output.WriteLine($"清理后：方案存在={await cleanup.ExistsAsync(profileRoot)}，" +
+                                     $"config.json 存在={await cleanup.ExistsAsync(configPath)}");
+                }
+            }
+            catch (Exception ex)
+            {
+                output.WriteLine("清理失败（设备可能留下测试方案）：" + ex);
+            }
+        }
+    }
+
     private async Task ImportModPackageAsync(string kind)
     {
         var output = _output;

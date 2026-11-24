@@ -165,6 +165,13 @@ public sealed class MobileSkinService
         {
             var loaderRoot = root + MobilePaths.LoaderRelative;
             var profileRoot = $"{loaderRoot}/skins/{package.ProfileName}";
+
+            // 只有「新建方案目录」会被游戏自建的 2750 目录挡住；覆盖已有方案照常能写
+            if (!await fileSystem.ExistsAsync(profileRoot, cancellationToken) &&
+                await MobileDeviceAccess.DescribeLoaderWritabilityAsync(fileSystem, loaderRoot, cancellationToken)
+                    is { } blocked)
+                return FailWith(blocked);
+
             await fileSystem.MakeDirectoriesAsync(profileRoot, cancellationToken);
 
             var written = 0;
@@ -297,6 +304,11 @@ public sealed class MobileSkinService
                 }
             }
 
+            // 删目录要写父目录：游戏自建的 skins/ 会拒绝
+            if (await MobileDeviceAccess.DescribeLoaderWritabilityAsync(fileSystem, loaderRoot, cancellationToken)
+                    is { } blocked)
+                return FailWith(blocked);
+
             await fileSystem.DeleteAsync(profileRoot, cancellationToken);
             if (await fileSystem.ExistsAsync(profileRoot, cancellationToken))
                 return FailWith($"删除后目录仍在：{profileRoot}");
@@ -327,6 +339,10 @@ public sealed class MobileSkinService
         }
         else
         {
+            // 还没有 config.json：要新建文件，同样会被游戏自建的 2750 目录挡住
+            if (await MobileDeviceAccess.DescribeLoaderWritabilityAsync(fileSystem, loaderRoot, cancellationToken)
+                    is { } blocked)
+                return MobileOperationResult.Fail(blocked);
             text = "{\n}\n";
             created = true;
         }
