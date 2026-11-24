@@ -19,7 +19,7 @@
 ![.NET 8](https://img.shields.io/badge/.NET-8-512BD4?style=flat-square&logo=dotnet&logoColor=white)
 ![WebView2](https://img.shields.io/badge/WebView2-555?style=flat-square)
 
-[下载最新版](https://github.com/higashitaniyume/AstralParty.Toys/releases/latest) · [更新记录](CHANGELOG.md) · [CesiumLoader](https://github.com/higashitaniyume/CesiumLoader) · [Android](https://github.com/aspatoys/AstralParty.Toys.Android) · [Linux](https://github.com/ParticleG/AstralParty.Toys.Linux)
+[下载最新版](https://github.com/higashitaniyume/AstralParty.Toys/releases/latest) · [更新记录](CHANGELOG.md) · [CesiumLoader](https://github.com/higashitaniyume/CesiumLoader) · [Android](https://github.com/aspatoys/AstralParty.Toys.Android) · [iOS](https://github.com/aspatoys/AstralParty.Toys.iOS) · [Linux](https://github.com/ParticleG/AstralParty.Toys.Linux)
 
 </div>
 
