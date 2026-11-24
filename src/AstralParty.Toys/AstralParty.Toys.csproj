@@ -9,10 +9,10 @@
     <AssemblyName>AstralParty.Toys</AssemblyName>
     <RootNamespace>AstralParty.Toys</RootNamespace>
     <StartupObject>AstralParty.Toys.App</StartupObject>
-    <!-- v2.4.5，程序与安装器数字版本为 2.4.5。 -->
-    <Version>2.4.5</Version>
-    <AssemblyVersion>2.4.5.0</AssemblyVersion>
-    <FileVersion>2.4.5.0</FileVersion>
+    <!-- v2.4.6，程序与安装器数字版本为 2.4.6。 -->
+    <Version>2.4.6</Version>
+    <AssemblyVersion>2.4.6.0</AssemblyVersion>
+    <FileVersion>2.4.6.0</FileVersion>
     <ApplicationIcon>WebUI\images\UT_AccountHeadShot_70902.ico</ApplicationIcon>
   </PropertyGroup>
 
