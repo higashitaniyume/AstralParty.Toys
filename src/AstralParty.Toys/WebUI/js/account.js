@@ -311,7 +311,7 @@
         state.status = p.status || 'disconnected'; if (typeof p.stale === 'boolean') state.stale = p.stale;
         if (!active()) state.matchesLoading = false;
         if (state.status === 'game_changed') { clearData(); state.uid = ''; post({ type: 'myAccountDiscover' }); }
-        const reasons = new Set(['server_kick','server_rejected','resource_version','rpc_timeout','transport_closed','repeated_friend_page','missing_friend_end','friend_page_limit']);
+        const reasons = new Set(['server_kick','server_rejected','resource_version','rpc_timeout','transport_closed','repeated_friend_page','missing_friend_end','friend_page_limit','credential_expired']);
         state.diagnostic = reasons.has(p.reason) ? ` [${p.reason}${Number.isInteger(p.command) ? ' · RPC ' + p.command : ''}${Number.isInteger(p.serverError) ? ' · #' + p.serverError : ''}]` : '';
         if (state.status === 'unavailable' && tutorialOpen()) { state.tutorialChecking = false; state.availability = {}; openTutorial(false); }
       }

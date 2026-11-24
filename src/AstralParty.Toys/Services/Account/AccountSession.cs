@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Text.Json;
 using static AstralParty.Toys.Services.Account.AccountProtocol;
 
 namespace AstralParty.Toys.Services.Account;
@@ -43,6 +44,10 @@ public sealed class AccountSession : IAsyncDisposable
         var region = LoginRegion(login);
         if (region == null || (credentials.Region.Length > 0 && credentials.Region != region))
             throw new InvalidDataException("invalid_credentials");
+        // The international client signs in with a MaxSDK JWT that lapses about an hour after login; the
+        // server answers an expired one with AuthErr, which otherwise reads as a network failure.
+        if (TokenExpiry(login) is { } expiry && expiry <= DateTimeOffset.UtcNow)
+            throw new AccountQueryException("credential_expired");
         await _transport.ConnectAsync(ct).ConfigureAwait(false);
         var frame = await _transport.CallAsync(5001, bytes, ct).ConfigureAwait(false);
         var response = _protocol.Parse("ConnectS2C", frame.Payload);
@@ -64,6 +69,44 @@ public sealed class AccountSession : IAsyncDisposable
         if (auth is not ("China" or "Abroad")) return null;
         if (Get(login, auth) == null || Get(login, "Dev") != null) return null;
         return auth == "China" ? "china" : "abroad";
+    }
+
+    /// <summary>Expiry the credential's session token declares, when it is a JWT that carries one.</summary>
+    public static DateTimeOffset? TokenExpiry(object? login)
+    {
+        if (login == null) return null;
+        foreach (var holder in new[] { Get(login, "Abroad"), Get(login, "China") })
+        {
+            if (holder == null) continue;
+            if (JwtExpiry(Text(holder, "Sid")) is { } expiry) return expiry;
+        }
+        return null;
+    }
+
+    /// <summary>Expiry of a JWT ("exp"); null for the CN client's opaque session string or an unusable token.</summary>
+    public static DateTimeOffset? JwtExpiry(string? session)
+    {
+        var parts = session?.Split('.');
+        if (parts is not { Length: 3 } || parts[1].Length is 0 or > 4096) return null;
+        try
+        {
+            using var payload = JsonDocument.Parse(Convert.FromBase64String(Pad(parts[1])));
+            if (payload.RootElement.TryGetProperty("exp", out var value) && value.TryGetInt64(out var seconds) &&
+                seconds is > 0 and <= 253402300799)
+                return DateTimeOffset.FromUnixTimeSeconds(seconds);
+        }
+        catch
+        {
+            // Not a JWT, or not a payload this tool understands: the expiry stays unknown.
+        }
+        return null;
+    }
+
+    /// <summary>JWT segments are base64url and carry no padding.</summary>
+    private static string Pad(string segment)
+    {
+        var text = segment.Replace('-', '+').Replace('_', '/');
+        return text.PadRight(text.Length + (4 - text.Length % 4) % 4, '=');
     }
 
     public static AccountPlayer ProjectPlayer(object player)

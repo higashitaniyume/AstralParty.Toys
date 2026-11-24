@@ -77,6 +77,42 @@ public sealed class MyAccountTests : IDisposable
         Assert.Null(AccountSession.LoginRegion(null));
     }
 
+    private static string Jwt(object payload)
+    {
+        var body = Convert.ToBase64String(JsonSerializer.SerializeToUtf8Bytes(payload)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." + body + ".signature";
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("opaque-session-string")]
+    [InlineData("a.b")]
+    [InlineData("a.b.c.d")]
+    [InlineData("!!!.@@@.###")]
+    public void JwtExpiryIgnoresAnythingThatIsNotAUsableJwt(string? session) => Assert.Null(AccountSession.JwtExpiry(session));
+
+    [Fact]
+    public void JwtExpiryReadsTheExpClaimOnly()
+    {
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1795409072), AccountSession.JwtExpiry(Jwt(new { sub = "u", exp = 1795409072 })));
+        Assert.Null(AccountSession.JwtExpiry(Jwt(new { sub = "u" })));
+        Assert.Null(AccountSession.JwtExpiry(Jwt(new { exp = 0 })));
+        Assert.Null(AccountSession.JwtExpiry(Jwt(new { exp = -1 })));
+        Assert.Null(AccountSession.JwtExpiry(Jwt(new { exp = "soon" })));
+    }
+
+    [Fact]
+    public void TokenExpiryComesFromTheAuthOneofSession()
+    {
+        var abroad = new { Auth = "Abroad", Abroad = new { Sid = Jwt(new { exp = 1795409072 }) }, China = (object?)null, Dev = (object?)null };
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1795409072), AccountSession.TokenExpiry(abroad));
+        // The CN client's opaque session string declares no expiry, so none is reported for it.
+        var china = new { Auth = "China", China = new { Sid = "0b0LAp3sil1lh" }, Abroad = (object?)null, Dev = (object?)null };
+        Assert.Null(AccountSession.TokenExpiry(china));
+        Assert.Null(AccountSession.TokenExpiry(null));
+    }
+
     private string WriteCredential(string uid, object value)
     {
         string directory = Path.Combine(AccountCredentials.Root(_scratch), uid);
