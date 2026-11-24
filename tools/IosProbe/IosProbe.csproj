@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    iOS 能力探针（M0 技术验证用，不进 AstralParty.Toys.slnx，不参与发布与 CI）。
+
+    目的：只回答一个问题 —— 纯 .NET 能不能通过 house_arrest(VendDocuments) 读写删
+    游戏容器 Documents 里的文件。方案见 docs/iOS集成到Toys-方案-2026-11-24.md 第 4.1 节。
+
+    跑法（在 replaytool 目录下，参数见程序内的 usage）：
+      dotnet run (project: tools/IosProbe) devices
+      dotnet run (project: tools/IosProbe) selftest
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>ios-probe</AssemblyName>
+    <RootNamespace>IosProbe</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- 探针是临时工具：不因为警告挡住验证 -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Netimobiledevice" Version="2.5.2" />
+  </ItemGroup>
+
+</Project>

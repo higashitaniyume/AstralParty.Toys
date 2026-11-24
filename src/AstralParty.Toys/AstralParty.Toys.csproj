@@ -18,6 +18,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ResourceModEngine\ResourceModEngine.csproj" />
+    <ProjectReference Include="..\AstralParty.Toys.Mobile\AstralParty.Toys.Mobile.csproj" />
+    <!-- Ship the verified Mono.Cecil injector as a standalone exe; never reference its assembly. -->
+    <ProjectReference Include="..\CesiumLoader.Mobile.Patcher\CesiumLoader.Mobile.Patcher.csproj"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>
@@ -45,6 +49,13 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Resources\Skins\character-image-sizes.json" LogicalName="AstralParty.Toys.CharacterImageSizes.json" />
     <EmbeddedResource Include="Resources\AudioCatalog.json" LogicalName="AstralParty.Toys.AudioCatalog.json" />
+    <!-- 移动端载荷（给手机装加载器时投放到游戏的 CesiumLoader/ 目录）：引导 DLL + CesiumLoader.Mobile.API + SDK。
+          这是加载器**托管部分**的最小包，不含内置模组 —— 模组由设备上的加载器 / 安卓 App 装。
+          与桌面包同一条路：内嵌的就这一个 zip，版本从包内 loader.json 读，不在代码里写死；
+          CI 打 tag 时按安卓仓库最新 Release 的 version.json → packages.loaderManaged 拉取并覆盖本文件。 -->
+    <EmbeddedResource Include="Resources\ModLoader\cesium-loader-android-managed.zip">
+      <LogicalName>AstralParty.Toys.ModLoader.cesium-loader-android-managed.zip</LogicalName>
+    </EmbeddedResource>
     <!-- 第三方模组「自定义主页背景」（TenkinMori，MIT）：不进加载器内置清单（发布流程会从 CesiumLoader 发布包同步那份清单），
          由「自定义 → 主页背景」第一次设置时装进游戏。说明见 Resources\ThirdPartyMods\HomeBackgroundMod\README.md。 -->
     <EmbeddedResource Include="Resources\ThirdPartyMods\HomeBackgroundMod\*" Exclude="Resources\ThirdPartyMods\HomeBackgroundMod\README.md;Resources\ThirdPartyMods\HomeBackgroundMod\*.patch">
@@ -77,5 +88,15 @@
   <ItemGroup>
     <InternalsVisibleTo Include="AstralParty.Toys.Tests" />
   </ItemGroup>
+
+  <!-- 注入器保持独立 exe 形态，整目录随 publish 输出（含 Mono.Cecil 与 runtimeconfig）。 -->
+  <Target Name="CopyMobilePatcherOutput" AfterTargets="Build">
+    <ItemGroup>
+      <MobilePatcherFiles Include="..\CesiumLoader.Mobile.Patcher\bin\$(Configuration)\net8.0\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(MobilePatcherFiles)"
+          DestinationFiles="@(MobilePatcherFiles->'$(TargetDir)mobile-patcher\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
 </Project>
 

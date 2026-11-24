@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Windows;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
+using AstralParty.Toys.Mobile.Models;
 using AstralParty.Toys.Services;
 
 namespace AstralParty.Toys;
@@ -39,7 +40,10 @@ public partial class HybridWindow
                 {
                     profiles,
                     activeId = profiles.FirstOrDefault(p => p.Active)?.Id,
-                    drives = GameLibraryService.FixedDriveRoots()
+                    drives = GameLibraryService.FixedDriveRoots(),
+                    // M4：标题栏的统一「当前目标」列表（本机档案 + 移动设备）
+                    targets = BuildUnifiedTargets(profiles),
+                    activeTargetId = ActiveTargetId(profiles),
                 };
             });
             if (request == _gameProfilesRequest)
@@ -50,6 +54,74 @@ public partial class HybridWindow
             if (request == _gameProfilesRequest)
                 Post(new { type = "error", message = $"读取游戏位置失败：{ex.Message}" });
         }
+    }
+
+    /// <summary>
+    /// M4：把「本机游戏档案」和「已发现的移动设备」拉平成同一个列表，供标题栏的目标切换器使用。
+    /// 本机条目的 id 前缀 <c>local:</c>，设备条目 id 就是设备目标 id（<c>ios:&lt;udid&gt;</c> / <c>android:&lt;serial&gt;</c>）。
+    /// 设备离线时**保留条目**（<c>online=false</c>），界面据此提示重连，
+    /// 而不是把条目藏掉让用户以为选中的是本机目录。
+    /// </summary>
+    private object[] BuildUnifiedTargets(IReadOnlyList<GameProfileView> profiles)
+    {
+        var activeMobile = GetActiveTargetKind();
+        var targets = new List<object>();
+        foreach (var profile in profiles)
+        {
+            targets.Add(new
+            {
+                id = "local:" + profile.Id,
+                kind = "local",
+                label = profile.Label,
+                subtitle = profile.Directory,
+                editionLabel = profile.EditionLabel,
+                active = activeMobile is null && profile.Active,
+                online = profile.DirectoryExists,
+                valid = profile.Valid,
+            });
+        }
+
+        foreach (var device in MobileDevices.GetTargets())
+        {
+            targets.Add(new
+            {
+                id = device.Id,
+                kind = "mobile",
+                label = device.Label,
+                subtitle = $"{device.Kind} · {device.Serial}" +
+                           (string.IsNullOrEmpty(device.AppId) ? "" : " · " + device.AppId),
+                editionLabel = device.Kind == "ios" ? "iOS" : "Android",
+                active = activeMobile is not null &&
+                         string.Equals(activeMobile.TargetId, device.Id, StringComparison.OrdinalIgnoreCase),
+                online = device.Online,
+                valid = true,
+            });
+        }
+
+        return targets.ToArray();
+    }
+
+    /// <summary>当前目标是不是设备；是设备就返回它，否则 <c>null</c>。</summary>
+    private ActiveTargetState? GetActiveTargetKind()
+    {
+        try
+        {
+            var active = MobileDevices.GetActive();
+            return string.Equals(active.Kind, "mobile", StringComparison.OrdinalIgnoreCase) ? active : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private string ActiveTargetId(IReadOnlyList<GameProfileView> profiles)
+    {
+        var activeMobile = GetActiveTargetKind();
+        if (activeMobile is not null)
+            return activeMobile.TargetId;
+        var local = profiles.FirstOrDefault(p => p.Active);
+        return local is null ? "" : "local:" + local.Id;
     }
 
     /// <summary>给文件夹对话框准备安全的起始目录。

@@ -9,5 +9,7 @@
     <Platform Solution="Release|x64" Project="x64" />
   </Project>
   <Project Path="src/ResourceModEngine/ResourceModEngine.csproj" />
+  <Project Path="src/AstralParty.Toys.Mobile/AstralParty.Toys.Mobile.csproj" />
+  <Project Path="src/CesiumLoader.Mobile.Patcher/CesiumLoader.Mobile.Patcher.csproj" />
   <Project Path="tests/AstralParty.Toys.Tests/AstralParty.Toys.Tests.csproj" />
 </Solution>

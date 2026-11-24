@@ -1,0 +1,638 @@
+/* 移动设备页（#devicesView）专用样式。
+   全部规则都挂在 #devicesView 下，避免影响 v2 的公共组件；
+   配色一律走 v2/gp 设计令牌，并单独给浅色主题留一套语义色。 */
+
+#devicesView {
+  --dv-accent: var(--gp-pink);
+  --dv-accent-soft: var(--v2-pink-soft);
+  --dv-ok: #4ade80;
+  --dv-ok-soft: rgba(74, 222, 128, .14);
+  --dv-warn: #fbbf24;
+  --dv-warn-soft: rgba(251, 191, 36, .14);
+  --dv-ios: #60a5fa;
+  --dv-ios-soft: rgba(96, 165, 250, .35);
+  --dv-android: #4ade80;
+  --dv-android-soft: rgba(74, 222, 128, .35);
+  --dv-radius: 14px;
+  --dv-radius-sm: 10px;
+  /* 次级文字：--gp-text-muted 在深色底上只有 3.4:1，达不到 4.5:1；这里单独给一档更亮的。 */
+  --dv-muted: #98a0b4;
+}
+
+:where(:root[data-theme="light"]) #devicesView {
+  --dv-muted: #5c6172;
+  --dv-ok: #2f7a3d;
+  --dv-ok-soft: rgba(47, 122, 61, .1);
+  --dv-warn: #a16207;
+  --dv-warn-soft: rgba(161, 98, 7, .12);
+  --dv-ios: #1d64c4;
+  --dv-ios-soft: rgba(29, 100, 196, .32);
+  --dv-android: #2f7a3d;
+  --dv-android-soft: rgba(47, 122, 61, .32);
+}
+
+#devicesView .dv-page { padding: 0 2px 24px; }
+
+/* ── 顶部 ───────────────────────────────────────────── */
+#devicesView .dv-top {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+#devicesView .dv-top h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--v2-text);
+  letter-spacing: .2px;
+}
+
+#devicesView .dv-top-sub {
+  margin-top: 3px;
+  font-size: 12.5px;
+  color: var(--dv-muted);
+}
+
+#devicesView .dv-top-actions { margin-left: auto; display: flex; gap: 8px; }
+
+/* ── 设备卡 ─────────────────────────────────────────── */
+#devicesView .dv-devices {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+#devicesView .dv-dev {
+  position: relative;
+  background: var(--v2-panel);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--dv-radius);
+  padding: 14px 14px 12px;
+  transition: border-color .16s ease, transform .16s ease, box-shadow .16s ease;
+}
+
+#devicesView .dv-dev::before {
+  content: "";
+  position: absolute;
+  inset: 12px auto 12px 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: transparent;
+  transition: background .16s ease;
+}
+
+#devicesView .dv-dev:hover { border-color: var(--v2-border-strong); transform: translateY(-1px); }
+#devicesView .dv-dev.is-selected { border-color: var(--dv-accent); box-shadow: 0 0 0 1px var(--dv-accent-soft); }
+#devicesView .dv-dev.is-selected::before { background: var(--dv-accent); }
+#devicesView .dv-dev.is-offline { opacity: .6; }
+#devicesView .dv-dev.is-offline:hover { transform: none; }
+
+#devicesView .dv-dev-head { display: flex; align-items: center; gap: 10px; }
+
+#devicesView .dv-dev-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: var(--v2-panel-2);
+  color: var(--v2-text-soft);
+  flex: none;
+}
+
+#devicesView .dv-dev-icon .mi { width: 21px; height: 21px; }
+
+#devicesView .dv-dev-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--v2-text);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#devicesView .dv-dev-meta {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--dv-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#devicesView .dv-dot {
+  margin-left: auto;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--dv-muted);
+}
+
+#devicesView .dv-dot i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dv-ok);
+  box-shadow: 0 0 0 3px var(--dv-ok-soft);
+}
+
+#devicesView .dv-dev.is-offline .dv-dot i { background: var(--dv-muted); box-shadow: none; }
+
+#devicesView .dv-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 11px 0 0; }
+
+#devicesView .dv-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 21px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid var(--v2-border);
+  background: var(--v2-panel-2);
+  font-size: 11.5px;
+  color: var(--v2-text-soft);
+  white-space: nowrap;
+}
+
+#devicesView .dv-tag .mi { width: 13px; height: 13px; }
+#devicesView .dv-tag.is-ios { color: var(--dv-ios); border-color: var(--dv-ios-soft); }
+#devicesView .dv-tag.is-android { color: var(--dv-android); border-color: var(--dv-android-soft); }
+#devicesView .dv-tag.is-off { color: var(--dv-muted); }
+
+#devicesView .dv-dev-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px solid var(--v2-border);
+}
+
+#devicesView .dv-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 8px;
+  border: 1px solid var(--v2-border);
+  background: var(--v2-panel-2);
+  color: var(--v2-text-soft);
+  font-size: 12.5px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .14s ease, border-color .14s ease, color .14s ease;
+}
+
+#devicesView .dv-btn:hover:not(:disabled) { background: var(--v2-hover); border-color: var(--v2-border-strong); color: var(--v2-text); }
+#devicesView .dv-btn:disabled { opacity: .45; cursor: not-allowed; }
+#devicesView .dv-btn .mi { width: 15px; height: 15px; }
+
+#devicesView .dv-btn.is-primary {
+  background: var(--dv-accent);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+}
+
+#devicesView .dv-btn.is-primary:hover:not(:disabled) { filter: brightness(1.08); color: #fff; }
+#devicesView .dv-btn.is-danger:hover:not(:disabled) { border-color: var(--dv-accent); color: var(--dv-accent); }
+
+/* ── 进度 ───────────────────────────────────────────── */
+#devicesView .dv-busy {
+  background: var(--v2-panel);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--dv-radius);
+  padding: 15px 16px 16px;
+  margin-bottom: 16px;
+}
+
+#devicesView .dv-busy[hidden] { display: none !important; }
+
+#devicesView .dv-busy-head { display: flex; align-items: center; gap: 10px; }
+
+#devicesView .dv-busy-head .mi { width: 18px; height: 18px; color: var(--dv-accent); }
+#devicesView .dv-busy-title { font-size: 13.5px; font-weight: 600; color: var(--v2-text); }
+#devicesView .dv-busy-msg { margin-left: auto; font-size: 12px; color: var(--dv-muted); }
+
+#devicesView .dv-seg { display: flex; gap: 4px; margin: 13px 0 0; }
+
+#devicesView .dv-seg span {
+  height: 4px;
+  flex: 1;
+  border-radius: 99px;
+  background: var(--v2-panel-2);
+  transition: background .2s ease;
+}
+
+#devicesView .dv-seg span.is-done { background: var(--dv-accent); opacity: .45; }
+#devicesView .dv-seg span.is-active { background: var(--dv-accent); }
+
+/* ── 总览 ───────────────────────────────────────────── */
+#devicesView .dv-overview {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: linear-gradient(135deg, var(--v2-panel-2), var(--v2-panel));
+  border: 1px solid var(--v2-border);
+  border-radius: var(--dv-radius);
+  padding: 15px 16px;
+  margin-bottom: 16px;
+}
+
+#devicesView .dv-ov-state { display: flex; align-items: center; gap: 11px; flex: none; }
+
+#devicesView .dv-ov-state .mi { width: 26px; height: 26px; }
+#devicesView .dv-ov-state.is-ok .mi { color: var(--dv-ok); }
+#devicesView .dv-ov-state.is-warn .mi { color: var(--dv-warn); }
+#devicesView .dv-ov-state.is-accent .mi { color: var(--dv-accent); }
+#devicesView .dv-ov-label { font-size: 11.5px; color: var(--dv-muted); }
+#devicesView .dv-ov-value { font-size: 16px; font-weight: 700; color: var(--v2-text); line-height: 1.2; }
+
+#devicesView .dv-stats { display: flex; flex-wrap: wrap; gap: 22px; margin-left: auto; }
+
+#devicesView .dv-stat { min-width: 66px; }
+#devicesView .dv-stat b { display: block; font-size: 16px; font-weight: 700; color: var(--v2-text); line-height: 1.25; }
+#devicesView .dv-stat small { font-size: 11.5px; color: var(--dv-muted); }
+
+/* ── 分区卡 ─────────────────────────────────────────── */
+#devicesView .dv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+#devicesView .dv-card {
+  background: var(--v2-panel);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--dv-radius);
+  overflow: hidden;
+}
+
+#devicesView .dv-card-h {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--v2-border);
+  background: var(--v2-panel-2);
+}
+
+#devicesView .dv-card-h .mi { width: 16px; height: 16px; color: var(--dv-muted); }
+#devicesView .dv-card-h b { font-size: 13px; font-weight: 600; color: var(--v2-text); }
+#devicesView .dv-card-h small { margin-left: auto; font-size: 11.5px; color: var(--dv-muted); }
+
+#devicesView .dv-card-b { padding: 5px 15px 10px; }
+
+#devicesView .dv-kv {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 7px 0;
+  border-bottom: 1px dashed var(--v2-border);
+}
+
+#devicesView .dv-kv:last-child { border-bottom: 0; }
+#devicesView .dv-k { flex: none; width: 76px; font-size: 12px; color: var(--dv-muted); }
+#devicesView .dv-v { flex: 1; min-width: 0; font-size: 12.5px; color: var(--v2-text-soft); text-align: right; word-break: break-word; }
+
+#devicesView .dv-v.dv-mono {
+  font-family: var(--v2-mono);
+  font-size: 11.5px;
+  word-break: break-all;
+  user-select: all;
+}
+
+#devicesView .dv-v.dv-dim { color: var(--dv-muted); }
+#devicesView .dv-v.dv-full { text-align: left; }
+
+#devicesView .dv-yes { color: var(--dv-ok); font-weight: 600; }
+#devicesView .dv-no { color: var(--dv-muted); }
+
+/* ── 徽标 ───────────────────────────────────────────── */
+#devicesView .dv-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 23px;
+  padding: 0 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+#devicesView .dv-pill .mi { width: 14px; height: 14px; }
+#devicesView .dv-pill.is-ok { color: var(--dv-ok); background: var(--dv-ok-soft); }
+#devicesView .dv-pill.is-accent { color: var(--dv-accent); background: var(--dv-accent-soft); }
+#devicesView .dv-pill.is-warn { color: var(--dv-warn); background: var(--dv-warn-soft); }
+#devicesView .dv-pill.is-plain { color: var(--v2-text-soft); background: var(--v2-panel-2); border-color: var(--v2-border); }
+
+/* ── 日志 / 问题 / 空状态 ───────────────────────────── */
+#devicesView .dv-log {
+  max-height: 210px;
+  overflow: auto;
+  margin: 6px 0 4px;
+  padding: 10px 12px;
+  border-radius: var(--dv-radius-sm);
+  background: var(--v2-well);
+  border: 1px solid var(--v2-border);
+  font-family: var(--v2-mono);
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--v2-text-soft);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+#devicesView .dv-issues { padding: 10px 15px 14px; display: grid; gap: 7px; }
+
+#devicesView .dv-issue {
+  display: flex;
+  gap: 8px;
+  padding: 9px 11px;
+  border-radius: var(--dv-radius-sm);
+  background: var(--dv-warn-soft);
+  font-size: 12.5px;
+  color: var(--v2-text-soft);
+  line-height: 1.5;
+}
+
+#devicesView .dv-issue .mi { width: 15px; height: 15px; flex: none; color: var(--dv-warn); margin-top: 1px; }
+
+#devicesView .dv-note {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 13px 15px;
+  border-radius: var(--dv-radius);
+  border: 1px solid var(--v2-border);
+  background: var(--v2-panel);
+  font-size: 12.5px;
+  color: var(--v2-text-soft);
+}
+
+#devicesView .dv-note .mi { width: 16px; height: 16px; flex: none; color: var(--dv-accent); }
+
+#devicesView .dv-empty {
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  padding: 44px 24px;
+  text-align: center;
+  background: var(--v2-panel);
+  border: 1px dashed var(--v2-border-strong);
+  border-radius: var(--dv-radius);
+  color: var(--dv-muted);
+  font-size: 13px;
+}
+
+#devicesView .dv-empty .mi { width: 34px; height: 34px; opacity: .5; }
+
+/* ── 入场动画 ───────────────────────────────────────── */
+#devicesView .dv-in { animation: dv-in .24s ease both; }
+
+@keyframes dv-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #devicesView .dv-in { animation: none; }
+  #devicesView .dv-dev, #devicesView .dv-seg span, #devicesView .dv-btn { transition: none; }
+}
+
+@media (max-width: 560px) {
+  #devicesView .dv-stats { margin-left: 0; gap: 16px; }
+  #devicesView .dv-k { width: 64px; }
+}
+
+/* ── 游戏包候选（渠道服很多，扫出来让玩家选） ────────── */
+#devicesView .dv-pkgs { display: grid; gap: 6px; padding: 9px 15px 13px; }
+
+#devicesView .dv-pkg {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border: 1px solid var(--v2-border);
+  border-radius: var(--dv-radius-sm);
+  background: var(--v2-panel-2);
+}
+
+#devicesView .dv-pkg.is-current { border-color: var(--dv-accent); background: var(--dv-accent-soft); }
+#devicesView .dv-pkg-main { min-width: 0; flex: 1; }
+
+#devicesView .dv-pkg-id {
+  font-family: var(--v2-mono);
+  font-size: 12px;
+  color: var(--v2-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#devicesView .dv-pkg-meta { margin-top: 2px; font-size: 11.5px; color: var(--dv-muted); }
+#devicesView .dv-pkg-actions { flex: none; display: flex; gap: 6px; align-items: center; }
+
+#devicesView .dv-hint {
+  padding: 12px 15px 15px;
+  font-size: 12.5px;
+  color: var(--dv-muted);
+  line-height: 1.6;
+}
+
+/* ── 操作日志（实时渲染 + 同时写文件） ───────────────── */
+#devicesView .dv-logcard { grid-column: 1 / -1; }
+
+#devicesView .dv-log-path {
+  font-family: var(--v2-mono);
+  font-size: 11px;
+  color: var(--dv-muted);
+  user-select: all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 320px;
+}
+
+#devicesView .dv-logcard .dv-card-h { gap: 8px; }
+#devicesView .dv-logcard .dv-card-h .dv-btn { height: 26px; padding: 0 9px; font-size: 12px; }
+#devicesView .dv-logcard .dv-card-h small { margin-left: 0; }
+
+#devicesView .dv-logs {
+  max-height: 340px;
+  overflow: auto;
+  padding: 8px 12px 10px;
+  font-family: var(--v2-mono);
+  font-size: 11.5px;
+  line-height: 1.62;
+}
+
+#devicesView .dv-log-line { display: flex; gap: 8px; }
+#devicesView .dv-log-t { flex: none; color: var(--dv-muted); }
+#devicesView .dv-log-l { flex: none; width: 40px; color: var(--dv-muted); }
+#devicesView .dv-log-m { flex: 1; min-width: 0; color: var(--v2-text-soft); word-break: break-all; }
+#devicesView .dv-log-line.lv-file .dv-log-l { color: var(--dv-ios); }
+
+#devicesView .dv-log-line.lv-warn .dv-log-l,
+#devicesView .dv-log-line.lv-warn .dv-log-m { color: var(--dv-warn); }
+
+#devicesView .dv-log-line.lv-error .dv-log-l,
+#devicesView .dv-log-line.lv-error .dv-log-m { color: var(--dv-accent); }
+
+#devicesView .dv-logs-empty { padding: 16px 15px; font-size: 12.5px; color: var(--dv-muted); }
+
+/* 卡片右上角的操作按钮（扫描 / 打开日志 / 清空）靠右排 */
+#devicesView .dv-card-h .dv-btn { margin-left: auto; }
+#devicesView .dv-card-h small + .dv-btn { margin-left: auto; }
+#devicesView .dv-card-h { flex-wrap: wrap; }
+
+/* 键盘焦点必须看得见（用 :focus-visible，不用 :focus，免得鼠标点击也亮） */
+#devicesView .dv-btn:focus-visible {
+  outline: 2px solid var(--dv-accent);
+  outline-offset: 2px;
+}
+
+/* 确认对话框：原生 <dialog> + showModal()，焦点陷阱与 Esc 由浏览器负责 */
+.dv-dialog {
+  width: min(430px, calc(100vw - 32px));
+  padding: 0;
+  border: 1px solid var(--v2-border, rgba(255, 255, 255, .14));
+  border-radius: 14px;
+  background: var(--v2-panel-solid, #1a1d2e);
+  color: var(--v2-text, #fff);
+  box-shadow: var(--gp-shadow-lg, 0 12px 32px rgba(0, 0, 0, .45));
+}
+
+.dv-dialog::backdrop { background: rgba(0, 0, 0, .55); }
+
+.dv-dialog-h {
+  padding: 17px 18px 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.dv-dialog-b {
+  padding: 9px 18px 17px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--dv-dialog-muted, #98a0b4);
+}
+
+.dv-dialog-f {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 18px 17px;
+}
+
+.dv-dialog-btn {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--v2-border, rgba(255, 255, 255, .14));
+  background: var(--v2-panel-2-solid, #20243a);
+  color: var(--v2-text-soft, #f3f5fa);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.dv-dialog-btn:focus-visible { outline: 2px solid #ff1776; outline-offset: 2px; }
+
+.dv-dialog-btn.is-primary {
+  background: #d6005f;
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dv-dialog { transition: none; }
+}
+
+/* 模组配置弹窗：宽一点，表单两列（字段名 + 控件），说明单独一行 */
+.dv-dialog-wide { width: min(560px, calc(100vw - 32px)); }
+
+.dv-cfg-form { display: grid; gap: 11px; }
+
+.dv-cfg-row {
+  display: grid;
+  grid-template-columns: minmax(110px, 40%) 1fr;
+  gap: 3px 10px;
+  align-items: center;
+}
+
+.dv-cfg-name {
+  font-family: var(--v2-mono, monospace);
+  font-size: 12px;
+  color: var(--v2-text-soft, #f3f5fa);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dv-cfg-row input[type="text"],
+.dv-cfg-row input[type="number"] {
+  width: 100%;
+  height: 30px;
+  padding: 0 9px;
+  border-radius: 7px;
+  border: 1px solid var(--v2-border, rgba(255, 255, 255, .14));
+  background: var(--v2-well, #0d0f18);
+  color: var(--v2-text, #fff);
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.dv-cfg-row input:focus-visible { outline: 2px solid #ff1776; outline-offset: 1px; }
+.dv-cfg-row input[type="checkbox"] { justify-self: start; width: 16px; height: 16px; accent-color: #d6005f; }
+
+.dv-cfg-comment {
+  grid-column: 1 / -1;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--dv-dialog-muted, #98a0b4);
+}
+
+.dv-dialog-b { max-height: min(56vh, 520px); overflow: auto; }
+/* ── M4：标题栏「当前目标」是设备时的提示条 ───────────────
+   挂在 .global-header 后面（不在 #devicesView 内），所以要单独选择器。
+   用 --dv-* 令牌保持一致；浅色主题另给一套。 */
+.dv-target-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--dv-warn, #fbbf24);
+  background: var(--dv-warn-soft, rgba(251, 191, 36, .14));
+  border-bottom: 1px solid var(--v2-border, rgba(255, 255, 255, .14));
+}
+
+.dv-target-notice .mi { width: 1em; height: 1em; flex: none; }
+
+:where(:root[data-theme="light"]) .dv-target-notice {
+  color: #a16207;
+  background: rgba(161, 98, 7, .12);
+}
+
+/* 设备目标下被禁用的入口：除了 disabled 还要看得出来「为什么」 */
+#devicesView .is-target-blocked,
+.is-target-blocked { cursor: not-allowed; opacity: .5; }
+
+/* 标题栏切换器：设备目标用 iOS 蓝点缀，和本机文件夹一眼能分开 */
+.v2-global-game.is-device { border-color: var(--dv-ios-soft, rgba(96, 165, 250, .35)); }
+.v2-global-game.is-device:hover { border-color: var(--dv-ios, #60a5fa); }

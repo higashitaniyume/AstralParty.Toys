@@ -23,6 +23,8 @@ function runPageHook(pageName) {
     window.WorkshopModule?.onShowDetail?.();
   } else if (pageName === 'skins') {
     window.SkinsModule?.onShowSkins?.();
+  } else if (pageName === 'devices') {
+    window.V2Devices?.onShow?.();
   }
 }
 
@@ -48,6 +50,8 @@ function finishPageTransition(target, pageName) {
   AppState.currentPage = pageName;
   AppState.isPageTransitioning = false;
   runPageHook(pageName);
+  // 目标守卫要在页面 hook 之后跑：页面刚渲染出来的入口才在 DOM 里
+  window.TargetGuard?.apply(pageName);
 
   const pending = AppState.pendingPage;
   AppState.pendingPage = null;

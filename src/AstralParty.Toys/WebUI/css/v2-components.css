@@ -442,3 +442,7 @@ html body.v2-has-bg :is(.v2-card, .v2-scheme, .v2-tcard, .v2-slot, .v2-seg, .v2-
 html body .profiles-page { scrollbar-width: auto; scrollbar-color: auto; }
 html body .profiles-page::-webkit-scrollbar { width: 15px; }
 html body .profiles-page::-webkit-scrollbar-thumb { background-clip: padding-box; border: 4px solid transparent; }
+
+/* ---------- 移动设备（检测 / 注入） ---------- */
+#devicesView { display: block; overflow-y: auto; }
+/* 页面自身的样式集中在 css/devices.css（由 v2.css 引入）；这里只保留滚动容器约定。 */

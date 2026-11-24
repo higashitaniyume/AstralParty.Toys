@@ -107,6 +107,42 @@ jobs:
             $modFiles = @($entryNames | Where-Object { $_ -match '^AstralParty_ModLoader/mods/[^/]+/[^/]+' })
             Write-Host "内嵌发布包: CesiumLoader $($manifest.version)（$($entryNames.Count) 个条目，mods 下 $($modFiles.Count) 个文件）"
           } finally { $archive.Dispose() }
+      # 移动端载荷同样只内嵌一个包，来源是安卓仓库最新 Release 的 version.json → packages.loaderManaged：
+      # 版本与 SHA-256 都从那份元数据读，程序集里不写死版本，因此不会出现「包里换了、Toys 还是旧的」。
+      # 用 API 取最新 Release 而不是 releases/latest：安卓的候选版是 pre-release，latest 会取不到。
+      - name: Fetch latest mobile loader payload
+        shell: pwsh
+        run: |
+          $repo = "aspatoys/AstralParty.Toys.Android"
+          $releases = gh api "repos/$repo/releases?per_page=1" | ConvertFrom-Json
+          $tag = $releases[0].tag_name
+          if (-not $tag) { throw "Failed to resolve the latest Android release." }
+
+          $dir = "$env:TEMP/aspatoys-managed"
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          gh release download $tag --repo $repo --pattern 'version.json' --dir $dir --clobber
+
+          $meta = Get-Content "$dir/version.json" -Raw | ConvertFrom-Json
+          $package = $meta.packages.loaderManaged
+          if (-not $package.url) { throw "version.json 里没有 packages.loaderManaged" }
+
+          $zipPath = "$dir/cesium-loader-android-managed.zip"
+          Invoke-WebRequest -Uri $package.url -OutFile $zipPath -UseBasicParsing
+
+          $hash = (Get-FileHash $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($hash -ne $package.sha256) { throw "移动端载荷包校验失败：$hash != $($package.sha256)" }
+
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $archive = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
+          try {
+            $entryNames = @($archive.Entries | ForEach-Object { $_.FullName })
+            foreach ($required in @("loader.json", "bootstrap/CesiumLoader.Mobile.Bootstrap.dll", "sdk/CesiumLoader.SDK.dll")) {
+              if ($entryNames -notcontains $required) { throw "移动端载荷包缺少 $required" }
+            }
+            Write-Host "内嵌移动端载荷: $tag（$($entryNames.Count) 个条目）"
+          } finally { $archive.Dispose() }
+
+          Copy-Item $zipPath "src/AstralParty.Toys/Resources/ModLoader/cesium-loader-android-managed.zip" -Force
 
           Get-ChildItem "src/AstralParty.Toys/Resources/ModLoader" | Select-Object Name, Length
 

@@ -9,6 +9,8 @@
     right: '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>',
     copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>',
     folder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>',
+    // 移动设备目标（标题栏切换器用）：手机外形，和桌面文件夹区分开
+    smartToy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="12" height="20" x="6" y="2" rx="2"/><path d="M11 18h2"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
     dot: '<svg viewBox="0 0 24 24"></svg>',
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>',
@@ -245,42 +247,79 @@
     syncHostTheme();
   }
 
-  // 标题栏全局游戏版本按钮：任何页面都能切换全局游戏目录，与模组页/自定义页的下拉保持同步
-  function openGlobalGameMenu(el) {
-    const list = AppState.gameProfiles?.profiles || [];
-    if (!list.length) {
+  // 标题栏「当前目标」切换器：本机游戏档案 + 已发现的移动设备，一个列表里选。
+  // 本机条目沿用 gameProfileSetActive（会同步模组/变速器状态），设备条目发 targetSetActive；
+  // 两边都由宿主写 active-target.json，然后广播 targetChanged。
+  function openTargetMenu(el) {
+    const targets = AppState.gameProfiles?.targets || [];
+    if (!targets.length) {
       openMenu(el, [
         { label: '添加游戏目录…', icon: ICON.plus, fn: () => post({ type: 'gameProfileBrowse' }) },
         { label: '管理游戏目录…', icon: ICON.sliders, fn: () => showPage('settings') },
       ]);
       return;
     }
+
+    const items = targets.map(target => {
+      const isDevice = target.kind === 'mobile';
+      const offline = target.online === false;
+      return {
+        label: `${isDevice ? (offline ? '[离线] ' : '') : `[${target.editionLabel || ''}] `}${target.label}` +
+               `${target.kind === 'local' && target.online === false ? '（目录不存在）' : ''}`,
+        icon: target.active ? ICON.check : (isDevice ? ICON.smartToy : ICON.folder),
+        fn: () => {
+          if (target.active) return;
+          // 设备离线时也允许选中：页面会提示重连，而不是静默继续改本机目录
+          post({ type: 'targetSetActive', id: target.id });
+        },
+      };
+    });
+
+    const devices = targets.filter(t => t.kind === 'mobile');
     openMenu(el, [
-      ...list.map(p => ({
-        label: `[${p.editionLabel}] ${p.label}${p.directoryExists === false ? '（目录不存在）' : ''}`,
-        icon: p.active ? ICON.check : ICON.dot,
-        fn: () => { if (!p.active) post({ type: 'gameProfileSetActive', id: p.id }); },
-      })),
+      ...items,
       '-',
       { label: '添加游戏目录…', icon: ICON.plus, fn: () => post({ type: 'gameProfileBrowse' }) },
       { label: '管理游戏目录…', icon: ICON.sliders, fn: () => showPage('settings') },
+      ...(devices.length ? [] : [{ label: '连接移动设备…', icon: ICON.smartToy, fn: () => showPage('devices') }]),
     ]);
   }
-  function renderGlobalGame() {
+
+  function renderGlobalTarget() {
     const btn = $('v2GlobalGameBtn');
     if (!btn) return;
-    const list = AppState.gameProfiles?.profiles || [];
-    const cur = list.find(p => p.active);
-    if (!list.length) {
+    const targets = AppState.gameProfiles?.targets || [];
+    const activeId = AppState.gameProfiles?.activeTargetId || '';
+    const cur = targets.find(t => t.id === activeId) || targets.find(t => t.active);
+
+    if (!targets.length) {
       btn.innerHTML = `${ICON.plus}<span class="v2-global-game-text">添加游戏目录…</span>${ICON.down}`;
       btn.title = '还没有添加游戏目录，点击添加';
-    } else if (!cur) {
-      btn.innerHTML = `${ICON.folder}<span class="v2-global-game-text">请选择游戏…</span>${ICON.down}`;
-      btn.title = '点击选择当前游戏目录';
-    } else {
-      btn.innerHTML = `${ICON.folder}<span class="v2-global-game-text">[${esc(cur.editionLabel || '')}] ${esc(cur.label || '')}</span>${ICON.down}`;
-      btn.title = cur.directory || '';
+      return;
     }
+    if (!cur) {
+      btn.innerHTML = `${ICON.folder}<span class="v2-global-game-text">请选择目标…</span>${ICON.down}`;
+      btn.title = '点击选择当前游戏或设备';
+      return;
+    }
+
+    const isDevice = cur.kind === 'mobile';
+    const label = isDevice
+      ? `${cur.online === false ? '（离线）' : ''}${cur.label}`
+      : `[${cur.editionLabel || ''}] ${cur.label}`;
+    btn.classList.toggle('is-device', isDevice);
+    btn.innerHTML = `${isDevice ? ICON.smartToy : ICON.folder}` +
+      `<span class="v2-global-game-text">${esc(label)}</span>${ICON.down}`;
+    btn.title = cur.subtitle || '';
+  }
+
+  // 标题栏全局游戏版本按钮：任何页面都能切换全局游戏目录，与模组页/自定义页的下拉保持同步
+  function openGlobalGameMenu(el) {
+    openTargetMenu(el);
+  }
+
+  function renderGlobalGame() {
+    renderGlobalTarget();
   }
 
   function mountTopbar() {
@@ -818,6 +857,11 @@
         renderGlobalGame();
         break;
       case 'replayLibrary': case 'homeData': case 'steamBypassSync': case 'launchModeSync': break;
+      case 'targetChanged':
+        // 目标切换（本机档案 / 移动设备）：标题栏按钮与设备页以外的页面守卫都跟着走
+        window.TargetGuard?.set(msg.payload);
+        renderGlobalGame();
+        break;
       default: return;
     }
     if (AppState.currentPage === 'home') setTimeout(renderHome);   // 等原版处理完（比如头像、单选框）再画

@@ -18,15 +18,18 @@ public partial class HybridWindow
         try
         {
             using var document = JsonDocument.Parse(e.WebMessageAsJson);
-            var root = document.RootElement;
+            // Clone：下面有异步处理器会在 await 之后才读这些字段，using 一结束原文档就废了；
+            // 直接传 RootElement 会在「点卸载」这类操作里抛 ObjectDisposedException（System.Text.Json）。
+            var root = document.RootElement.Clone();
             var type = root.TryGetProperty("type", out var typeElement) ? typeElement.GetString() : null;
             if (await HandleMyAccountMessageAsync(type, root)) return;
             if (type is "launchGame" or "accountProfileLaunch") StopMyAccount("game_running");
-            if (type is "gameProfileSetActive" or "gameProfileRemove" or "accountProfileActivate") StopMyAccount("game_changed");
+            if (type is "gameProfileSetActive" or "gameProfileRemove" or "accountProfileActivate" or "targetSetActive") StopMyAccount("game_changed");
             if (HandleUiThemeMessage(type, root)) return;   // 新界面：深浅色
             if (HandleBackgroundMessage(type, root)) return;   // 新界面：自定义 → 背景
             if (HandleFontMessage(type, root)) return;         // 新界面：自定义 → 字体
             if (HandleWindowChromeMessage(type, root)) return;   // 新界面自绘标题栏：拖动 / 最小化 / 最大化 / 关闭
+            if (HandleDeviceMessage(type, root)) return;         // 新界面：移动设备（只读检测）
             if ((_loaderRecoveryBusy || _modPackageImportRunning || _modUpdateRunning || _modImportRunning || _modInstallRunning || _modRollbackRunning || _workshopBusy || _modProfileRunning)
                 && type is "modInstall" or "modUninstall" or "modDisableLoader" or "modRestoreLoader"
                     or "modRollbackApply" or "modDownloadUpdate" or "modImportPackage" or "modImport" or "modPickImport" or "modDelete" or "modToggle"

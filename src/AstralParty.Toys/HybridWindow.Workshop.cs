@@ -87,7 +87,7 @@ public partial class HybridWindow
                 page,
                 24);
 
-            var installed = await Task.Run(() => BuildInstalledModMap());
+            var installed = await BuildInstalledModMapForTargetAsync();
             var builtIn = new HashSet<string>(ModManager.BuiltInModIds, StringComparer.OrdinalIgnoreCase);
 
             var covers = await Task.WhenAll(list.Items.Select(item =>
@@ -122,6 +122,7 @@ public partial class HybridWindow
                 payload = new
                 {
                     baseUrl,
+                    target = DescribeWorkshopTarget(),
                     total = list.Total,
                     page = list.Page,
                     pageSize = list.PageSize,
@@ -146,7 +147,7 @@ public partial class HybridWindow
             var detail = await _workshopService.GetDetailAsync(
                 baseUrl, id, _libraryService.Settings.Language);
             var cover = await _workshopService.CacheCoverAsync(baseUrl, detail.Id, detail.CoverUrl);
-            var installed = await Task.Run(() => BuildInstalledModMap());
+            var installed = await BuildInstalledModMapForTargetAsync();
             var builtIn = ModManager.BuiltInModIds.Contains(detail.Id, StringComparer.OrdinalIgnoreCase);
             installed.TryGetValue(detail.Id, out var entry);
 
@@ -156,6 +157,7 @@ public partial class HybridWindow
                 payload = new
                 {
                     baseUrl,
+                    target = DescribeWorkshopTarget(),
                     mod = new
                     {
                         id = detail.Id,
@@ -221,6 +223,65 @@ public partial class HybridWindow
         return map;
     }
 
+    /// <summary>市场页要显示「装到哪里」：本机游戏目录，还是某台设备。</summary>
+    private object DescribeWorkshopTarget()
+    {
+        if (ActiveMobileTarget() is { } device)
+            return new
+            {
+                kind = "mobile",
+                label = device.Label,
+                detail = $"{device.Kind} · {device.Serial}" +
+                         (string.IsNullOrEmpty(device.AppId) ? "" : " · " + device.AppId),
+                online = device.Online,
+            };
+
+        string directory = "";
+        try
+        {
+            directory = _gameLibrary.GetActive()?.Directory ?? "";
+        }
+        catch
+        {
+            // 没有当前档案时只报本机
+        }
+
+        return new { kind = "local", label = "本机", detail = directory, online = true };
+    }
+
+    /// <summary>市场页的「已装版本」要跟着当前目标走：目标是设备时来自设备目录，否则来自本机游戏目录。</summary>
+    private async Task<Dictionary<string, ModEntryInfo>> BuildInstalledModMapForTargetAsync()
+    {
+        if (ActiveOnlineMobileTarget() is not { } device)
+            return await Task.Run(BuildInstalledModMap);
+
+        var map = new Dictionary<string, ModEntryInfo>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            foreach (var mod in await Task.Run(() => MobileInstall.ListModsAsync(device)))
+            {
+                var entry = new ModEntryInfo
+                {
+                    Id = mod.Id,
+                    Name = mod.Name,
+                    DisplayName = mod.Name,
+                    Version = mod.Version,
+                    SdkVersion = mod.SdkVersion,
+                    Description = mod.Description,
+                    Enabled = mod.Enabled,
+                };
+                if (mod.Id.Length > 0) map.TryAdd(mod.Id, entry);
+                if (mod.Name.Length > 0) map.TryAdd(mod.Name, entry);
+            }
+        }
+        catch (Exception ex)
+        {
+            _mobileLog?.Warn($"{device.Label} 上的模组列表读不出来：{ex.Message}");
+        }
+
+        return map;
+    }
+
     // ============================== 安装 ==============================
 
     private async Task HandleWorkshopInstallAsync(string id, string? version)
@@ -242,6 +303,23 @@ public partial class HybridWindow
         if (ModManager.BuiltInModIds.Contains(id, StringComparer.OrdinalIgnoreCase))
         {
             Post(new { type = "workshopResult", payload = new { success = false, id, message = "这是随工具箱内置的模组，不能从市场安装。" } });
+            return;
+        }
+
+        // M6：当前目标是设备时，市场直接装到设备上。下载 / 校验 / 预检与本机同一套，只有最后一步的落点不同。
+        if (ActiveMobileTarget() is { } device)
+        {
+            if (!device.Online)
+            {
+                Post(new
+                {
+                    type = "workshopResult",
+                    payload = new { success = false, id, message = $"{device.Label} 已离线，重新连上后再安装。" }
+                });
+                return;
+            }
+
+            await InstallMarketModToDeviceAsync(device, id, version);
             return;
         }
 
