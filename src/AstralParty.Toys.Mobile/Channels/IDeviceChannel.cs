@@ -67,6 +67,39 @@ public interface IDeviceFileSystem : IAsyncDisposable
 
         return null;
     }
+    /// <summary>Lists one directory level with entry metadata (folder flag, size, modified).</summary>
+    async Task<IReadOnlyList<DeviceDirectoryEntry>> ListDetailedAsync(
+        string path, bool includeHidden = false, CancellationToken cancellationToken = default)
+    {
+        var names = await ListAsync(path, cancellationToken);
+        var entries = new List<DeviceDirectoryEntry>();
+        var prefix = path.TrimEnd('/');
+        foreach (var name in names)
+        {
+            if (name is "." or ".." || (!includeHidden && name.StartsWith('.')))
+                continue;
+            cancellationToken.ThrowIfCancellationRequested();
+            var full = string.IsNullOrEmpty(prefix) ? name : $"{prefix}/{name}";
+            DeviceFileInfo? stat = null;
+            try
+            {
+                stat = await StatAsync(full, cancellationToken);
+            }
+            catch
+            {
+                // Some restricted files refuse stat; still return entry cleanly.
+            }
+            entries.Add(new DeviceDirectoryEntry(
+                name,
+                stat?.IsDirectory ?? false,
+                stat?.Size ?? 0,
+                stat?.Modified));
+        }
+
+        return entries;
+    }
 }
 
-public sealed record DeviceFileInfo(long Size, DateTimeOffset? Modified);
+public sealed record DeviceFileInfo(long Size, DateTimeOffset? Modified, bool IsDirectory = false);
+
+public sealed record DeviceDirectoryEntry(string Name, bool IsDirectory, long Size, DateTimeOffset? Modified);

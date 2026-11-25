@@ -108,6 +108,18 @@ public sealed class MobileInstallService
                 Step("备份原始代码包…", 25, progress);
                 _store.SaveBackup(inner, original);
             }
+            else if (_store.HasBackup(inner))
+            {
+                Step("使用本机原始备份重新注入…", 25, progress);
+                original = _store.ReadBackup(inner);
+                originalSha = Sha(original);
+            }
+            else
+            {
+                return FailWith(
+                    "设备上的代码包已带注入标记且本机无原始备份，不能重复叠加注入。" +
+                    "请先点击「还原」清理缓存并启动一次游戏重新下载原始代码包，然后再执行一键安装或注入。");
+            }
 
             var work = Path.Combine(_store.WorkDirectory, "install", inner);
             var assetsDir = Path.Combine(work, "assets");
@@ -301,18 +313,88 @@ public sealed class MobileInstallService
                 await fileSystem.MakeDirectoriesAsync($"{loaderRoot}/{directory}", cancellationToken);
 
             var probe = loaderRoot + "/.aspatoys-write-probe";
-            await fileSystem.WriteAllBytesAsync(probe, [], cancellationToken);
-            if (await fileSystem.StatAsync(probe, cancellationToken) is null)
-                return FailWith($"加载器目录不可写：{loaderRoot}。游戏先跑过一次时该目录归游戏所有且组无写位，" +
-                            "shell 身份既删不掉也改不了权限——请先清除该游戏的数据，或先在游戏内启动一次让加载器整理目录，再投放。");
-            await fileSystem.DeleteAsync(probe, cancellationToken);
+            var canCreate = false;
+            try
+            {
+                await fileSystem.WriteAllBytesAsync(probe, [], cancellationToken);
+                if (await fileSystem.StatAsync(probe, cancellationToken) is not null)
+                {
+                    canCreate = true;
+                    await fileSystem.DeleteAsync(probe, cancellationToken);
+                }
+            }
+            catch
+            {
+                canCreate = false;
+            }
 
+            var disabledMods = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                foreach (var name in await fileSystem.ListAsync($"{loaderRoot}/disabled_mods", cancellationToken))
+                    disabledMods.Add(name);
+            }
+            catch
+            {
+                // Best effort when disabled_mods is empty or newly created.
+            }
+
+            if (!canCreate)
+            {
+                // 安卓加载器目录若已被游戏进程建出（2750），无法新建文件但可覆盖已有文件；
+                // 若有待投放文件尚不存在，则直接给出明确的权限原因与处理指引。
+                foreach (var file in payload.Files)
+                {
+                    var remote = $"{loaderRoot}/{ResolveDeployRelativePath(file.RelativePath, android, disabledMods)}";
+                    if (await fileSystem.StatAsync(remote, cancellationToken) is null)
+                    {
+                        var reason = await MobileDeviceAccess.DescribeLoaderWritabilityAsync(
+                            fileSystem, loaderRoot, cancellationToken);
+                        return FailWith(reason ?? $"加载器目录不可写：{loaderRoot}");
+                    }
+                }
+            }
+            else
+            {
+                // Clean up obsolete legacy API/bootstrap binaries so old assembly names cannot shadow CesiumLoader.Mobile.*.
+                foreach (var stale in new[]
+                         {
+                             $"{loaderRoot}/CesiumAndroidApi.dll",
+                             $"{loaderRoot}/{MobilePayload.LegacyBootstrapFile}",
+                             $"{loaderRoot}/bootstrap/{MobilePayload.LegacyBootstrapFile}",
+                         })
+                {
+                    try
+                    {
+                        if (await fileSystem.ExistsAsync(stale, cancellationToken))
+                            await fileSystem.DeleteAsync(stale, cancellationToken);
+                    }
+                    catch
+                    {
+                        // Best-effort cleanup of stale binaries.
+                    }
+                }
+            }
+
+            var ensuredDirs = new HashSet<string>(StringComparer.Ordinal);
+            var preservedFiles = new HashSet<string>(StringComparer.Ordinal);
             var written = 0;
             foreach (var file in payload.Files)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var remote = $"{loaderRoot}/{MobilePayload.DeviceRelativePath(file.RelativePath, android)}";
-                await fileSystem.MakeDirectoriesAsync(remote[..remote.LastIndexOf('/')], cancellationToken);
+                var targetRel = ResolveDeployRelativePath(file.RelativePath, android, disabledMods);
+                var remote = $"{loaderRoot}/{targetRel}";
+                if (targetRel.EndsWith("/config.json", StringComparison.OrdinalIgnoreCase) &&
+                    await fileSystem.ExistsAsync(remote, cancellationToken))
+                {
+                    preservedFiles.Add(targetRel);
+                    written++;
+                    continue;
+                }
+
+                var parentDir = remote[..remote.LastIndexOf('/')];
+                if (ensuredDirs.Add(parentDir))
+                    await fileSystem.MakeDirectoriesAsync(parentDir, cancellationToken);
                 await fileSystem.WriteAllBytesAsync(
                     remote, payload.BytesOf(file), cancellationToken);
                 written++;
@@ -358,7 +440,9 @@ public sealed class MobileInstallService
             var mismatched = new List<string>();
             foreach (var file in payload.Files)
             {
-                var relative = MobilePayload.DeviceRelativePath(file.RelativePath, android);
+                var relative = ResolveDeployRelativePath(file.RelativePath, android, disabledMods);
+                if (preservedFiles.Contains(relative))
+                    continue;
                 var info = await fileSystem.StatAsync($"{loaderRoot}/{relative}", cancellationToken);
                 if (info is null || info.Size != file.Length)
                     mismatched.Add($"{file.RelativePath}({info?.Size.ToString() ?? "缺"}/{file.Length})");
@@ -388,10 +472,25 @@ public sealed class MobileInstallService
             return new MobileOperationResult
             {
                 Ok = true,
-                Message = $"已投放 {written} 个文件到 CesiumLoader",
-                Detail = $"version={version} sdk={sdkVersion} skipped={payload.Skipped}",
+                Message = $"已投放 {written} 个文件到 CesiumLoader（内置 {mods.Count} 个模组）",
+                Detail = $"version={version} sdk={sdkVersion} mods={mods.Count} skipped={payload.Skipped}",
             };
         }
+    }
+
+    private static string ResolveDeployRelativePath(
+        string payloadRelative, bool android, HashSet<string> disabledMods)
+    {
+        var normalized = MobilePayload.DeviceRelativePath(payloadRelative, android);
+        if (normalized.StartsWith("mods/", StringComparison.Ordinal))
+        {
+            var rest = normalized["mods/".Length..];
+            var slash = rest.IndexOf('/');
+            var modId = slash >= 0 ? rest[..slash] : rest;
+            if (disabledMods.Contains(modId))
+                return "disabled_mods/" + rest;
+        }
+        return normalized;
     }
 
     /// <summary>
@@ -467,6 +566,63 @@ public sealed class MobileInstallService
                 Ok = true,
                 Message = $"{(enabled ? "已启用" : "已停用")} {modId}",
                 Detail = toFolder,
+            };
+        }
+    }
+
+    /// <summary>
+    /// 删除设备上的某个模组目录（无论位于 <c>mods/</c> 还是 <c>disabled_mods/</c>）。
+    /// 安卓加载器目录若为游戏进程自建（2750），删目录前会返回可理解的权限说明。
+    /// </summary>
+    public async Task<MobileOperationResult> DeleteModAsync(
+        MobileTarget target, string modId, Action<string, int>? progress = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(modId) || modId.Contains('/') || modId.Contains('\\') ||
+            modId.Contains("..") || modId is "." or "..")
+            return FailWith($"模组 ID 非法：{modId}");
+
+        var opened = await OpenRootAsync(target, cancellationToken);
+        if (opened is null)
+            return FailWith("找不到游戏容器（先做一次「检测」确认包名）");
+
+        var (fileSystem, root, _) = opened.Value;
+        await using (fileSystem)
+        {
+            var loaderRoot = root + MobilePaths.LoaderRelative;
+            var targets = new List<(string Folder, string Path)>();
+            foreach (var folder in new[] { MobilePaths.ModsRelative, MobilePaths.DisabledModsRelative })
+            {
+                var path = $"{loaderRoot}/{folder}/{modId}";
+                if (await fileSystem.ExistsAsync(path, cancellationToken))
+                    targets.Add((folder, path));
+            }
+
+            if (targets.Count == 0)
+                return FailWith($"设备上没有模组 {modId}");
+
+            if (await MobileDeviceAccess.DescribeLoaderWritabilityAsync(fileSystem, loaderRoot, cancellationToken)
+                    is { } blocked)
+                return FailWith(blocked);
+
+            var removed = new List<string>();
+            for (var i = 0; i < targets.Count; i++)
+            {
+                var (folder, path) = targets[i];
+                Step($"正在删除 {folder}/{modId}…", 20 + (i + 1) * 70 / targets.Count, progress);
+                await fileSystem.DeleteAsync(path, cancellationToken);
+                if (await fileSystem.ExistsAsync(path, cancellationToken))
+                    return FailWith($"删除后目录仍在：{path}");
+                removed.Add($"{folder}/{modId}");
+            }
+
+            Step($"已删除 {modId}", 100, progress);
+            _log?.Info($"已删除设备上的模组 {modId}（{string.Join(", ", removed)}）");
+            return new MobileOperationResult
+            {
+                Ok = true,
+                Message = $"已删除模组 {modId}",
+                Detail = string.Join(", ", removed),
             };
         }
     }
@@ -747,7 +903,19 @@ public sealed class MobileInstallService
             await fileSystem.DisposeAsync();
             return null;
         }
-        var catalogName = catalogs.OrderDescending().First();
+        string? catalogName = null;
+        DateTimeOffset newest = DateTimeOffset.MinValue;
+        foreach (var name in catalogs)
+        {
+            var stat = await fileSystem.StatAsync(root + MobilePaths.AddressablesRelative + "/" + name, cancellationToken);
+            var modified = stat?.Modified ?? DateTimeOffset.MinValue;
+            if (modified >= newest)
+            {
+                newest = modified;
+                catalogName = name;
+            }
+        }
+        catalogName ??= catalogs[^1];
         var catalogBytes = await fileSystem.ReadAllBytesAsync(
             root + MobilePaths.AddressablesRelative + "/" + catalogName, cancellationToken);
         var catalog = AddressablesCatalog.Parse(catalogBytes);
@@ -760,7 +928,13 @@ public sealed class MobileInstallService
 
         Step("定位代码包…", 15, progress);
         var bundlesRoot = root + MobilePaths.BundlesRelative;
-        var outer = await fileSystem.FindBundleOuterAsync(bundlesRoot, inner, cancellationToken);
+        string? outer = null;
+        if (!string.IsNullOrEmpty(target.BundleOuter) &&
+            await fileSystem.ExistsAsync($"{bundlesRoot}/{target.BundleOuter}/{inner}/__data", cancellationToken))
+        {
+            outer = target.BundleOuter;
+        }
+        outer ??= await fileSystem.FindBundleOuterAsync(bundlesRoot, inner, cancellationToken);
         if (string.IsNullOrEmpty(outer))
         {
             await fileSystem.DisposeAsync();
@@ -796,6 +970,8 @@ public sealed class MobileInstallService
             CreateNoWindow = true,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8,
             WorkingDirectory = Path.GetDirectoryName(_patcherDll) ?? "",
         };
         foreach (var arg in new[]

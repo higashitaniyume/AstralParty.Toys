@@ -1,638 +1,1796 @@
-/* 移动设备页（#devicesView）专用样式。
-   全部规则都挂在 #devicesView 下，避免影响 v2 的公共组件；
-   配色一律走 v2/gp 设计令牌，并单独给浅色主题留一套语义色。 */
+/* ============================================================================
+   Mobile Devices View (AstralParty.Toys v2)
+   Uses exact v2-layout / v2-components / base-reset design tokens across dark,
+   light, and custom wallpaper modes.
+   ============================================================================ */
 
-#devicesView {
-  --dv-accent: var(--gp-pink);
-  --dv-accent-soft: var(--v2-pink-soft);
-  --dv-ok: #4ade80;
-  --dv-ok-soft: rgba(74, 222, 128, .14);
-  --dv-warn: #fbbf24;
-  --dv-warn-soft: rgba(251, 191, 36, .14);
-  --dv-ios: #60a5fa;
-  --dv-ios-soft: rgba(96, 165, 250, .35);
-  --dv-android: #4ade80;
-  --dv-android-soft: rgba(74, 222, 128, .35);
-  --dv-radius: 14px;
-  --dv-radius-sm: 10px;
-  /* 次级文字：--gp-text-muted 在深色底上只有 3.4:1，达不到 4.5:1；这里单独给一档更亮的。 */
-  --dv-muted: #98a0b4;
-}
-
-:where(:root[data-theme="light"]) #devicesView {
-  --dv-muted: #5c6172;
-  --dv-ok: #2f7a3d;
-  --dv-ok-soft: rgba(47, 122, 61, .1);
-  --dv-warn: #a16207;
-  --dv-warn-soft: rgba(161, 98, 7, .12);
-  --dv-ios: #1d64c4;
-  --dv-ios-soft: rgba(29, 100, 196, .32);
-  --dv-android: #2f7a3d;
-  --dv-android-soft: rgba(47, 122, 61, .32);
-}
-
-#devicesView .dv-page { padding: 0 2px 24px; }
-
-/* ── 顶部 ───────────────────────────────────────────── */
-#devicesView .dv-top {
+.dv-page {
   display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
+  flex-direction: column;
+  gap: 14px;
 }
 
-#devicesView .dv-top h1 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--v2-text);
-  letter-spacing: .2px;
-}
-
-#devicesView .dv-top-sub {
-  margin-top: 3px;
-  font-size: 12.5px;
-  color: var(--dv-muted);
-}
-
-#devicesView .dv-top-actions { margin-left: auto; display: flex; gap: 8px; }
-
-/* ── 设备卡 ─────────────────────────────────────────── */
-#devicesView .dv-devices {
+.dv-workbench {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-#devicesView .dv-dev {
-  position: relative;
-  background: var(--v2-panel);
-  border: 1px solid var(--v2-border);
-  border-radius: var(--dv-radius);
-  padding: 14px 14px 12px;
-  transition: border-color .16s ease, transform .16s ease, box-shadow .16s ease;
-}
-
-#devicesView .dv-dev::before {
-  content: "";
-  position: absolute;
-  inset: 12px auto 12px 0;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: transparent;
-  transition: background .16s ease;
-}
-
-#devicesView .dv-dev:hover { border-color: var(--v2-border-strong); transform: translateY(-1px); }
-#devicesView .dv-dev.is-selected { border-color: var(--dv-accent); box-shadow: 0 0 0 1px var(--dv-accent-soft); }
-#devicesView .dv-dev.is-selected::before { background: var(--dv-accent); }
-#devicesView .dv-dev.is-offline { opacity: .6; }
-#devicesView .dv-dev.is-offline:hover { transform: none; }
-
-#devicesView .dv-dev-head { display: flex; align-items: center; gap: 10px; }
-
-#devicesView .dv-dev-icon {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 11px;
-  background: var(--v2-panel-2);
-  color: var(--v2-text-soft);
-  flex: none;
-}
-
-#devicesView .dv-dev-icon .mi { width: 21px; height: 21px; }
-
-#devicesView .dv-dev-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--v2-text);
-  line-height: 1.25;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-#devicesView .dv-dev-meta {
-  margin-top: 2px;
-  font-size: 12px;
-  color: var(--dv-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-#devicesView .dv-dot {
-  margin-left: auto;
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11.5px;
-  color: var(--dv-muted);
-}
-
-#devicesView .dv-dot i {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--dv-ok);
-  box-shadow: 0 0 0 3px var(--dv-ok-soft);
-}
-
-#devicesView .dv-dev.is-offline .dv-dot i { background: var(--dv-muted); box-shadow: none; }
-
-#devicesView .dv-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 11px 0 0; }
-
-#devicesView .dv-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 21px;
-  padding: 0 8px;
-  border-radius: 6px;
-  border: 1px solid var(--v2-border);
-  background: var(--v2-panel-2);
-  font-size: 11.5px;
-  color: var(--v2-text-soft);
-  white-space: nowrap;
-}
-
-#devicesView .dv-tag .mi { width: 13px; height: 13px; }
-#devicesView .dv-tag.is-ios { color: var(--dv-ios); border-color: var(--dv-ios-soft); }
-#devicesView .dv-tag.is-android { color: var(--dv-android); border-color: var(--dv-android-soft); }
-#devicesView .dv-tag.is-off { color: var(--dv-muted); }
-
-#devicesView .dv-dev-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  margin-top: 12px;
-  padding-top: 11px;
-  border-top: 1px solid var(--v2-border);
-}
-
-#devicesView .dv-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 30px;
-  padding: 0 11px;
-  border-radius: 8px;
-  border: 1px solid var(--v2-border);
-  background: var(--v2-panel-2);
-  color: var(--v2-text-soft);
-  font-size: 12.5px;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background .14s ease, border-color .14s ease, color .14s ease;
-}
-
-#devicesView .dv-btn:hover:not(:disabled) { background: var(--v2-hover); border-color: var(--v2-border-strong); color: var(--v2-text); }
-#devicesView .dv-btn:disabled { opacity: .45; cursor: not-allowed; }
-#devicesView .dv-btn .mi { width: 15px; height: 15px; }
-
-#devicesView .dv-btn.is-primary {
-  background: var(--dv-accent);
-  border-color: transparent;
-  color: #fff;
-  font-weight: 600;
-}
-
-#devicesView .dv-btn.is-primary:hover:not(:disabled) { filter: brightness(1.08); color: #fff; }
-#devicesView .dv-btn.is-danger:hover:not(:disabled) { border-color: var(--dv-accent); color: var(--dv-accent); }
-
-/* ── 进度 ───────────────────────────────────────────── */
-#devicesView .dv-busy {
-  background: var(--v2-panel);
-  border: 1px solid var(--v2-border);
-  border-radius: var(--dv-radius);
-  padding: 15px 16px 16px;
-  margin-bottom: 16px;
-}
-
-#devicesView .dv-busy[hidden] { display: none !important; }
-
-#devicesView .dv-busy-head { display: flex; align-items: center; gap: 10px; }
-
-#devicesView .dv-busy-head .mi { width: 18px; height: 18px; color: var(--dv-accent); }
-#devicesView .dv-busy-title { font-size: 13.5px; font-weight: 600; color: var(--v2-text); }
-#devicesView .dv-busy-msg { margin-left: auto; font-size: 12px; color: var(--dv-muted); }
-
-#devicesView .dv-seg { display: flex; gap: 4px; margin: 13px 0 0; }
-
-#devicesView .dv-seg span {
-  height: 4px;
-  flex: 1;
-  border-radius: 99px;
-  background: var(--v2-panel-2);
-  transition: background .2s ease;
-}
-
-#devicesView .dv-seg span.is-done { background: var(--dv-accent); opacity: .45; }
-#devicesView .dv-seg span.is-active { background: var(--dv-accent); }
-
-/* ── 总览 ───────────────────────────────────────────── */
-#devicesView .dv-overview {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  background: linear-gradient(135deg, var(--v2-panel-2), var(--v2-panel));
-  border: 1px solid var(--v2-border);
-  border-radius: var(--dv-radius);
-  padding: 15px 16px;
-  margin-bottom: 16px;
-}
-
-#devicesView .dv-ov-state { display: flex; align-items: center; gap: 11px; flex: none; }
-
-#devicesView .dv-ov-state .mi { width: 26px; height: 26px; }
-#devicesView .dv-ov-state.is-ok .mi { color: var(--dv-ok); }
-#devicesView .dv-ov-state.is-warn .mi { color: var(--dv-warn); }
-#devicesView .dv-ov-state.is-accent .mi { color: var(--dv-accent); }
-#devicesView .dv-ov-label { font-size: 11.5px; color: var(--dv-muted); }
-#devicesView .dv-ov-value { font-size: 16px; font-weight: 700; color: var(--v2-text); line-height: 1.2; }
-
-#devicesView .dv-stats { display: flex; flex-wrap: wrap; gap: 22px; margin-left: auto; }
-
-#devicesView .dv-stat { min-width: 66px; }
-#devicesView .dv-stat b { display: block; font-size: 16px; font-weight: 700; color: var(--v2-text); line-height: 1.25; }
-#devicesView .dv-stat small { font-size: 11.5px; color: var(--dv-muted); }
-
-/* ── 分区卡 ─────────────────────────────────────────── */
-#devicesView .dv-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
   align-items: start;
 }
 
-#devicesView .dv-card {
-  background: var(--v2-panel);
-  border: 1px solid var(--v2-border);
-  border-radius: var(--dv-radius);
-  overflow: hidden;
-}
-
-#devicesView .dv-card-h {
+.dv-main-col {
   display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 12px 15px;
-  border-bottom: 1px solid var(--v2-border);
-  background: var(--v2-panel-2);
-}
-
-#devicesView .dv-card-h .mi { width: 16px; height: 16px; color: var(--dv-muted); }
-#devicesView .dv-card-h b { font-size: 13px; font-weight: 600; color: var(--v2-text); }
-#devicesView .dv-card-h small { margin-left: auto; font-size: 11.5px; color: var(--dv-muted); }
-
-#devicesView .dv-card-b { padding: 5px 15px 10px; }
-
-#devicesView .dv-kv {
-  display: flex;
-  align-items: baseline;
+  flex-direction: column;
   gap: 14px;
-  padding: 7px 0;
-  border-bottom: 1px dashed var(--v2-border);
+  min-width: 0;
 }
 
-#devicesView .dv-kv:last-child { border-bottom: 0; }
-#devicesView .dv-k { flex: none; width: 76px; font-size: 12px; color: var(--dv-muted); }
-#devicesView .dv-v { flex: 1; min-width: 0; font-size: 12.5px; color: var(--v2-text-soft); text-align: right; word-break: break-word; }
-
-#devicesView .dv-v.dv-mono {
-  font-family: var(--v2-mono);
-  font-size: 11.5px;
-  word-break: break-all;
-  user-select: all;
+.dv-side-log {
+  display: none;
 }
 
-#devicesView .dv-v.dv-dim { color: var(--dv-muted); }
-#devicesView .dv-v.dv-full { text-align: left; }
+.dv-side-log-card {
+  gap: 10px;
+}
 
-#devicesView .dv-yes { color: var(--dv-ok); font-weight: 600; }
-#devicesView .dv-no { color: var(--dv-muted); }
+.dv-log-tab {
+  display: inline-flex;
+}
 
-/* ── 徽标 ───────────────────────────────────────────── */
-#devicesView .dv-pill {
+@media (min-width: 1200px) {
+  .dv-page {
+    max-width: 1440px;
+  }
+
+  .dv-workbench {
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 16px;
+  }
+
+  .dv-side-log {
+    display: block;
+    position: sticky;
+    top: 16px;
+  }
+
+  .dv-side-log-card .dv-log {
+    height: calc(100vh - 220px);
+    max-height: none;
+    min-height: 360px;
+  }
+
+  .dv-log-tab {
+    display: none;
+  }
+}
+
+/* ---------- Frosted Header Card (matches #modsView .v2-head over custom wallpaper) ---------- */
+.dv-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--v2-border);
+  background: rgba(var(--v2-panel-rgb), 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.dv-head-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 240px;
+}
+
+.dv-head-experimental {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: 23px;
-  padding: 0 10px;
-  border-radius: 99px;
+  gap: 6px;
+  min-block-size: 26px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(250, 204, 21, 0.36);
+  background: rgba(250, 204, 21, 0.12);
+  color: #facc15;
   font-size: 12px;
   font-weight: 600;
-  border: 1px solid transparent;
-}
-
-#devicesView .dv-pill .mi { width: 14px; height: 14px; }
-#devicesView .dv-pill.is-ok { color: var(--dv-ok); background: var(--dv-ok-soft); }
-#devicesView .dv-pill.is-accent { color: var(--dv-accent); background: var(--dv-accent-soft); }
-#devicesView .dv-pill.is-warn { color: var(--dv-warn); background: var(--dv-warn-soft); }
-#devicesView .dv-pill.is-plain { color: var(--v2-text-soft); background: var(--v2-panel-2); border-color: var(--v2-border); }
-
-/* ── 日志 / 问题 / 空状态 ───────────────────────────── */
-#devicesView .dv-log {
-  max-height: 210px;
-  overflow: auto;
-  margin: 6px 0 4px;
-  padding: 10px 12px;
-  border-radius: var(--dv-radius-sm);
-  background: var(--v2-well);
-  border: 1px solid var(--v2-border);
-  font-family: var(--v2-mono);
-  font-size: 11.5px;
-  line-height: 1.55;
-  color: var(--v2-text-soft);
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-
-#devicesView .dv-issues { padding: 10px 15px 14px; display: grid; gap: 7px; }
-
-#devicesView .dv-issue {
-  display: flex;
-  gap: 8px;
-  padding: 9px 11px;
-  border-radius: var(--dv-radius-sm);
-  background: var(--dv-warn-soft);
-  font-size: 12.5px;
-  color: var(--v2-text-soft);
-  line-height: 1.5;
-}
-
-#devicesView .dv-issue .mi { width: 15px; height: 15px; flex: none; color: var(--dv-warn); margin-top: 1px; }
-
-#devicesView .dv-note {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 13px 15px;
-  border-radius: var(--dv-radius);
-  border: 1px solid var(--v2-border);
-  background: var(--v2-panel);
-  font-size: 12.5px;
-  color: var(--v2-text-soft);
-}
-
-#devicesView .dv-note .mi { width: 16px; height: 16px; flex: none; color: var(--dv-accent); }
-
-#devicesView .dv-empty {
-  display: grid;
-  place-items: center;
-  gap: 10px;
-  padding: 44px 24px;
-  text-align: center;
-  background: var(--v2-panel);
-  border: 1px dashed var(--v2-border-strong);
-  border-radius: var(--dv-radius);
-  color: var(--dv-muted);
-  font-size: 13px;
-}
-
-#devicesView .dv-empty .mi { width: 34px; height: 34px; opacity: .5; }
-
-/* ── 入场动画 ───────────────────────────────────────── */
-#devicesView .dv-in { animation: dv-in .24s ease both; }
-
-@keyframes dv-in {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  #devicesView .dv-in { animation: none; }
-  #devicesView .dv-dev, #devicesView .dv-seg span, #devicesView .dv-btn { transition: none; }
-}
-
-@media (max-width: 560px) {
-  #devicesView .dv-stats { margin-left: 0; gap: 16px; }
-  #devicesView .dv-k { width: 64px; }
-}
-
-/* ── 游戏包候选（渠道服很多，扫出来让玩家选） ────────── */
-#devicesView .dv-pkgs { display: grid; gap: 6px; padding: 9px 15px 13px; }
-
-#devicesView .dv-pkg {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 11px;
-  border: 1px solid var(--v2-border);
-  border-radius: var(--dv-radius-sm);
-  background: var(--v2-panel-2);
-}
-
-#devicesView .dv-pkg.is-current { border-color: var(--dv-accent); background: var(--dv-accent-soft); }
-#devicesView .dv-pkg-main { min-width: 0; flex: 1; }
-
-#devicesView .dv-pkg-id {
-  font-family: var(--v2-mono);
-  font-size: 12px;
-  color: var(--v2-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-#devicesView .dv-pkg-meta { margin-top: 2px; font-size: 11.5px; color: var(--dv-muted); }
-#devicesView .dv-pkg-actions { flex: none; display: flex; gap: 6px; align-items: center; }
-
-#devicesView .dv-hint {
-  padding: 12px 15px 15px;
-  font-size: 12.5px;
-  color: var(--dv-muted);
-  line-height: 1.6;
-}
-
-/* ── 操作日志（实时渲染 + 同时写文件） ───────────────── */
-#devicesView .dv-logcard { grid-column: 1 / -1; }
-
-#devicesView .dv-log-path {
-  font-family: var(--v2-mono);
-  font-size: 11px;
-  color: var(--dv-muted);
-  user-select: all;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 320px;
-}
-
-#devicesView .dv-logcard .dv-card-h { gap: 8px; }
-#devicesView .dv-logcard .dv-card-h .dv-btn { height: 26px; padding: 0 9px; font-size: 12px; }
-#devicesView .dv-logcard .dv-card-h small { margin-left: 0; }
-
-#devicesView .dv-logs {
-  max-height: 340px;
-  overflow: auto;
-  padding: 8px 12px 10px;
-  font-family: var(--v2-mono);
-  font-size: 11.5px;
-  line-height: 1.62;
-}
-
-#devicesView .dv-log-line { display: flex; gap: 8px; }
-#devicesView .dv-log-t { flex: none; color: var(--dv-muted); }
-#devicesView .dv-log-l { flex: none; width: 40px; color: var(--dv-muted); }
-#devicesView .dv-log-m { flex: 1; min-width: 0; color: var(--v2-text-soft); word-break: break-all; }
-#devicesView .dv-log-line.lv-file .dv-log-l { color: var(--dv-ios); }
-
-#devicesView .dv-log-line.lv-warn .dv-log-l,
-#devicesView .dv-log-line.lv-warn .dv-log-m { color: var(--dv-warn); }
-
-#devicesView .dv-log-line.lv-error .dv-log-l,
-#devicesView .dv-log-line.lv-error .dv-log-m { color: var(--dv-accent); }
-
-#devicesView .dv-logs-empty { padding: 16px 15px; font-size: 12.5px; color: var(--dv-muted); }
-
-/* 卡片右上角的操作按钮（扫描 / 打开日志 / 清空）靠右排 */
-#devicesView .dv-card-h .dv-btn { margin-left: auto; }
-#devicesView .dv-card-h small + .dv-btn { margin-left: auto; }
-#devicesView .dv-card-h { flex-wrap: wrap; }
-
-/* 键盘焦点必须看得见（用 :focus-visible，不用 :focus，免得鼠标点击也亮） */
-#devicesView .dv-btn:focus-visible {
-  outline: 2px solid var(--dv-accent);
-  outline-offset: 2px;
-}
-
-/* 确认对话框：原生 <dialog> + showModal()，焦点陷阱与 Esc 由浏览器负责 */
-.dv-dialog {
-  width: min(430px, calc(100vw - 32px));
-  padding: 0;
-  border: 1px solid var(--v2-border, rgba(255, 255, 255, .14));
-  border-radius: 14px;
-  background: var(--v2-panel-solid, #1a1d2e);
-  color: var(--v2-text, #fff);
-  box-shadow: var(--gp-shadow-lg, 0 12px 32px rgba(0, 0, 0, .45));
-}
-
-.dv-dialog::backdrop { background: rgba(0, 0, 0, .55); }
-
-.dv-dialog-h {
-  padding: 17px 18px 0;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.dv-dialog-b {
-  padding: 9px 18px 17px;
-  font-size: 13px;
-  line-height: 1.65;
-  color: var(--dv-dialog-muted, #98a0b4);
-}
-
-.dv-dialog-f {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 0 18px 17px;
-}
-
-.dv-dialog-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 32px;
-  padding: 0 14px;
-  border-radius: 8px;
-  border: 1px solid var(--v2-border, rgba(255, 255, 255, .14));
-  background: var(--v2-panel-2-solid, #20243a);
-  color: var(--v2-text-soft, #f3f5fa);
-  font: inherit;
-  font-size: 13px;
   cursor: pointer;
 }
 
-.dv-dialog-btn:focus-visible { outline: 2px solid #ff1776; outline-offset: 2px; }
-
-.dv-dialog-btn.is-primary {
-  background: #d6005f;
-  border-color: transparent;
-  color: #fff;
-  font-weight: 600;
+.dv-head-experimental:hover {
+  background: rgba(250, 204, 21, 0.2);
+  border-color: rgba(250, 204, 21, 0.55);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .dv-dialog { transition: none; }
+.dv-head-experimental:focus-visible {
+  outline: 2px solid #facc15;
+  outline-offset: 2px;
 }
 
-/* 模组配置弹窗：宽一点，表单两列（字段名 + 控件），说明单独一行 */
-.dv-dialog-wide { width: min(560px, calc(100vw - 32px)); }
+html[data-theme="light"] .dv-head-experimental {
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(217, 119, 6, 0.36);
+}
 
-.dv-cfg-form { display: grid; gap: 11px; }
+.dv-head-text h1 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--v2-text);
+}
 
-.dv-cfg-row {
-  display: grid;
-  grid-template-columns: minmax(110px, 40%) 1fr;
-  gap: 3px 10px;
+.dv-head-sub {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--gp-text-muted);
+}
+
+.dv-head-actions {
+  display: flex;
   align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.dv-cfg-name {
-  font-family: var(--v2-mono, monospace);
+/* ---------- Stroke Icon Helper (separate from .mi fill:currentColor Material Symbols) ---------- */
+.dv-ico {
+  width: 1em;
+  height: 1em;
+  fill: none;
+  flex: 0 0 auto;
+  display: inline-block;
+  vertical-align: -0.14em;
+}
+
+/* ---------- Topbar Device Indicator & Global Guard Banner ---------- */
+.v2-global-game.is-device {
+  border-color: rgba(255, 23, 118, 0.45);
+  background: var(--v2-pink-soft);
+}
+
+.dv-target-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-left: var(--v2-side);
+  padding: 8px 20px;
+  background: rgba(var(--v2-panel-rgb), 0.92);
+  border-bottom: 1px solid rgba(255, 23, 118, 0.28);
+  color: var(--v2-text-soft);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.dv-target-notice-body {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dv-target-notice-body svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  color: var(--gp-pink);
+}
+
+.dv-target-notice-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.dv-target-notice-btn {
+  height: 26px;
+  padding: 0 10px;
   font-size: 12px;
-  color: var(--v2-text-soft, #f3f5fa);
+}
+
+.is-target-blocked {
+  opacity: 0.42 !important;
+  cursor: not-allowed !important;
+}
+
+/* ---------- Device Selector Strip ---------- */
+.dv-device-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+}
+
+.dv-device {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 13px 15px;
+  border-radius: 12px;
+  background: rgba(var(--v2-panel-rgb), 0.84);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--v2-border);
+  text-align: left;
+  color: var(--v2-text-soft);
+  cursor: pointer;
+  transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
+}
+
+.dv-device:hover:not(:disabled) {
+  border-color: var(--v2-border-strong);
+  background: rgba(var(--v2-panel-2-rgb), 0.9);
+}
+
+.dv-device:focus-visible {
+  outline: 2px solid var(--gp-pink);
+  outline-offset: 2px;
+}
+
+.dv-device.is-selected {
+  border-color: var(--gp-pink);
+  background: linear-gradient(155deg, rgba(255, 23, 118, 0.14), rgba(var(--v2-panel-rgb), 0.94));
+  box-shadow: 0 0 0 1px rgba(255, 23, 118, 0.28), 0 8px 22px rgba(0, 0, 0, 0.22);
+}
+
+.dv-device.is-offline {
+  opacity: 0.78;
+}
+
+.dv-device-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.dv-device-id {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.dv-device-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  background: var(--v2-pink-soft);
+  border: 1px solid rgba(255, 23, 118, 0.28);
+  color: var(--gp-pink);
+}
+
+.dv-device-icon.is-android {
+  background: rgba(52, 211, 153, 0.14);
+  border-color: rgba(52, 211, 153, 0.3);
+  color: #34d399;
+}
+
+html[data-theme="light"] .dv-device-icon.is-android {
+  color: #059669;
+}
+
+.dv-device-icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.dv-device-titles {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dv-device-name {
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--v2-text);
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.dv-cfg-row input[type="text"],
-.dv-cfg-row input[type="number"] {
-  width: 100%;
-  height: 30px;
-  padding: 0 9px;
-  border-radius: 7px;
-  border: 1px solid var(--v2-border, rgba(255, 255, 255, .14));
-  background: var(--v2-well, #0d0f18);
-  color: var(--v2-text, #fff);
-  font: inherit;
-  font-size: 12.5px;
-}
-
-.dv-cfg-row input:focus-visible { outline: 2px solid #ff1776; outline-offset: 1px; }
-.dv-cfg-row input[type="checkbox"] { justify-self: start; width: 16px; height: 16px; accent-color: #d6005f; }
-
-.dv-cfg-comment {
-  grid-column: 1 / -1;
+.dv-device-model {
   font-size: 11.5px;
-  line-height: 1.5;
-  color: var(--dv-dialog-muted, #98a0b4);
+  color: var(--gp-text-muted);
+  font-family: var(--v2-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.dv-dialog-b { max-height: min(56vh, 520px); overflow: auto; }
-/* ── M4：标题栏「当前目标」是设备时的提示条 ───────────────
-   挂在 .global-header 后面（不在 #devicesView 内），所以要单独选择器。
-   用 --dv-* 令牌保持一致；浅色主题另给一套。 */
-.dv-target-notice {
+.dv-device-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.dv-device-badges {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Empty State Card ---------- */
+.dv-empty-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 40px 24px;
+  border-radius: 14px;
+  background: rgba(var(--v2-panel-rgb), 0.84);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px dashed var(--v2-border-strong);
+  gap: 12px;
+}
+
+.dv-empty-art {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: var(--v2-pink-soft);
+  color: var(--gp-pink);
+}
+
+.dv-empty-art svg {
+  width: 26px;
+  height: 26px;
+}
+
+.dv-empty-title {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 650;
+  color: var(--v2-text);
+}
+
+.dv-empty-desc {
+  margin: 0;
+  max-width: 480px;
+  font-size: 13px;
+  color: var(--gp-text-sub);
+  line-height: 1.55;
+}
+
+.dv-empty-actions {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px;
+  margin-top: 4px;
+}
+
+/* ---------- Pills & Semantic Status Badges ---------- */
+.dv-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 550;
+  line-height: 1.45;
+  background: rgba(var(--v2-panel-2-rgb), 0.9);
+  border: 1px solid var(--v2-border);
+  color: var(--gp-text-sub);
+  white-space: nowrap;
+}
+
+.dv-pill svg {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+}
+
+.dv-pill.ok {
+  background: rgba(52, 211, 153, 0.14);
+  border-color: rgba(52, 211, 153, 0.36);
+  color: #34d399;
+}
+
+.dv-pill.warn {
+  background: rgba(250, 204, 21, 0.14);
+  border-color: rgba(250, 204, 21, 0.36);
+  color: var(--gp-gold);
+}
+
+.dv-pill.bad {
+  background: rgba(244, 63, 94, 0.14);
+  border-color: rgba(244, 63, 94, 0.36);
+  color: #fb7185;
+}
+
+.dv-pill.accent {
+  background: var(--v2-pink-soft);
+  border-color: rgba(255, 23, 118, 0.4);
+  color: var(--gp-pink);
+}
+
+html[data-theme="light"] .dv-pill.ok { color: #059669; }
+html[data-theme="light"] .dv-pill.warn { color: #b45309; }
+html[data-theme="light"] .dv-pill.bad { color: #dc2626; }
+
+/* ---------- Workspace Hero & Action Deck ---------- */
+.dv-hero-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  margin-bottom: 0;
+  background: rgba(var(--v2-panel-rgb), 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.dv-hero-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dv-hero-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1 1 280px;
+}
+
+.dv-hero-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--v2-text);
+}
+
+.dv-hero-sub {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--gp-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dv-hero-sub code {
+  color: var(--v2-text-soft);
+  font-family: var(--v2-mono);
   font-size: 12px;
+}
+
+.dv-serial-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--v2-border);
+  background: rgba(var(--v2-panel-2-rgb), 0.9);
+  color: var(--gp-text-sub);
+  font-family: var(--v2-mono);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.dv-serial-btn:hover {
+  border-color: var(--v2-border-strong);
+  color: var(--v2-text);
+}
+
+.dv-hero-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.dv-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 12px;
+  border-top: 1px solid var(--v2-border);
+}
+
+.dv-actions-danger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.dv-danger-btn {
+  border: 1px solid rgba(244, 63, 94, 0.36);
+  background: rgba(244, 63, 94, 0.08);
+}
+
+.dv-danger-btn:hover:not(:disabled) {
+  background: rgba(244, 63, 94, 0.16);
+}
+
+.dv-payload-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 9px 13px;
+  border-radius: 10px;
+  background: rgba(var(--v2-panel-2-rgb), 0.72);
+  border: 1px solid var(--v2-border);
+  font-size: 12.5px;
+}
+
+.dv-payload-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.dv-payload-path {
+  font-family: var(--v2-mono);
+  font-size: 11.5px;
+  color: var(--gp-text-muted);
+  word-break: break-all;
+}
+
+/* ---------- Progress Bar (preserves dev-busy contract) ---------- */
+.dev-busy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(255, 23, 118, 0.1);
+  border: 1px solid rgba(255, 23, 118, 0.3);
+}
+
+.dv-busy-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--v2-text);
+}
+
+.dv-busy-pct {
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  color: var(--gp-pink);
+}
+
+.dv-busy-track {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+html[data-theme="light"] .dv-busy-track {
+  background: rgba(31, 34, 51, 0.12);
+}
+
+.dv-busy-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--gp-pink), #fb7185);
+  transition: width 180ms ease-out;
+}
+
+.dv-busy-fill.is-indeterminate {
+  width: 40% !important;
+  animation: dvIndeterminate 1.2s ease-in-out infinite;
+}
+
+@keyframes dvIndeterminate {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(120%); }
+  100% { transform: translateX(260%); }
+}
+
+/* ---------- Alerts & Feedback ---------- */
+.dv-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  border: 1px solid var(--v2-border);
+  background: rgba(var(--v2-panel-2-rgb), 0.78);
+  color: var(--v2-text-soft);
+}
+
+.dv-alert svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.dv-alert.ok {
+  background: rgba(52, 211, 153, 0.12);
+  border-color: rgba(52, 211, 153, 0.32);
+}
+.dv-alert.ok svg { color: #34d399; }
+
+.dv-alert.warn {
+  background: rgba(250, 204, 21, 0.11);
+  border-color: rgba(250, 204, 21, 0.34);
+}
+.dv-alert.warn svg { color: var(--gp-gold); }
+
+.dv-alert.bad {
+  background: rgba(244, 63, 94, 0.12);
+  border-color: rgba(244, 63, 94, 0.34);
+}
+.dv-alert.bad svg { color: #fb7185; }
+
+html[data-theme="light"] .dv-alert.ok svg { color: #059669; }
+html[data-theme="light"] .dv-alert.warn svg { color: #b45309; }
+html[data-theme="light"] .dv-alert.bad svg { color: #dc2626; }
+
+.dv-alert-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.dv-alert-detail {
+  font-size: 11.5px;
+  color: var(--gp-text-muted);
+  font-family: var(--v2-mono);
+  word-break: break-all;
+}
+
+/* ---------- Workspace Tabs ---------- */
+.dv-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--v2-border);
+  background: rgba(var(--v2-panel-rgb), 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  overflow-x: auto;
+  scrollbar-width: auto;
+}
+
+.dv-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  padding: 8px 13px;
+  border: 0;
+  background: transparent;
+  color: var(--gp-text-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+  border-radius: 7px;
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+.dv-tab svg {
+  width: 15px;
+  height: 15px;
+}
+
+.dv-tab:hover:not(:disabled) {
+  color: var(--v2-text);
+  background: var(--v2-hover);
+}
+
+.dv-tab:focus-visible {
+  outline: 2px solid var(--gp-pink);
+  outline-offset: -2px;
+}
+
+.dv-tab[aria-selected="true"] {
+  color: var(--v2-text);
+  background: rgba(var(--v2-panel-2-rgb), 0.95);
+}
+
+.dv-tab[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  inset: auto 10px 0;
+  border-block-end: 2.5px solid var(--gp-pink);
+}
+
+.dv-tab-count {
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(var(--v2-panel-2-rgb), 0.9);
+  border: 1px solid var(--v2-border);
+  color: var(--gp-text-sub);
+}
+
+.dv-tabpanel {
+  padding-top: 2px;
+}
+
+.dv-tabpanel[hidden] {
+  display: none;
+}
+
+/* ---------- Bento Diagnostics Grid ---------- */
+.dv-bento {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 12px;
+}
+
+.dv-card {
+  padding: 16px 18px;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(var(--v2-panel-rgb), 0.86);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.dv-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--v2-border);
+}
+
+.dv-card-title {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13.5px;
+  font-weight: 650;
+  color: var(--v2-text);
+}
+
+.dv-card-title svg {
+  width: 16px;
+  height: 16px;
+  color: var(--gp-pink);
+}
+
+.dv-card-wide {
+  grid-column: 1 / -1;
+}
+
+.dv-kv-list {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px 14px;
+  font-size: 12.5px;
+}
+
+.dv-kv-k {
+  color: var(--gp-text-muted);
+  white-space: nowrap;
+}
+
+.dv-kv-v {
+  color: var(--v2-text-soft);
+  word-break: break-all;
+  font-variant-numeric: tabular-nums;
+}
+
+.dv-kv-v.mono {
+  font-family: var(--v2-mono);
+  font-size: 12px;
+}
+
+.dv-issues-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+}
+
+/* ---------- Packages Panel & Manual Input Form ---------- */
+.dv-panel-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dv-panel-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dv-manual-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 13px 15px;
+  border-radius: 10px;
+  background: rgba(var(--v2-panel-2-rgb), 0.72);
+  border: 1px solid var(--v2-border);
+}
+
+.dv-manual-field {
+  flex: 1 1 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.dv-manual-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--v2-text);
+}
+
+.dv-manual-hint {
+  font-size: 11.5px;
+  color: var(--gp-text-muted);
+}
+
+.dv-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 11px;
+  border-radius: 8px;
+  border: 1px solid var(--v2-border-strong);
+  background: var(--v2-well);
+  color: var(--v2-text);
+  font: inherit;
+  font-size: 13px;
+}
+
+html[data-theme="light"] .dv-input {
+  background: var(--v2-panel-solid);
+}
+
+.dv-input:focus-visible {
+  outline: 2px solid var(--gp-pink);
+  outline-offset: 1px;
+}
+
+.dv-pkg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+
+.dv-pkg-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--v2-border);
+  background: rgba(var(--v2-panel-2-rgb), 0.76);
+}
+
+.dv-pkg-item.is-current {
+  border-color: var(--gp-pink);
+  background: var(--v2-pink-soft);
+}
+
+.dv-pkg-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dv-pkg-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--v2-text);
+}
+
+.dv-pkg-id {
+  font-size: 11.5px;
+  color: var(--gp-text-sub);
+  font-family: var(--v2-mono);
+  word-break: break-all;
+}
+
+/* ---------- Mods & Skins Lists ---------- */
+.dv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dv-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--v2-border);
+  background: rgba(var(--v2-panel-2-rgb), 0.76);
+  transition: border-color 120ms ease;
+}
+
+.dv-item-row:hover {
+  border-color: var(--v2-border-strong);
+}
+
+.dv-item-row.is-disabled {
+  opacity: 0.68;
+}
+
+.dv-item-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.dv-item-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--v2-text);
+}
+
+.dv-item-desc {
+  font-size: 12px;
+  color: var(--gp-text-sub);
+  line-height: 1.45;
+}
+
+.dv-item-sub {
+  font-size: 11px;
+  color: var(--gp-text-muted);
+  font-family: var(--v2-mono);
+}
+
+.dv-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.dv-muted {
+  margin: 0;
+  padding: 14px 4px;
+  font-size: 13px;
+  color: var(--gp-text-muted);
+}
+
+/* ---------- Config Modal Form ---------- */
+.dv-config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 58vh;
+  overflow-y: auto;
+  padding: 2px 4px 2px 2px;
+}
+
+.dv-config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(var(--v2-panel-2-rgb), 0.78);
+  border: 1px solid var(--v2-border);
+}
+
+.dv-config-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dv-config-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--v2-text);
+  font-family: var(--v2-mono);
+}
+
+.dv-config-comment {
+  font-size: 12px;
+  color: var(--gp-text-muted);
+  line-height: 1.4;
+}
+
+.dv-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--gp-pink);
+  cursor: pointer;
+}
+
+/* ---------- Live Operation Log Terminal ---------- */
+.dv-log {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--v2-well);
+  border: 1px solid var(--v2-border);
+  color: var(--v2-text-soft);
+  font-family: var(--v2-mono);
+  font-size: 11.5px;
+  line-height: 1.55;
+  max-height: 360px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dv-log-line {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+  word-break: break-word;
+}
+
+.dv-log-time {
+  color: var(--gp-text-muted);
+  flex-shrink: 0;
+}
+
+.dv-log-lvl {
+  font-weight: 600;
+  flex-shrink: 0;
+  color: var(--gp-blue);
+}
+
+.dv-log-line.is-error .dv-log-lvl,
+.dv-log-line.is-error .dv-log-msg {
+  color: #fca5a5;
+}
+
+.dv-log-line.is-warn .dv-log-lvl,
+.dv-log-line.is-warn .dv-log-msg {
+  color: var(--gp-gold);
+}
+
+.dv-log-line.is-file .dv-log-lvl {
+  color: #6ee7b7;
+}
+
+html[data-theme="light"] .dv-log-lvl { color: #0284c7; }
+html[data-theme="light"] .dv-log-line.is-error .dv-log-lvl,
+html[data-theme="light"] .dv-log-line.is-error .dv-log-msg { color: #dc2626; }
+html[data-theme="light"] .dv-log-line.is-warn .dv-log-lvl,
+html[data-theme="light"] .dv-log-line.is-warn .dv-log-msg { color: #b45309; }
+html[data-theme="light"] .dv-log-line.is-file .dv-log-lvl { color: #059669; }
+
+/* ---------- Prompt Modal Form ---------- */
+.dv-prompt-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ---------- Device File Explorer ---------- */
+.dv-file-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dv-file-nav-btns {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.dv-file-crumbs {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
+  padding: 5px 10px;
+  border-radius: 9px;
+  background: var(--v2-well);
+  border: 1px solid var(--v2-border);
+  font-family: var(--v2-mono);
+  font-size: 12px;
+}
+
+.dv-file-crumb {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--v2-text-soft);
+  font: inherit;
+  padding: 2px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.dv-file-crumb:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--v2-text);
+}
+
+html[data-theme="light"] .dv-file-crumb:hover {
+  background: rgba(31, 34, 51, 0.08);
+}
+
+.dv-file-crumb.is-cur {
+  color: var(--gp-pink);
+  font-weight: 600;
+}
+
+.dv-file-sep {
+  color: var(--gp-text-muted);
+  user-select: none;
+}
+
+.dv-file-hidden-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--v2-text-soft);
+  cursor: pointer;
+  user-select: none;
+}
+
+.dv-file-shortcuts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.dv-file-chip {
+  appearance: none;
+  border: 1px solid var(--v2-border);
+  background: rgba(var(--v2-panel-2-rgb), 0.72);
+  color: var(--v2-text-soft);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 11.5px;
+  font-family: var(--v2-mono);
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.dv-file-chip:hover:not(:disabled) {
+  border-color: var(--gp-pink);
+  color: var(--v2-text);
+}
+
+.dv-file-chip.is-cur {
+  background: rgba(255, 23, 118, 0.14);
+  border-color: rgba(255, 23, 118, 0.42);
+  color: var(--gp-pink);
+}
+
+.dv-file-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.dv-actions-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--v2-border);
+  margin: 0 2px;
+}
+
+.dv-file-table {
+  border: 1px solid var(--v2-border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(var(--v2-panel-2-rgb), 0.56);
+}
+
+.dv-file-thead,
+.dv-file-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px 152px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+}
+
+.dv-file-thead {
+  background: rgba(var(--v2-panel-2-rgb), 0.92);
+  border-bottom: 1px solid var(--v2-border);
+  padding: 0 12px;
+}
+
+.dv-file-th {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--gp-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 8px 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.dv-file-th:hover {
+  color: var(--v2-text);
+}
+
+.dv-file-tbody {
+  height: 400px;
+  max-height: 400px;
+  overflow-y: auto;
+  position: relative;
+}
+
+.dv-file-spacer {
+  width: 100%;
+  pointer-events: none;
+}
+
+.dv-file-row {
+  appearance: none;
+  border: none;
+  border-bottom: 1px solid var(--v2-border);
+  background: transparent;
+  color: var(--v2-text);
+  padding: 0 12px;
+  height: 38px;
+  box-sizing: border-box;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.dv-file-rename-input {
+  flex: 1 1 auto;
+  min-width: 80px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid var(--gp-pink);
+  background: var(--v2-well);
+  color: var(--v2-text);
+  font-family: inherit;
+  font-size: 12.5px;
+  outline: none;
+}
+
+.dv-file-count {
+  flex: 0 0 auto;
+}
+
+.dv-file-tip {
+  font-size: 12px;
+  color: var(--gp-text-muted);
+}
+
+.dv-file-row:last-child {
+  border-bottom: none;
+}
+
+.dv-file-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+html[data-theme="light"] .dv-file-row:hover {
+  background: rgba(31, 34, 51, 0.04);
+}
+
+.dv-file-row.is-selected {
+  background: rgba(255, 23, 118, 0.14);
+}
+
+.dv-file-row:focus-visible,
+.dv-file-crumb:focus-visible,
+.dv-file-chip:focus-visible,
+.dv-file-th:focus-visible {
+  outline: 2px solid var(--gp-pink);
+  outline-offset: -2px;
+}
+
+.dv-file-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dv-file-name > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dv-file-name .dv-ico {
+  flex: 0 0 auto;
+  color: var(--gp-blue);
+}
+
+.dv-file-row[data-dev-file-dir="1"] .dv-file-name .dv-ico {
+  color: var(--gp-gold);
+}
+
+.dv-file-col-size,
+.dv-file-col-time {
+  font-family: var(--v2-mono);
+  font-size: 11.5px;
+  color: var(--gp-text-muted);
+  white-space: nowrap;
+  text-align: right;
+}
+
+.dv-file-th.dv-file-col-size,
+.dv-file-th.dv-file-col-time {
+  text-align: right;
+}
+
+.dv-file-pre {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--v2-well);
+  border: 1px solid var(--v2-border);
+  color: var(--v2-text-soft);
+  font-family: var(--v2-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  max-height: 58vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ---------- Floating Corner Progress HUD & Toast ---------- */
+.dv-corner-stack {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 950;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: none;
+  max-width: min(420px, calc(100vw - 44px));
+}
+
+.dv-progress-hud,
+.dv-corner-toast {
+  pointer-events: auto;
+  width: min(380px, calc(100vw - 44px));
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: rgba(20, 22, 36, 0.94);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 23, 118, 0.42);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  color: var(--v2-text);
+}
+
+html[data-theme="light"] .dv-progress-hud,
+html[data-theme="light"] .dv-corner-toast {
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 32px rgba(31, 34, 51, 0.16);
+}
+
+.dv-progress-hud {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dv-progress-hud-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12.5px;
+}
+
+.dv-progress-hud-title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dv-progress-hud-pct {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--gp-pink);
+  flex: 0 0 auto;
+}
+
+.dv-progress-hud-msg {
+  font-size: 12px;
+  color: var(--gp-text-muted);
+}
+
+.dv-corner-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-color: var(--v2-border-strong);
+}
+
+.dv-corner-toast.is-ok {
+  border-color: rgba(52, 211, 153, 0.55);
+}
+
+.dv-corner-toast.is-ok .dv-ico {
+  color: #34d399;
+}
+
+.dv-corner-toast.is-bad {
+  border-color: rgba(244, 63, 94, 0.55);
+}
+
+.dv-corner-toast.is-bad .dv-ico {
+  color: #fb7185;
+}
+
+html[data-theme="light"] .dv-corner-toast.is-ok .dv-ico { color: #059669; }
+html[data-theme="light"] .dv-corner-toast.is-bad .dv-ico { color: #dc2626; }
+
+.dv-corner-toast-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dv-corner-toast-msg {
+  font-size: 12.5px;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.dv-corner-toast-detail {
+  font-family: var(--v2-mono);
+  font-size: 11.5px;
+  color: var(--gp-text-muted);
+  word-break: break-word;
+}
+
+.dv-corner-toast-close {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--gp-text-muted);
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 4px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.dv-corner-toast-close:hover {
+  color: var(--v2-text);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ---------- Environment Diagnostics Card ---------- */
+.dv-env-card {
+  gap: 10px;
+}
+
+.dv-env-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dv-env-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dv-env-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.dv-env-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 10px;
+}
+
+.dv-env-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(var(--v2-panel-2-rgb), 0.72);
+  border: 1px solid var(--v2-border);
+}
+
+.dv-env-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dv-env-item-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--v2-text);
+  flex-wrap: wrap;
+}
+
+.dv-env-path-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.dv-env-path-form .dv-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dv-env-link-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.dv-env-link {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-block-size: 28px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(59, 130, 246, 0.28);
+  background: rgba(59, 130, 246, 0.08);
+  color: var(--gp-blue, #60a5fa);
+  font-size: 12.5px;
+  font-weight: 500;
+  text-decoration: none;
+  max-width: 100%;
+}
+
+.dv-env-link-label {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.dv-env-link-url {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11.5px;
+  color: var(--gp-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.dv-env-link:hover {
+  background: rgba(59, 130, 246, 0.16);
+  border-color: var(--gp-blue, #60a5fa);
+}
+
+.dv-env-link:focus-visible {
+  outline: 2px solid var(--gp-pink);
+  outline-offset: 2px;
+}
+
+html body dialog#dvExperimentalDialog.dv-experimental-dialog {
+  margin: auto;
+  padding: 0;
+  width: min(900px, 94vw);
+  max-width: min(900px, 94vw);
+  max-height: 85vh;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--gp-radius-lg, 14px);
+  background: linear-gradient(135deg, rgba(22, 28, 50, 0.98) 0%, rgba(14, 18, 34, 0.98) 100%);
+  color: var(--v2-text);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85), 0 0 30px rgba(255, 23, 118, 0.2);
+  overflow: hidden;
+}
+
+html body dialog#dvExperimentalDialog.dv-experimental-dialog:modal {
+  overscroll-behavior: contain;
+}
+
+html body dialog#dvExperimentalDialog.dv-experimental-dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: rgba(6, 9, 15, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.dv-experimental-form {
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+}
+
+.dv-experimental-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 24px;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.dv-experimental-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.dv-experimental-heading svg {
+  width: 20px;
+  height: 20px;
+  color: var(--gp-gold, #facc15);
+  flex: 0 0 auto;
+}
+
+.dv-experimental-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--v2-text);
+}
+
+.dv-experimental-close {
+  flex: 0 0 auto;
+}
+
+.dv-experimental-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px 24px;
+  overflow-y: auto;
+}
+
+html body dialog#dvExperimentalDialog .dv-experimental-warn {
+  margin: 0;
+  text-align: center;
+  color: var(--gp-gold, #facc15);
+  font-size: 16px;
+  font-weight: 800;
   line-height: 1.5;
-  color: var(--dv-warn, #fbbf24);
-  background: var(--dv-warn-soft, rgba(251, 191, 36, .14));
-  border-bottom: 1px solid var(--v2-border, rgba(255, 255, 255, .14));
 }
 
-.dv-target-notice .mi { width: 1em; height: 1em; flex: none; }
-
-:where(:root[data-theme="light"]) .dv-target-notice {
-  color: #a16207;
-  background: rgba(161, 98, 7, .12);
+html body dialog#dvExperimentalDialog .dv-experimental-lead {
+  margin: 0;
+  text-align: center;
+  color: var(--gp-gold, #facc15);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.65;
 }
 
-/* 设备目标下被禁用的入口：除了 disabled 还要看得出来「为什么」 */
-#devicesView .is-target-blocked,
-.is-target-blocked { cursor: not-allowed; opacity: .5; }
+.dv-experimental-points {
+  margin: 0;
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid var(--gp-border, rgba(255, 255, 255, 0.14));
+  border-radius: var(--gp-radius-md, 10px);
+  background: rgba(250, 204, 21, 0.06);
+  color: var(--gp-gold, #facc15);
+  font-size: 13px;
+  line-height: 1.7;
+  text-align: center;
+  list-style-position: inside;
+}
 
-/* 标题栏切换器：设备目标用 iOS 蓝点缀，和本机文件夹一眼能分开 */
-.v2-global-game.is-device { border-color: var(--dv-ios-soft, rgba(96, 165, 250, .35)); }
-.v2-global-game.is-device:hover { border-color: var(--dv-ios, #60a5fa); }
+.dv-experimental-points li::marker {
+  color: var(--gp-gold, #facc15);
+}
+
+.dv-experimental-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+html[data-theme="light"] body dialog#dvExperimentalDialog.dv-experimental-dialog {
+  border-color: var(--v2-border-strong);
+  background: var(--v2-panel, #ffffff);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.2);
+}
+
+html[data-theme="light"] .dv-experimental-head {
+  background: rgba(15, 23, 42, 0.03);
+  border-bottom-color: var(--v2-border);
+}
+
+html[data-theme="light"] .dv-experimental-points {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(217, 119, 6, 0.3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dv-device,
+  .dv-busy-fill,
+  .dv-tab,
+  .dv-item-row,
+  .dv-file-row,
+  .dv-file-chip {
+    transition: none;
+    animation: none;
+  }
+}

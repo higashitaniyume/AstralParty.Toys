@@ -22,6 +22,8 @@ public sealed class ToysConfig
 
     public MigrationConfigSection Migration { get; set; } = new();
 
+    public MobileConfigSection Mobile { get; set; } = new();
+
     /// <summary>把外部写进来的值收拢到合法区间；文件被手改坏时也能继续用。</summary>
     public ToysConfig Normalize()
     {
@@ -31,6 +33,8 @@ public sealed class ToysConfig
         Workshop ??= new WorkshopConfigSection();
         Update ??= new UpdateConfigSection();
         Migration ??= new MigrationConfigSection();
+        Mobile ??= new MobileConfigSection();
+        Mobile.AdbPath = (Mobile.AdbPath ?? "").Trim();
 
         App.Language = AppLanguage.Normalize(App.Language);
         App.Theme = string.Equals(App.Theme, "light", StringComparison.OrdinalIgnoreCase) ? "light" : "dark";
@@ -121,6 +125,12 @@ public sealed class MigrationConfigSection
 
     /// <summary>迁移来源目录，便于排查。</summary>
     public string FromRoot { get; set; } = "";
+}
+
+public sealed class MobileConfigSection
+{
+    /// <summary>玩家指定的 adb.exe 绝对路径；为空时自动按 SDK / PATH 查找。</summary>
+    public string AdbPath { get; set; } = "";
 }
 
 /// <summary>

@@ -47,6 +47,7 @@
 
       window.GameLibModule?.init?.();
       this.refreshModStatus();
+      post({ type: 'workshopModVersions' });
     },
     bindEvents() {
       $('modsBackHomeBtn')?.addEventListener('click', () => showPage('home'));

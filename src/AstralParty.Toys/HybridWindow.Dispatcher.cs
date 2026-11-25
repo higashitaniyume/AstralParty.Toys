@@ -67,6 +67,7 @@ public partial class HybridWindow
                         _ = PostSteamBypassSyncAsync();
                         _ = PushGameProfilesAsync();
                         _ = PushModProfilesAsync();   // 概览页的「模组方案」下拉要能直接用
+                        if (GetActiveTargetKind() is not null) PostTargetChanged();
                     }
                     finally
                     {
@@ -409,6 +410,9 @@ public partial class HybridWindow
                     break;
                 case "modStatus":
                     _ = PushModStatusAsync();
+                    break;
+                case "workshopModVersions":
+                    _ = PushWorkshopModVersionsAsync();
                     break;
                 case "modRollbackList":
                     HandleModRollbackList();

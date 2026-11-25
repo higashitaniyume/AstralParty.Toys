@@ -126,7 +126,7 @@ jobs:
           $package = $meta.packages.loaderManaged
           if (-not $package.url) { throw "version.json 里没有 packages.loaderManaged" }
 
-          $zipPath = "$dir/cesium-loader-android-managed.zip"
+          $zipPath = "$dir/cesium-loader-mobile-managed.zip"
           Invoke-WebRequest -Uri $package.url -OutFile $zipPath -UseBasicParsing
 
           $hash = (Get-FileHash $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -136,13 +136,15 @@ jobs:
           $archive = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
           try {
             $entryNames = @($archive.Entries | ForEach-Object { $_.FullName })
-            foreach ($required in @("loader.json", "bootstrap/CesiumLoader.Mobile.Bootstrap.dll", "sdk/CesiumLoader.SDK.dll")) {
+            foreach ($required in @("loader.json", "bootstrap/CesiumLoader.Mobile.Bootstrap.dll", "sdk/CesiumLoader.SDK.dll", "CesiumLoader.Mobile.API.dll")) {
               if ($entryNames -notcontains $required) { throw "移动端载荷包缺少 $required" }
             }
-            Write-Host "内嵌移动端载荷: $tag（$($entryNames.Count) 个条目）"
+            $modEntries = @($entryNames | Where-Object { $_ -match '^mods/[^/]+/[^/]+' })
+            if ($modEntries.Count -eq 0) { throw "移动端载荷包缺少内置 mods/" }
+            Write-Host "内嵌移动端载荷: $tag（$($entryNames.Count) 个条目，mods 下 $($modEntries.Count) 个文件）"
           } finally { $archive.Dispose() }
 
-          Copy-Item $zipPath "src/AstralParty.Toys/Resources/ModLoader/cesium-loader-android-managed.zip" -Force
+          Copy-Item $zipPath "src/AstralParty.Toys/Resources/ModLoader/cesium-loader-mobile-managed.zip" -Force
 
           Get-ChildItem "src/AstralParty.Toys/Resources/ModLoader" | Select-Object Name, Length
 
