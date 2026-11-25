@@ -621,7 +621,7 @@
       toast('这个 aspatoys 链接里没有模组 ID，打不开模组详情。');
       return;
     }
-    state.externalMod = { id, version };
+    state.externalMod = { id, version, refresh: payload?.refresh === true };
 
     if (state.consent === 'granted') {
       openExternalModNow();
@@ -640,6 +640,7 @@
     const pending = state.externalMod;
     if (!pending?.id || state.consent !== 'granted') return;
     state.externalMod = null;
+    if (pending.refresh) state.details.delete(pending.id);
     openDetail(pending.id, pending.version ? 'versions' : 'details');
   }
 
@@ -1160,6 +1161,8 @@
   }
 
   const WorkshopModule = {
+    compareVersions,
+
     openExternalMod(payload) {
       openExternalModRequest(payload);
     },

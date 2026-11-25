@@ -417,6 +417,7 @@
 
       // Mods & Speedhack
       'mods.title': '模組與載入器管理',
+      'mods.workshop_update_detail': '查看 {name} 的市場更新',
       'mods.loader_title': 'CesiumLoader 載入器',
       'mods.installed_ver': '已安裝版本',
       'mods.builtin_ver': '隨本程式內建',

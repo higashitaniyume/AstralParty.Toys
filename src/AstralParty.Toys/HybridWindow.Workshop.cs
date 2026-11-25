@@ -27,6 +27,8 @@ public partial class HybridWindow
 
     private bool WorkshopConsentGranted => WorkshopConsent.IsGranted(_libraryService.Settings);
 
+    private (string Source, string Language, DateTimeOffset Expires, Task<Dictionary<string, string>> Request)? _workshopModVersions;
+
     /// <summary>没有同意时一律拒绝：任何市场请求（含封面缓存）都不会发出去。</summary>
     private bool RequireWorkshopConsent()
     {
@@ -63,6 +65,37 @@ public partial class HybridWindow
     }
 
     // ============================== 目录与详情 ==============================
+
+    private async Task PushWorkshopModVersionsAsync()
+    {
+        // 模组页的被动检查只复用已有同意。点击市场入口时仍由市场流程处理同意提示。
+        var source = WorkshopBaseUrl;
+        if (!WorkshopConsentGranted)
+        {
+            Post(new { type = "workshopModVersions", payload = new { source, versions = new Dictionary<string, string>() } });
+            return;
+        }
+        var language = _libraryService.Settings.Language;
+        if (_workshopModVersions is not { } catalog || catalog.Source != source || catalog.Language != language ||
+            (catalog.Request.IsCompleted && catalog.Expires <= DateTimeOffset.UtcNow))
+        {
+            catalog = (source, language, DateTimeOffset.UtcNow.AddMinutes(2),
+                _workshopService.GetWindowsModVersionsAsync(source, language));
+            _workshopModVersions = catalog;
+        }
+
+        try
+        {
+            var versions = await catalog.Request;
+            if (WorkshopConsentGranted && source == WorkshopBaseUrl && _workshopModVersions?.Request == catalog.Request)
+                Post(new { type = "workshopModVersions", payload = new { source, versions } });
+        }
+        catch (Exception ex) when (ex is WorkshopException or JsonException or OperationCanceledException or IOException)
+        {
+            if (_workshopModVersions?.Request == catalog.Request)
+                _workshopModVersions = (source, language, DateTimeOffset.UtcNow.AddSeconds(15), catalog.Request);
+        }
+    }
 
     private async Task HandleWorkshopListAsync(JsonElement root)
     {

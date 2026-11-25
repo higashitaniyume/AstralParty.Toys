@@ -417,6 +417,7 @@
 
       // Mods & Speedhack
       'mods.title': 'Mod & Loader Management',
+      'mods.workshop_update_detail': 'View the marketplace update for {name}',
       'mods.loader_title': 'CesiumLoader',
       'mods.installed_ver': 'Installed Version',
       'mods.builtin_ver': 'Built-in Version',
