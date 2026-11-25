@@ -17,7 +17,7 @@
       <div class="speedhack-mode-cards" role="group" aria-labelledby="speedhackModeTitle">
         <article class="speedhack-mode-card" id="speedhackUnityCard" data-mode="unity">
           <div class="mode-card-header">
-            <h3 class="mode-card-title" data-i18n="speedhack.unity_title">Unity 高性能模式</h3>
+            <h3 class="mode-card-title" id="speedhackUnityTitle" data-i18n="speedhack.unity_title">Unity 高性能模式</h3>
             <span class="mode-card-badge" data-i18n="speedhack.recommended">推荐</span>
           </div>
           <p class="mode-card-description" data-i18n="speedhack.unity_desc">缩放 Unity 游戏时间，系统时钟保持 1x。</p>
@@ -26,12 +26,12 @@
             <li data-i18n="speedhack.unity_performance">极大减少性能开销</li>
             <li class="mode-card-tradeoff" data-i18n="speedhack.unity_cons">限制：适配的静音 CRI 视频最高 3x，有声或音轨未知的视频保持原速。</li>
           </ul>
-          <button type="button" class="mode-card-button" data-speed-mode="unity" aria-label="Unity 高性能模式" aria-pressed="false" disabled>选择此模式</button>
+          <button type="button" class="mode-card-button" data-speed-mode="unity" aria-labelledby="speedhackUnityTitle" aria-pressed="false" disabled>选择此模式</button>
         </article>
 
         <article class="speedhack-mode-card" id="speedhackNativeCard" data-mode="native">
           <div class="mode-card-header">
-            <h3 class="mode-card-title" data-i18n="speedhack.native_title">Native 原始模式</h3>
+            <h3 class="mode-card-title" id="speedhackNativeTitle" data-i18n="speedhack.native_title">Native 原始模式</h3>
           </div>
           <p class="mode-card-description" data-i18n="speedhack.native_desc">缩放游戏进程使用的系统计时。</p>
           <ul class="mode-card-features">
@@ -39,7 +39,7 @@
             <li class="mode-card-tradeoff" data-i18n="speedhack.native_cons">限制：也可能影响回合计时、演出和网络超时，高倍速下影响更明显。</li>
             <li class="mode-card-tradeoff" data-i18n="speedhack.native_performance">性能开销会随倍速成倍增加。</li>
           </ul>
-          <button type="button" class="mode-card-button" data-speed-mode="native" aria-label="Native 原始模式" aria-pressed="false" disabled>选择此模式</button>
+          <button type="button" class="mode-card-button" data-speed-mode="native" aria-labelledby="speedhackNativeTitle" aria-pressed="false" disabled>选择此模式</button>
         </article>
       </div>
     </section>

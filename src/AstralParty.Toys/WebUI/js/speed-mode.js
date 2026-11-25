@@ -25,7 +25,7 @@
       const selected = button.dataset.speedMode === mode;
       button.disabled = disabled;
       button.setAttribute('aria-pressed', String(selected));
-      button.textContent = selected ? '已选中' : '选择此模式';
+      button.textContent = t(selected ? 'speedhack.selected' : 'speedhack.select_this_mode');
       button.closest('[data-mode]').classList.toggle('speedhack-mode-card-selected', selected);
     }
     speedInput().disabled = disabled || (mode === 'unity' && saved.unityMinSpeed === saved.unityMaxSpeed);
@@ -40,17 +40,17 @@
     const [min, max] = rangeFor(mode);
     speedInput().value = String(speed);
     speedInput().removeAttribute('aria-invalid');
-    $('speedhackSpeedRange').textContent = `范围：${min}x–${max}x`;
+    $('speedhackSpeedRange').textContent = t('speedhack.range', { min, max });
   }
 
   function readInput() {
     const value = speedInput().value.trim();
     if (value === '' || /^\d+\.$/.test(value)) return {};
-    if (!/^\d+(?:\.\d+)?$/.test(value)) return { error: '请输入有效的倍速。' };
+    if (!/^\d+(?:\.\d+)?$/.test(value)) return { error: t('speedhack.invalid_speed') };
     const speed = Number(value);
     const [min, max] = rangeFor(mode);
     if (!Number.isFinite(speed) || speed < min || speed > max) {
-      return { error: `倍速超出范围（${min}x–${max}x）。` };
+      return { error: t('speedhack.out_of_range', { min, max }) };
     }
     return { speed };
   }
@@ -63,7 +63,7 @@
   function showFailure(message) {
     pending = null;
     if (saved) showDraft(saved.mode, saved.speed);
-    else $('speedhackCurrentMode').textContent = '无法读取设置';
+    else $('speedhackCurrentMode').textContent = t('speedhack.read_failed');
     feedback(message, 'error');
     renderControls();
   }
@@ -74,12 +74,10 @@
     const timer = setTimeout(() => {
       if (pending?.id !== id) return;
       if (kind === 'save') {
-        feedback('保存响应超时，正在重新读取…');
+        feedback(t('speedhack.save_timeout'));
         request('read', {}, true);
       } else {
-        showFailure(recovering
-          ? '保存结果未确认，请重新打开页面核对。'
-          : '读取设置超时，请重新打开页面。');
+        showFailure(t(recovering ? 'speedhack.save_unconfirmed' : 'speedhack.read_timeout'));
       }
     }, responseTimeout);
     pending = { id, kind, timer, recovering };
@@ -94,7 +92,7 @@
       return;
     }
     showDraft(nextMode, speed);
-    feedback('正在保存…');
+    feedback(t('speedhack.saving'));
     request('save', { gameDirectory, mode, speed });
   }
 
@@ -111,7 +109,7 @@
       if (pending?.kind === 'save' || pending?.recovering) return;
       saved = null;
       mode = null;
-      $('speedhackCurrentMode').textContent = '正在读取设置…';
+      $('speedhackCurrentMode').textContent = t('speedhack.reading');
       $('speedhackSpeedRange').textContent = '';
       speedInput().value = '';
       speedInput().removeAttribute('aria-invalid');
@@ -134,8 +132,8 @@
       const name = t(saved.mode === 'unity' ? 'speedhack.unity_title' : 'speedhack.native_title');
       $('speedhackCurrentMode').textContent = `${name} · ${saved.speed}x`;
       showDraft(saved.mode, saved.speed);
-      feedback(kind === 'save' ? '已保存。下次启动游戏时生效。'
-        : recovering ? '已重新读取宿主设置。' : '', kind === 'save' ? 'success' : '');
+      feedback(kind === 'save' ? t('speedhack.saved')
+        : recovering ? t('speedhack.reloaded') : '', kind === 'save' ? 'success' : '');
       renderControls();
     }
   };
@@ -158,7 +156,7 @@
       const { speed, error } = readInput();
       if (error) input.setAttribute('aria-invalid', 'true');
       else input.removeAttribute('aria-invalid');
-      feedback(error || (speed === undefined ? '正在输入…' : ''), error ? 'error' : '');
+      feedback(error || (speed === undefined ? t('speedhack.typing') : ''), error ? 'error' : '');
       if (speed !== undefined) inputTimer = setTimeout(saveInput, saveDelay);
     });
     input?.addEventListener('blur', () => {
