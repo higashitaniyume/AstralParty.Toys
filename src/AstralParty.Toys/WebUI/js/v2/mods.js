@@ -338,7 +338,7 @@
     const speedAvailable = s.installed && !s.loaderDisabled && !s.coreMissing && speedSync?.settings?.mode && !speedSync.error;
     const speedDisabled = !speedAvailable || b || M.speedPending ? 'disabled' : '';
     const sm = speedMod(), hk = sm && sm.enabled !== false;
-    const nativeSpeed = speedSync?.settings?.mode === 'native' && !hk;
+    const nativeSpeed = speedSync?.settings?.mode === 'native';
     const speedKey = speedSync?.settings?.toggleKey || 'Delete';
     const enabled = mods().filter(m => m.enabled !== false).length;
     // 清理已不存在的勾选（解密后列表已删 / 换游戏目录）
@@ -694,7 +694,7 @@
     if (!sync?.config || sync.error || M.speedPending) return;
     const [min, max] = gameSpeedRange();
     if (!(speed >= min && speed <= max)) {
-      toast(`倍速必须在 ${min}x 到 ${max}x 之间`);
+      toast(t('speedhack.out_of_range', { min, max }));
       render();
       return;
     }

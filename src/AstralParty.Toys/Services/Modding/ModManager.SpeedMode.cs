@@ -1,5 +1,7 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using AstralParty.Toys.Models;
 using AstralParty.Toys.Services.Common;
 
@@ -73,15 +75,16 @@ public sealed partial class ModManager
             var baseSpeed = ReadSpeedModeNumber(loader, "speedhackBaseSpeed", MinBaseSpeed);
 
             var activeConfig = mode == UnitySpeedMode ? unityConfig : nativeConfig;
-            var configuredSpeed = ReadSpeedModeNumber(activeConfig, "speed", 2);
+            var legacyNativeDefault = mode == UnitySpeedMode && UsesLegacyModeOption(unity!) &&
+                !string.Equals(ReadSpeedModeString(unityConfig, "accelerationMode"), UnitySpeedMode, StringComparison.OrdinalIgnoreCase);
+            var configuredSpeed = ReadSpeedModeNumber(activeConfig, "speed", legacyNativeDefault ? MinBaseSpeed : 2);
             var (min, max) = mode == UnitySpeedMode ? (unityMin, unityMax) : (nativeMin, nativeMax);
             var speed = mode.Length == 0 ? Math.Clamp(baseSpeed, MinBaseSpeed, MaxBaseSpeed)
-                : Math.Clamp(baseSpeed > 1.0001 ? baseSpeed : configuredSpeed, min, max);
+                : Math.Clamp(baseSpeed > 1.0001 ? baseSpeed : legacyNativeDefault ? MinBaseSpeed : configuredSpeed, min, max);
             if (migrate && !status.GameRunning && mode.Length != 0 && (
                 baseSpeed != MinBaseSpeed || activeConfig["speed"] is null || speed != configuredSpeed ||
                 (mode == UnitySpeedMode
-                    ? IsSpeedModEnabled(native) || (UsesLegacyModeOption(unity!) &&
-                      ReadSpeedModeString(unityConfig, "accelerationMode") != UnitySpeedMode)
+                    ? IsSpeedModEnabled(native) || legacyNativeDefault
                     : IsSpeedModEnabled(unity))))
             {
                 SaveSpeedModeSettings(status, mode, speed);
@@ -117,36 +120,41 @@ public sealed partial class ModManager
             var target = (useUnity ? unity : native)!;
             var other = useUnity ? native : unity;
             var targetConfigPath = SpeedModConfigReadPath(directory, target);
-            var (config, _) = ReadSpeedModeConfig(targetConfigPath);
+            var (config, targetConfigText) = ReadSpeedModeConfig(targetConfigPath);
             var (min, max) = ReadSpeedRange(config);
             if (!double.IsFinite(speed) || speed < min || speed > max)
                 throw new InvalidOperationException($"所选模式的倍速必须在 {min:0.##}x 到 {max:0.##}x 之间。");
 
+            var changedKeys = new List<string>(3) { "speed" };
             if (useUnity)
             {
                 if (UsesLegacyModeOption(target)) config["accelerationMode"] = UnitySpeedMode;
                 else config.Remove("accelerationMode");
+                changedKeys.Add("accelerationMode");
             }
             var disableOther = IsSpeedModEnabled(other);
             var enableTarget = !IsSpeedModEnabled(target);
             if (disableOther && enableTarget &&
                 ReadSpeedModeString(ReadSpeedModConfig(directory, other, active: false), "toggleKey") is { } key)
+            {
                 config["toggleKey"] = key;
+                changedKeys.Add("toggleKey");
+            }
             config["speed"] = speed;
 
             var targetWritePath = target is { DirectoryName: null, DisabledFolder: true }
                 ? ActiveFlatSpeedConfigPath(directory, target.FileName) : targetConfigPath;
             var loaderPath = LoaderConfigPath(directory);
-            var (loader, _) = ReadSpeedModeConfig(loaderPath);
+            var (loader, loaderText) = ReadSpeedModeConfig(loaderPath);
             var rollback = new Stack<Action>();
             try
             {
-                WriteSpeedModeFile(targetWritePath, config, rollback);
+                WriteSpeedModeFile(targetWritePath, config, targetConfigText, rollback, changedKeys);
                 if (ReadSpeedModeNumber(loader, "speedhackBaseSpeed", MinBaseSpeed) != MinBaseSpeed)
                 {
                     // 旧版 Toys 的原生启动倍率迁入所选模组。现在两个模式都由各自的模组应用倍率。
                     loader["speedhackBaseSpeed"] = MinBaseSpeed;
-                    WriteSpeedModeFile(loaderPath, loader, rollback);
+                    WriteSpeedModeFile(loaderPath, loader, loaderText, rollback, ["speedhackBaseSpeed"]);
                 }
                 if (disableOther) ChangeSpeedModEnabled(directory, other!, false, rollback);
                 if (enableTarget) ChangeSpeedModEnabled(directory, target, true, rollback);
@@ -186,15 +194,96 @@ public sealed partial class ModManager
         }
     }
 
-    private static void WriteSpeedModeFile(string path, JsonObject config, Stack<Action> rollback)
+    private static void WriteSpeedModeFile(
+        string path, JsonObject config, string? originalText, Stack<Action> rollback, IReadOnlyList<string> changedKeys)
     {
-        var original = File.Exists(path) ? File.ReadAllText(path) : null;
-        ToysConfigStore.WriteAtomic(path, config.ToJsonString(ModConfigWriteOptions));
+        var original = File.Exists(path) ? File.ReadAllBytes(path) : null;
+        var hasBom = original is { Length: >= 3 } && original[0] == 0xEF && original[1] == 0xBB && original[2] == 0xBF;
+        var updatedText = originalText is not null
+            ? TryUpdateSpeedJsonText(originalText, config, changedKeys)
+            : null;
+        if (updatedText is not null)
+        {
+            var encoded = new System.Text.UTF8Encoding(hasBom).GetBytes(updatedText);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            WriteAllBytesProtected(path, encoded);
+        }
+        else
+        {
+            ToysConfigStore.WriteAtomic(path, config.ToJsonString(ModConfigWriteOptions));
+        }
+
         rollback.Push(() =>
         {
             if (original is null) File.Delete(path);
-            else ToysConfigStore.WriteAtomic(path, original);
+            else WriteAllBytesProtected(path, original);
         });
+    }
+
+    private static string? TryUpdateSpeedJsonText(string text, JsonObject expected, IReadOnlyList<string> changedKeys)
+    {
+        var updated = text.TrimStart('\uFEFF');
+        var newline = updated.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
+        foreach (var key in changedKeys)
+        {
+            var node = expected[key];
+            if (node is null)
+            {
+                updated = RemoveJsonProperty(updated, key);
+                continue;
+            }
+            var literal = node.ToJsonString(ModConfigWriteOptions);
+            updated = SetJsonPropertyLiteral(updated, key, literal, newline);
+        }
+
+        try
+        {
+            if (JsonNode.Parse(updated, documentOptions: SpeedModeJsonOptions) is not JsonObject parsed) return null;
+            if (parsed.Count != expected.Count) return null;
+            foreach (var pair in expected)
+            {
+                if (!parsed.TryGetPropertyValue(pair.Key, out var actual) || !JsonNode.DeepEquals(actual, pair.Value))
+                    return null;
+            }
+            return updated;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string SetJsonPropertyLiteral(string text, string key, string literal, string newline)
+    {
+        var escapedKey = Regex.Escape(JsonSerializer.Serialize(key, ModConfigWriteOptions));
+        var pattern = $@"({escapedKey}\s*:\s*)(""([^""\\]|\\.)*""|[^,\}}\r\n/]+)";
+        foreach (Match match in Regex.Matches(text, pattern))
+        {
+            if (IsInsideLineComment(text, match.Index)) continue;
+            var value = match.Groups[2].Value.TrimEnd();
+            var trailing = match.Groups[2].Value[value.Length..];
+            return text[..match.Groups[2].Index] + literal + trailing + text[(match.Index + match.Length)..];
+        }
+
+        var close = text.LastIndexOf('}');
+        if (close < 0) return text;
+        var head = text[..close].TrimEnd();
+        var comma = head.EndsWith(',') || head.EndsWith('{') ? "" : ",";
+        return head + comma + newline + "  " + JsonSerializer.Serialize(key, ModConfigWriteOptions) + ": " + literal + newline + text[close..];
+    }
+
+    private static string RemoveJsonProperty(string text, string key)
+    {
+        var escapedKey = Regex.Escape(JsonSerializer.Serialize(key, ModConfigWriteOptions));
+        var pattern = $@"(?m)^[ \t]*{escapedKey}\s*:\s*(?:""(?:[^""\\]|\\.)*""|[^,\}}\r\n]+)[ \t]*,?[ \t]*(?://[^\r\n]*)?\r?\n?";
+        foreach (Match match in Regex.Matches(text, pattern))
+        {
+            if (IsInsideLineComment(text, match.Index)) continue;
+            var candidate = text[..match.Index] + text[(match.Index + match.Length)..];
+            // 如果删除的是最后一个带尾逗号的前驱之后的末项，修掉多余尾逗号（自检兜底也会拦截非法 JSON）。
+            return Regex.Replace(candidate, @",(\s*\})", "$1");
+        }
+        return text;
     }
 
     private void ChangeSpeedModEnabled(string directory, ModEntryInfo mod, bool enabled, Stack<Action> rollback)

@@ -1666,6 +1666,11 @@
       "本地已经是最新版本，不需要重复下载": "The local copy is already the latest version; no need to download again",
       "仍然重新下载": "Download Again Anyway",
       "下载最新默认包": "Download Latest Default Pack",
-      "下载": "Download"
+      "下载": "Download",
+      "请先选择变速模式": "Select a speed mode first",
+      "选择模式": "Select Mode",
+      "正在读取变速设置…": "Reading speed settings…",
+      "先安装可用的加载器": "Install a working loader first",
+      "切换 Unity": "Switch to Unity"
   };
 })();

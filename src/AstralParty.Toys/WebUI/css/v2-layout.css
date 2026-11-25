@@ -90,12 +90,12 @@ body.page-home-active .page-container { height: auto; }
 /* 顺序：概览 回放 变速 模组 市场 皮肤 … 设置（沉底）；维基改成顶栏的外部链接 */
 .nav-crumb-btn[data-page="home"] { order: 1; }
 .nav-crumb-btn[data-page="tools"] { order: 2; }
-.nav-crumb-btn[data-page="speedhack"] { order: 3; width: calc(100% - 8px); padding-inline: 4px; }
-.nav-crumb-btn[data-page="mods"] { order: 3; }
-.nav-crumb-btn[data-page="workshop"] { order: 4; }
-.nav-crumb-btn[data-page="skins"] { order: 5; }
-.nav-crumb-btn[data-page="profiles"] { order: 6; }
-.nav-crumb-btn[data-page="devices"] { order: 7; }
+.nav-crumb-btn[data-page="speedhack"] { order: 3; }
+.nav-crumb-btn[data-page="mods"] { order: 4; }
+.nav-crumb-btn[data-page="workshop"] { order: 5; }
+.nav-crumb-btn[data-page="skins"] { order: 6; }
+.nav-crumb-btn[data-page="profiles"] { order: 7; }
+.nav-crumb-btn[data-page="devices"] { order: 8; }
 .nav-crumb-btn[data-page="settings"] { order: 99; }
 .v2-theme-btn { order: 98; margin-top: auto; display: flex; align-items: center; width: 52px; flex-direction: column; gap: 2px; padding: 7px 0 5px; border-radius: 8px; border: 0; background: none; color: var(--gp-text-muted); font-size: 11px; font-weight: 500; white-space: nowrap; cursor: pointer; }
 .v2-theme-btn svg { width: 20px; height: 20px; }

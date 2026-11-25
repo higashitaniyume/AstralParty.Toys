@@ -77,6 +77,7 @@ function showPage(pageName, options = {}) {
   }
 
   if (current?.id === 'accountView') window.MyAccountModule?.onHide();
+  if (current?.id === 'speedhackView') window.SpeedModeModule?.onHide?.();
   updateNavigation(pageName);
   if (!current || immediate) {
     target.classList.remove('hidden', 'page-entering', 'page-leaving');

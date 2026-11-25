@@ -204,8 +204,12 @@ body:not(.reduce-motion) #speedhackView:not(.page-entering) .speedhack-section {
   background: var(--gp-pink);
 }
 
-.speedhack-mode-card:not(.speedhack-mode-card-selected) :is(.mode-card-title, .mode-card-description, .mode-card-features li, .mode-card-button, .mode-card-badge) {
+.speedhack-mode-card:not(.speedhack-mode-card-selected) :is(.mode-card-description, .mode-card-features .mode-card-tradeoff, .mode-card-button, .mode-card-badge) {
   color: var(--gp-text-muted);
+}
+
+.speedhack-mode-card:not(.speedhack-mode-card-selected) .mode-card-title {
+  color: var(--gp-text-sub);
 }
 
 .speedhack-mode-card:not(.speedhack-mode-card-selected) .mode-card-button {
@@ -247,7 +251,7 @@ body:not(.reduce-motion) #speedhackView:not(.page-entering) .speedhack-section {
 }
 
 .speed-input-number[aria-invalid="true"] {
-  border-color: var(--gp-danger, #ff8298);
+  border-color: var(--accent-red, #f43f5e);
 }
 
 .speed-unit {
@@ -276,7 +280,7 @@ body:not(.reduce-motion) #speedhackView:not(.page-entering) .speedhack-section {
 }
 
 .speedhack-feedback:not(:empty) { margin-top: 6px; }
-.speedhack-feedback[data-kind="error"] { color: var(--gp-danger, #ff8298); }
+.speedhack-feedback[data-kind="error"] { color: var(--accent-red, #f43f5e); }
 .speedhack-feedback[data-kind="success"] { color: var(--gp-green, #4ade80); }
 
 /* ============ 响应式 ============ */

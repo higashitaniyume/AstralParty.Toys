@@ -10,6 +10,7 @@
   let saved = null;
   let gameDirectory = '';
   let mode = null;
+  let refreshAfterSave = false;
   const speedInput = () => $('speedhackSpeedInput');
   const modeButtons = () => document.querySelectorAll('#speedhackView [data-speed-mode]');
 
@@ -112,15 +113,29 @@
 
   function saveInput() {
     cancelInputSave();
-    if (pending || !saved) return;
+    if (pending || !saved || AppState.currentPage !== 'speedhack') return;
     const { speed } = readInput();
     if (speed !== undefined) save(mode, speed);
   }
 
   window.SpeedModeModule = {
+    onHide() {
+      if (inputTimer !== null) {
+        cancelInputSave();
+        if (!pending && saved && AppState.currentPage === 'speedhack') {
+          const { speed } = readInput();
+          if (speed !== undefined) save(mode, speed);
+        }
+      }
+    },
+
     onShow() {
-      if (inputTimer !== null) saveInput();
-      if (pending?.kind === 'save' || pending?.recovering) return;
+      cancelInputSave();
+      if (pending?.kind === 'save' || pending?.recovering) {
+        refreshAfterSave = true;
+        return;
+      }
+      refreshAfterSave = false;
       saved = null;
       mode = null;
       $('speedhackCurrentMode').textContent = t('speedhack.reading');
@@ -136,8 +151,19 @@
       const { kind, timer, recovering } = pending;
       clearTimeout(timer);
       pending = null;
+      const shouldRefresh = refreshAfterSave && AppState.currentPage === 'speedhack';
+      refreshAfterSave = false;
       if (result.error) {
+        if (shouldRefresh && /目录/.test(result.error)) {
+          this.onShow();
+          return;
+        }
         showFailure(result.error);
+        return;
+      }
+
+      if (shouldRefresh) {
+        this.onShow();
         return;
       }
 

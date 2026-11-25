@@ -1125,6 +1125,47 @@ public sealed class ModManagerTests
         Assert.False(Assert.Single(manager.GetInstalledMods(harness.GameDirectory), mod => mod.FileName == ModManager.NativeSpeedModFileName).Enabled);
     }
 
+    [Fact]
+    public void SpeedModeSettings_PreservesNormalSpeedWhenMigratingLegacyNativeDefault()
+    {
+        using var harness = new ModHarness("ap-speed-mode-legacy-normal");
+        var manager = harness.Manager;
+        manager.Install(harness.GameDirectory, overwriteDll: false);
+        manager.SaveStoredGameDirectory(harness.GameDirectory);
+        manager.WriteModConfigText(harness.GameDirectory, ModManager.SpeedModeModFileName,
+            """{"accelerationMode":"native","speed":2}""", bom: false);
+        var status = manager.GetStatus();
+        status.GameRunning = false;
+
+        var settings = manager.ReadSpeedModeSettings(status, migrate: true);
+
+        Assert.Equal("unity", settings.Mode);
+        Assert.Equal(1, settings.Speed);
+        Assert.Equal("unity", System.Text.Json.Nodes.JsonNode.Parse(
+            manager.ReadModConfig(harness.GameDirectory, ModManager.SpeedModeModFileName))!["accelerationMode"]?.GetValue<string>());
+    }
+
+    [Fact]
+    public void SpeedModeSettings_PreservesCommentsWhenMigratingConfigs()
+    {
+        using var harness = new ModHarness("ap-speed-mode-comments");
+        var manager = harness.Manager;
+        manager.Install(harness.GameDirectory, overwriteDll: false);
+        manager.SaveStoredGameDirectory(harness.GameDirectory);
+        var loaderPath = manager.LoaderConfigPath(harness.GameDirectory);
+        File.WriteAllText(loaderPath, "{\n  // keep loader comment\n  \"speedhackBaseSpeed\": 3.0\n}\n");
+        manager.WriteModConfigText(harness.GameDirectory, ModManager.SpeedModeModFileName,
+            "{\n  // keep mod comment\n  \"accelerationMode\": \"native\",\n  \"speed\": 2\n}\n", bom: false);
+
+        var status = manager.GetStatus();
+        status.GameRunning = false;
+        var settings = manager.ReadSpeedModeSettings(status, migrate: true);
+
+        Assert.Equal(3, settings.Speed);
+        Assert.Contains("// keep loader comment", File.ReadAllText(loaderPath));
+        Assert.Contains("// keep mod comment", manager.ReadModConfig(harness.GameDirectory, ModManager.SpeedModeModFileName));
+    }
+
     private static void InstallNativeSpeedModeMod(ModHarness harness, bool enabled = false)
     {
         var directory = Path.Combine(ModManager.ModsRoot(harness.GameDirectory), "NativeSpeedMod");
