@@ -273,4 +273,55 @@ public sealed class GameLibraryTests
         var view = service.GetProfiles().Single();
         Assert.False(view.DirectoryExists);
     }
+
+    [Fact]
+    public void BuildExplorerArguments_NormalizesSlashesAndDoubleBackslashes()
+    {
+        using var sandbox = new TestSandbox("ap-explorer-args");
+        var modsDir = sandbox.EnsureDirectory("Game\\AstralParty_ModLoader\\mods");
+        var malformedDir = modsDir.Replace('\\', '/') + "/";
+        var doubleBackslashDir = modsDir.Replace("\\AstralParty_ModLoader", "\\\\AstralParty_ModLoader") + "\\";
+
+        Assert.Equal($"\"{modsDir}\"", SpeedhackManager.BuildExplorerArguments(malformedDir));
+        Assert.Equal($"\"{modsDir}\"", SpeedhackManager.BuildExplorerArguments(doubleBackslashDir));
+
+        var configFile = Path.Combine(modsDir, "config.json");
+        File.WriteAllText(configFile, "{}");
+        Assert.Equal($"/select,\"{configFile}\"", SpeedhackManager.BuildExplorerArguments(configFile.Replace('\\', '/')));
+    }
+
+    [Fact]
+    public void ParseVdfPath_UnescapesAndNormalizesSteamPaths()
+    {
+        Assert.Equal(@"D:\SteamLibrary", SpeedhackManager.ParseVdfPath(@"D:\\SteamLibrary"));
+        Assert.Equal(@"C:\Program Files (x86)\Steam", SpeedhackManager.ParseVdfPath("C:/Program Files (x86)/Steam/"));
+    }
+
+    [Fact]
+    public void GameLibraryService_NormalizesLegacyMalformedDirectories()
+    {
+        using var sandbox = new TestSandbox("ap-gamelib-normalize");
+        var game = MakeFakeGame(sandbox, "SteamGame", "AstralParty_CN.exe");
+        var malformed = game.Replace('\\', '/') + "/";
+
+        // 模拟老版本已经写入的带正斜杠路径
+        var stateDir = sandbox.EnsureDirectory(ToysPaths.StateFolderName);
+        var storePath = Path.Combine(stateDir, "game-profiles.json");
+        File.WriteAllText(storePath, $$"""
+            {
+              "Profiles": [
+                { "Id": "p1", "Directory": "{{malformed}}", "Edition": "cn", "Label": "吉星派对 · 国服" }
+              ],
+              "ActiveId": "p1"
+            }
+            """);
+
+        var service = new GameLibraryService(sandbox.Root);
+        Assert.Equal(game, service.GetActiveDirectory());
+        Assert.Equal(game, service.GetProfiles().Single().Directory);
+
+        // AddDirectory 同样应规范化写入
+        var view = service.AddDirectory(game.Replace("\\SteamGame", "\\\\SteamGame") + "\\", activate: true);
+        Assert.Equal(game, view.Directory);
+    }
 }

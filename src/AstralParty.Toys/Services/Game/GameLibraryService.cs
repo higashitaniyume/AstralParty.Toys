@@ -59,8 +59,10 @@ public sealed class GameLibraryService
         var cleaned = new List<GameProfile>();
         foreach (var profile in data.Profiles ?? new List<GameProfile>())
         {
-            if (string.IsNullOrWhiteSpace(profile.Directory)) continue;
-            var key = NormalizePath(profile.Directory);
+            var normalized = SpeedhackManager.NormalizeDirectoryPath(profile.Directory);
+            if (normalized.Length == 0) continue;
+            profile.Directory = normalized;
+            var key = NormalizePath(normalized);
             if (!seen.Add(key)) continue;
             if (string.IsNullOrWhiteSpace(profile.Id)) profile.Id = NewId();
             if (string.IsNullOrWhiteSpace(profile.Edition)) profile.Edition = "custom";
@@ -129,6 +131,7 @@ public sealed class GameLibraryService
     /// <summary>添加一个目录（已存在则返回既有档案）；activate=true 时顺便设为当前。</summary>
     public GameProfileView AddDirectory(string directory, bool activate = true, string? label = null, string? edition = null)
     {
+        directory = SpeedhackManager.NormalizeDirectoryPath(directory);
         var data = Load();
         var key = NormalizePath(directory);
         var existing = data.Profiles.FirstOrDefault(p => NormalizePath(p.Directory) == key);

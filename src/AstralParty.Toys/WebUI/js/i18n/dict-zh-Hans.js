@@ -698,7 +698,7 @@
       'settings.data_root_note': '设置、缓存、日志和回放都放在同一个文件夹里。游戏自带的「本地回放」只有 <strong>10 个席位</strong>——这是客户端写死的上限，和服务器无关：超了只是游戏拒绝保存新回放。把回放归档到这里的 <code>replays</code> 目录即可腾出席位，需要时再一键放回游戏。',
       'settings.data_root_hint': '默认 <code>文档\\AstralParty.Toys</code>。更改后会先把现有数据整体搬到新位置，搬完立刻生效。',
       'settings.group_logs': '日志',
-      'settings.logs_note': '运行日志按天写入数据文件夹的 logs 目录，默认保留 7 天，单个文件超过 10 MB 会自动分卷。',
+      'settings.logs_note': '这是 AstralParty.Toys 自身的日志目录，不是游戏 / 模组日志目录。运行日志按天写入数据文件夹的 logs 目录，默认保留 7 天，单个文件超过 10 MB 会自动分卷。',
       'settings.log_level': '日志级别',
       'settings.log_level_desc': '排查问题时切到 Debug，平时保持 Info 即可。',
       'settings.open_logs': '打开日志文件夹',

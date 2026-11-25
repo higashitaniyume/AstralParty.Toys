@@ -226,6 +226,7 @@
       </div>`;
     else if (tab === 'logs') main = `
       <div class="v2-card"><div class="v2-card-title"><span>日志</span></div>
+        <div class="v2-notice" style="margin:12px 18px 4px">${I().info}<span>这里是 <b>AstralParty.Toys</b> 自身的日志目录，不是游戏 / 模组日志目录；查看游戏或模组日志请到「模组」页打开日志文件夹。</span></div>
         <div class="v2-row"><span class="k">日志文件夹</span>
           <span class="v v2-muted" style="font-family:var(--v2-mono);font-size:12px;white-space:normal">${esc(LS().logsRoot || '数据文件夹\\logs')}</span>
           <button class="v2-btn ghost" data-v2g="openLogs">打开</button></div>

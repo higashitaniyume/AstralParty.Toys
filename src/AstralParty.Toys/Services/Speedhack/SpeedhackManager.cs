@@ -456,14 +456,22 @@ public sealed partial class SpeedhackManager
         }
     }
 
+    internal static string? BuildExplorerArguments(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return null;
+        var normalized = NormalizeDirectoryPath(path);
+        if (normalized.Length == 0) return null;
+        return File.Exists(normalized)
+            ? $"/select,\"{normalized}\""
+            : $"\"{normalized}\"";
+    }
+
     public static void OpenInExplorer(string path)
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(path)) return;
-            var argument = File.Exists(path)
-                ? $"/select,\"{path}\""
-                : $"\"{path}\"";
+            var argument = BuildExplorerArguments(path);
+            if (argument is null) return;
             Process.Start(new ProcessStartInfo("explorer.exe", argument) { UseShellExecute = true });
         }
         catch

@@ -94,7 +94,8 @@ public sealed partial class ModManager
             using var document = JsonDocument.Parse(File.ReadAllText(StateFilePath));
             var value = document.RootElement.TryGetProperty("gameDirectory", out var element)
                 ? element.GetString() : null;
-            return string.IsNullOrWhiteSpace(value) ? null : value;
+            var normalized = SpeedhackManager.NormalizeDirectoryPath(value);
+            return normalized.Length == 0 ? null : normalized;
         }
         catch
         {
@@ -106,7 +107,11 @@ public sealed partial class ModManager
     {
         var path = StateFilePath;
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, JsonSerializer.Serialize(new { gameDirectory = directory }));
+        var normalized = SpeedhackManager.NormalizeDirectoryPath(directory);
+        File.WriteAllText(path, JsonSerializer.Serialize(new
+        {
+            gameDirectory = normalized.Length == 0 ? null : normalized
+        }));
     }
 
     // ============================== 工具 ==============================

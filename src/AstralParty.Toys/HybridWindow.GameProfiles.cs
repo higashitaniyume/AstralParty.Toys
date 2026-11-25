@@ -259,8 +259,8 @@ public partial class HybridWindow
 
     private void HandleGameProfileOpen(string id)
     {
-        var directory = _gameLibrary.GetDirectory(id);
-        if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+        var directory = SpeedhackManager.NormalizeDirectoryPath(_gameLibrary.GetDirectory(id));
+        if (directory.Length == 0 || !Directory.Exists(directory))
         {
             Post(new { type = "toast", message = "这个目录已经不在了。" });
             return;

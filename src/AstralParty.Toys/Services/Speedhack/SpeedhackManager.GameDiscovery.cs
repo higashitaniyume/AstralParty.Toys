@@ -8,6 +8,23 @@ public sealed partial class SpeedhackManager
 {
     // ============================== 游戏目录定位 ==============================
 
+    internal static string NormalizeDirectoryPath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return "";
+        var trimmed = path.Trim();
+        try
+        {
+            return Path.TrimEndingDirectorySeparator(Path.GetFullPath(trimmed));
+        }
+        catch
+        {
+            return trimmed.TrimEnd('\\', '/');
+        }
+    }
+
+    internal static string ParseVdfPath(string raw)
+        => NormalizeDirectoryPath(raw.Replace("\\\\", "\\"));
+
     /// <summary>先取上次手动选择的目录，没有再自动探测。</summary>
     public string? ResolveGameDirectory() => GetStoredGameDirectory() ?? DetectGameDirectory();
 
@@ -19,7 +36,8 @@ public sealed partial class SpeedhackManager
             using var document = JsonDocument.Parse(File.ReadAllText(StateFilePath));
             var value = document.RootElement.TryGetProperty("gameDirectory", out var element)
                 ? element.GetString() : null;
-            return string.IsNullOrWhiteSpace(value) ? null : value;
+            var normalized = NormalizeDirectoryPath(value);
+            return normalized.Length == 0 ? null : normalized;
         }
         catch
         {
@@ -30,7 +48,11 @@ public sealed partial class SpeedhackManager
     public void SaveStoredGameDirectory(string? directory)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(StateFilePath)!);
-        File.WriteAllText(StateFilePath, JsonSerializer.Serialize(new { gameDirectory = directory }));
+        var normalized = NormalizeDirectoryPath(directory);
+        File.WriteAllText(StateFilePath, JsonSerializer.Serialize(new
+        {
+            gameDirectory = normalized.Length == 0 ? null : normalized
+        }));
     }
 
     /// <summary>通过 Steam 注册表 + libraryfolders.vdf 找到游戏 exe 所在目录（含启动器子目录）。</summary>
@@ -49,10 +71,10 @@ public sealed partial class SpeedhackManager
             {
                 // 自动查找只认 AstralParty*.exe：ContainsGameExe 的 Unity 兜底是给手动选目录用的，
                 // 用在这里会把 Steam 库里别的 Unity 游戏也当成吉星派对（首次启动还可能设成当前游戏）。
-                if (HasKnownGameExe(appDir)) found.Add(appDir);
+                if (HasKnownGameExe(appDir)) found.Add(NormalizeDirectoryPath(appDir));
                 foreach (var sub in SafeEnumerateDirectories(appDir))
                 {
-                    if (HasKnownGameExe(sub)) found.Add(sub);
+                    if (HasKnownGameExe(sub)) found.Add(NormalizeDirectoryPath(sub));
                 }
             }
         }
@@ -67,7 +89,7 @@ public sealed partial class SpeedhackManager
         TryAddRegistryBase(bases, Registry.LocalMachine, @"SOFTWARE\Valve\Steam", "InstallPath");
         foreach (var fallback in new[] { @"C:\Program Files (x86)\Steam", @"C:\Program Files\Steam" })
         {
-            if (Directory.Exists(fallback)) bases.Add(fallback);
+            if (Directory.Exists(fallback)) bases.Add(NormalizeDirectoryPath(fallback));
         }
 
         var extras = new List<string>();
@@ -80,7 +102,9 @@ public sealed partial class SpeedhackManager
                 foreach (var line in File.ReadLines(vdf))
                 {
                     var match = System.Text.RegularExpressions.Regex.Match(line, "\"path\"\\s*\"([^\"]+)\"");
-                    if (match.Success) extras.Add(match.Groups[1].Value.TrimEnd('\\', '/'));
+                    if (!match.Success) continue;
+                    var path = ParseVdfPath(match.Groups[1].Value);
+                    if (path.Length > 0 && Directory.Exists(path)) extras.Add(path);
                 }
             }
             catch
@@ -97,8 +121,8 @@ public sealed partial class SpeedhackManager
         try
         {
             using var key = hive.OpenSubKey(subKey);
-            var path = key?.GetValue(valueName) as string;
-            if (!string.IsNullOrWhiteSpace(path) && Directory.Exists(path)) bases.Add(path.TrimEnd('\\', '/'));
+            var normalized = NormalizeDirectoryPath(key?.GetValue(valueName) as string);
+            if (normalized.Length > 0 && Directory.Exists(normalized)) bases.Add(normalized);
         }
         catch
         {
