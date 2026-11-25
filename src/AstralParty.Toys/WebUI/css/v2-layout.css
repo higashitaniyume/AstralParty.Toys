@@ -305,6 +305,7 @@ details.v2-card[open] > summary svg { transform: rotate(180deg); }
   display: grid; gap: 2px; width: max-content; max-width: min(260px, 45vw); padding: 6px 9px;
   border: 1px solid var(--v2-border-strong); border-radius: 6px; background: var(--v2-float);
   color: var(--v2-text); font-size: 12px; font-weight: 400; overflow-wrap: anywhere; visibility: hidden;
+  pointer-events: none;
 }
 .v2-mod-update:hover .v2-mod-update-tip,
 .v2-mod-update-btn:focus-visible + .v2-mod-update-tip { visibility: visible; }

@@ -1163,6 +1163,12 @@
   const WorkshopModule = {
     compareVersions,
 
+    syncConsent(granted) {
+      if (typeof granted !== 'boolean') return;
+      if (granted) state.consent = 'granted';
+      else if (state.consent === 'unknown') state.consent = 'required';
+    },
+
     openExternalMod(payload) {
       openExternalModRequest(payload);
     },

@@ -58,7 +58,7 @@
 
   function workshopUpdateButton(mod) {
     if (!mod.version || isBuiltIn(mod) || workshopSource !== currentWorkshopSource()) return '';
-    const id = String(mod.id || mod.name || mod.fileName.replace(/\.dll$/i, '')).trim().toLowerCase();
+    const id = String(mod.id || mod.name || String(mod.fileName || '').replace(/\.dll$/i, '')).trim().toLowerCase();
     const available = workshopVersions.get(id);
     if (!available) return '';
     const installed = String(mod.version).trim().replace(/^v(?=\d)/i, '');
@@ -79,7 +79,8 @@
   }
 
   function setWorkshopVersions(payload) {
-    if (payload?.source !== currentWorkshopSource()) return;
+    window.WorkshopModule?.syncConsent?.(payload?.consentGranted);
+    if (!payload?.source || (AppState.librarySettings && payload.source !== currentWorkshopSource())) return;
     workshopSource = payload.source;
     workshopVersions = new Map(Object.entries(payload.versions || {}).map(([id, version]) =>
       [id.toLowerCase(), { id, version }]));

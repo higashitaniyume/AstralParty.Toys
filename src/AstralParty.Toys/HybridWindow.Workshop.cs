@@ -27,7 +27,7 @@ public partial class HybridWindow
 
     private bool WorkshopConsentGranted => WorkshopConsent.IsGranted(_libraryService.Settings);
 
-    private (string Source, string Language, DateTimeOffset Expires, Task<Dictionary<string, string>> Request)? _workshopModVersions;
+    private (string Source, string Language, DateTimeOffset Expires, Task<Dictionary<string, string>> Request, bool Failed)? _workshopModVersions;
 
     /// <summary>没有同意时一律拒绝：任何市场请求（含封面缓存）都不会发出去。</summary>
     private bool RequireWorkshopConsent()
@@ -72,7 +72,7 @@ public partial class HybridWindow
         var source = WorkshopBaseUrl;
         if (!WorkshopConsentGranted)
         {
-            Post(new { type = "workshopModVersions", payload = new { source, versions = new Dictionary<string, string>() } });
+            Post(new { type = "workshopModVersions", payload = new { source, consentGranted = false, versions = new Dictionary<string, string>() } });
             return;
         }
         var language = _libraryService.Settings.Language;
@@ -80,7 +80,7 @@ public partial class HybridWindow
             (catalog.Request.IsCompleted && catalog.Expires <= DateTimeOffset.UtcNow))
         {
             catalog = (source, language, DateTimeOffset.UtcNow.AddMinutes(2),
-                _workshopService.GetWindowsModVersionsAsync(source, language));
+                _workshopService.GetWindowsModVersionsAsync(source, language), false);
             _workshopModVersions = catalog;
         }
 
@@ -88,12 +88,12 @@ public partial class HybridWindow
         {
             var versions = await catalog.Request;
             if (WorkshopConsentGranted && source == WorkshopBaseUrl && _workshopModVersions?.Request == catalog.Request)
-                Post(new { type = "workshopModVersions", payload = new { source, versions } });
+                Post(new { type = "workshopModVersions", payload = new { source, consentGranted = true, versions } });
         }
         catch (Exception ex) when (ex is WorkshopException or JsonException or OperationCanceledException or IOException)
         {
-            if (_workshopModVersions?.Request == catalog.Request)
-                _workshopModVersions = (source, language, DateTimeOffset.UtcNow.AddSeconds(15), catalog.Request);
+            if (_workshopModVersions is { } current && current.Request == catalog.Request && !current.Failed)
+                _workshopModVersions = current with { Expires = DateTimeOffset.UtcNow.AddSeconds(15), Failed = true };
         }
     }
 
