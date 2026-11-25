@@ -139,22 +139,48 @@ public sealed class MobileDeviceService
                     _store.MarkOffline(existing.Id);
             }
 
+            var existingTargets = _store.LoadTargets()
+                .ToDictionary(t => t.Id, StringComparer.OrdinalIgnoreCase);
+
             foreach (var device in found)
             {
-                _store.Upsert(new MobileTarget
-                {
-                    Id = device.Kind + ":" + device.Id,
-                    Kind = device.Kind,
-                    Serial = device.Id,
-                    Label = string.IsNullOrEmpty(device.Label) ? device.Model : device.Label,
-                    Model = device.Model,
-                    OsVersion = device.OsVersion,
-                    State = device.State,
-                    Paired = device.Paired,
-                    AppId = "",
-                    Online = true,
-                    LastSeen = DateTimeOffset.Now.ToString("o"),
-                });
+                var id = device.Kind + ":" + device.Id;
+                var label = string.IsNullOrEmpty(device.Label) ? device.Model : device.Label;
+                var merged = existingTargets.TryGetValue(id, out var prior)
+                    ? new MobileTarget
+                    {
+                        Id = prior.Id,
+                        Kind = device.Kind,
+                        Serial = device.Id,
+                        Label = label,
+                        Model = device.Model,
+                        OsVersion = device.OsVersion,
+                        State = device.State,
+                        Paired = device.Paired,
+                        AppId = prior.AppId,
+                        BundleOuter = prior.BundleOuter,
+                        Installed = prior.Installed,
+                        InstalledInner = prior.InstalledInner,
+                        InstalledPatchedSha256 = prior.InstalledPatchedSha256,
+                        OriginalSha256 = prior.OriginalSha256,
+                        Online = true,
+                        LastSeen = DateTimeOffset.Now.ToString("o"),
+                    }
+                    : new MobileTarget
+                    {
+                        Id = id,
+                        Kind = device.Kind,
+                        Serial = device.Id,
+                        Label = label,
+                        Model = device.Model,
+                        OsVersion = device.OsVersion,
+                        State = device.State,
+                        Paired = device.Paired,
+                        AppId = "",
+                        Online = true,
+                        LastSeen = DateTimeOffset.Now.ToString("o"),
+                    };
+                _store.Upsert(merged);
             }
         }
 
@@ -323,6 +349,12 @@ public sealed class MobileDeviceService
                     : string.Equals(target.OriginalSha256, report.BundleSha256, StringComparison.OrdinalIgnoreCase)
                         ? PatchStates.Clean
                         : report.Injected ? PatchStates.PatchedExternal : PatchStates.Stale;
+            }
+            else if (!string.IsNullOrEmpty(target.InstalledInner) && !report.Injected)
+            {
+                // 本机记录着曾给更早的 inner 打过补丁，现在 catalog 指向的新包却不含注入标记：
+                // 通常是游戏热更下了新的代码包，原来的注入已失效，需要重新注入。
+                report.PatchState = PatchStates.Stale;
             }
             else
             {

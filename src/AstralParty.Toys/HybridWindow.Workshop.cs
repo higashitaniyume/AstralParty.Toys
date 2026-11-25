@@ -318,7 +318,18 @@ public partial class HybridWindow
                 });
                 return;
             }
+            if (DeviceBusyGate())
+            {
+                Post(new
+                {
+                    type = "workshopResult",
+                    payload = new { success = false, id, message = "设备上还有操作正在进行，请稍候。" }
+                });
+                return;
+            }
 
+            _workshopBusy = true;
+            _deviceBusy = true;
             await InstallMarketModToDeviceAsync(device, id, version);
             return;
         }

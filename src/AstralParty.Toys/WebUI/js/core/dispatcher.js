@@ -370,6 +370,7 @@ host?.addEventListener('message', event => {
       if (loadEl) loadEl.classList.add('hidden');
       // 宿主抛异常时不会有别的收尾消息，这里兜住按钮的忙碌态，免得一直转圈
       window.ModsModule?.clearBusy?.();
+      window.V2Devices?.clearBusy?.();
       toast(`错误：${msg.message}`);
       break;
   }

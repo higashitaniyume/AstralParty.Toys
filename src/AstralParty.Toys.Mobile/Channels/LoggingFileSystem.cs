@@ -34,6 +34,14 @@ public sealed class LoggingFileSystem(IDeviceFileSystem inner, MobileOperationLo
         return names;
     }
 
+    public async Task<IReadOnlyList<DeviceDirectoryEntry>> ListDetailedAsync(
+        string path, bool includeHidden = false, CancellationToken cancellationToken = default)
+    {
+        var entries = await inner.ListDetailedAsync(path, includeHidden, cancellationToken);
+        log.File($"详列目录  {path}  → {entries.Count} 项");
+        return entries;
+    }
+
     public async Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken = default)
     {
         var watch = Stopwatch.StartNew();

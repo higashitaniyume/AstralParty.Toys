@@ -10,6 +10,7 @@ using AstralParty.Toys.Mobile.Channels;
 using AstralParty.Toys.Mobile.Logging;
 using AstralParty.Toys.Mobile.Models;
 using AstralParty.Toys.Mobile.Patching;
+using AstralParty.Toys.Mobile.Services;
 using AstralParty.Toys.Mobile.Targets;
 using Xunit.Abstractions;
 using AstralParty.Toys.Mobile.Payload;
@@ -184,14 +185,26 @@ public class MobileTests
     {
         using var sandbox = new TestSandbox("ap-mobile-payload-embed");
         var path = MobilePayloadProvisioner.Ensure(sandbox.Root);
+        Assert.Equal(MobilePayloadProvisioner.FileName, Path.GetFileName(path));
 
         var payload = MobilePayload.Read(path);
         // 引导名新旧两个都认；托管包里它在 bootstrap/ 下
         var bootstrapName = MobilePayload.BootstrapFileCandidates
             .FirstOrDefault(name => payload.Files.Any(f => f.RelativePath.EndsWith(name, StringComparison.Ordinal)));
         Assert.False(string.IsNullOrEmpty(bootstrapName), "载荷缺引导 DLL（注入的 cctor 找不到它）");
+        Assert.Contains(payload.Files, f => f.RelativePath == "CesiumLoader.Mobile.API.dll");
+        Assert.Contains(payload.Files, f => f.RelativePath == "mods/CesiumOverlayMod/CesiumOverlayMod.dll");
+        Assert.Contains(payload.Files, f => f.RelativePath == "mods/CardSkinMod/CardSkinMod.dll");
+        Assert.Contains(payload.Files, f => f.RelativePath == "mods/SpeedHackMod/SpeedHackMod.dll");
+        Assert.Contains(payload.Files, f => f.RelativePath == "mods/FreeCameraMod/FreeCameraMod.dll");
 
-
+        var builtInModIds = payload.Files
+            .Select(f => f.RelativePath)
+            .Where(p => p.StartsWith("mods/", StringComparison.Ordinal))
+            .Select(p => p["mods/".Length..].Split('/')[0])
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        Assert.True(builtInModIds.Count >= 20, $"内嵌载荷内置模组数量过少：{builtInModIds.Count}");
 
         // 用投放时的同一套规则读一遍：会校验引导在根上、SDK 带移动端兜底
         Assert.True(payload.Files.Count >= 3, $"载荷文件太少：{payload.Files.Count}");
@@ -203,6 +216,59 @@ public class MobileTests
         File.WriteAllText(probe, "x");
         MobilePayloadProvisioner.Ensure(sandbox.Root);
         Assert.True(File.Exists(probe), "内容未变时不该清空载荷目录");
+    }
+
+    [Fact]
+    public async Task InstallService_DeployPayloadDeploysBuiltinModsAndPreservesDisabledAndConfig()
+    {
+        using var sandbox = new TestSandbox("ap-mobile-deploy-mods");
+        var payloadPath = MobilePayloadProvisioner.Ensure(sandbox.Root);
+        var fs = new InMemoryDeployFileSystem();
+        const string root = "files/";
+        fs.Dirs.Add(root + "com.unity.addressables");
+        fs.Dirs.Add(root + "CesiumLoader");
+        fs.Dirs.Add(root + "CesiumLoader/disabled_mods");
+        fs.Dirs.Add(root + "CesiumLoader/disabled_mods/SpeedHackMod");
+        fs.Files[root + "CesiumLoader/disabled_mods/SpeedHackMod/config.json"] = Encoding.UTF8.GetBytes("{\"keepDisabledConfig\":true}");
+        fs.Files[root + "CesiumLoader/mods/CesiumOverlayMod/config.json"] = Encoding.UTF8.GetBytes("{\"keepOverlayConfig\":true}");
+        fs.Files[root + "CesiumLoader/CesiumAndroidApi.dll"] = [1, 2, 3];
+
+        var service = new AstralParty.Toys.Mobile.Services.MobileInstallService(
+            new SingleFsChannel("android", root, fs),
+            new MobileInstallStore(sandbox.Root),
+            new MobileTargetStore(sandbox.Root),
+            "unused");
+
+        var target = new MobileTarget
+        {
+            Id = "android:dev1",
+            Kind = "android",
+            Serial = "dev1",
+            AppId = "com.example.game",
+            Online = true,
+        };
+
+        var result = await service.DeployPayloadAsync(target, payloadPath);
+        Assert.True(result.Ok, result.Message);
+
+        Assert.True(fs.Files.ContainsKey(root + "CesiumLoader/bootstrap/CesiumLoader.Mobile.Bootstrap.dll"));
+        Assert.True(fs.Files.ContainsKey(root + "CesiumLoader/sdk/CesiumLoader.SDK.dll"));
+        Assert.True(fs.Files.ContainsKey(root + "CesiumLoader/CesiumLoader.Mobile.API.dll"));
+        Assert.True(fs.Files.ContainsKey(root + "CesiumLoader/mods/CesiumOverlayMod/CesiumOverlayMod.dll"));
+        Assert.True(fs.Files.ContainsKey(root + "CesiumLoader/disabled_mods/SpeedHackMod/SpeedHackMod.dll"));
+        Assert.False(fs.Files.ContainsKey(root + "CesiumLoader/mods/SpeedHackMod/SpeedHackMod.dll"));
+        Assert.False(fs.Files.ContainsKey(root + "CesiumLoader/CesiumAndroidApi.dll"));
+
+        Assert.Equal("{\"keepDisabledConfig\":true}",
+            Encoding.UTF8.GetString(fs.Files[root + "CesiumLoader/disabled_mods/SpeedHackMod/config.json"]));
+        Assert.Equal("{\"keepOverlayConfig\":true}",
+            Encoding.UTF8.GetString(fs.Files[root + "CesiumLoader/mods/CesiumOverlayMod/config.json"]));
+
+        using var doc = JsonDocument.Parse(fs.Files[root + "CesiumLoader/installed.json"]);
+        var builtInMods = doc.RootElement.GetProperty("builtInMods").EnumerateArray().Select(x => x.GetString()).ToList();
+        Assert.Contains("CesiumOverlayMod", builtInMods);
+        Assert.Contains("SpeedHackMod", builtInMods);
+        Assert.Contains("CardSkinMod", builtInMods);
     }
 
     [Fact]
@@ -333,6 +399,187 @@ public class MobileTests
     }
 
     [Fact]
+    public async Task DeviceService_DiscoverPreservesAppIdAndInstallState()
+    {
+        using var sandbox = new TestSandbox("ap-mobile-discover-preserve");
+        var store = new MobileTargetStore(sandbox.Root);
+        store.Upsert(new MobileTarget
+        {
+            Id = "android:dev1",
+            Kind = "android",
+            Serial = "dev1",
+            Label = "OldName",
+            AppId = "com.custom.channel",
+            BundleOuter = "outer-hash",
+            Installed = true,
+            InstalledInner = "inner-hash",
+            InstalledPatchedSha256 = "patched-sha",
+            OriginalSha256 = "orig-sha",
+        });
+
+        var channel = new FakeDiscoveryChannel("android", new DeviceInfo
+        {
+            Kind = "android",
+            Id = "dev1",
+            Label = "NewPhone",
+            Model = "Pixel",
+            OsVersion = "14",
+            State = "device",
+            Paired = true,
+        });
+        var service = new MobileDeviceService(sandbox.Root, [channel]);
+        await service.DiscoverAsync();
+
+        var after = Assert.Single(service.GetTargets());
+        Assert.Equal("NewPhone", after.Label);
+        Assert.Equal("com.custom.channel", after.AppId);
+        Assert.Equal("outer-hash", after.BundleOuter);
+        Assert.True(after.Installed);
+        Assert.Equal("inner-hash", after.InstalledInner);
+        Assert.Equal("patched-sha", after.InstalledPatchedSha256);
+        Assert.Equal("orig-sha", after.OriginalSha256);
+        Assert.True(after.Online);
+    }
+
+    [Fact]
+    public void PayloadProvisioner_ReadSummaryReflectsEmbeddedZip()
+    {
+        using var sandbox = new TestSandbox("ap-mobile-payload-summary");
+        var missing = MobilePayloadProvisioner.ReadSummary(sandbox.Root);
+        Assert.False(missing.Present);
+
+        MobilePayloadProvisioner.Ensure(sandbox.Root);
+        var summary = MobilePayloadProvisioner.ReadSummary(sandbox.Root);
+        Assert.True(summary.Present);
+        Assert.False(string.IsNullOrEmpty(summary.SdkVersion));
+        Assert.True(summary.FileCount >= 3);
+    }
+
+    private sealed class FakeDiscoveryChannel : IDeviceChannel
+    {
+        private readonly DeviceInfo _device;
+
+        public FakeDiscoveryChannel(string kind, DeviceInfo device)
+        {
+            Kind = kind;
+            _device = device;
+        }
+
+        public string Kind { get; }
+
+        public Task<IReadOnlyList<DeviceInfo>> DiscoverAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<DeviceInfo>>([_device]);
+
+        public Task<IReadOnlyList<MobilePackageCandidate>> FindGamePackagesAsync(
+            string serial, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<MobilePackageCandidate>>([]);
+
+        public string BuildRoot(MobileTarget target) => "";
+
+        public Task<IDeviceFileSystem> OpenAsync(MobileTarget target, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+    }
+
+    [Fact]
+    public async Task InstallService_DeleteModRemovesFromModsAndDisabledMods()
+    {
+        using var sandbox = new TestSandbox("ap-mobile-delete-mod");
+        var target = new MobileTarget
+        {
+            Id = "ios:dev1",
+            Kind = "ios",
+            Serial = "dev1",
+            AppId = "com.example.game",
+            Online = true,
+        };
+        var fs = new InMemoryDeleteFileSystem();
+        fs.Existing.Add("Documents/com.unity.addressables");
+        fs.Existing.Add("Documents/CesiumLoader");
+        fs.Existing.Add("Documents/CesiumLoader/mods/DemoMod");
+        fs.Existing.Add("Documents/CesiumLoader/disabled_mods/OtherMod");
+
+        var service = new AstralParty.Toys.Mobile.Services.MobileInstallService(
+            new SingleFsChannel("ios", "Documents/", fs),
+            new MobileInstallStore(sandbox.Root),
+            new MobileTargetStore(sandbox.Root),
+            "unused");
+
+        var bad = await service.DeleteModAsync(target, "../evil");
+        Assert.False(bad.Ok);
+
+        var okEnabled = await service.DeleteModAsync(target, "DemoMod");
+        Assert.True(okEnabled.Ok);
+        Assert.DoesNotContain("Documents/CesiumLoader/mods/DemoMod", fs.Existing);
+
+        var okDisabled = await service.DeleteModAsync(target, "OtherMod");
+        Assert.True(okDisabled.Ok);
+        Assert.DoesNotContain("Documents/CesiumLoader/disabled_mods/OtherMod", fs.Existing);
+
+        var missing = await service.DeleteModAsync(target, "MissingMod");
+        Assert.False(missing.Ok);
+    }
+
+    private sealed class SingleFsChannel(string kind, string root, IDeviceFileSystem fs) : IDeviceChannel
+    {
+        public string Kind { get; } = kind;
+
+        public Task<IReadOnlyList<DeviceInfo>> DiscoverAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<DeviceInfo>>([]);
+
+        public Task<IReadOnlyList<MobilePackageCandidate>> FindGamePackagesAsync(
+            string serial, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<MobilePackageCandidate>>([]);
+
+        public string BuildRoot(MobileTarget target) => root;
+
+        public Task<IDeviceFileSystem> OpenAsync(MobileTarget target, CancellationToken cancellationToken = default) =>
+            Task.FromResult(fs);
+    }
+
+    private sealed class InMemoryDeleteFileSystem : IDeviceFileSystem
+    {
+        public HashSet<string> Existing { get; } = new(StringComparer.Ordinal);
+
+        public Task<bool> ExistsAsync(string path, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Existing.Contains(path));
+
+        public Task<DeviceFileInfo?> StatAsync(string path, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Existing.Contains(path) ? new DeviceFileInfo(0, DateTimeOffset.UtcNow) : null);
+
+        public Task<IReadOnlyList<string>> ListAsync(string path, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<string>>([]);
+
+        public Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken = default) =>
+            Task.FromResult<byte[]>([]);
+
+        public Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken = default) =>
+            Task.FromResult("");
+
+        public Task WriteAllBytesAsync(string path, byte[] data, CancellationToken cancellationToken = default)
+        {
+            Existing.Add(path);
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteAsync(string path, CancellationToken cancellationToken = default)
+        {
+            Existing.Remove(path);
+            return Task.CompletedTask;
+        }
+
+        public Task MakeDirectoriesAsync(string path, CancellationToken cancellationToken = default)
+        {
+            Existing.Add(path);
+            return Task.CompletedTask;
+        }
+
+        public Task RenameAsync(string from, string to, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
+
+    [Fact]
     public void DevicePage_IsWiredIntoNavigationDispatcherAndAllFourDictionaries()
     {
         var appSource = TestPaths.AppSourceDirectory;
@@ -340,14 +587,26 @@ public class MobileTests
         var dispatcher = File.ReadAllText(Path.Combine(appSource, "HybridWindow.Dispatcher.cs"));
         var router = File.ReadAllText(Path.Combine(webUi, "js", "core", "router.js"));
         var index = File.ReadAllText(Path.Combine(webUi, "index.html"));
-        var script = File.ReadAllText(Path.Combine(webUi, "js", "v2", "devices.js"));
+        var deviceScripts = Directory.GetFiles(Path.Combine(webUi, "js", "v2"), "devices*.js")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText)
+            .ToList();
+        var script = string.Join("\n", deviceScripts);
+        var entryScript = File.ReadAllText(Path.Combine(webUi, "js", "v2", "devices.js"));
 
         Assert.Contains("HandleDeviceMessage(type, root)", dispatcher);
         Assert.Contains("pageName === 'devices'", router);
         Assert.Contains("data-page=\"devices\"", index);
         Assert.Contains("<!-- @include view-devices.html -->", index);
+        Assert.Contains("js/v2/devices-helpers.js", index);
+        Assert.Contains("js/v2/devices-files.js", index);
         Assert.Contains("js/v2/devices.js", index);
-        Assert.Contains("window.V2Devices", script);
+        Assert.Contains("window.V2Devices", entryScript);
+        Assert.Contains("dv-env-link", entryScript);
+        Assert.Contains("rel=\"noopener noreferrer\"", entryScript);
+        Assert.Contains("dvExperimentalDialog", entryScript);
+        Assert.Contains("dv-head-experimental", entryScript);
+        Assert.Contains("showModal", entryScript);
         Assert.Contains("dev-busy", script);
         var componentsCss = File.ReadAllText(Path.Combine(webUi, "css", "v2-components.css"));
         Assert.Contains("#devicesView { display: block; overflow-y: auto; }", componentsCss);
@@ -373,7 +632,9 @@ public class MobileTests
     public void DevicePage_EveryRenderedClassIsStyledAndLoopIsInPlace()
     {
         var webUi = Path.Combine(TestPaths.AppSourceDirectory, "WebUI");
-        var script = File.ReadAllText(Path.Combine(webUi, "js", "v2", "devices.js"));
+        var script = string.Join("\n", Directory.GetFiles(Path.Combine(webUi, "js", "v2"), "devices*.js")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
         var css = File.ReadAllText(Path.Combine(webUi, "css", "devices.css"));
 
         var tokens = Regex.Matches(script, @"\bdv-[a-z0-9-]+")
@@ -515,6 +776,169 @@ public class MobileTests
             Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(patchedDll)).ToLowerInvariant(),
             after[AddressablesCatalog.RuntimeAssetKey]);
         _output.WriteLine(stdout);
+    }
+
+    [Fact]
+    public async Task MobileFileService_NormalizesPathsListsAndPreviewsTextOrBinary()
+    {
+        Assert.Equal("", MobileFileService.NormalizeRelativePath("/"));
+        Assert.Equal("CesiumLoader/logs", MobileFileService.NormalizeRelativePath(@" \CesiumLoader\logs\ "));
+        Assert.Throws<InvalidOperationException>(() => MobileFileService.NormalizeRelativePath("../secret"));
+        Assert.Throws<InvalidOperationException>(() => MobileFileService.ValidateSingleName("a/b"));
+        Assert.Throws<InvalidOperationException>(() => MobileFileService.ValidateSingleName(".."));
+
+        var target = new MobileTarget { Id = "ios:u1", Kind = "ios", Serial = "u1", AppId = "com.feimo.astralpartycn" };
+        var fs = new StubExplorerFileSystem { Bytes = Encoding.UTF8.GetBytes("hello cesium\nline2") };
+        var service = new MobileFileService(new FakeFileChannel("ios", "Documents/", fs));
+
+        var listed = await service.ListAsync(target, "CesiumLoader");
+        Assert.Null(listed.Error);
+        Assert.Equal("Documents", listed.RootLabel);
+        Assert.Equal("CesiumLoader", listed.Path);
+        Assert.Equal(["aaa", "bbb"], listed.Entries.Select(e => e.Name).ToArray());
+        Assert.All(listed.Entries, e => Assert.StartsWith("CesiumLoader/", e.Path, StringComparison.Ordinal));
+
+        var textPreview = await service.ReadPreviewAsync(target, "CesiumLoader/logs/boot.log");
+        Assert.False(textPreview.Binary);
+        Assert.Equal("hello cesium\nline2", textPreview.Text);
+
+        fs.Bytes = [0x4D, 0x5A, 0x00, 0x01];
+        var binPreview = await service.ReadPreviewAsync(target, "CesiumLoader/mods/a.dll");
+        Assert.True(binPreview.Binary);
+        Assert.Null(binPreview.Text);
+
+        using var sandbox = new TestSandbox("ap-mobile-files-rw");
+        var localIn = sandbox.Combine("upload.txt");
+        await File.WriteAllTextAsync(localIn, "upload-body");
+        var upResult = await service.UploadFilesAsync(target, "CesiumLoader/logs", [localIn]);
+        Assert.True(upResult.Ok);
+
+        var localOut = sandbox.Combine("sub", "saved.bin");
+        var dlResult = await service.DownloadToFileAsync(target, "CesiumLoader/mods/a.dll", localOut);
+        Assert.True(dlResult.Ok);
+        Assert.Equal([0x4D, 0x5A, 0x00, 0x01], await File.ReadAllBytesAsync(localOut));
+    }
+
+    [Fact]
+    public void EnvironmentService_ScansProcessListAndRespectsCustomAdbPath()
+    {
+        using var sandbox = new TestSandbox("ap-mobile-env-adb");
+        var missingResult = MobileEnvironmentService.ScanAdbFromProcesses(() => []);
+        Assert.False(missingResult.Found);
+        Assert.Contains("找不到", missingResult.Message);
+
+        var fakeAdb = sandbox.Combine("adb.exe");
+        File.WriteAllText(fakeAdb, "stub");
+        var hitResult = MobileEnvironmentService.ScanAdbFromProcesses(() => [fakeAdb, sandbox.Combine("gone.exe")]);
+        Assert.True(hitResult.Found);
+        Assert.Equal(fakeAdb, hitResult.Path);
+
+        var resolvedCustom = AndroidChannel.ResolveAdbDetailed(fakeAdb);
+        Assert.Equal("custom", resolvedCustom.Source);
+        Assert.Equal(fakeAdb, resolvedCustom.Path);
+        Assert.False(resolvedCustom.ConfigInvalid);
+
+        var invalidFallback = AndroidChannel.ResolveAdbDetailed(sandbox.Combine("missing-adb.exe"));
+        Assert.True(invalidFallback.ConfigInvalid);
+        Assert.Equal("https://www.apple.com/itunes/download/win64", MobileEnvironmentService.ItunesDownloadUrl);
+    }
+
+    private sealed class FakeFileChannel(string kind, string root, IDeviceFileSystem fs) : IDeviceChannel
+    {
+        public string Kind => kind;
+        public string BuildRoot(MobileTarget target) => root;
+        public Task<IReadOnlyList<DeviceInfo>> DiscoverAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<DeviceInfo>>([]);
+        public Task<IReadOnlyList<MobilePackageCandidate>> FindGamePackagesAsync(string serial, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<MobilePackageCandidate>>([]);
+        public Task<IDeviceFileSystem> OpenAsync(MobileTarget target, CancellationToken cancellationToken = default) =>
+            Task.FromResult(fs);
+    }
+
+    private sealed class StubExplorerFileSystem : IDeviceFileSystem
+    {
+        public byte[] Bytes { get; set; } = [];
+        public Task<bool> ExistsAsync(string path, CancellationToken cancellationToken = default) => Task.FromResult(true);
+        public Task<DeviceFileInfo?> StatAsync(string path, CancellationToken cancellationToken = default) =>
+            Task.FromResult<DeviceFileInfo?>(new DeviceFileInfo(Bytes.Length, DateTimeOffset.UtcNow, false));
+        public Task<IReadOnlyList<string>> ListAsync(string path, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<string>>(["aaa", "bbb"]);
+        public Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken = default) => Task.FromResult(Bytes);
+        public Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken = default) => Task.FromResult("");
+        public Task WriteAllBytesAsync(string path, byte[] data, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task DeleteAsync(string path, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task MakeDirectoriesAsync(string path, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task RenameAsync(string from, string to, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
+
+    private sealed class InMemoryDeployFileSystem : IDeviceFileSystem
+    {
+        public Dictionary<string, byte[]> Files { get; } = new(StringComparer.Ordinal);
+        public HashSet<string> Dirs { get; } = new(StringComparer.Ordinal);
+
+        public Task<bool> ExistsAsync(string path, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Files.ContainsKey(path) || Dirs.Contains(path.TrimEnd('/')));
+
+        public Task<DeviceFileInfo?> StatAsync(string path, CancellationToken cancellationToken = default)
+        {
+            if (Files.TryGetValue(path, out var data))
+                return Task.FromResult<DeviceFileInfo?>(new DeviceFileInfo(data.Length, DateTimeOffset.UtcNow, false));
+            if (Dirs.Contains(path.TrimEnd('/')))
+                return Task.FromResult<DeviceFileInfo?>(new DeviceFileInfo(0, DateTimeOffset.UtcNow, true));
+            return Task.FromResult<DeviceFileInfo?>(null);
+        }
+
+        public Task<IReadOnlyList<string>> ListAsync(string path, CancellationToken cancellationToken = default)
+        {
+            var prefix = path.TrimEnd('/') + "/";
+            var children = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var key in Files.Keys.Concat(Dirs))
+            {
+                if (!key.StartsWith(prefix, StringComparison.Ordinal) || key.Length == prefix.Length)
+                    continue;
+                var rest = key[prefix.Length..];
+                var slash = rest.IndexOf('/');
+                children.Add(slash >= 0 ? rest[..slash] : rest);
+            }
+            return Task.FromResult<IReadOnlyList<string>>(children.OrderBy(x => x, StringComparer.Ordinal).ToList());
+        }
+
+        public Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Files.TryGetValue(path, out var data) ? data : []);
+
+        public Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Files.TryGetValue(path, out var data) ? Encoding.UTF8.GetString(data) : "");
+
+        public Task WriteAllBytesAsync(string path, byte[] data, CancellationToken cancellationToken = default)
+        {
+            Files[path] = data;
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteAsync(string path, CancellationToken cancellationToken = default)
+        {
+            Files.Remove(path);
+            Dirs.Remove(path.TrimEnd('/'));
+            return Task.CompletedTask;
+        }
+
+        public Task MakeDirectoriesAsync(string path, CancellationToken cancellationToken = default)
+        {
+            var normalized = path.TrimEnd('/');
+            if (!string.IsNullOrEmpty(normalized))
+                Dirs.Add(normalized);
+            return Task.CompletedTask;
+        }
+
+        public Task RenameAsync(string from, string to, CancellationToken cancellationToken = default)
+        {
+            if (Files.Remove(from, out var data))
+                Files[to] = data;
+            return Task.CompletedTask;
+        }
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 
     private static string BuildCatalog(string assetKey, string bundleName)

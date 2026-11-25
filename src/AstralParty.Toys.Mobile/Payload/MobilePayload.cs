@@ -56,10 +56,24 @@ public sealed class MobilePayload
     /// <summary>确认要装原样文件时的放行开关（与 iOS 侧同名）。</summary>
     public const string AllowDesktopSdkEnv = "CESIUM_ALLOW_DESKTOP_SDK";
 
-    private static readonly HashSet<string> SkipSuffixes = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly HashSet<string> GlobalSkipSuffixes = new(StringComparer.OrdinalIgnoreCase)
     {
-        ".pdb", ".txt", ".md", ".xml", ".lib", ".exp", ".iobj", ".ipdb",
+        ".pdb", ".lib", ".exp", ".iobj", ".ipdb",
     };
+
+    private static readonly HashSet<string> RootOnlySkipSuffixes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".txt", ".md", ".xml",
+    };
+
+    private static bool ShouldSkipEntry(string relative)
+    {
+        var ext = Path.GetExtension(relative);
+        if (GlobalSkipSuffixes.Contains(ext))
+            return true;
+        return !relative.StartsWith("mods/", StringComparison.OrdinalIgnoreCase) &&
+               RootOnlySkipSuffixes.Contains(ext);
+    }
 
     private MobilePayload(string root, IReadOnlyList<MobilePayloadFile> files, int skipped, string version, bool archive)
     {
@@ -121,7 +135,7 @@ public sealed class MobilePayload
                 continue;   // 目录条目
 
             // 包根可能带一层目录（托管包是平的，但第三方包不一定）
-            if (SkipSuffixes.Contains(Path.GetExtension(relative)))
+            if (ShouldSkipEntry(relative))
             {
                 skipped++;
                 continue;
@@ -146,7 +160,7 @@ public sealed class MobilePayload
         foreach (var path in Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories))
         {
             var relative = Path.GetRelativePath(root, path).Replace('\\', '/');
-            if (SkipSuffixes.Contains(Path.GetExtension(relative)))
+            if (ShouldSkipEntry(relative))
             {
                 skipped++;
                 continue;

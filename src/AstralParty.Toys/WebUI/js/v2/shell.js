@@ -849,13 +849,24 @@
         Guide.scan = { mode: msg.payload?.mode, running: false, candidates: msg.payload?.candidates || [] };
         break;
       case 'skinsProfiles': V2.skins = msg.payload; break;
-      case 'gameProfiles':
+      case 'gameProfiles': {
         // 程序启动时，概览可能赶在自动添加游戏之前要过状态，那份没有游戏目录，这里补要一次
         if ((msg.payload?.profiles || []).some(p => p.active) && !V2.modStatus?.gameDirectory) {
           V2.lastModStatusAsk = Date.now(); post({ type: 'modStatus' });
         }
+        const tId = msg.payload?.activeTargetId;
+        const curTarget = (msg.payload?.targets || []).find(t => t.id === tId);
+        if (curTarget) {
+          window.TargetGuard?.set({
+            kind: curTarget.kind,
+            targetId: curTarget.id,
+            deviceLabel: curTarget.label,
+            online: curTarget.online,
+          });
+        }
         renderGlobalGame();
         break;
+      }
       case 'replayLibrary': case 'homeData': case 'steamBypassSync': case 'launchModeSync': break;
       case 'targetChanged':
         // 目标切换（本机档案 / 移动设备）：标题栏按钮与设备页以外的页面守卫都跟着走

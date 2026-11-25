@@ -48,8 +48,6 @@ try
                          Option(args, "--text") ?? "cesium ios probe ok",
                          Refs(args)),
         "bootstrap" => Bootstrap(args[1], args[2],
-                         Option(args, "--name") ?? "cesium_probe.txt",
-                         Option(args, "--text") ?? "cesium ios probe ok",
                          Option(args, "--dir") ?? "CesiumLoader",
                          Option(args, "--boot-dll") ?? "CesiumLoader.Mobile.Bootstrap.dll",
                          Option(args, "--boot-type") ?? "CesiumLoader.Mobile.Bootstrap.Boot",
@@ -251,23 +249,16 @@ static int Probe(string input, string output, string fileName, string text, stri
 }
 
 /// <summary>
-/// 探针 + 引导加载，两段互相独立的 try/catch 内联在 &lt;Module&gt;.cctor 里。
+/// 引导加载，单段 try/catch 内联在 &lt;Module&gt;.cctor 里（不写入诊断标记文件）。
 ///
 /// 加载链与安卓 inject-bootstrap 同形：
 ///   Assembly.Load(File.ReadAllBytes(dll)) -&gt; GetType(type) -&gt; GetMethod(name) -&gt; Invoke
-/// 两处 iOS 侧的必要差异：
-///   1. 路径运行时算（iOS 容器带 UUID）：Application.persistentDataPath；
-///   2. 调 <c>Boot.LoadForGame(root)</c> 而不是 <c>Boot.Load()</c>，把根目录显式传进去。
-///      安卓那份 Boot.ResolveRoot() 靠 TryPersistentDataRoot() 兜底，而后者用的是
-///      双参 Assembly.GetType(string, bool) —— 该重载在 HybridCLR 上被裁掉（AGENTS 点名、
-///      MobileTouch.cs 也记过）。让它抛出来只会退到 /sdcard 那几个安卓专属候选，
-///      iOS 上必然全失败。LoadForGame(root) 里的 TryPrepare(root) 一成功就不会再走
-///      ResolveRoot()，所以这条路完全绕开那个裁剪坑，也不用改安卓产物。
-///
-/// 每一步都写一个 &lt;persistentDataPath&gt;/cesium_ios_&lt;step&gt;.txt 标记：标记是纯
-/// WriteAllText，是最不可能出问题的一步，用文件在不在就能把失败点钉死。
+/// 两处移动端的必要差异：
+///   1. 路径运行时算（容器路径带 UUID）：Application.persistentDataPath；
+///   2. 调 <c>Boot.LoadForGame(root)</c> 而不是 <c>Boot.Load()</c>，把根目录显式传进去，
+///      避免退回到 HybridCLR 上被裁剪的双参 Assembly.GetType(string, bool)。
 /// </summary>
-static int Bootstrap(string input, string output, string markerName, string markerText,
+static int Bootstrap(string input, string output,
                      string loaderDir, string bootDll, string bootType, string bootMethod,
                      string bootArg, string[] refDirs)
 {
@@ -294,9 +285,6 @@ static int Bootstrap(string input, string output, string markerName, string mark
     concat2.Parameters.Add(new ParameterDefinition(str));
 
     var fileType = new TypeReference("System.IO", "File", module, corlib);
-    var writeAllText = new MethodReference("WriteAllText", module.TypeSystem.Void, fileType) { HasThis = false };
-    writeAllText.Parameters.Add(new ParameterDefinition(str));
-    writeAllText.Parameters.Add(new ParameterDefinition(str));
     var readAllBytes = new MethodReference("ReadAllBytes", bytes, fileType) { HasThis = false };
     readAllBytes.Parameters.Add(new ParameterDefinition(str));
 
@@ -344,25 +332,10 @@ static int Bootstrap(string input, string output, string markerName, string mark
     var dllLocal = new VariableDefinition(str); body.Variables.Add(dllLocal);
 
     var tail = createdCctor ? il.Create(OpCodes.Ret) : body.Instructions[0];
-
-    var after1 = il.Create(OpCodes.Nop);
-    var try1 = il.Create(OpCodes.Call, getPp);
-    var handler1 = il.Create(OpCodes.Pop);
-
-    var try2 = il.Create(OpCodes.Call, getPp);
-    var handler2 = il.Create(OpCodes.Pop);
+    var tryStart = il.Create(OpCodes.Call, getPp);
+    var handlerStart = il.Create(OpCodes.Pop);
 
     var block = new List<Instruction>();
-
-    // 标记写入：path = pp + "/" + name; File.WriteAllText(path, text)
-    void Mark(string name, string text)
-    {
-        block.Add(Instruction.Create(OpCodes.Ldloc, ppLocal));
-        block.Add(Instruction.Create(OpCodes.Ldstr, "/" + name));
-        block.Add(Instruction.Create(OpCodes.Call, concat2));
-        block.Add(Instruction.Create(OpCodes.Ldstr, text));
-        block.Add(Instruction.Create(OpCodes.Call, writeAllText));
-    }
 
     void ConcatInto(VariableDefinition target, VariableDefinition left, string right)
     {
@@ -372,33 +345,17 @@ static int Bootstrap(string input, string output, string markerName, string mark
         block.Add(Instruction.Create(OpCodes.Stloc, target));
     }
 
-    // ---- 第 1 段：pp 与标记（证明 cctor 跑了 + persistentDataPath 可用） ----
-    block.Add(try1);
+    block.Add(tryStart);
     block.Add(Instruction.Create(OpCodes.Stloc, ppLocal));
-    Mark(markerName, markerText);
-    block.Add(Instruction.Create(OpCodes.Leave, after1));
-    block.Add(handler1);
-    block.Add(Instruction.Create(OpCodes.Leave, after1));
-    block.Add(after1);
-
-    // ---- 第 2 段：加载引导，逐步留标记 ----
-    block.Add(try2);
-    block.Add(Instruction.Create(OpCodes.Stloc, ppLocal));
-    Mark("cesium_ios_s1_enter.txt", "region2 entered");
     ConcatInto(rootLocal, ppLocal, "/" + loaderDir);
     ConcatInto(dllLocal, rootLocal, "/" + bootDll);
-    Mark("cesium_ios_s2_paths.txt", "paths computed");
     block.Add(Instruction.Create(OpCodes.Ldloc, dllLocal));
     block.Add(Instruction.Create(OpCodes.Call, readAllBytes));
-    Mark("cesium_ios_s3_read.txt", "bytes read");
     block.Add(Instruction.Create(OpCodes.Call, assemblyLoad));
-    Mark("cesium_ios_s4_load.txt", "assembly loaded");
     block.Add(Instruction.Create(OpCodes.Ldstr, bootType));
     block.Add(Instruction.Create(OpCodes.Callvirt, getType));
-    Mark("cesium_ios_s5_type.txt", "type resolved");
     block.Add(Instruction.Create(OpCodes.Ldstr, bootMethod));
     block.Add(Instruction.Create(OpCodes.Callvirt, getMethod));
-    Mark("cesium_ios_s6_method.txt", "method resolved");
     block.Add(Instruction.Create(OpCodes.Ldnull));
     if (passRoot)
     {
@@ -415,12 +372,9 @@ static int Bootstrap(string input, string output, string markerName, string mark
     }
     block.Add(Instruction.Create(OpCodes.Callvirt, invoke));
     block.Add(Instruction.Create(OpCodes.Pop));
-    Mark("cesium_ios_s7_invoked.txt", "bootstrap invoked");
     block.Add(Instruction.Create(OpCodes.Leave, tail));
 
-    block.Add(handler2);
-    // handler2 的首条指令就是 Pop（丢掉异常对象）；ppLocal 由第 1 段或第 2 段开头赋值过。
-    Mark("cesium_ios_s9_caught.txt", "region2 threw");
+    block.Add(handlerStart);
     block.Add(Instruction.Create(OpCodes.Leave, tail));
 
     if (createdCctor)
@@ -435,12 +389,10 @@ static int Bootstrap(string input, string output, string markerName, string mark
 
     body.ExceptionHandlers.Add(new ExceptionHandler(ExceptionHandlerType.Catch)
     {
-        TryStart = try1, TryEnd = handler1, HandlerStart = handler1, HandlerEnd = after1,
-        CatchType = exceptionType,
-    });
-    body.ExceptionHandlers.Add(new ExceptionHandler(ExceptionHandlerType.Catch)
-    {
-        TryStart = try2, TryEnd = handler2, HandlerStart = handler2, HandlerEnd = tail,
+        TryStart = tryStart,
+        TryEnd = handlerStart,
+        HandlerStart = handlerStart,
+        HandlerEnd = tail,
         CatchType = exceptionType,
     });
 
@@ -452,24 +404,23 @@ static int Bootstrap(string input, string output, string markerName, string mark
     var refs = checkCctor?.Body?.Instructions
         .Select(i => (i.Operand as MethodReference)?.Name)
         .Where(n => n != null).ToList() ?? new List<string?>();
-    var need = new[] { "get_persistentDataPath", "Concat", "WriteAllText", "ReadAllBytes", "Load", "GetType", "GetMethod", "Invoke" };
+    var need = new[] { "get_persistentDataPath", "Concat", "ReadAllBytes", "Load", "GetType", "GetMethod", "Invoke" };
     var missing = need.Where(n => !refs.Contains(n)).ToList();
     var handlers = checkCctor?.Body?.ExceptionHandlers.Count ?? 0;
     var extraMethods = checkModule.Methods.Count(m => m.Name != ".cctor");
     var literals = checkCctor?.Body?.Instructions.Where(i => i.OpCode == OpCodes.Ldstr)
         .Select(i => (string?)i.Operand).ToList() ?? new List<string?>();
     var hasType = literals.Contains(bootType);
-    var markerCount = literals.Count(s => s != null && s.StartsWith("/cesium_ios_s", StringComparison.Ordinal));
 
     var after = (Types: CountTypes(check.MainModule), Methods: CountMethods(check.MainModule), Refs: check.MainModule.AssemblyReferences.Count);
 
-    Console.WriteLine($"注入 <Module>.cctor -> 标记文件 + 加载 {bootType}::{bootMethod}({(passRoot ? "root" : "无参")})");
+    Console.WriteLine($"注入 <Module>.cctor -> 加载 {bootType}::{bootMethod}({(passRoot ? "root" : "无参")})");
     Console.WriteLine($"引导路径      : {{Application.persistentDataPath}}/{loaderDir}/{bootDll}");
     Console.WriteLine($"cctor         : {(createdCctor ? "新建（该程序集原本没有）" : "已存在，注入段前插，原有指令保留")}");
     Console.WriteLine($"输入          : {Path.GetFileName(input)}  {new FileInfo(input).Length} B  {Sha256(input)}");
     Console.WriteLine($"输出          : {Path.GetFileName(output)}  {new FileInfo(output).Length} B  {Sha256(output)}");
     Console.WriteLine($"结构          : 类型 {before.Types} -> {after.Types}，方法 {before.Methods} -> {after.Methods}，引用 {before.Refs} -> {after.Refs}");
     Console.WriteLine(missing.Count == 0 ? "校验 : 加载链调用齐全" : $"校验 : 缺少调用 {string.Join(", ", missing)}（失败）");
-    Console.WriteLine($"校验 : 异常护栏 {handlers} 段（应为 2）；引导类型字面量 {hasType}；分段标记 {markerCount} 个；<Module> 额外方法 {extraMethods} 个");
-    return missing.Count == 0 && handlers == 2 && hasType && markerCount == 8 && extraMethods == 0 ? 0 : 1;
+    Console.WriteLine($"校验 : 异常护栏 {handlers} 段（应为 1）；引导类型字面量 {hasType}；<Module> 额外方法 {extraMethods} 个");
+    return missing.Count == 0 && handlers == 1 && hasType && extraMethods == 0 ? 0 : 1;
 }

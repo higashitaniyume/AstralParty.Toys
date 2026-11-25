@@ -221,10 +221,11 @@ public sealed class IosChannel : IDeviceChannel
                 return null;
             var size = info.Number("st_size");
             var modifiedSeconds = info.Number("st_mtime");
+            var isDir = string.Equals(info.Text("st_ifmt"), "S_IFDIR", StringComparison.OrdinalIgnoreCase);
             var modified = modifiedSeconds > 0
                 ? DateTimeOffset.FromUnixTimeSeconds(modifiedSeconds)
                 : (DateTimeOffset?)null;
-            return new DeviceFileInfo(size, modified);
+            return new DeviceFileInfo(size, modified, isDir);
         }
 
         public async Task<IReadOnlyList<string>> ListAsync(string path, CancellationToken cancellationToken = default)

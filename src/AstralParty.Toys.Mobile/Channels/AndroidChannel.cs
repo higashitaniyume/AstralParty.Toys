@@ -14,6 +14,9 @@ public sealed class AndroidChannel : IDeviceChannel
 {
     public string Kind => "android";
 
+    /// <summary>Optional user-configured path to <c>adb.exe</c>, persisted in app config.</summary>
+    public static string? CustomAdbPath { get; set; }
+
     public string BuildRoot(MobileTarget target) => $"/sdcard/Android/data/{target.AppId}/files/";
 
     /// <summary>Appends the scheduler-style temp suffix used for every staged write.</summary>
@@ -145,8 +148,20 @@ public sealed class AndroidChannel : IDeviceChannel
         }
     }
 
-    private static string ResolveAdb()
+    public static string ResolveAdb() => ResolveAdbDetailed(CustomAdbPath).Path;
+
+    public static (string Path, string Source, bool ConfigInvalid) ResolveAdbDetailed(string? customOverride = null)
     {
+        var custom = (customOverride ?? CustomAdbPath ?? "").Trim();
+        if (!string.IsNullOrEmpty(custom))
+        {
+            if (File.Exists(custom))
+                return (custom, "custom", false);
+        }
+
+        var configInvalid = !string.IsNullOrEmpty(custom);
+        var exeName = OperatingSystem.IsWindows() ? "adb.exe" : "adb";
+
         foreach (var root in new[]
                  {
                      Environment.GetEnvironmentVariable("ANDROID_HOME"),
@@ -158,12 +173,27 @@ public sealed class AndroidChannel : IDeviceChannel
         {
             if (string.IsNullOrEmpty(root))
                 continue;
-            var candidate = Path.Combine(root, "platform-tools", OperatingSystem.IsWindows() ? "adb.exe" : "adb");
+            var candidate = Path.Combine(root, "platform-tools", exeName);
             if (File.Exists(candidate))
-                return candidate;
+                return (candidate, "sdk", configInvalid);
         }
 
-        return "adb";
+        var pathEnv = Environment.GetEnvironmentVariable("PATH") ?? "";
+        foreach (var dir in pathEnv.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+        {
+            try
+            {
+                var candidate = Path.Combine(dir.Trim().Trim('"'), exeName);
+                if (File.Exists(candidate))
+                    return (candidate, "path", configInvalid);
+            }
+            catch
+            {
+                // Ignore malformed PATH segments.
+            }
+        }
+
+        return (exeName, "missing", configInvalid);
     }
 
     private static async Task<string> RunTextAsync(string[] args, CancellationToken cancellationToken)
@@ -177,7 +207,9 @@ public sealed class AndroidChannel : IDeviceChannel
 
     private static async Task<byte[]> RunBytesAsync(string[] args, CancellationToken cancellationToken)
     {
-        var (_, stdout, _) = await RunAsync(args, cancellationToken);
+        var (exitCode, stdout, stderr) = await RunAsync(args, cancellationToken);
+        if (exitCode != 0)
+            throw new IOException($"adb exec-out 失败（退出码 {exitCode}）：{(stderr + Encoding.UTF8.GetString(stdout)).Trim()}");
         return stdout;
     }
 
@@ -218,21 +250,59 @@ public sealed class AndroidChannel : IDeviceChannel
 
         public async Task<DeviceFileInfo?> StatAsync(string path, CancellationToken cancellationToken = default)
         {
-            var text = await RunShellAsync($"stat -c '%s %Y' '{path}'", cancellationToken);
-            var parts = text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length < 2 || !long.TryParse(parts[0], out var size) || !long.TryParse(parts[1], out var seconds))
+            var text = await RunShellAsync($"stat -c '%F|%s|%Y' {Quote(path)}", cancellationToken);
+            var line = text.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.TrimEnd('\r');
+            if (string.IsNullOrEmpty(line))
                 return null;
+            var parts = line.Split('|');
+            if (parts.Length < 3 || !long.TryParse(parts[1], out var size) || !long.TryParse(parts[2], out var seconds))
+                return null;
+            var isDir = parts[0].Contains("directory", StringComparison.OrdinalIgnoreCase);
             var modified = seconds > 0 ? DateTimeOffset.FromUnixTimeSeconds(seconds) : (DateTimeOffset?)null;
-            return new DeviceFileInfo(size, modified);
+            return new DeviceFileInfo(size, modified, isDir);
         }
 
         public async Task<IReadOnlyList<string>> ListAsync(string path, CancellationToken cancellationToken = default)
         {
-            var text = await RunShellAsync($"ls -1 '{path}'", cancellationToken);
+            var text = await RunShellAsync($"ls -1 {Quote(path)}", cancellationToken);
             return text.Split('\n', StringSplitOptions.RemoveEmptyEntries)
                 .Select(line => line.TrimEnd('\r'))
                 .Where(line => line.Length > 0)
                 .ToList();
+        }
+
+        public async Task<IReadOnlyList<DeviceDirectoryEntry>> ListDetailedAsync(
+            string path, bool includeHidden = false, CancellationToken cancellationToken = default)
+        {
+            // Batch stat in a single shell pipeline so folders with thousands of files do not spawn N processes.
+            var script = $"cd {Quote(path)} 2>/dev/null && " +
+                         "find . -maxdepth 1 -mindepth 1 -print0 2>/dev/null | " +
+                         "xargs -0 stat -c '%F|%s|%Y|%n' 2>/dev/null";
+            var text = await RunShellAsync(script, cancellationToken);
+            var entries = new List<DeviceDirectoryEntry>();
+            foreach (var raw in text.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var line = raw.TrimEnd('\r');
+                var p1 = line.IndexOf('|');
+                var p2 = p1 >= 0 ? line.IndexOf('|', p1 + 1) : -1;
+                var p3 = p2 >= 0 ? line.IndexOf('|', p2 + 1) : -1;
+                if (p1 < 0 || p2 < 0 || p3 < 0)
+                    continue;
+                var type = line[..p1];
+                if (!long.TryParse(line[(p1 + 1)..p2], out var size)) size = 0;
+                if (!long.TryParse(line[(p2 + 1)..p3], out var seconds)) seconds = 0;
+                var name = line[(p3 + 1)..];
+                if (name.StartsWith("./", StringComparison.Ordinal))
+                    name = name[2..];
+                if (string.IsNullOrEmpty(name) || name is "." or "..")
+                    continue;
+                if (!includeHidden && name.StartsWith('.'))
+                    continue;
+                var isDir = type.Contains("directory", StringComparison.OrdinalIgnoreCase);
+                var modified = seconds > 0 ? DateTimeOffset.FromUnixTimeSeconds(seconds) : (DateTimeOffset?)null;
+                entries.Add(new DeviceDirectoryEntry(name, isDir, size, modified));
+            }
+            return entries;
         }
 
         async Task<string?> IDeviceFileSystem.FindBundleOuterAsync(
@@ -247,7 +317,7 @@ public sealed class AndroidChannel : IDeviceChannel
         }
 
         public Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken = default) =>
-            RunBytesAsync(["-s", _serial, "exec-out", "cat", path], cancellationToken);
+            RunBytesAsync(["-s", _serial, "exec-out", $"cat {Quote(path)}"], cancellationToken);
 
         public async Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken = default) =>
             Encoding.UTF8.GetString(await ReadAllBytesAsync(path, cancellationToken));
