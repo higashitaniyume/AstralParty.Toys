@@ -49,6 +49,23 @@
     render();
   }
 
+  function isNewerLoaderVersion(candidate, installed) {
+    const parse = value => {
+      const clean = String(value || '').trim().replace(/^modloader-/i, '').replace(/^v/i, '').split('-')[0];
+      const parts = clean.split('.').map(n => parseInt(n, 10));
+      if (!parts.length || parts.some(n => Number.isNaN(n))) return null;
+      return [parts[0] || 0, parts[1] || 0, parts[2] || 0, parts[3] || 0];
+    };
+    const a = parse(candidate);
+    const b = parse(installed);
+    if (!a) return false;
+    if (!b) return true;
+    for (let i = 0; i < 4; i++) {
+      if (a[i] !== b[i]) return a[i] > b[i];
+    }
+    return false;
+  }
+
   function renderHead() {
     return `
       <header class="dv-head">
@@ -250,6 +267,14 @@
       ? `<span class="dv-pill ok">${icon('inventory_2')}${esc(tr('devices.payloadReady'))}${state.payloadVersion ? ' · v' + esc(state.payloadVersion) : ''}${state.payloadSdkVersion ? ' · SDK ' + esc(state.payloadSdkVersion) : ''}</span>`
       : `<span class="dv-pill warn">${icon('warning')}${esc(tr('devices.deployMissing'))}</span>`;
 
+    const installedLoaderVer = (report?.loaderVersion || report?.sdkVersion || '').trim();
+    const latestLoaderVer = (state.loaderRelease?.version || '').trim();
+    const isLoaderUpdateNewer = !!(installedLoaderVer && latestLoaderVer && isNewerLoaderVersion(latestLoaderVer, installedLoaderVer));
+    const loaderUpdateBtnLabel = latestLoaderVer
+      ? tr('devices.loaderUpdateTo', { version: latestLoaderVer })
+      : tr('devices.loaderUpdateFromGh');
+    const loaderMetaText = `${installedLoaderVer ? 'v' + installedLoaderVer : tr('devices.loaderVersionUnknown')} · ${latestLoaderVer ? tr('devices.loaderLatestBadge', { version: latestLoaderVer }) : tr('devices.loaderNotChecked')}`;
+
     const staleWarning = report?.patchState === 'stale'
       ? `<div class="dv-alert warn" role="alert">${icon('warning')}<div class="dv-alert-content"><b>${esc(tr('devices.stateStale'))}</b><span>${esc(tr('devices.staleBanner'))}</span></div></div>`
       : '';
@@ -339,6 +364,32 @@
             ${payloadBadge}
             ${state.payloadPath ? `<span class="dv-payload-path" title="${esc(state.payloadPath)}">${esc(state.payloadPath)}</span>` : ''}
           </div>
+        </div>
+
+        <div class="dv-loader-update">
+          <div class="dv-loader-update-head">
+            <div class="dv-loader-update-info">
+              <b>${esc(tr('devices.loaderUpdateTitle'))}</b>
+              <span class="dv-loader-update-meta">${esc(loaderMetaText)}</span>
+            </div>
+            <div class="dv-loader-update-actions">
+              <button type="button" class="v2-btn line" data-dev-check-loader
+                ${state.busy || state.loaderChecking ? 'disabled' : ''}>
+                ${icon('refresh')}
+                <span>${esc(state.loaderChecking ? tr('devices.loaderChecking') : tr('devices.loaderCheckLatest'))}</span>
+              </button>
+              <button type="button" class="v2-btn ${isLoaderUpdateNewer ? 'primary' : 'line'}" data-dev-update-loader="${esc(dev.id)}"
+                ${state.busy || offline || !state.loaderRelease ? 'disabled' : ''}>
+                ${icon('upgrade')}
+                <span>${esc(loaderUpdateBtnLabel)}</span>
+              </button>
+              <a class="v2-btn ghost dv-loader-gh-link" href="https://github.com/higashitaniyume/CesiumLoader/releases/latest" target="_blank" rel="noopener noreferrer">
+                ${icon('open_in_new')}<span>GitHub</span>
+              </a>
+            </div>
+          </div>
+          ${state.loaderUpdateStatus ? `<div class="dv-loader-update-status">${esc(state.loaderUpdateStatus)}</div>` : ''}
+          <div class="dv-loader-update-hint">${esc(tr('devices.loaderUpdateHint'))}</div>
         </div>
       </section>`;
   }
@@ -825,6 +876,20 @@
         render();
         break;
       }
+      case 'deviceLoaderCheckResult': {
+        const p = msg.payload || {};
+        state.loaderChecking = false;
+        if (p.ok && p.version) {
+          state.loaderRelease = p;
+          state.loaderUpdateStatus = tr('devices.loaderCheckOk', { version: p.version });
+          showCornerToast(true, state.loaderUpdateStatus);
+        } else {
+          state.loaderUpdateStatus = tr('devices.loaderCheckFail', { msg: p.message || 'unknown error' });
+          showCornerToast(false, state.loaderUpdateStatus);
+        }
+        render();
+        break;
+      }
       case 'devicePackages': {
         state.packagesTargetId = msg.payload?.targetId || state.selectedId;
         state.packages = msg.payload?.packages || [];
@@ -885,8 +950,10 @@
         break;
       }
       case 'error': {
+        state.loaderChecking = false;
         if (state.busy || state.pullingPayload || state.progress?.active) clearBusy();
         if (msg.message) showCornerToast(false, msg.message);
+        render();
         break;
       }
     }
@@ -951,6 +1018,34 @@
       state.pullingPayload = true;
       startBusy(tr('devices.pulling'));
       post({ type: 'devicePullPayload' });
+      return;
+    }
+    if (el.hasAttribute('data-dev-check-loader') && !state.busy && !state.loaderChecking) {
+      state.loaderChecking = true;
+      state.loaderUpdateStatus = tr('devices.loaderChecking');
+      render();
+      post({ type: 'deviceCheckLoaderUpdate', targetId: dev?.id || '' });
+      return;
+    }
+    if (el.dataset.devUpdateLoader && !state.busy && state.loaderRelease) {
+      const targetId = el.dataset.devUpdateLoader;
+      const version = state.loaderRelease.version || '';
+      confirmAction({
+        title: tr('devices.loaderUpdateConfirmTitle', { version }),
+        iconName: 'upgrade',
+        lines: [
+          tr('devices.loaderUpdateConfirmLine1'),
+          tr('devices.loaderUpdateConfirmLine2'),
+          tr('devices.loaderUpdateConfirmLine3'),
+        ],
+        okLabel: tr('devices.loaderUpdateConfirmOk'),
+        danger: false,
+        onConfirm: () => {
+          state.loaderUpdateStatus = tr('devices.loaderUpdateTo', { version });
+          startBusy(tr('devices.busyWrite'));
+          post({ type: 'deviceUpdateLoader', targetId, expectedVersion: version });
+        },
+      });
       return;
     }
     if (el.dataset.devCopySerial) {

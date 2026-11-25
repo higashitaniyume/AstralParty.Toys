@@ -272,6 +272,115 @@ public class MobileTests
     }
 
     [Fact]
+    public async Task LoaderUpdateService_PreparesVerifiesAndPreservesMobileModsDisabledAndConflicts()
+    {
+        using var sandbox = new TestSandbox("ap-mobile-loader-update");
+        var payloadPath = MobilePayloadProvisioner.Ensure(sandbox.Root);
+
+        static byte[] MakeZip(bool tamperEntry = false)
+        {
+            using var ms = new MemoryStream();
+            using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                var manifestFiles = new Dictionary<string, string>();
+                void AddEntry(string path, string content, bool recordHash = true)
+                {
+                    var bytes = Encoding.UTF8.GetBytes(content);
+                    if (recordHash)
+                        manifestFiles[path] = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+                    using var s = zip.CreateEntry(path).Open();
+                    var written = tamperEntry && path.EndsWith("NewOfficialMod.dll", StringComparison.Ordinal)
+                        ? Encoding.UTF8.GetBytes("tampered")
+                        : bytes;
+                    s.Write(written, 0, written.Length);
+                }
+
+                AddEntry("AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll", "sdk-4.2.0");
+                AddEntry("AstralParty_ModLoader/CesiumLoader-LICENSE.txt", "MIT");
+                AddEntry("AstralParty_ModLoader/mods/NewOfficialMod/NewOfficialMod.dll", "new-mod-dll");
+                AddEntry("AstralParty_ModLoader/mods/NewOfficialMod/NewOfficialMod.json", "{\"id\":\"NewOfficialMod\"}");
+                AddEntry("AstralParty_ModLoader/mods/NewOfficialMod/NewOfficialMod.pdb", "debug-pdb", recordHash: false);
+                AddEntry("AstralParty_ModLoader/mods/NewOfficialMod/config.json", "{\"default\":1}", recordHash: false);
+                AddEntry("AstralParty_ModLoader/mods/DisabledOfficialMod/DisabledOfficialMod.dll", "disabled-dll");
+                AddEntry("AstralParty_ModLoader/mods/ConflictedMod/ConflictedMod.dll", "conflict-dll");
+                AddEntry("AstralParty_ModLoader/mods/CesiumOverlayMod/CesiumOverlayMod.dll", "desktop-overlay");
+                AddEntry("AstralParty_ModLoader/mods/SpeedHackMod/SpeedHackMod.dll", "desktop-speedhack");
+                AddEntry("AstralParty_ModLoader/mods/FreeCameraMod/FreeCameraMod.dll", "desktop-camera");
+                AddEntry("AstralParty_ModLoader/mods/LanguageUnlockMod/LanguageUnlockMod.dll", "desktop-lang");
+
+                using var msManifest = zip.CreateEntry("cesium-loader.json").Open();
+                var manifestBytes = JsonSerializer.SerializeToUtf8Bytes(new
+                {
+                    version = "4.2.0",
+                    files = manifestFiles,
+                });
+                msManifest.Write(manifestBytes, 0, manifestBytes.Length);
+            }
+            return ms.ToArray();
+        }
+
+        Assert.Throws<InvalidDataException>(() => MobileLoaderUpdateService.PreparePackage(MakeZip(tamperEntry: true)));
+
+        var prepared = MobileLoaderUpdateService.PreparePackage(MakeZip(), expectedVersion: "4.2.0");
+        Assert.Equal("4.2.0", prepared.Version);
+        Assert.Contains("AstralParty_ModLoader/sdk/CesiumLoader.SDK.dll"[22..], prepared.Files.Keys);
+        Assert.Contains("NewOfficialMod", prepared.Mods);
+        Assert.DoesNotContain("CesiumOverlayMod", prepared.Mods);
+        Assert.DoesNotContain("SpeedHackMod", prepared.Mods);
+        Assert.DoesNotContain("FreeCameraMod", prepared.Mods);
+        Assert.DoesNotContain("LanguageUnlockMod", prepared.Mods);
+        Assert.DoesNotContain(prepared.Files.Keys, k => k.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(prepared.Files.Keys, k => k.EndsWith("/config.json", StringComparison.OrdinalIgnoreCase));
+
+        var fs = new InMemoryDeployFileSystem();
+        const string root = "files/";
+        fs.Dirs.Add(root + "com.unity.addressables");
+        fs.Dirs.Add(root + "CesiumLoader");
+        fs.Dirs.Add(root + "CesiumLoader/mods/CesiumOverlayMod");
+        fs.Files[root + "CesiumLoader/mods/CesiumOverlayMod/CesiumOverlayMod.dll"] = Encoding.UTF8.GetBytes("mobile-overlay-keep");
+        fs.Files[root + "CesiumLoader/mods/NewOfficialMod/config.json"] = Encoding.UTF8.GetBytes("{\"player\":true}");
+        fs.Files[root + "CesiumLoader/mods/NewOfficialMod.dll"] = Encoding.UTF8.GetBytes("flat-legacy");
+        fs.Dirs.Add(root + "CesiumLoader/disabled_mods/DisabledOfficialMod");
+        fs.Files[root + "CesiumLoader/disabled_mods/DisabledOfficialMod/DisabledOfficialMod.dll"] = Encoding.UTF8.GetBytes("old");
+        fs.Dirs.Add(root + "CesiumLoader/mods/ConflictedMod");
+        fs.Files[root + "CesiumLoader/mods/ConflictedMod/ConflictedMod.dll"] = Encoding.UTF8.GetBytes("enabled-local");
+        fs.Dirs.Add(root + "CesiumLoader/disabled_mods/ConflictedMod");
+        fs.Files[root + "CesiumLoader/disabled_mods/ConflictedMod/ConflictedMod.dll"] = Encoding.UTF8.GetBytes("disabled-local");
+        fs.Files[root + "CesiumLoader/installed.json"] = Encoding.UTF8.GetBytes("{\"layout\":2,\"sdkVersion\":\"4.1.1\"}");
+
+        var target = new MobileTarget
+        {
+            Id = "android:dev1",
+            Kind = "android",
+            Serial = "dev1",
+            AppId = "com.example.game",
+            Online = true,
+        };
+
+        var result = await MobileLoaderUpdateService.ApplyToDeviceAsync(
+            new SingleFsChannel("android", root, fs),
+            target,
+            prepared,
+            payloadPath);
+        Assert.True(result.Ok, result.Message);
+        Assert.Contains("ConflictedMod", result.Message);
+
+        Assert.Equal("mobile-overlay-keep", Encoding.UTF8.GetString(fs.Files[root + "CesiumLoader/mods/CesiumOverlayMod/CesiumOverlayMod.dll"]));
+        Assert.Equal("{\"player\":true}", Encoding.UTF8.GetString(fs.Files[root + "CesiumLoader/mods/NewOfficialMod/config.json"]));
+        Assert.Equal("new-mod-dll", Encoding.UTF8.GetString(fs.Files[root + "CesiumLoader/mods/NewOfficialMod/NewOfficialMod.dll"]));
+        Assert.False(fs.Files.ContainsKey(root + "CesiumLoader/mods/NewOfficialMod.dll"));
+        Assert.Equal("disabled-dll", Encoding.UTF8.GetString(fs.Files[root + "CesiumLoader/disabled_mods/DisabledOfficialMod/DisabledOfficialMod.dll"]));
+        Assert.False(fs.Files.ContainsKey(root + "CesiumLoader/mods/DisabledOfficialMod/DisabledOfficialMod.dll"));
+        Assert.Equal("enabled-local", Encoding.UTF8.GetString(fs.Files[root + "CesiumLoader/mods/ConflictedMod/ConflictedMod.dll"]));
+        Assert.True(fs.Files.ContainsKey(root + "CesiumLoader/bootstrap/CesiumLoader.Mobile.Bootstrap.dll"));
+
+        using var doc = JsonDocument.Parse(fs.Files[root + "CesiumLoader/installed.json"]);
+        Assert.Equal("4.2.0", doc.RootElement.GetProperty("loaderVersion").GetString());
+        Assert.Equal("4.2.0", doc.RootElement.GetProperty("sdkVersion").GetString());
+        Assert.Equal(2, doc.RootElement.GetProperty("layout").GetInt32());
+    }
+
+    [Fact]
     public void OperationLog_WritesFileAndStreamsEveryEntry()
     {
         using var sandbox = new TestSandbox("ap-mobile-log");

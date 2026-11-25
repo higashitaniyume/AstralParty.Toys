@@ -73,6 +73,9 @@
     payloadSdkVersion: '',
     payloadFileCount: 0,
     pullingPayload: false,
+    loaderRelease: null,
+    loaderChecking: false,
+    loaderUpdateStatus: '',
     packages: null,
     packagesTargetId: '',
     mods: null,
@@ -253,12 +256,13 @@
     syncCornerHud();
   }
 
-  function confirmAction({ title, message, okLabel, danger, onConfirm }) {
+  function confirmAction({ title, message, lines, iconName = 'info', okLabel, danger, onConfirm }) {
     const ui = U();
+    const bulletLines = (Array.isArray(lines) && lines.length ? lines : [message]).filter(Boolean);
     if (danger && ui?.confirmDelete) {
       ui.confirmDelete({
         title: esc(title),
-        lines: [esc(message)],
+        lines: bulletLines.map(esc),
         ok: esc(okLabel || tr('common.confirm')),
         onOk: onConfirm,
       });
@@ -269,22 +273,26 @@
         ui.closeModal();
         onConfirm?.();
       };
+      const iconHtml = icon(iconName) || ui.ICON?.info || '';
+      const listHtml = bulletLines.map(line => `<li>${esc(line)}</li>`).join('');
       const m = ui.openModal(`
-        <div class="v2-modal-head">
-          <h2>${esc(title)}</h2>
-          <button type="button" class="v2-icon-btn" data-v2modal="close" aria-label="${esc(tr('common.cancel'))}">${ui.ICON.x}</button>
+        <div class="v2-confirm" style="padding-bottom:18px">
+          <div class="v2-confirm-icon" style="background:rgba(250,204,21,.12);color:var(--gp-gold)">${iconHtml}</div>
+          <div>
+            <b class="v2-confirm-title">${esc(title)}</b>
+            <ul class="v2-confirm-lines">${listHtml}</ul>
+          </div>
         </div>
-        <p style="margin:0;color:var(--gp-text-sub);font-size:13px;line-height:1.55">${esc(message)}</p>
         <div class="v2-modal-foot">
           <span class="v2-top-spacer"></span>
           <button type="button" class="v2-btn ghost" data-v2modal="close" id="dvModalCancel">${esc(tr('common.cancel'))}</button>
           <button type="button" class="v2-btn ${danger ? 'danger-fill' : 'primary'}" data-v2modal="devConfirmOk">${esc(okLabel || tr('common.confirm'))}</button>
-        </div>`, 'narrow');
+        </div>`, 'wide');
       if (danger) ui.armDanger(m);
       document.getElementById('dvModalCancel')?.focus();
       return;
     }
-    if (window.confirm(message)) onConfirm?.();
+    if (window.confirm(bulletLines.join('\n'))) onConfirm?.();
   }
 
   function openPromptModal({ title, label, initialValue = '', placeholder = '', onSubmit }) {
@@ -299,13 +307,13 @@
     };
     ui.openModal(`
       <div class="v2-modal-head">
-        <h2>${esc(title)}</h2>
+        <b>${esc(title)}</b>
         <button type="button" class="v2-icon-btn" data-v2modal="close" aria-label="${esc(tr('common.cancel'))}">${ui.ICON.x}</button>
       </div>
-      <form id="dvPromptForm" class="dv-prompt-form">
+      <form id="dvPromptForm" class="dv-prompt-form" style="padding:16px 18px">
         <label class="dv-manual-label" for="dvPromptInput">${esc(label)}</label>
         <input id="dvPromptInput" class="dv-input" type="text" value="${esc(initialValue)}" placeholder="${esc(placeholder)}" required>
-        <div class="v2-modal-foot">
+        <div class="v2-modal-foot" style="margin:8px -18px -16px">
           <span class="v2-top-spacer"></span>
           <button type="button" class="v2-btn ghost" data-v2modal="close">${esc(tr('common.cancel'))}</button>
           <button type="submit" class="v2-btn primary">${esc(tr('common.confirm'))}</button>
@@ -389,7 +397,7 @@
 
     ui.openModal(`
       <div class="v2-modal-head">
-        <h2>${esc(payload.modId)} · ${esc(tr('devices.modConfig'))}</h2>
+        <b>${esc(payload.modId)} · ${esc(tr('devices.modConfig'))}</b>
         <button type="button" class="v2-icon-btn" data-v2modal="close" aria-label="${esc(tr('common.cancel'))}">${ui.ICON.x}</button>
       </div>
       <div class="dv-config-form">

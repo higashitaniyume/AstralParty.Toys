@@ -19,6 +19,7 @@ public partial class HybridWindow
     private MobileOperationLog? _mobileLog;
     private MobileInstallStore? _mobileInstallState;
     private bool _deviceBusy;
+    private bool _deviceLoaderCheckRunning;
     private int _deviceRequest;
     private static string? _mobilePayloadPath;
 
@@ -167,6 +168,23 @@ public partial class HybridWindow
                 _deviceBusy = true;
                 _ = PullLatestPayloadAsync();
                 return true;
+
+            case "deviceCheckLoaderUpdate":
+            {
+                var targetId = ReadDeviceString(root, "targetId") ?? "";
+                _ = CheckDeviceLoaderUpdateAsync(targetId);
+                return true;
+            }
+
+            case "deviceUpdateLoader":
+            {
+                var target = ResolveOnlineDeviceTarget(root, "更新加载器");
+                if (target is null || DeviceBusyGate()) return true;
+                var expectedVersion = ReadDeviceString(root, "expectedVersion");
+                _deviceBusy = true;
+                _ = WriteAsync(() => UpdateDeviceLoaderAsync(target, expectedVersion), target.Id, refresh: "mods");
+                return true;
+            }
 
             case "deviceScanPackages":
             {
@@ -622,6 +640,84 @@ public partial class HybridWindow
         {
             FinishDeviceBusyOp();
         }
+    }
+
+    private async Task CheckDeviceLoaderUpdateAsync(string targetId)
+    {
+        if (_deviceLoaderCheckRunning)
+            return;
+        _deviceLoaderCheckRunning = true;
+        try
+        {
+            var settings = _libraryService.Settings;
+            var info = await _modManager.GetLatestVersionAsync(settings.GitHubMirrorType, settings.CustomGitHubMirrorUrl)
+                .ConfigureAwait(true);
+            MobileLog.Info($"已查询 GitHub 最新 CesiumLoader：{info.Version}");
+            Post(new
+            {
+                type = "deviceLoaderCheckResult",
+                payload = new
+                {
+                    ok = true,
+                    targetId,
+                    version = info.Version ?? "",
+                    tag = info.Tag ?? "",
+                    publishedAt = info.PublishedAt ?? "",
+                    htmlUrl = info.HtmlUrl ?? "",
+                },
+            });
+        }
+        catch (Exception ex)
+        {
+            Post(new
+            {
+                type = "deviceLoaderCheckResult",
+                payload = new { ok = false, targetId, message = ex.Message },
+            });
+        }
+        finally
+        {
+            _deviceLoaderCheckRunning = false;
+        }
+    }
+
+    private async Task<MobileOperationResult> UpdateDeviceLoaderAsync(MobileTarget target, string? expectedVersion)
+    {
+        var settings = _libraryService.Settings;
+        DeviceProgress("正在从 GitHub 下载最新 CesiumLoader…", 8);
+        var zipBytes = await _modManager.DownloadLatestPackageAsync(
+                settings.GitHubMirrorType,
+                settings.CustomGitHubMirrorUrl,
+                cancellationToken: default,
+                progress: (_, pct, msg) => DeviceProgress(
+                    string.IsNullOrEmpty(msg) ? "正在下载最新 CesiumLoader…" : msg,
+                    pct >= 0 ? 8 + pct * 45 / 100 : 25))
+            .ConfigureAwait(false);
+
+        DeviceProgress("正在校验并解压加载器发布包…", 55);
+        var prepared = MobileLoaderUpdateService.PreparePackage(
+            zipBytes,
+            expectedVersion,
+            (msg, pct) => DeviceProgress(msg, 55 + pct * 15 / 100));
+
+        string? localPayload = null;
+        try
+        {
+            localPayload = MobilePayloadPath;
+        }
+        catch
+        {
+            // 没有本地移动端载荷时保留设备上既有引导，不阻断更新
+        }
+
+        return await MobileLoaderUpdateService.ApplyToDeviceAsync(
+            MobileChannels,
+            target,
+            prepared,
+            localPayload,
+            MobileLoaderUpdateService.OfficialSourceUrl,
+            MobileLog,
+            (msg, pct) => DeviceProgress(msg, 70 + pct * 30 / 100)).ConfigureAwait(false);
     }
 
     private async Task PushDevicesAsync(bool discover)
