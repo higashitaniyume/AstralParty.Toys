@@ -21,7 +21,8 @@
     <ProjectReference Include="..\AstralParty.Toys.Mobile\AstralParty.Toys.Mobile.csproj" />
     <!-- Ship the verified Mono.Cecil injector as a standalone exe; never reference its assembly. -->
     <ProjectReference Include="..\CesiumLoader.Mobile.Patcher\CesiumLoader.Mobile.Patcher.csproj"
-                      ReferenceOutputAssembly="false" />
+                      ReferenceOutputAssembly="false"
+                      AdditionalProperties="PublishSingleFile=false;SelfContained=false" />
   </ItemGroup>
 
   <ItemGroup>
