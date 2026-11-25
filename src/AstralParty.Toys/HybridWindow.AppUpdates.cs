@@ -157,6 +157,13 @@ public partial class HybridWindow
                     Post(new { type = "toast", message = $"发现新版本 v{result.Manifest?.Version}" });
                 }
 
+                _ = AnnounceUpdateAvailableChangelogAsync(
+                    trigger: "app-update-available",
+                    defaultTab: "app",
+                    userInitiated: userInitiated,
+                    appPrevVersion: AppInfo.Get().Version,
+                    appTargetVersion: result.Manifest?.Version);
+
                 // 若开启了自动下载，后台静默拉取安装包（不会替用户「改用安装版」）
                 if (settings.AutoDownloadUpdates && _targetUpdatePackage != null)
                 {
@@ -362,10 +369,10 @@ public partial class HybridWindow
     }
 
     /// <summary>上一次原地更新的结果（脚本在重新打开程序前写下），启动后告诉用户一次。</summary>
-    private void ReportLastSelfUpdate()
+    private SelfUpdateOutcome? ReportLastSelfUpdate()
     {
         var result = AppSelfUpdater.TakeLastResult();
-        if (result == null) return;
+        if (result == null) return null;
         var outcome = result;
         var v = string.IsNullOrEmpty(outcome.Version) ? "新版本" : $"v{outcome.Version}";
         if (outcome.Ok)
@@ -381,6 +388,7 @@ public partial class HybridWindow
         {
             Post(new { type = "toast", message = $"更新到 {v} 没有完成，已还原成原来的版本。可以稍后再试，或者到发布页手动下载。" });
         }
+        return outcome;
     }
 
     /// <summary>
@@ -406,13 +414,14 @@ public partial class HybridWindow
     }
 
     /// <summary>
-    /// 应用启动就绪后延迟触发自动检查。
+    /// 应用启动就绪后检查首次安装/更新完毕弹窗，并延迟触发自动检查。
     /// </summary>
     private void ScheduleStartupUpdateCheck()
     {
-        ReportLastSelfUpdate();
+        var selfUpdateOutcome = ReportLastSelfUpdate();
         ReportInstallerSwitch();
         if (_supersededByInstaller) return;
+        _ = CheckStartupUpdatedChangelogAsync(selfUpdateOutcome);
         if (!_libraryService.Settings.AutoCheckUpdates) return;
 
         _ = Task.Run(async () =>

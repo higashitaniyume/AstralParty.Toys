@@ -210,6 +210,7 @@ public sealed partial class ReplayLibraryService
             AutoCheckUpdates = config.Update.AutoCheck,
             AutoDownloadUpdates = config.Update.AutoDownload,
             AutoInstallUpdates = config.Update.AutoInstall,
+            AutoChangelogPopup = config.Update.AutoChangelogPopup,
             GitHubMirrorType = config.Update.GitHubMirrorType,
             CustomGitHubMirrorUrl = config.Update.CustomGitHubMirrorUrl
         });
@@ -255,6 +256,7 @@ public sealed partial class ReplayLibraryService
             config.Update.AutoCheck = normalized.AutoCheckUpdates;
             config.Update.AutoDownload = normalized.AutoDownloadUpdates;
             config.Update.AutoInstall = normalized.AutoInstallUpdates;
+            config.Update.AutoChangelogPopup = normalized.AutoChangelogPopup;
             config.Update.GitHubMirrorType = normalized.GitHubMirrorType;
             config.Update.CustomGitHubMirrorUrl = normalized.CustomGitHubMirrorUrl;
         });

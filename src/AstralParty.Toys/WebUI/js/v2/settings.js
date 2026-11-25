@@ -260,7 +260,9 @@
           <label class="v2-switch"><input type="checkbox" id="v2gAutoDownload" ${LS().autoDownloadUpdates ? 'checked' : ''}><span></span></label></div>
         <div class="v2-row"><span class="k">自动安装更新</span><span class="v v2-muted">下载完成后自动安装</span>
           <label class="v2-switch"><input type="checkbox" id="v2gAutoInstall" ${LS().autoInstallUpdates ? 'checked' : ''}><span></span></label></div>
-        <div class="v2-row"><span class="k">更新日志</span><span class="v v2-muted">查看每个版本的新增与修复</span>
+        <div class="v2-row"><span class="k">自动弹出更新日志</span><span class="v v2-muted">发现新版本、更新完成或首次安装时弹出完整更新日志</span>
+          <label class="v2-switch"><input type="checkbox" id="v2gAutoChangelogPopup" ${LS().autoChangelogPopup !== false ? 'checked' : ''}><span></span></label></div>
+        <div class="v2-row"><span class="k">更新日志</span><span class="v v2-muted">查看工具箱与加载器的完整新增与修复记录</span>
           <button class="v2-btn ghost" data-v2g="changelog">更新日志</button></div>
       </div>`;
     else if (tab === 'about') main = `
@@ -459,6 +461,7 @@
     if (t.id === 'v2gAutoCheck') return saveLibrary({ autoCheckUpdates: t.checked });
     if (t.id === 'v2gAutoDownload') return saveLibrary({ autoDownloadUpdates: t.checked });
     if (t.id === 'v2gAutoInstall') return saveLibrary({ autoInstallUpdates: t.checked });
+    if (t.id === 'v2gAutoChangelogPopup') return saveLibrary({ autoChangelogPopup: t.checked });
     if (t.id === 'v2gMirror') return saveLibrary({ githubMirrorType: t.value });
     if (t.id === 'v2gMirrorUrl') return saveLibrary({ customGitHubMirrorUrl: t.value.trim() });
     if (t.id === 'v2gWorkshopUrl') return saveLibrary({ workshopUrl: t.value.trim() || null });

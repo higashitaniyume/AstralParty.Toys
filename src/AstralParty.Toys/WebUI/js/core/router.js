@@ -114,10 +114,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Brand logo click returns to home（role=button，补上键盘 Enter/Space）
-  $('brandLogoBtn')?.addEventListener('click', () => showPage('home'));
+  // 点击标题栏 App Logo 打开更新日志弹窗（role=button，补上键盘 Enter/Space）
+  $('brandLogoBtn')?.addEventListener('click', () => window.VersionModule?.requestChangelog('app'));
   $('brandLogoBtn')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showPage('home'); }
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); window.VersionModule?.requestChangelog('app'); }
   });
 
   // Modal close handlers

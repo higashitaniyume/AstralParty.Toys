@@ -172,7 +172,8 @@ public partial class HybridWindow
             case "deviceCheckLoaderUpdate":
             {
                 var targetId = ReadDeviceString(root, "targetId") ?? "";
-                _ = CheckDeviceLoaderUpdateAsync(targetId);
+                var installedVersion = ReadDeviceString(root, "installedVersion");
+                _ = CheckDeviceLoaderUpdateAsync(targetId, installedVersion);
                 return true;
             }
 
@@ -181,8 +182,9 @@ public partial class HybridWindow
                 var target = ResolveOnlineDeviceTarget(root, "更新加载器");
                 if (target is null || DeviceBusyGate()) return true;
                 var expectedVersion = ReadDeviceString(root, "expectedVersion");
+                var installedVersion = ReadDeviceString(root, "installedVersion");
                 _deviceBusy = true;
-                _ = WriteAsync(() => UpdateDeviceLoaderAsync(target, expectedVersion), target.Id, refresh: "mods");
+                _ = WriteAsync(() => UpdateDeviceLoaderAsync(target, expectedVersion, installedVersion), target.Id, refresh: "mods");
                 return true;
             }
 
@@ -642,7 +644,7 @@ public partial class HybridWindow
         }
     }
 
-    private async Task CheckDeviceLoaderUpdateAsync(string targetId)
+    private async Task CheckDeviceLoaderUpdateAsync(string targetId, string? installedVersion = null)
     {
         if (_deviceLoaderCheckRunning)
             return;
@@ -666,6 +668,18 @@ public partial class HybridWindow
                     htmlUrl = info.HtmlUrl ?? "",
                 },
             });
+
+            if (!string.IsNullOrWhiteSpace(info.Version)
+                && (string.IsNullOrWhiteSpace(installedVersion)
+                    || Services.App.AppUpdateService.IsNewerVersion(installedVersion, info.Version)))
+            {
+                _ = AnnounceUpdateAvailableChangelogAsync(
+                    trigger: "loader-update-available",
+                    defaultTab: "loader",
+                    userInitiated: true,
+                    loaderPrevVersion: installedVersion,
+                    loaderTargetVersion: info.Version);
+            }
         }
         catch (Exception ex)
         {
@@ -681,7 +695,7 @@ public partial class HybridWindow
         }
     }
 
-    private async Task<MobileOperationResult> UpdateDeviceLoaderAsync(MobileTarget target, string? expectedVersion)
+    private async Task<MobileOperationResult> UpdateDeviceLoaderAsync(MobileTarget target, string? expectedVersion, string? installedVersion = null)
     {
         var settings = _libraryService.Settings;
         DeviceProgress("正在从 GitHub 下载最新 CesiumLoader…", 8);
@@ -700,6 +714,8 @@ public partial class HybridWindow
             expectedVersion,
             (msg, pct) => DeviceProgress(msg, 55 + pct * 15 / 100));
 
+        var extractedChangelog = ModManager.ExtractChangelogFromPackage(zipBytes);
+
         string? localPayload = null;
         try
         {
@@ -710,7 +726,7 @@ public partial class HybridWindow
             // 没有本地移动端载荷时保留设备上既有引导，不阻断更新
         }
 
-        return await MobileLoaderUpdateService.ApplyToDeviceAsync(
+        var result = await MobileLoaderUpdateService.ApplyToDeviceAsync(
             MobileChannels,
             target,
             prepared,
@@ -718,6 +734,14 @@ public partial class HybridWindow
             MobileLoaderUpdateService.OfficialSourceUrl,
             MobileLog,
             (msg, pct) => DeviceProgress(msg, 70 + pct * 30 / 100)).ConfigureAwait(false);
+
+        if (result.Ok)
+        {
+            _ = Dispatcher.InvokeAsync(() =>
+                _ = AnnounceLoaderUpdatedChangelogAsync(installedVersion, prepared.Version, extractedChangelog));
+        }
+
+        return result;
     }
 
     private async Task PushDevicesAsync(bool discover)

@@ -802,6 +802,19 @@ public partial class HybridWindow
             _ = PushModStatusAsync();
 
             if (!userInitiated) AnnounceLoaderUpdateIfNewer(info);
+
+            var installedForChangelog = _modManager.GetStatus().InstalledVersion;
+            if (!string.IsNullOrEmpty(installedForChangelog)
+                && !string.IsNullOrEmpty(info.Version)
+                && Services.App.AppUpdateService.IsNewerVersion(installedForChangelog, info.Version))
+            {
+                _ = AnnounceUpdateAvailableChangelogAsync(
+                    trigger: "loader-update-available",
+                    defaultTab: "loader",
+                    userInitiated: userInitiated,
+                    loaderPrevVersion: installedForChangelog,
+                    loaderTargetVersion: info.Version);
+            }
         }
         catch (Exception ex)
         {
@@ -865,12 +878,14 @@ public partial class HybridWindow
         try
         {
             var directory = RequireModGameDirectory();
+            var previousInstalledVersion = _modManager.GetStatus().InstalledVersion;
             var settings = _libraryService.Settings;
             var mirror = !string.IsNullOrEmpty(mirrorType) ? mirrorType : settings.GitHubMirrorType;
             var custom = customMirrorUrl ?? settings.CustomGitHubMirrorUrl;
             reporter("download", -1, "正在连接 GitHub 下载 CesiumLoader…");
             var bytes = await _modManager.DownloadLatestPackageAsync(mirror, custom, cancellationToken: default, progress: reporter).ConfigureAwait(true);
             var manifest = ModManager.ParsePackageManifest(bytes);
+            var extractedChangelog = ModManager.ExtractChangelogFromPackage(bytes);
             var installReporter = reporter;
             await Task.Run(() => _modManager.InstallPackage(directory, bytes, overwriteDll, allowDowngrade, installReporter))
                 .ConfigureAwait(true);
@@ -879,6 +894,7 @@ public partial class HybridWindow
             Post(new { type = "toast", message = $"加载器已更新{versionText}。" + (SpeedhackManager.IsGameRunning() ? "游戏正在运行，重启游戏后生效。" : "") });
             _ = PushModStatusAsync();
             _ = PostSteamBypassSyncAsync();   // 刚更新完，首页的启动方式单选框跟上新配置
+            _ = AnnounceLoaderUpdatedChangelogAsync(previousInstalledVersion, manifest?.Version, extractedChangelog);
         }
         catch (Exception ex)
         {

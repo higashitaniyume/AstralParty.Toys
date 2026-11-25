@@ -75,6 +75,7 @@ public partial class HybridWindow
             Debug.WriteLine($"PostChangelog remote failed, fallback to bundled: {ex.Message}");
             markdown = BundledAppChangelog();
         }
+        markdown = UpdateChangelogService.NormalizeHeader(markdown, isLoader: false);
         Post(new { type = "changelog", payload = new { markdown } });
     }
 
@@ -82,12 +83,13 @@ public partial class HybridWindow
     /// CesiumLoader 仓库根拉 CHANGELOG.md，拉不到退回内嵌的打包版本。</summary>
     private async Task PostLoaderChangelogAsync(bool fresh)
     {
-        var embedded = ModManager.BundledLoaderChangelog;
+        var embedded = UpdateChangelogService.NormalizeHeader(ModManager.BundledLoaderChangelog, isLoader: true);
         try
         {
             var settings = _libraryService.Settings;
             var text = await ModManager.DownloadRepoChangelogAsync(
                 ModManager.LoaderRepo, settings.GitHubMirrorType, settings.CustomGitHubMirrorUrl).ConfigureAwait(true);
+            text = UpdateChangelogService.NormalizeHeader(text, isLoader: true);
             Post(new { type = "loaderChangelog", payload = new { markdown = text, source = "github" } });
         }
         catch (Exception ex)

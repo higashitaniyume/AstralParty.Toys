@@ -38,6 +38,9 @@ public sealed class ReplayLibrarySettings
     /// <summary>安装包下载完成后自动拉起安装器进行更新。</summary>
     public bool AutoInstallUpdates { get; set; } = false;
 
+    /// <summary>发现新版本、更新完毕或首次安装时自动弹出更新日志弹窗。</summary>
+    public bool AutoChangelogPopup { get; set; } = true;
+
     /// <summary>GitHub 镜像加速源类型：gh-proxy, ghfast, custom, direct（默认 gh-proxy）。</summary>
     public string GitHubMirrorType { get; set; } = GitHubMirrorHelper.DefaultMirrorType;
 

@@ -385,6 +385,9 @@ public partial class HybridWindow
         var autoInstallUpdates = root.TryGetProperty("autoInstallUpdates", out var instEl)
             ? instEl.GetBoolean()
             : _libraryService.Settings.AutoInstallUpdates;
+        var autoChangelogPopup = root.TryGetProperty("autoChangelogPopup", out var popupEl)
+            ? popupEl.GetBoolean()
+            : _libraryService.Settings.AutoChangelogPopup;
         var mirrorType = root.TryGetProperty("githubMirrorType", out var mirrorEl)
             ? mirrorEl.GetString()
             : _libraryService.Settings.GitHubMirrorType;
@@ -401,6 +404,7 @@ public partial class HybridWindow
             AutoCheckUpdates = autoCheckUpdates,
             AutoDownloadUpdates = autoDownloadUpdates,
             AutoInstallUpdates = autoInstallUpdates,
+            AutoChangelogPopup = autoChangelogPopup,
             GitHubMirrorType = mirrorType ?? GitHubMirrorHelper.DefaultMirrorType,
             CustomGitHubMirrorUrl = customMirrorUrl ?? ""
         });
@@ -449,6 +453,7 @@ public partial class HybridWindow
         autoCheckUpdates = _libraryService.Settings.AutoCheckUpdates,
         autoDownloadUpdates = _libraryService.Settings.AutoDownloadUpdates,
         autoInstallUpdates = _libraryService.Settings.AutoInstallUpdates,
+        autoChangelogPopup = _libraryService.Settings.AutoChangelogPopup,
         githubMirrorType = _libraryService.Settings.GitHubMirrorType,
         customGitHubMirrorUrl = _libraryService.Settings.CustomGitHubMirrorUrl
     };

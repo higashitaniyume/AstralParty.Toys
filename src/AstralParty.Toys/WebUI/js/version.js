@@ -46,7 +46,6 @@
         dockValue.textContent = parts.filter(Boolean).join(' · ');
       }
       this.renderAbout();
-      this.maybeShowWhatsNew();
     },
 
     /// 设置页「关于」里的几行。版本消息与设置页谁先到都有可能，所以两边都会调它。
@@ -171,6 +170,10 @@
     /// 打开更新日志弹窗并切到指定 Tab（'app' | 'loader'）。
     requestChangelog(tab) {
       tab = tab === 'loader' ? 'loader' : 'app';
+      if (window.V2Changelog?.open) {
+        window.V2Changelog.open(tab);
+        return;
+      }
       if (!HOST_AVAILABLE) {
         openModal('更新日志', '<p class="changelog-empty">在 AstralParty.Toys 程序窗口里打开这一页才能查看更新日志。</p>');
         return;

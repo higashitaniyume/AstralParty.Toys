@@ -113,7 +113,8 @@ body.page-home-active .page-container { height: auto; }
 
 /* 自绘标题栏（仿 BazaarPlusPlus）：图标 名称 版本 …… 链接 │ 窗口按钮。系统标题栏已在 HybridWindow.xaml 隐藏 */
 .global-header, body.page-home-active .global-header { justify-content: flex-start; padding-right: 0; cursor: default; user-select: none; }
-.brand-section { cursor: default; }
+.brand-section { cursor: pointer; border-radius: 8px; padding: 2px 6px; margin: -2px -6px; transition: background .15s ease; }
+.brand-section:hover { background: var(--v2-hover); }
 .app-version-chip { background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 2px !important; height: auto; color: var(--gp-text-muted); font-size: 12px; font-weight: 400; cursor: pointer; }
 .app-version-chip:hover { color: var(--v2-text); }
 .app-version-chip svg { display: none; }

@@ -1024,12 +1024,13 @@
       state.loaderChecking = true;
       state.loaderUpdateStatus = tr('devices.loaderChecking');
       render();
-      post({ type: 'deviceCheckLoaderUpdate', targetId: dev?.id || '' });
+      post({ type: 'deviceCheckLoaderUpdate', targetId: dev?.id || '', installedVersion: dev?.loader?.version || '' });
       return;
     }
     if (el.dataset.devUpdateLoader && !state.busy && state.loaderRelease) {
       const targetId = el.dataset.devUpdateLoader;
       const version = state.loaderRelease.version || '';
+      const installedVersion = dev?.loader?.version || '';
       confirmAction({
         title: tr('devices.loaderUpdateConfirmTitle', { version }),
         iconName: 'upgrade',
@@ -1043,7 +1044,7 @@
         onConfirm: () => {
           state.loaderUpdateStatus = tr('devices.loaderUpdateTo', { version });
           startBusy(tr('devices.busyWrite'));
-          post({ type: 'deviceUpdateLoader', targetId, expectedVersion: version });
+          post({ type: 'deviceUpdateLoader', targetId, expectedVersion: version, installedVersion });
         },
       });
       return;

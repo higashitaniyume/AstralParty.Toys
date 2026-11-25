@@ -55,6 +55,8 @@ public sealed class ToysConfig
             Update.GitHubMirrorType = GitHubMirrorHelper.DefaultMirrorType;
         }
         Update.CustomGitHubMirrorUrl = (Update.CustomGitHubMirrorUrl ?? "").Trim();
+        Update.LastSeenAppVersion = (Update.LastSeenAppVersion ?? "").Trim();
+        Update.LastSeenEmbeddedLoaderVersion = (Update.LastSeenEmbeddedLoaderVersion ?? "").Trim();
 
         SchemaVersion = ToysConfigStore.CurrentSchemaVersion;
         return this;
@@ -111,6 +113,15 @@ public sealed class UpdateConfigSection
     public bool AutoCheck { get; set; } = true;
     public bool AutoDownload { get; set; }
     public bool AutoInstall { get; set; }
+
+    /// <summary>发现新版本、更新完毕或首次安装时自动弹窗展示更新日志。</summary>
+    public bool AutoChangelogPopup { get; set; } = true;
+
+    /// <summary>上次已展示/确认更新日志的工具箱版本号（空串代表尚未记录，即全新安装或老版本升级）。</summary>
+    public string LastSeenAppVersion { get; set; } = "";
+
+    /// <summary>上次已知晓的随包内置加载器版本号。</summary>
+    public string LastSeenEmbeddedLoaderVersion { get; set; } = "";
 
     /// <summary>gh-proxy / ghfast / custom / direct。</summary>
     public string GitHubMirrorType { get; set; } = GitHubMirrorHelper.DefaultMirrorType;

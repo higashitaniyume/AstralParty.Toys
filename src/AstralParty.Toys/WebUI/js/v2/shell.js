@@ -368,7 +368,7 @@
     // 按下后宿主马上接管鼠标（系统的拖动循环），网页收不到 dblclick，所以自己按两次按下的间隔判断双击。
     let lastDown = 0, lastX = 0, lastY = 0;
     header.addEventListener('mousedown', e => {
-      if (e.button !== 0 || e.target.closest('button, a, input, select, textarea, .v2-jump-tip')) return;
+      if (e.button !== 0 || e.target.closest('button, a, input, select, textarea, .v2-jump-tip, #brandLogoBtn')) return;
       const now = Date.now(), dbl = now - lastDown < 400 && Math.abs(e.screenX - lastX) < 6 && Math.abs(e.screenY - lastY) < 6;
       lastDown = dbl ? 0 : now; lastX = e.screenX; lastY = e.screenY;
       e.preventDefault();

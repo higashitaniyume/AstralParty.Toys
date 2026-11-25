@@ -97,6 +97,17 @@ public partial class HybridWindow
                 case "loaderChangelogGet":
                     _ = PostLoaderChangelogAsync(root.TryGetProperty("fresh", out var freshEl) && freshEl.ValueKind == JsonValueKind.True);
                     break;
+                case "openChangelogModal":
+                    var requestedTab = root.TryGetProperty("tab", out var tabEl) ? tabEl.GetString() ?? "app" : "app";
+                    _ = PushChangelogModalAsync("manual", requestedTab, isAutoPopup: false, preferRemote: false);
+                    break;
+                case "markChangelogSeen":
+                    HandleMarkChangelogSeen();
+                    break;
+                case "setAutoChangelogPopup":
+                    var popupEnabled = root.TryGetProperty("enabled", out var popupEnabledEl) && popupEnabledEl.ValueKind == JsonValueKind.True;
+                    HandleSetAutoChangelogPopup(popupEnabled);
+                    break;
                 case "getAppUpdateState":
                     PostUpdateState(_currentUpdateStatus);
                     break;
@@ -210,6 +221,7 @@ public partial class HybridWindow
                             AutoCheckUpdates = curSettings.AutoCheckUpdates,
                             AutoDownloadUpdates = curSettings.AutoDownloadUpdates,
                             AutoInstallUpdates = curSettings.AutoInstallUpdates,
+                            AutoChangelogPopup = curSettings.AutoChangelogPopup,
                             GitHubMirrorType = curSettings.GitHubMirrorType,
                             CustomGitHubMirrorUrl = curSettings.CustomGitHubMirrorUrl
                         });

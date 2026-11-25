@@ -43,19 +43,46 @@ public sealed partial class ModManager
     /// <summary>CesiumLoader 仓库（取仓库根 CHANGELOG.md 当作加载器更新日志）。</summary>
     public const string LoaderRepo = "higashitaniyume/CesiumLoader";
 
-    /// <summary>去 GitHub 取指定仓库根目录 CHANGELOG.md（raw），并应用设置中选择的 GitHub 镜像。
-    /// 失败抛异常，由调用方兜底内嵌。</summary>
-    public static async Task<string> DownloadRepoChangelogAsync(string repo, string? mirrorType, string? customUrl)
+    /// <summary>去 GitHub 取指定仓库根目录 CHANGELOG.md（raw），优先设置中的 GitHub 镜像、失败回退直连。
+    /// 全部失败抛异常，由调用方兜底内嵌。</summary>
+    public static async Task<string> DownloadRepoChangelogAsync(
+        string repo,
+        string? mirrorType,
+        string? customUrl,
+        CancellationToken cancellationToken = default)
     {
         var rawUrl = $"https://raw.githubusercontent.com/{repo}/master/CHANGELOG.md";
-        var url = GitHubMirrorHelper.ApplyMirror(rawUrl, mirrorType, customUrl);
-        using var req = new HttpRequestMessage(HttpMethod.Get, url);
-        req.Headers.Accept.ParseAdd("text/markdown,text/plain;q=0.9,*/*;q=0.8");
-        using var resp = await Http.SendAsync(req).ConfigureAwait(false);
-        resp.EnsureSuccessStatusCode();
-        var text = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
-        if (string.IsNullOrWhiteSpace(text)) throw new InvalidOperationException("仓库根 CHANGELOG.md 为空。");
-        return text.Trim();
+        var mirroredUrl = GitHubMirrorHelper.ApplyMirror(rawUrl, mirrorType, customUrl);
+        var candidates = new List<string> { mirroredUrl };
+        if (!string.Equals(mirroredUrl, rawUrl, StringComparison.OrdinalIgnoreCase))
+            candidates.Add(rawUrl);
+
+        Exception? lastError = null;
+        foreach (var url in candidates)
+        {
+            try
+            {
+                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                timeoutCts.CancelAfter(TimeSpan.FromSeconds(10));
+                using var req = new HttpRequestMessage(HttpMethod.Get, url);
+                req.Headers.Accept.ParseAdd("text/markdown,text/plain;q=0.9,*/*;q=0.8");
+                using var resp = await Http.SendAsync(req, timeoutCts.Token).ConfigureAwait(false);
+                resp.EnsureSuccessStatusCode();
+                var text = await resp.Content.ReadAsStringAsync(timeoutCts.Token).ConfigureAwait(false);
+                if (!string.IsNullOrWhiteSpace(text)) return text.Trim();
+                lastError = new InvalidOperationException("仓库根 CHANGELOG.md 为空。");
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                lastError = ex;
+            }
+        }
+
+        throw lastError ?? new InvalidOperationException("无法获取仓库根 CHANGELOG.md。");
     }
 
     public const string InstalledManifestFileName = "cesium-loader.json";

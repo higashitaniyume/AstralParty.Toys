@@ -15,10 +15,20 @@ host?.addEventListener('message', event => {
 
     case 'changelog':
       window.VersionModule?.renderChangelog(msg.payload);
+      window.V2Changelog?.syncFromLegacy('app', msg.payload);
       break;
 
     case 'loaderChangelog':
       window.VersionModule?.renderLoaderChangelog(msg.payload);
+      window.V2Changelog?.syncFromLegacy('loader', msg.payload);
+      break;
+
+    case 'changelogModal':
+      window.V2Changelog?.receiveModal(msg.payload);
+      break;
+
+    case 'changelogModalRefresh':
+      window.V2Changelog?.receiveRefresh(msg.payload);
       break;
 
     case 'homeData':

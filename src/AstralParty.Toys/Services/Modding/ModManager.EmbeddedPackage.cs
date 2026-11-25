@@ -90,6 +90,26 @@ public sealed partial class ModManager
         }
     }
 
+    /// <summary>从指定发布包字节中读取根目录 <c>CHANGELOG.md</c>；不存在或为占位符时返回空串。</summary>
+    public static string ExtractChangelogFromPackage(byte[]? packageBytes)
+    {
+        if (packageBytes is not { Length: > 0 }) return "";
+        try
+        {
+            using var stream = new MemoryStream(packageBytes, writable: false);
+            using var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: false);
+            var entry = archive.GetEntry(PackageChangelogEntry);
+            if (entry is null) return "";
+            using var reader = new StreamReader(entry.Open(), System.Text.Encoding.UTF8);
+            var text = reader.ReadToEnd().Trim();
+            return text.StartsWith("<!-- placeholder", StringComparison.OrdinalIgnoreCase) ? "" : text;
+        }
+        catch
+        {
+            return "";
+        }
+    }
+
     /// <summary>
     /// 随程序集内置的 mod（ModId，序数排序 = 安装顺序）：**直接来自内嵌发布包的 <c>mods\</c> 目录**。
     /// 清单只有一份，就是加载器发布包本身，不可能再和 Toys 侧的另一份清单对不上。

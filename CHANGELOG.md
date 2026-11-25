@@ -1,6 +1,6 @@
 # 更新日志 / Changelog
 
-本文件按版本记录 `AstralParty.Toys` 的功能变更。版本号与 GitHub 发布 tag 一一对应（如 `v0.2.0`），发布产物由 [release.yml](.github/workflows/release.yml) 在打 tag 时自动构建。
+欢迎您使用 **AstralParty.Toys**（吉星派对工具箱）与 **CesiumLoader** 模组加载器，衷心感谢您的支持与陪伴！如果您在使用过程中遇到任何问题、Bug 或有功能建议，非常欢迎前往 [GitHub Issues](https://github.com/higashitaniyume/AstralParty.Toys/issues) 提交反馈，也欢迎加入企鹅群 **1078464597**（[点击加群](https://qm.qq.com/cgi-bin/qm/qr?k=tYrqev4U2Xr2PPAA4EkILA0NKmP3zgeU&jump_from=webapi&authKey=jHiIqsg0jEV53dBtQ9V3qXohKKHwLDGmfWprcrg7gueM9pU9iz+ST/QHR6d1j3wa)）或 [Discord 频道](https://discord.gg/SZaYSwGX94) 和我们交流，我们会认真查看并尽力为您排查解决。
 
 ## [Unreleased]
 
