@@ -21,18 +21,32 @@
 
   function renderControls() {
     const disabled = Boolean(pending) || !saved;
+    const nativeUnavailable = saved?.canSelectNative === false;
+    $('speedhackNativeMarket').hidden = !nativeUnavailable;
+    const nativeHotkey = $('speedhackNativeHotkey');
+    nativeHotkey.hidden = !saved || nativeUnavailable;
+    nativeHotkey.textContent = t('speedhack.native_hotkey', { key: saved?.toggleKey || 'Delete' });
+    const unityUnavailable = saved?.canSelectUnity === false;
+    $('speedhackUnityUnavailable').hidden = !unityUnavailable;
     for (const button of modeButtons()) {
       const selected = button.dataset.speedMode === mode;
-      button.disabled = disabled;
+      const unavailable = button.dataset.speedMode === 'unity' ? unityUnavailable : nativeUnavailable;
+      button.hidden = unavailable;
+      button.disabled = disabled || unavailable;
       button.setAttribute('aria-pressed', String(selected));
       button.textContent = t(selected ? 'speedhack.selected' : 'speedhack.select_this_mode');
       button.closest('[data-mode]').classList.toggle('speedhack-mode-card-selected', selected);
     }
-    speedInput().disabled = disabled || (mode === 'unity' && saved.unityMinSpeed === saved.unityMaxSpeed);
+    const [min, max] = rangeFor(mode);
+    speedInput().disabled = disabled || !mode || min === max;
+    const enabled = $('speedhackEnabled');
+    enabled.checked = Boolean(mode) && Number(speedInput().value) > 1.0001;
+    enabled.disabled = disabled || !mode || max === 1;
   }
 
   function rangeFor(selectedMode) {
-    return selectedMode === 'unity' ? [saved.unityMinSpeed, saved.unityMaxSpeed] : [1, 100];
+    return selectedMode === 'unity' ? [saved.unityMinSpeed, saved.unityMaxSpeed]
+      : [saved?.nativeMinSpeed ?? 1, saved?.nativeMaxSpeed ?? 100];
   }
 
   function showDraft(nextMode, speed) {
@@ -130,7 +144,7 @@
       saved = result.settings;
       gameDirectory = result.gameDirectory;
       const name = t(saved.mode === 'unity' ? 'speedhack.unity_title' : 'speedhack.native_title');
-      $('speedhackCurrentMode').textContent = `${name} · ${saved.speed}x`;
+      $('speedhackCurrentMode').textContent = saved.mode ? `${name} · ${saved.speed}x` : t('speedhack.no_mode');
       showDraft(saved.mode, saved.speed);
       feedback(kind === 'save' ? t('speedhack.saved')
         : recovering ? t('speedhack.reloaded') : '', kind === 'save' ? 'success' : '');
@@ -139,15 +153,29 @@
   };
 
   document.addEventListener('DOMContentLoaded', () => {
+    $('speedhackNativeMarket').addEventListener('click', () => {
+      window.WorkshopModule?.openExternalMod({ id: 'NativeSpeedMod' });
+    });
     for (const button of modeButtons()) {
       button.closest('[data-mode]').addEventListener('click', () => {
         const nextMode = button.dataset.speedMode;
-        if (pending || !saved || AppState.isPageTransitioning || nextMode === mode) return;
+        if (button.disabled || AppState.isPageTransitioning || nextMode === mode) return;
         const speed = readInput().speed ?? saved.speed;
         const [min, max] = rangeFor(nextMode);
         save(nextMode, Math.max(min, Math.min(max, speed)));
       });
     }
+
+    $('speedhackEnabled').addEventListener('change', event => {
+      if (pending || !saved) return;
+      const [min, max] = rangeFor(mode);
+      if (!event.target.checked && min > 1) {
+        feedback(t('speedhack.out_of_range', { min, max }), 'error');
+        renderControls();
+        return;
+      }
+      save(mode, event.target.checked ? Math.max(min, Math.min(max, 2)) : 1);
+    });
 
     const input = speedInput();
     input?.addEventListener('input', () => {

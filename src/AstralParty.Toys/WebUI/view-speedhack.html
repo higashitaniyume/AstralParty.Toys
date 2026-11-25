@@ -26,6 +26,7 @@
             <li data-i18n="speedhack.unity_performance">极大减少性能开销</li>
             <li class="mode-card-tradeoff" data-i18n="speedhack.unity_cons">限制：适配的静音 CRI 视频最高 3x，有声或音轨未知的视频保持原速。</li>
           </ul>
+          <p class="mode-card-description" id="speedhackUnityUnavailable" data-i18n="speedhack.unity_unavailable" hidden>需要安装 SpeedHackMod 2.5.4 或更新版本。</p>
           <button type="button" class="mode-card-button" data-speed-mode="unity" aria-labelledby="speedhackUnityTitle" aria-pressed="false" disabled>选择此模式</button>
         </article>
 
@@ -33,19 +34,30 @@
           <div class="mode-card-header">
             <h3 class="mode-card-title" id="speedhackNativeTitle" data-i18n="speedhack.native_title">Native 原始模式</h3>
           </div>
-          <p class="mode-card-description" data-i18n="speedhack.native_desc">缩放游戏进程使用的系统计时。</p>
+          <p class="mode-card-description" data-i18n="speedhack.native_desc">切入时启用市场的 NativeSpeedMod，并停用 SpeedHackMod。</p>
+          <p class="mode-card-description" id="speedhackNativeHotkey"></p>
           <ul class="mode-card-features">
             <li data-i18n="speedhack.native_pros">优点：沿用原有的全局计时方式，可用于 Unity 模式下动画或视频速度不符的场景。</li>
             <li class="mode-card-tradeoff" data-i18n="speedhack.native_cons">限制：也可能影响回合计时、演出和网络超时，高倍速下影响更明显。</li>
             <li class="mode-card-tradeoff" data-i18n="speedhack.native_performance">性能开销会随倍速成倍增加。</li>
           </ul>
           <button type="button" class="mode-card-button" data-speed-mode="native" aria-labelledby="speedhackNativeTitle" aria-pressed="false" disabled>选择此模式</button>
+          <button type="button" class="mode-card-button" id="speedhackNativeMarket" data-i18n="speedhack.native_market" hidden>前往市场安装</button>
         </article>
       </div>
     </section>
 
     <section class="v2-card speedhack-section">
-      <h2 class="speedhack-section-title" data-i18n="speedhack.speed_title">倍速调整</h2>
+      <div class="speedhack-settings-heading">
+        <h2 class="speedhack-section-title" data-i18n="speedhack.speed_title">倍速调整</h2>
+        <label class="speedhack-switch">
+          <span id="speedhackEnabledLabel" data-i18n="speedhack.enabled">游戏变速</span>
+          <span class="v2-switch">
+            <input type="checkbox" id="speedhackEnabled" aria-labelledby="speedhackEnabledLabel" disabled>
+            <span aria-hidden="true"></span>
+          </span>
+        </label>
+      </div>
       <div class="speed-control-row">
         <label for="speedhackSpeedInput" class="speed-label" data-i18n="speedhack.speed_value">速度倍率：</label>
         <div class="speed-display">

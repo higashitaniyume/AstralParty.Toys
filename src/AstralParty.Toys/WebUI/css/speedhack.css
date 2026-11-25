@@ -55,6 +55,18 @@ body:not(.reduce-motion) #speedhackView:not(.page-entering) .speedhack-section {
   color: var(--gp-text-main);
 }
 
+.speedhack-settings-heading,
+.speedhack-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.speedhack-settings-heading {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
 /* ============ 模式卡片 ============ */
 .speedhack-mode-cards {
   display: grid;

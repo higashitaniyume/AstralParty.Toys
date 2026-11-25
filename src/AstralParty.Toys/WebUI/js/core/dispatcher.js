@@ -244,7 +244,7 @@ host?.addEventListener('message', event => {
       break;
 
     case 'modSpeedhackSync':
-      if (window.ModsModule) window.ModsModule.syncSpeedhackBar(msg.payload?.config);
+      if (window.ModsModule) window.ModsModule.syncSpeedhackBar(msg.payload?.config, msg.payload);
       break;
 
     case 'launchModeSync':

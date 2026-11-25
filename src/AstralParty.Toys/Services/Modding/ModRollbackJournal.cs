@@ -238,7 +238,7 @@ public sealed class ModRollbackJournal
         bool includeLoader,
         bool includeProfiles,
         bool preserveAccountFields = false,
-        string? modFileName = null)
+        IReadOnlyCollection<string>? modFileNames = null)
     {
         lock (Gate)
         {
@@ -263,7 +263,7 @@ public sealed class ModRollbackJournal
             {
                 foreach (var mod in _modManager.GetInstalledMods(directory))
                 {
-                    if (modFileName is not null && !string.Equals(mod.FileName, modFileName, StringComparison.OrdinalIgnoreCase))
+                    if (modFileNames is not null && !modFileNames.Contains(mod.FileName, StringComparer.OrdinalIgnoreCase))
                         continue;
                     entry.Mods.Add(new RollbackModSnapshot
                     {
