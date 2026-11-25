@@ -410,6 +410,9 @@ public partial class HybridWindow
                 case "modStatus":
                     _ = PushModStatusAsync();
                     break;
+                case "workshopModVersions":
+                    _ = PushWorkshopModVersionsAsync();
+                    break;
                 case "modRollbackList":
                     HandleModRollbackList();
                     break;

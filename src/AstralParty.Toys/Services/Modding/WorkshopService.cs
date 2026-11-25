@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using AstralParty.Toys.Models;
 
 namespace AstralParty.Toys.Services.Modding;
 
@@ -119,6 +120,28 @@ public sealed partial class WorkshopService
         catch (HttpRequestException ex)
         {
             throw new WorkshopException($"无法连接市场：{ex.Message}");
+        }
+    }
+
+    /// <summary>读取 Windows 模组的市场版本，不读取封面或逐个请求本地模组。</summary>
+    internal async Task<Dictionary<string, string>> GetWindowsModVersionsAsync(string baseUrl, string language)
+    {
+        const int requestedPageSize = 60;
+        var versions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(25));
+        for (var page = 1; ; page++)
+        {
+            var list = await GetListAsync(baseUrl, language, null, null, "name", page, requestedPageSize, timeout.Token);
+            foreach (var item in list.Items)
+            {
+                if (!string.IsNullOrWhiteSpace(item.Id) && !string.IsNullOrWhiteSpace(item.LatestVersion) &&
+                    ModPlatforms.Supports(item.Platforms, ModPlatforms.Windows))
+                    versions.TryAdd(item.Id, item.LatestVersion);
+            }
+
+            var pageSize = list.PageSize > 0 ? list.PageSize : requestedPageSize;
+            if (list.Items.Count == 0 || (long)page * pageSize >= list.Total)
+                return versions;
         }
     }
 

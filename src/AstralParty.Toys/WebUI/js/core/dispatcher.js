@@ -131,6 +131,10 @@ host?.addEventListener('message', event => {
       if (window.ModsModule) window.ModsModule.renderModStatus(msg.payload);
       break;
 
+    case 'workshopModVersions':
+      window.V2ModsModule?.setWorkshopVersions(msg.payload);
+      break;
+
     case 'modLoaderProgress':
       // 加载器下载 / 校验 / 安装进度（阶段 + 百分比），新界面自己画进度条
       window.V2ModsModule?.progress?.(msg.payload);

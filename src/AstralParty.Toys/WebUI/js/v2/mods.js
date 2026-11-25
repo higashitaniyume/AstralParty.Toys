@@ -52,6 +52,40 @@
     const ids = MM()?.builtInMods || [], file = String(m.fileName || '').replace(/\.dll$/i, '');
     return ids.some(id => id === m.name || id === file);
   };
+  let workshopSource = '';
+  let workshopVersions = new Map();
+  const currentWorkshopSource = () => String(AppState.librarySettings?.workshopUrl || 'https://forge.hiynet.com').trim().replace(/\/+$/, '');
+
+  function workshopUpdateButton(mod) {
+    if (!mod.version || isBuiltIn(mod) || workshopSource !== currentWorkshopSource()) return '';
+    const id = String(mod.id || mod.name || String(mod.fileName || '').replace(/\.dll$/i, '')).trim().toLowerCase();
+    const available = workshopVersions.get(id);
+    if (!available) return '';
+    const installed = String(mod.version).trim().replace(/^v(?=\d)/i, '');
+    const latest = available.version.trim().replace(/^v(?=\d)/i, '');
+    if (!/^\d/.test(installed) || !/^\d/.test(latest) ||
+        !(window.WorkshopModule?.compareVersions(installed, latest) < 0)) return '';
+
+    const tooltipId = 'mod-update-' + encodeURIComponent(mod.fileName);
+    return `<span class="v2-mod-update">
+      <button type="button" class="v2-mod-update-btn" data-v2m-workshop="${esc(available.id)}"
+        aria-label="${esc(t('mods.workshop_update_detail', { name: mod.displayName || mod.name || mod.fileName }))}"
+        aria-describedby="${esc(tooltipId)}">${I().up}</button>
+      <span class="v2-mod-update-tip" role="tooltip" id="${esc(tooltipId)}">
+        <span>${esc(t('workshop.installed_version', { version: installed }))}</span>
+        <span>${esc(t('workshop.latest'))} v${esc(latest)}</span>
+      </span>
+    </span>`;
+  }
+
+  function setWorkshopVersions(payload) {
+    window.WorkshopModule?.syncConsent?.(payload?.consentGranted);
+    if (!payload?.source || (AppState.librarySettings && payload.source !== currentWorkshopSource())) return;
+    workshopSource = payload.source;
+    workshopVersions = new Map(Object.entries(payload.versions || {}).map(([id, version]) =>
+      [id.toLowerCase(), { id, version }]));
+    render();
+  }
   const speedMod = () => mods().find(m => m.name === 'SpeedHackMod' || /^SpeedHackMod\.dll$/i.test(m.fileName || ''));
   const baseSpeed = () => {
     const raw = Number(M.speedCfg?.speedhackBaseSpeed ?? 1);
@@ -121,7 +155,7 @@
     return `<div class="v2-mod ${off ? 'off' : ''} ${selected ? 'sel' : ''}" data-mod-file="${esc(m.fileName)}" data-mod-search="${esc(haystack(m))}">
       <label class="v2-check" title="选中此模组"><input type="checkbox" data-v2m-sel="${esc(m.fileName)}" ${selected ? 'checked' : ''} ${disableUi ? 'disabled' : ''}><span></span></label>
       <div class="body">
-        <div class="name">${esc(m.displayName || m.name || m.fileName)}${m.version ? `<span class="v2-tag">v${esc(m.version)}</span>` : ''}
+        <div class="name">${esc(m.displayName || m.name || m.fileName)}${m.version ? `<span class="v2-mod-version"><span class="v2-tag">v${esc(m.version)}</span>${workshopUpdateButton(m)}</span>` : ''}
           ${isBuiltIn(m) ? '<span class="v2-tag blue" title="随加载器一起安装的内置模组">内置</span>' : '<span class="v2-tag" title="不是随加载器内置的：来自市场或手动导入">第三方</span>'}
           ${m.disabledFolder ? '<span class="v2-tag" title="模组文件夹在 disabled_mods 里，加载器不会扫描这个目录">disabled_mods</span>' : ''}
           ${(Number(m.permissions) & 2) ? '<span class="v2-badge warn" title="此模组声明可以操作游戏（模拟出牌 / 掷骰 / 移动等），请确认来源可信">可操作游戏</span>' : ''}</div>
@@ -640,6 +674,11 @@
   document.addEventListener('click', ev => {
     const t = ev.target;
     if (!t.closest?.('#modsView')) return;
+    const workshop = t.closest('[data-v2m-workshop]');
+    if (workshop) {
+      window.WorkshopModule?.openExternalMod({ id: workshop.dataset.v2mWorkshop, refresh: true });
+      return;
+    }
     const a = t.closest('[data-v2m]'), cfg = t.closest('[data-v2m-cfg]'), more = t.closest('[data-v2m-more]');
     if (a && !a.disabled) return actions[a.dataset.v2m]?.(a);
     if (cfg) return MM()?.openModConfig(cfg.dataset.v2mCfg);
@@ -713,5 +752,5 @@
   });
 
   // 宿主消息（dispatcher）用：加载器进度条 / 版本回滚列表；render 供内部重画
-  window.V2ModsModule = { render, progress, rollbackVersions, applyFilter, get state() { return M; } };
+  window.V2ModsModule = { render, progress, rollbackVersions, applyFilter, setWorkshopVersions, get state() { return M; } };
 })();

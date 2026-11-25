@@ -224,6 +224,23 @@ public sealed class WorkshopServiceTests
     }
 
     [Fact]
+    public async Task GetWindowsModVersionsAsync_FollowsServerPaginationAndSkipsAndroidOnlyMods()
+    {
+        using var harness = new Harness();
+        harness.Handler.PayloadFor = uri => Encoding.UTF8.GetBytes(uri.Query.Contains("page=1&", StringComparison.Ordinal)
+            ? """{"total":3,"pageSize":2,"items":[{"id":"NativeSpeedMod","latestVersion":"1.1.0","platforms":["windows"]},{"id":"PhoneOnly","latestVersion":"3.0.0","platforms":["android"]}]}"""
+            : """{"total":3,"pageSize":2,"items":[{"id":"SharedMod","latestVersion":"2.1.0"}]}""");
+
+        var versions = await harness.Service.GetWindowsModVersionsAsync(Forge, "zh-Hans");
+
+        Assert.Equal("1.1.0", versions["nativespeedmod"]);
+        Assert.Equal("2.1.0", versions["SharedMod"]);
+        Assert.False(versions.ContainsKey("PhoneOnly"));
+        Assert.Equal(2, harness.Handler.Requests.Count);
+        Assert.Contains("page=2&pageSize=60", harness.Handler.Requests[1]);
+    }
+
+    [Fact]
     public async Task GetDetailAsync_ParsesVersionsAndKeepsRelativeUrls()
     {
         using var harness = new Harness();
@@ -738,6 +755,7 @@ public sealed class WorkshopServiceTests
         public List<string> Methods { get; } = [];
         public List<string> Bodies { get; } = [];
         public byte[] Payload { get; set; } = [];
+        public Func<Uri, byte[]>? PayloadFor { get; set; }
         /// <summary>贴纸图片请求（<c>/stickers/…</c>）的返回；目录/计数 JSON 仍用 <see cref="Payload"/>。</summary>
         public byte[] ImagePayload { get; set; } = [];
         public HttpStatusCode Status { get; set; } = HttpStatusCode.OK;
@@ -760,7 +778,7 @@ public sealed class WorkshopServiceTests
             var path = request.RequestUri!.AbsolutePath;
             var body = path.StartsWith("/stickers/", StringComparison.OrdinalIgnoreCase) && ImagePayload.Length > 0
                 ? ImagePayload
-                : Payload;
+                : PayloadFor?.Invoke(request.RequestUri!) ?? Payload;
 
             var response = new HttpResponseMessage(Status);
             if (Status == HttpStatusCode.OK)

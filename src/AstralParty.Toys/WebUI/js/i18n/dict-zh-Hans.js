@@ -501,6 +501,7 @@
 
       // Mods & Speedhack
       'mods.title': '模组与加载器管理',
+      'mods.workshop_update_detail': '查看 {name} 的市场更新',
       'mods.loader_title': 'CesiumLoader 加载器',
       'mods.installed_ver': '已安装版本',
       'mods.builtin_ver': '随本程序内置',

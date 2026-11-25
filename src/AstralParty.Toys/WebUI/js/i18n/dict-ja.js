@@ -502,6 +502,7 @@
 
       // Mods & Speedhack
       'mods.title': 'Mod＆ローダー管理',
+      'mods.workshop_update_detail': '{name} のマーケット更新を表示',
       'mods.loader_title': 'CesiumLoader',
       'mods.installed_ver': '導入済みバージョン',
       'mods.builtin_ver': '同梱バージョン',
