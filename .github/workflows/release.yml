@@ -112,6 +112,8 @@ jobs:
       # 用 API 取最新 Release 而不是 releases/latest：安卓的候选版是 pre-release，latest 会取不到。
       - name: Fetch latest mobile loader payload
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           $repo = "aspatoys/AstralParty.Toys.Android"
           $releases = gh api "repos/$repo/releases?per_page=1" | ConvertFrom-Json
