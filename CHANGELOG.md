@@ -2,11 +2,26 @@
 
 欢迎您使用 **AstralParty.Toys**（吉星派对工具箱）与 **CesiumLoader** 模组加载器，衷心感谢您的支持与陪伴！如果您在使用过程中遇到任何问题、Bug 或有功能建议，非常欢迎前往 [GitHub Issues](https://github.com/higashitaniyume/AstralParty.Toys/issues) 提交反馈，也欢迎加入企鹅群 **1078464597**（[点击加群](https://qm.qq.com/cgi-bin/qm/qr?k=tYrqev4U2Xr2PPAA4EkILA0NKmP3zgeU&jump_from=webapi&authKey=jHiIqsg0jEV53dBtQ9V3qXohKKHwLDGmfWprcrg7gueM9pU9iz+ST/QHR6d1j3wa)）或 [Discord 频道](https://discord.gg/SZaYSwGX94) 和我们交流，我们会认真查看并尽力为您排查解决。
 
-## [Unreleased]
+## [v2.5.0] - 2026-11-25
+
+### 更新日志弹窗
+
+- 新增更新日志自动弹窗：全新安装首次启动、检测到新版本准备更新、更新完成重启后，以及加载器更新前后都会自动弹窗渲染完整更新日志（包含工具箱与 CesiumLoader 加载器两个标签页）。
+- 点击标题栏左上角工具箱图标可随时打开更新日志；弹窗底部提供「以后永久不弹窗」按钮，也可在「设置 → 软件更新」中重新开启或关闭。
+
+### 变速
+
+- 新增「变速」页：支持在 Unity 变速与市场提供的 `NativeSpeedMod` 原生时钟变速之间切换并自动保存配置，同时兼容既有 `1.0x` 默认值与配置文件注释。
+
+### 模组与市场
+
+- 模组页支持为已安装模组显示市场（Forge）新版本更新提示，方便快速跳转查看与更新。
+- 规范化打开游戏目录时的路径处理，并在设置页日志提示中明确区分工具箱日志目录与游戏/模组日志目录。
 
 ### 移动设备（iOS / 安卓）
 
 - 新增「移动设备」页：接上通过 USB 连接的 iOS 设备（house_arrest/AFC）或开启 USB 调试的安卓设备（adb）即可使用。设备卡片显示型号与系统、是否已配对/已授权，设备上可能装了多个渠道服，先用「扫描游戏包」选定当前游戏再操作。
+- 新增设备文件管理、运行环境（ADB / iTunes）检测，以及从 GitHub Release 在线更新移动设备上的 CesiumLoader 加载器。
 - 「检测」会读出该游戏当前的代码包哈希、catalog 构建哈希、注入状态、加载器版本与 SDK 版本、模组数量以及最近一次启动的 `ok=/failed=` 结果，并给出问题清单。
 - 「投放载荷」把随工具内置的移动端加载器（引导 DLL、SDK、`CesiumLoader.Mobile.API`）装到设备上的 `CesiumLoader/` 目录，逐文件回读校验；「注入」改写游戏热更缓存里的代码包让引导被拉起，改写前先备份原文，之后可以「还原」回原始代码包。
 - 设备上的模组：列出已装模组（启用状态只看在 `mods/` 还是 `disabled_mods/`）、启用/停用（整个模组目录搬移）、直接编辑模组目录里的 `config.json`（只改标量字段，做文本定点替换，注释与 `1.0` 这类写法原样保留）、导入本地模组包（ZIP）。已在设备上的 `config.json` 不会被包内文件覆盖。
