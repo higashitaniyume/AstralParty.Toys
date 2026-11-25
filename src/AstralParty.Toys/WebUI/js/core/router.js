@@ -15,6 +15,8 @@ function runPageHook(pageName) {
     window.SettingsModule?.init();
   } else if (pageName === 'utilities') {
     window.UtilitiesModule?.onShowUtilities?.();
+  } else if (pageName === 'speedhack') {
+    window.SpeedModeModule?.onShow();
   } else if (pageName === 'mods') {
     window.ModsModule?.onShowMods?.();
   } else if (pageName === 'workshop') {

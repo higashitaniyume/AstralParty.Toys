@@ -87,9 +87,10 @@ body.page-home-active .page-container { height: auto; }
 .nav-crumb-btn .nav-ico { width: 20px; height: 20px; }
 .nav-crumb-btn:hover { background: var(--v2-hover); color: var(--v2-text); border: 0; transform: none; }
 .nav-crumb-btn.active { background: var(--v2-pink-soft); color: var(--gp-pink); border: 0; box-shadow: none; }
-/* 顺序：概览 回放 模组 市场 皮肤 … 设置（沉底）；维基改成顶栏的外部链接 */
+/* 顺序：概览 回放 变速 模组 市场 皮肤 … 设置（沉底）；维基改成顶栏的外部链接 */
 .nav-crumb-btn[data-page="home"] { order: 1; }
 .nav-crumb-btn[data-page="tools"] { order: 2; }
+.nav-crumb-btn[data-page="speedhack"] { order: 3; width: calc(100% - 8px); padding-inline: 4px; }
 .nav-crumb-btn[data-page="mods"] { order: 3; }
 .nav-crumb-btn[data-page="workshop"] { order: 4; }
 .nav-crumb-btn[data-page="skins"] { order: 5; }

@@ -30,7 +30,7 @@ public partial class HybridWindow
             if (HandleFontMessage(type, root)) return;         // 新界面：自定义 → 字体
             if (HandleWindowChromeMessage(type, root)) return;   // 新界面自绘标题栏：拖动 / 最小化 / 最大化 / 关闭
             if (HandleDeviceMessage(type, root)) return;         // 新界面：移动设备（只读检测）
-            if ((_loaderRecoveryBusy || _modPackageImportRunning || _modUpdateRunning || _modImportRunning || _modInstallRunning || _modRollbackRunning || _workshopBusy || _modProfileRunning)
+            if (GameFileOperationBusy
                 && type is "modInstall" or "modUninstall" or "modDisableLoader" or "modRestoreLoader"
                     or "modRollbackApply" or "modDownloadUpdate" or "modImportPackage" or "modImport" or "modPickImport" or "modDelete" or "modToggle"
                     or "modToggleBatch" or "modDeleteBatch"
@@ -566,6 +566,10 @@ public partial class HybridWindow
                     {
                         // 未选游戏目录等: 忽略, 变速栏保持默认
                     }
+                    break;
+                case "speedModeRead":
+                case "speedModeSave":
+                    await HandleSpeedModeMessageAsync(root, save: type == "speedModeSave");
                     break;
                 case "modSaveSpeedhack":
                     if (root.TryGetProperty("speedhackBaseSpeed", out var modSpeedhackElement))

@@ -126,6 +126,10 @@ host?.addEventListener('message', event => {
       if (window.UtilitiesModule) window.UtilitiesModule.applyStatus(msg.payload);
       break;
 
+    case 'speedModeResult':
+      window.SpeedModeModule?.receive(msg.payload);
+      break;
+
     case 'modStatus':
       // payload = { status, builtInMods }：整份交给渲染，页面自己区分「哪个模组是内置的」
       if (window.ModsModule) window.ModsModule.renderModStatus(msg.payload);
