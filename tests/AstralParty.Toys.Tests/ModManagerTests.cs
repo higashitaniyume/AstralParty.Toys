@@ -875,6 +875,307 @@ public sealed class ModManagerTests
     }
 
     [Fact]
+    public void SpeedModeSettings_SaveAndReloadBothModesFromGameFiles()
+    {
+        using var harness = new ModHarness("ap-speed-mode-roundtrip");
+        var manager = harness.Manager;
+        manager.Install(harness.GameDirectory, overwriteDll: false);
+        manager.SaveStoredGameDirectory(harness.GameDirectory);
+        var loaderPath = manager.LoaderConfigPath(harness.GameDirectory);
+        File.WriteAllText(loaderPath, """{"speedhackBaseSpeed":2.5,"customLoaderOption":true}""");
+        manager.WriteModConfigText(harness.GameDirectory, ModManager.SpeedModeModFileName,
+            """{"accelerationMode":"native","toggleKey":"LeftControl","maxSpeed":6,"_comments":{"toggleKey":"keep"}}""", bom: false);
+        InstallNativeSpeedModeMod(harness);
+
+        Assert.Equal("unity", manager.ReadSpeedModeSettings(manager.GetStatus()).Mode);
+        Assert.Equal(2.5, manager.ReadSpeedModeSettings(manager.GetStatus()).Speed);
+        manager.SaveSpeedModeSettings(manager.GetStatus(), "unity", 3.75);
+
+        var reopened = new ModManager(TestPaths.AppDirectory, manager.ProfileDirectory);
+        var unity = reopened.ReadSpeedModeSettings(reopened.GetStatus());
+        Assert.Equal(new SpeedModeSettings("unity", 3.75, 1, 6) { ToggleKey = "LeftControl", CanSelectNative = true }, unity);
+        Assert.Equal(1, reopened.ReadLoaderConfig(harness.GameDirectory).SpeedhackBaseSpeed);
+        Assert.Throws<InvalidOperationException>(() => reopened.SaveSpeedModeSettings(reopened.GetStatus(), "unity", 7));
+        Assert.Equal(unity, reopened.ReadSpeedModeSettings(reopened.GetStatus()));
+
+        reopened.SaveSpeedModeSettings(reopened.GetStatus(), "native", 4);
+        Assert.Equal(new SpeedModeSettings("native", 4, 1, 6) { ToggleKey = "LeftControl", CanSelectNative = true },
+            manager.ReadSpeedModeSettings(manager.GetStatus()));
+        Assert.Equal(1, manager.ReadLoaderConfig(harness.GameDirectory).SpeedhackBaseSpeed);
+        var mod = manager.ReadModConfig(harness.GameDirectory, ModManager.SpeedModeModFileName);
+        Assert.Contains("LeftControl", mod);
+        Assert.Contains("\"_comments\"", mod);
+        Assert.Contains("\"customLoaderOption\"", File.ReadAllText(loaderPath));
+    }
+
+    [Fact]
+    public void SpeedModeSettings_ReadsLegacyUnityStartupSpeedAndCanRestoreNormalSpeed()
+    {
+        using var harness = new ModHarness("ap-speed-mode-legacy");
+        var manager = harness.Manager;
+        manager.Install(harness.GameDirectory, overwriteDll: false);
+        manager.SaveStoredGameDirectory(harness.GameDirectory);
+        manager.SetSpeedhack(harness.GameDirectory, 4);
+        manager.WriteModConfigText(harness.GameDirectory, ModManager.SpeedModeModFileName,
+            """{"accelerationMode":"UNITY","speed":2}""", bom: false);
+
+        Assert.Equal(4, manager.ReadSpeedModeSettings(manager.GetStatus()).Speed);
+        manager.SaveSpeedModeSettings(manager.GetStatus(), "unity", 1);
+        Assert.Equal(new SpeedModeSettings("unity", 1, 1, 10), manager.ReadSpeedModeSettings(manager.GetStatus()));
+        Assert.Equal(1, manager.ReadLoaderConfig(harness.GameDirectory).SpeedhackBaseSpeed);
+    }
+
+    [Theory]
+    [InlineData("2.5.7")]
+    [InlineData("3.0.0")]
+    public void SpeedModeSettings_SwitchesModernModOffAndOnWithTheCurrentSpeed(string version)
+    {
+        using var harness = new ModHarness("ap-speed-mode-after-start");
+        var manager = harness.Manager;
+        manager.Install(harness.GameDirectory, overwriteDll: false);
+        manager.SaveStoredGameDirectory(harness.GameDirectory);
+        var sidecar = manager.ModSidecarPath(harness.GameDirectory, ModManager.SpeedModeModFileName)!;
+        var metadata = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(sidecar))!.AsObject();
+        metadata["version"] = version;
+        File.WriteAllText(sidecar, metadata.ToJsonString());
+        InstallNativeSpeedModeMod(harness);
+
+        manager.SaveSpeedModeSettings(manager.GetStatus(), "unity", 4);
+        // SpeedHackMod >= 2.5.7 removes accelerationMode when it loads its config.
+        var config = System.Text.Json.Nodes.JsonNode.Parse(
+            manager.ReadModConfig(harness.GameDirectory, ModManager.SpeedModeModFileName))!.AsObject();
+        config.Remove("accelerationMode");
+        manager.WriteModConfigText(harness.GameDirectory, ModManager.SpeedModeModFileName, config.ToJsonString(), bom: false);
+
+        Assert.Equal(new SpeedModeSettings("unity", 4, 1, 10) { CanSelectNative = true }, manager.ReadSpeedModeSettings(manager.GetStatus()));
+        Assert.True(manager.SaveSpeedModeSettings(manager.GetStatus(), "native", 4));
+
+        var reopened = new ModManager(TestPaths.AppDirectory, manager.ProfileDirectory);
+        var nativeStatus = reopened.GetStatus();
+        var disabled = Assert.Single(nativeStatus.Mods, mod => mod.FileName == ModManager.SpeedModeModFileName);
+        Assert.False(disabled.Enabled);
+        Assert.True(disabled.DisabledFolder);
+        Assert.True(Assert.Single(nativeStatus.Mods, mod => mod.FileName == ModManager.NativeSpeedModFileName).Enabled);
+        Assert.Equal(1, reopened.ReadLoaderConfig(harness.GameDirectory).SpeedhackBaseSpeed);
+        Assert.Equal(new SpeedModeSettings("native", 4, 1, 10) { CanSelectNative = true },
+            reopened.ReadSpeedModeSettings(nativeStatus, migrate: true));
+
+        reopened.SaveGameSpeed(nativeStatus, 3.5);
+        Assert.Equal(3.5, reopened.ReadSpeedModeSettings(nativeStatus).Speed);
+        Assert.True(reopened.SaveSpeedModeSettings(nativeStatus, "unity", 3.5));
+        var unityStatus = reopened.GetStatus();
+        var enabled = Assert.Single(unityStatus.Mods, mod => mod.FileName == ModManager.SpeedModeModFileName);
+        Assert.True(enabled.Enabled);
+        Assert.False(enabled.DisabledFolder);
+        Assert.False(Assert.Single(unityStatus.Mods, mod => mod.FileName == ModManager.NativeSpeedModFileName).Enabled);
+        Assert.Equal(1, reopened.ReadLoaderConfig(harness.GameDirectory).SpeedhackBaseSpeed);
+        Assert.Equal(new SpeedModeSettings("unity", 3.5, 1, 10) { CanSelectNative = true }, reopened.ReadSpeedModeSettings(unityStatus));
+        Assert.DoesNotContain("accelerationMode", reopened.ReadModConfig(harness.GameDirectory, ModManager.SpeedModeModFileName));
+    }
+
+    [Fact]
+    public void SpeedModeSettings_DefaultsToUnityWhenUpgradingLegacyConfig()
+    {
+        using var harness = new ModHarness("ap-speed-mode-upgrade");
+        var manager = harness.Manager;
+        manager.Install(harness.GameDirectory, overwriteDll: false);
+        manager.SaveStoredGameDirectory(harness.GameDirectory);
+        manager.SetSpeedhack(harness.GameDirectory, 4);
+        manager.WriteModConfigText(harness.GameDirectory, ModManager.SpeedModeModFileName,
+            """{"maxSpeed":6,"toggleKey":"LeftControl"}""", bom: false);
+
+        var status = manager.GetStatus();
+        status.GameRunning = false;
+        Assert.Equal(new SpeedModeSettings("unity", 4, 1, 6) { ToggleKey = "LeftControl" }, manager.ReadSpeedModeSettings(status, migrate: true));
+        Assert.Equal(1, manager.ReadLoaderConfig(harness.GameDirectory).SpeedhackBaseSpeed);
+        Assert.Contains("\"accelerationMode\": \"unity\"", manager.ReadModConfig(harness.GameDirectory, ModManager.SpeedModeModFileName));
+    }
+
+    [Fact]
+    public void SpeedModeSettings_ModPageUsesUnityAndKeepsExplicitOffAcrossStartup()
+    {
+        using var harness = new ModHarness("ap-speed-mode-mods-switch");
+        var manager = harness.Manager;
+        manager.Install(harness.GameDirectory, overwriteDll: false);
+        manager.SaveStoredGameDirectory(harness.GameDirectory);
+        var status = manager.GetStatus();
+        status.GameRunning = false;
+        status.Mods.Single(mod => mod.FileName == ModManager.SpeedModeModFileName).Version = "3.0.0";
+
+        Assert.Equal(new SpeedModeSettings("unity", 2, 1, 10), manager.ReadSpeedModeSettings(status, migrate: true));
+        manager.SaveGameSpeed(status, 1);
+        Assert.Equal(new SpeedModeSettings("unity", 1, 1, 10), manager.ReadSpeedModeSettings(status, migrate: true));
+        manager.SaveGameSpeed(status, 4);
+        Assert.Equal(new SpeedModeSettings("unity", 4, 1, 10), manager.ReadSpeedModeSettings(status));
+        Assert.Equal(1, manager.ReadLoaderConfig(harness.GameDirectory).SpeedhackBaseSpeed);
+        Assert.DoesNotContain("accelerationMode", manager.ReadModConfig(harness.GameDirectory, ModManager.SpeedModeModFileName));
+    }
+
+    [Fact]
+    public void SpeedModeSettings_RestoresLoaderConfigWhenModWriteFails()
+    {
+        using var harness = new ModHarness("ap-speed-mode-rollback");
+        var manager = harness.Manager;
+        manager.Install(harness.GameDirectory, overwriteDll: false);
+        manager.SaveStoredGameDirectory(harness.GameDirectory);
+        InstallNativeSpeedModeMod(harness);
+        manager.SaveSpeedModeSettings(manager.GetStatus(), "native", 3);
+        var loaderPath = manager.LoaderConfigPath(harness.GameDirectory);
+        manager.SetSpeedhack(harness.GameDirectory, 3);
+        var original = File.ReadAllText(loaderPath);
+        Directory.CreateDirectory(manager.ModConfigWritePathFor(harness.GameDirectory, ModManager.SpeedModeModFileName) + ".tmp");
+
+        Assert.ThrowsAny<Exception>(() => manager.SaveSpeedModeSettings(manager.GetStatus(), "unity", 3));
+        Assert.Equal(original, File.ReadAllText(loaderPath));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SpeedModeSettings_RestoresBothConfigsWhenModCannotMove(bool enable)
+    {
+        using var harness = new ModHarness("ap-speed-mode-move-rollback");
+        var manager = harness.Manager;
+        manager.Install(harness.GameDirectory, overwriteDll: false);
+        manager.SaveStoredGameDirectory(harness.GameDirectory);
+        InstallNativeSpeedModeMod(harness);
+        var previousMode = enable ? "native" : "unity";
+        manager.SaveSpeedModeSettings(manager.GetStatus(), previousMode, 4);
+        manager.SetSpeedhack(harness.GameDirectory, 4);
+        var loaderPath = manager.LoaderConfigPath(harness.GameDirectory);
+        var modPath = manager.ModConfigWritePathFor(harness.GameDirectory, ModManager.SpeedModeModFileName);
+        var sidecar = manager.ModSidecarPath(harness.GameDirectory, ModManager.SpeedModeModFileName)!;
+        var nativePath = manager.ModConfigWritePathFor(harness.GameDirectory, ModManager.NativeSpeedModFileName);
+        var nativeSidecar = manager.ModSidecarPath(harness.GameDirectory, ModManager.NativeSpeedModFileName)!;
+        var beforeLoader = File.ReadAllText(loaderPath);
+        var beforeMod = File.Exists(modPath) ? File.ReadAllText(modPath) : null;
+        var beforeSidecar = File.ReadAllBytes(sidecar);
+        var beforeNative = File.Exists(nativePath) ? File.ReadAllText(nativePath) : null;
+        var beforeNativeSidecar = File.ReadAllBytes(nativeSidecar);
+        Directory.CreateDirectory(Path.Combine(ModManager.ModsRoot(harness.GameDirectory), enable ? "SpeedHackMod" : "NativeSpeedMod"));
+
+        Assert.Throws<IOException>(() => manager.SaveSpeedModeSettings(manager.GetStatus(), enable ? "unity" : "native", 5));
+
+        Assert.Equal(beforeLoader, File.ReadAllText(loaderPath));
+        Assert.Equal(beforeMod, File.Exists(modPath) ? File.ReadAllText(modPath) : null);
+        Assert.Equal(beforeSidecar, File.ReadAllBytes(sidecar));
+        Assert.Equal(beforeNative, File.Exists(nativePath) ? File.ReadAllText(nativePath) : null);
+        Assert.Equal(beforeNativeSidecar, File.ReadAllBytes(nativeSidecar));
+        Assert.Equal(previousMode, manager.ReadSpeedModeSettings(manager.GetStatus()).Mode);
+    }
+
+    [Fact]
+    public void SpeedModeSettings_NativeRequiresTheMarketplaceMod()
+    {
+        using var harness = new ModHarness("ap-speed-mode-native-only");
+        var manager = harness.Manager;
+        harness.InstallLoaderOnly();
+        manager.SaveStoredGameDirectory(harness.GameDirectory);
+        var status = manager.GetStatus();
+        Assert.Equal(new SpeedModeSettings("", 1, 1, 10, false), manager.ReadSpeedModeSettings(status));
+        Assert.Throws<InvalidOperationException>(() => manager.SaveSpeedModeSettings(status, "native", 4));
+        Assert.Throws<InvalidOperationException>(() => manager.SaveSpeedModeSettings(status, "unity", 4));
+        Assert.Equal(1, manager.ReadLoaderConfig(harness.GameDirectory).SpeedhackBaseSpeed);
+    }
+
+    [Fact]
+    public void SpeedModeSettings_ReenablesFlatModWithoutLosingItsConfig()
+    {
+        using var harness = new ModHarness("ap-speed-mode-flat");
+        var manager = harness.Manager;
+        harness.InstallLoaderOnly();
+        manager.SaveStoredGameDirectory(harness.GameDirectory);
+        InstallNativeSpeedModeMod(harness);
+        var fileName = ModManager.SpeedModeModFileName;
+        var folder = ModManager.ModsRoot(harness.GameDirectory);
+        File.WriteAllText(Path.Combine(folder, fileName), "placeholder");
+        File.WriteAllText(Path.Combine(folder, "SpeedHackMod.json"), """{"id":"SpeedHackMod","version":"3.0.0"}""");
+        manager.WriteModConfigText(harness.GameDirectory, fileName, """{"speed":4,"maxSpeed":6,"toggleKey":"LeftControl"}""", bom: false);
+        manager.ToggleMod(harness.GameDirectory, fileName, enabled: false);
+
+        manager.SaveSpeedModeSettings(manager.GetStatus(), "unity", 3.5);
+        Assert.Equal(new SpeedModeSettings("unity", 3.5, 1, 6) { ToggleKey = "LeftControl", CanSelectNative = true },
+            manager.ReadSpeedModeSettings(manager.GetStatus()));
+        Assert.Contains("LeftControl", manager.ReadModConfig(harness.GameDirectory, fileName));
+
+        manager.SaveSpeedModeSettings(manager.GetStatus(), "native", 3.5);
+        Assert.Equal(new SpeedModeSettings("native", 3.5, 1, 6) { ToggleKey = "LeftControl", CanSelectNative = true },
+            manager.ReadSpeedModeSettings(manager.GetStatus()));
+        Assert.False(Assert.Single(manager.GetInstalledMods(harness.GameDirectory), mod => mod.FileName == fileName).Enabled);
+        Assert.Contains("LeftControl", manager.ReadModConfig(harness.GameDirectory, fileName));
+    }
+
+    [Fact]
+    public void SpeedModeSettings_MigratesLegacyMultiplierAndDisablesTheOtherMod()
+    {
+        using var harness = new ModHarness("ap-speed-mode-market-migration");
+        var manager = harness.Manager;
+        manager.Install(harness.GameDirectory, overwriteDll: false);
+        manager.SaveStoredGameDirectory(harness.GameDirectory);
+        InstallNativeSpeedModeMod(harness, enabled: true);
+        manager.SetSpeedhack(harness.GameDirectory, 5);
+        var status = manager.GetStatus();
+        status.GameRunning = false;
+
+        var settings = manager.ReadSpeedModeSettings(status, migrate: true);
+
+        Assert.Equal("unity", settings.Mode);
+        Assert.Equal(5, settings.Speed);
+        Assert.Equal(1, manager.ReadLoaderConfig(harness.GameDirectory).SpeedhackBaseSpeed);
+        Assert.False(Assert.Single(manager.GetInstalledMods(harness.GameDirectory), mod => mod.FileName == ModManager.NativeSpeedModFileName).Enabled);
+    }
+
+    [Fact]
+    public void SpeedModeSettings_PreservesNormalSpeedWhenMigratingLegacyNativeDefault()
+    {
+        using var harness = new ModHarness("ap-speed-mode-legacy-normal");
+        var manager = harness.Manager;
+        manager.Install(harness.GameDirectory, overwriteDll: false);
+        manager.SaveStoredGameDirectory(harness.GameDirectory);
+        manager.WriteModConfigText(harness.GameDirectory, ModManager.SpeedModeModFileName,
+            """{"accelerationMode":"native","speed":2}""", bom: false);
+        var status = manager.GetStatus();
+        status.GameRunning = false;
+
+        var settings = manager.ReadSpeedModeSettings(status, migrate: true);
+
+        Assert.Equal("unity", settings.Mode);
+        Assert.Equal(1, settings.Speed);
+        Assert.Equal("unity", System.Text.Json.Nodes.JsonNode.Parse(
+            manager.ReadModConfig(harness.GameDirectory, ModManager.SpeedModeModFileName))!["accelerationMode"]?.GetValue<string>());
+    }
+
+    [Fact]
+    public void SpeedModeSettings_PreservesCommentsWhenMigratingConfigs()
+    {
+        using var harness = new ModHarness("ap-speed-mode-comments");
+        var manager = harness.Manager;
+        manager.Install(harness.GameDirectory, overwriteDll: false);
+        manager.SaveStoredGameDirectory(harness.GameDirectory);
+        var loaderPath = manager.LoaderConfigPath(harness.GameDirectory);
+        File.WriteAllText(loaderPath, "{\n  // keep loader comment\n  \"speedhackBaseSpeed\": 3.0\n}\n");
+        manager.WriteModConfigText(harness.GameDirectory, ModManager.SpeedModeModFileName,
+            "{\n  // keep mod comment\n  \"accelerationMode\": \"native\",\n  \"speed\": 2\n}\n", bom: false);
+
+        var status = manager.GetStatus();
+        status.GameRunning = false;
+        var settings = manager.ReadSpeedModeSettings(status, migrate: true);
+
+        Assert.Equal(3, settings.Speed);
+        Assert.Contains("// keep loader comment", File.ReadAllText(loaderPath));
+        Assert.Contains("// keep mod comment", manager.ReadModConfig(harness.GameDirectory, ModManager.SpeedModeModFileName));
+    }
+
+    private static void InstallNativeSpeedModeMod(ModHarness harness, bool enabled = false)
+    {
+        var directory = Path.Combine(ModManager.ModsRoot(harness.GameDirectory), "NativeSpeedMod");
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Combine(directory, ModManager.NativeSpeedModFileName), "placeholder");
+        File.WriteAllText(Path.Combine(directory, "NativeSpeedMod.json"), """{"id":"NativeSpeedMod","name":"NativeSpeedMod","version":"1.0.0"}""");
+        if (!enabled) harness.Manager.ToggleMod(harness.GameDirectory, ModManager.NativeSpeedModFileName, enabled: false);
+    }
+
+    [Fact]
     public void Install_PreservesExistingUserConfig()
     {
         using var harness = new ModHarness("ap-mod-preserve-cfg");

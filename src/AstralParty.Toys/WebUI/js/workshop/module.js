@@ -612,7 +612,7 @@
     if (!cached) post({ type: 'workshopDetail', id });
   }
 
-  // 网页点 aspatoys://install-mod 唤起：只打开详情页，由用户在详情页确认安装。
+  // 从外部链接或应用内入口打开指定市场详情，由用户在详情页确认安装。
   // 指定了版本时直接停在「版本」页签，方便找到那个版本的安装按钮；没指定就停在「详情」。
   function openExternalModRequest(payload) {
     const id = String(payload?.id || '').trim();

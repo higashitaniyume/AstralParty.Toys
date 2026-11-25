@@ -8,7 +8,7 @@
   const writePref = (key, value) => { try { localStorage.setItem(key, value); } catch { /* 存不了就只在本次会话生效 */ } };
 
   const M = {
-    q: '', speedCfg: null, sel: new Set(), pendingBatch: null,
+    q: '', speedSync: null, speedPending: false, sel: new Set(), pendingBatch: null,
     sort: readPref(PREF.sort, 'installed'),   // installed | name | status
     group: readPref(PREF.group, 'kind'),      // kind | time | none
     progress: null,
@@ -87,10 +87,17 @@
     render();
   }
   const speedMod = () => mods().find(m => m.name === 'SpeedHackMod' || /^SpeedHackMod\.dll$/i.test(m.fileName || ''));
+  const gameSpeedSync = () => M.speedSync?.gameDirectory?.toLowerCase() === status()?.gameDirectory?.toLowerCase()
+    ? M.speedSync : null;
   const baseSpeed = () => {
-    const raw = Number(M.speedCfg?.speedhackBaseSpeed ?? 1);
+    const raw = Number(gameSpeedSync()?.config?.speedhackBaseSpeed ?? 1);
     return Number.isFinite(raw) && raw >= 1 ? raw : 1;
   };
+  function gameSpeedRange() {
+    const settings = gameSpeedSync()?.settings;
+    return settings?.mode === 'unity' ? [settings.unityMinSpeed, settings.unityMaxSpeed]
+      : [settings?.nativeMinSpeed ?? 1, settings?.nativeMaxSpeed ?? 100];
+  }
 
   // ---------- 排序 / 分组 / 搜索 ----------
   const SORTS = [['installed', '最近安装'], ['name', '名称'], ['status', '启用状态']];
@@ -359,7 +366,14 @@
     }[lv.act] || '';
     const loaderIsPrimary = ['install', 'restore', 'update'].includes(lv.act);
 
-    const sp = baseSpeed(), on = sp > 1.0001, sm = speedMod(), hk = sm && sm.enabled !== false;
+    const speedSync = gameSpeedSync();
+    const sp = speedSync?.settings?.speed ?? baseSpeed(), on = sp > 1.0001;
+    const [speedMin, speedMax] = gameSpeedRange();
+    const speedAvailable = s.installed && !s.loaderDisabled && !s.coreMissing && speedSync?.settings?.mode && !speedSync.error;
+    const speedDisabled = !speedAvailable || b || M.speedPending ? 'disabled' : '';
+    const sm = speedMod(), hk = sm && sm.enabled !== false;
+    const nativeSpeed = speedSync?.settings?.mode === 'native';
+    const speedKey = speedSync?.settings?.toggleKey || 'Delete';
     const enabled = mods().filter(m => m.enabled !== false).length;
     // 清理已不存在的勾选（解密后列表已删 / 换游戏目录）
     if (M.sel.size) {
@@ -401,15 +415,19 @@
           <button class="v2-icon-btn" data-v2m="loaderSettings" title="加载器设置" ${usable ? '' : 'disabled'}>${I().sliders}</button>
         </div>
         <div class="v2-row"><span class="k">游戏变速</span>
-          <span class="v">${!usable ? '<span class="v2-muted">先安装加载器</span>' : on
-            ? `启动时 <input id="v2mSpeed" type="number" min="1" max="100" step="0.1" value="${sp}" class="v2-num"> 倍速　<span class="v2-muted">重启游戏生效</span>`
+          <span class="v">${!speedAvailable ? `<span class="v2-muted">${esc(speedSync?.error || (speedSync?.settings ? '请先选择变速模式' : s.installed && !s.coreMissing ? '正在读取变速设置…' : '先安装可用的加载器'))}</span>` : on
+            ? `启动时 <input id="v2mSpeed" type="number" min="${speedMin}" max="${speedMax}" step="any" value="${sp}" class="v2-num" ${speedDisabled}> 倍速　<span class="v2-muted">重启游戏生效</span>`
             : '<span class="v2-muted">关闭（1.0 = 正常速度，不支持减速）</span>'}</span>
-          <label class="v2-switch"><input type="checkbox" data-v2m-speed ${on ? 'checked' : ''} ${usable ? '' : 'disabled'}><span></span></label></div>
+          ${speedSync?.settings && !speedSync.settings.mode ? '<button class="v2-btn line" data-v2page="speedhack">选择模式</button>' : ''}
+          <label class="v2-switch"><input type="checkbox" data-v2m-speed aria-label="游戏变速" ${speedAvailable && on ? 'checked' : ''} ${speedMax === 1 ? 'disabled' : speedDisabled}><span></span></label></div>
+
         <div class="v2-row"><span class="k">变速热键</span>
-          <span class="v">${hk ? '<span class="v2-muted">Delete 在 1.0x 和上次倍率间切换 · Alt+= / Alt+- 调倍率（由「变速」模组提供）</span>'
+          <span class="v">${nativeSpeed ? `<span class="v2-muted">${esc(t('speedhack.native_hotkey', { key: speedKey }))}</span>`
+            : hk ? `<span class="v2-muted">${esc(speedKey)} 在 1.0x 和上次倍率间切换 · Alt+= / Alt+- 调倍率（由「变速」模组提供）</span>`
             : sm ? `<span style="color:var(--gp-gold)">需要开启「变速」模组</span>${on ? `<span class="v2-muted">　现在游戏会一直以 ${sp}x 运行，没法切回 1.0x</span>` : ''}`
             : '<span class="v2-muted">没装「变速」模组，游戏里不能用热键变速</span>'}</span>
-          ${sm && !hk ? `<button class="v2-btn line" data-v2m="speedModOn">开启模组</button>` : ''}</div>
+          ${nativeSpeed && speedSync?.settings?.canSelectUnity ? '<button class="v2-btn line" data-v2page="speedhack">切换 Unity</button>'
+            : sm && !hk ? '<button class="v2-btn line" data-v2m="speedModOn">开启模组</button>' : ''}</div>
       </div>
 
       ${window.V2ModProfiles?.card?.() || ''}
@@ -701,19 +719,26 @@
       render();
       return;
     }
-    if (t.dataset.v2mSpeed !== undefined) { saveSpeed(t.checked ? 2.0 : 1.0); return; }
+    if (t.dataset.v2mSpeed !== undefined) {
+      const [min, max] = gameSpeedRange();
+      saveSpeed(t.checked ? Math.max(min, Math.min(max, 2)) : 1);
+      return;
+    }
     if (t.id === 'v2mSort') { M.sort = t.value; writePref(PREF.sort, M.sort); render(); return; }
     if (t.id === 'v2mGroup') { M.group = t.value; writePref(PREF.group, M.group); render(); return; }
-    if (t.id === 'v2mSpeed') {
-      const v = Number(t.value);
-      if (!(v >= 1 && v <= 100)) { toast('倍速必须在 1.0 ~ 100 之间（加载器不支持减速）'); t.value = baseSpeed(); return; }
-      saveSpeed(v);
-    }
+    if (t.id === 'v2mSpeed') saveSpeed(Number(t.value));
   });
-  // 先在界面上改过来，宿主随后推 modSpeedhackSync 时以它为准
-  function saveSpeed(v) {
-    post({ type: 'modSaveSpeedhack', speedhackBaseSpeed: v });
-    M.speedCfg = { ...(M.speedCfg || {}), speedhackBaseSpeed: v };
+  function saveSpeed(speed) {
+    const sync = gameSpeedSync();
+    if (!sync?.config || sync.error || M.speedPending) return;
+    const [min, max] = gameSpeedRange();
+    if (!(speed >= min && speed <= max)) {
+      toast(t('speedhack.out_of_range', { min, max }));
+      render();
+      return;
+    }
+    M.speedPending = true;
+    post({ type: 'modSaveSpeedhack', gameDirectory: sync.gameDirectory, speedhackBaseSpeed: speed });
     render();
   }
 
@@ -742,7 +767,10 @@
     ['renderModStatus', 'renderUpdateCheck', 'clearBusy', 'setBusy', 'renderPackageImportResult', 'syncSpeedhackBar', 'clearRecoveryBusy'].forEach(name => {
       const orig = mm[name]; if (typeof orig !== 'function') return;
       mm[name] = function (...args) {
-        if (name === 'syncSpeedhackBar' && args[0]) M.speedCfg = args[0];
+        if (name === 'syncSpeedhackBar') {
+          M.speedSync = args[1] ?? null;
+          M.speedPending = false;
+        }
         const r = orig.apply(this, args);
         render();
         return r;

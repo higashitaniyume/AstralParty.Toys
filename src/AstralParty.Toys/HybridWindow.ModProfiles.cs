@@ -255,27 +255,7 @@ public partial class HybridWindow
         {
             _modProfileRunning = false;
             _ = PushModStatusAsync();      // 会顺带回推 modProfiles
-            PushLoaderConfigSync();
-        }
-    }
-
-    /// <summary>套用方案可能改了加载器设置：把变速栏与首页启动方式同步过来。</summary>
-    private void PushLoaderConfigSync()
-    {
-        try
-        {
-            var directory = CreateModProfileService().GameDirectory;
-            if (string.IsNullOrWhiteSpace(directory) || !File.Exists(_modManager.LoaderConfigPath(directory))) return;
-            Post(new
-            {
-                type = "modSpeedhackSync",
-                payload = new { config = _modManager.ReadLoaderConfig(directory) }
-            });
             _ = PostSteamBypassSyncAsync();
-        }
-        catch
-        {
-            // 没装加载器 / 配置读不到：忽略，界面保持原样
         }
     }
 
@@ -378,7 +358,7 @@ public partial class HybridWindow
         {
             _modProfileRunning = false;
             _ = PushModStatusAsync();
-            PushLoaderConfigSync();
+            _ = PostSteamBypassSyncAsync();
         }
     }
 

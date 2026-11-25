@@ -1,0 +1,295 @@
+/* 变速页 */
+
+.speedhack-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+body.page-transitioning #speedhackView {
+  pointer-events: none;
+}
+
+/* 页面进入动画（与其它页面统一） */
+body:not(.reduce-motion) #speedhackView:not(.page-entering) .speedhack-header {
+  animation: content-rise 360ms var(--motion-ease) both;
+}
+body:not(.reduce-motion) #speedhackView:not(.page-entering) .speedhack-status-card {
+  animation: content-rise 440ms var(--motion-ease) both;
+}
+body:not(.reduce-motion) #speedhackView:not(.page-entering) .speedhack-section {
+  animation: content-rise 440ms var(--motion-ease) 60ms both;
+}
+
+.speedhack-body {
+  flex: none;
+  width: 100%;
+}
+
+.speedhack-header {
+  justify-content: space-between;
+  padding: 10px 12px;
+}
+
+.speedhack-status-card .status-value {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--gp-pink);
+}
+
+/* ============ 分块标题 ============ */
+.speedhack-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 18px;
+}
+
+.speedhack-section-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: var(--gp-text-main);
+}
+
+.speedhack-settings-heading,
+.speedhack-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.speedhack-settings-heading {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+/* ============ 模式卡片 ============ */
+.speedhack-mode-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.speedhack-mode-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: var(--gp-radius-md);
+  border: 2px solid var(--gp-border);
+  background: var(--v2-panel-2);
+  transition: all 220ms var(--motion-ease);
+}
+
+.speedhack-mode-card:has(.mode-card-button:not(:disabled)):hover {
+  border-color: var(--gp-pink);
+  background: rgba(255, 74, 150, 0.08);
+  transform: translateY(-2px);
+}
+
+.speedhack-mode-card:has(.mode-card-button:not(:disabled)) {
+  cursor: pointer;
+}
+
+.speedhack-mode-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--gp-radius-md);
+  background: rgba(255, 74, 150, 0.12);
+  opacity: 0;
+  transition: opacity 220ms var(--motion-ease);
+  pointer-events: none;
+}
+
+.speedhack-mode-card:has(.mode-card-button:not(:disabled)):hover::before {
+  opacity: 1;
+}
+
+/* 选中态 */
+.speedhack-mode-card-selected {
+  border-color: var(--gp-pink);
+  border-width: 2px;
+  background: linear-gradient(135deg, rgba(255, 74, 150, 0.15) 0%, rgba(255, 74, 150, 0.08) 100%);
+  box-shadow: 0 0 20px rgba(255, 74, 150, 0.2), var(--gp-shadow-sm);
+}
+
+.speedhack-mode-card-selected::before {
+  opacity: 0;
+}
+
+.mode-card-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+
+.mode-card-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--gp-text-main);
+}
+
+.mode-card-badge {
+  padding: 2px 7px;
+  border: 1px solid var(--gp-green);
+  border-radius: var(--gp-radius-full);
+  background: rgba(74, 222, 128, .12);
+  color: var(--gp-green);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.mode-card-description {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--gp-text-sub);
+  line-height: 1.5;
+}
+
+.mode-card-features {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--gp-text-muted);
+  line-height: 1.6;
+}
+
+.mode-card-features li {
+  color: var(--gp-green, #4ade80);
+  font-weight: 600;
+}
+
+.mode-card-features .mode-card-tradeoff {
+  color: var(--gp-text-sub);
+  font-weight: 400;
+}
+
+.mode-card-button {
+  align-self: flex-start;
+  margin-top: auto;
+  padding: 8px 16px;
+  border-radius: var(--gp-radius-sm);
+  border: 1px solid var(--gp-pink);
+  background: transparent;
+  color: var(--gp-pink);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 140ms var(--motion-ease);
+}
+
+.mode-card-button:not(:disabled):hover {
+  background: rgba(255, 74, 150, 0.15);
+}
+
+.mode-card-button[aria-pressed="true"] {
+  background: var(--gp-pink);
+  color: white;
+  border-color: var(--gp-pink);
+}
+
+.mode-card-button[aria-pressed="true"]:not(:disabled):hover {
+  background: var(--gp-pink);
+}
+
+.speedhack-mode-card:not(.speedhack-mode-card-selected) :is(.mode-card-description, .mode-card-features .mode-card-tradeoff, .mode-card-button, .mode-card-badge) {
+  color: var(--gp-text-muted);
+}
+
+.speedhack-mode-card:not(.speedhack-mode-card-selected) .mode-card-title {
+  color: var(--gp-text-sub);
+}
+
+.speedhack-mode-card:not(.speedhack-mode-card-selected) .mode-card-button {
+  border-color: var(--gp-border);
+}
+
+.speed-control-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.speed-label {
+  width: 110px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--gp-text-sub);
+}
+
+.speed-display {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-width: 0;
+}
+
+.speed-input-number {
+  width: 92px;
+  padding: 8px 10px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  background: var(--v2-well);
+  color: var(--gp-text-main);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.speed-input-number[aria-invalid="true"] {
+  border-color: var(--accent-red, #f43f5e);
+}
+
+.speed-unit {
+  color: var(--gp-text-muted);
+}
+
+.speed-range {
+  margin: 0;
+  color: var(--gp-text-muted);
+  font-size: 12px;
+}
+
+.speedhack-page :is(.mode-card-button, .speed-input-number):disabled {
+  cursor: default;
+  opacity: .55;
+}
+
+.speedhack-page :is(.mode-card-button, .speed-input-number):focus-visible {
+  outline: 2px solid var(--gp-pink);
+  outline-offset: 3px;
+}
+
+.speedhack-feedback {
+  margin: 0;
+  font-size: 13px;
+}
+
+.speedhack-feedback:not(:empty) { margin-top: 6px; }
+.speedhack-feedback[data-kind="error"] { color: var(--accent-red, #f43f5e); }
+.speedhack-feedback[data-kind="success"] { color: var(--gp-green, #4ade80); }
+
+/* ============ 响应式 ============ */
+@media (max-width: 768px) {
+  .speedhack-body {
+    padding-inline: 16px;
+  }
+
+  .speedhack-mode-cards {
+    grid-template-columns: 1fr;
+  }
+}

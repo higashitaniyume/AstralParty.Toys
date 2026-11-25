@@ -53,6 +53,18 @@ public sealed class EmbeddedWebUiTests
         Assert.Contains("<script", html, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void Index_ContainsSpeedModeNavigationAndView()
+    {
+        using var stream = EmbeddedWebStore.Open("index.html");
+        Assert.NotNull(stream);
+        using var reader = new StreamReader(stream!);
+        var html = reader.ReadToEnd();
+
+        Assert.Contains("data-page=\"speedhack\"", html, StringComparison.Ordinal);
+        Assert.Contains("id=\"speedhackView\"", html, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData("index.html", "text/html")]
     [InlineData("css/base.css", "text/css")]

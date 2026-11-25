@@ -342,6 +342,7 @@ public partial class HybridWindow
     /// </summary>
     private void HandleLaunchGame(string mode, string? accountProfile = null, bool separateInstance = false)
     {
+        PrepareGameSpeedForLaunch();
         if (mode == "taptap")
         {
             if (!separateInstance)

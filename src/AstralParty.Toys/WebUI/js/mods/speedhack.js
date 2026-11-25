@@ -16,12 +16,11 @@
       if (hintEl) hintEl.textContent = '先安装加载器';
     },
 
-    // 用加载器配置填充变速栏状态（开关 + 倍速）
-    syncSpeedhackBar(config) {
+    syncSpeedhackBar(config, sync) {
       if (!config) return;
       const available = this.modStatus ? this.modStatus.installed === true : true;
       // 加载器硬性下限 1.0：配置里残留的 <1 值(旧版写的)按 1.0 显示，避免界面显示"0.5x"却实际跑 1x
-      const raw = Number(config.speedhackBaseSpeed ?? 1.0);
+      const raw = Number(sync?.settings?.speed ?? config.speedhackBaseSpeed ?? 1.0);
       const speed = Number.isFinite(raw) && raw >= 1.0 ? raw : 1.0;
       const enabled = Math.abs(speed - 1.0) > 0.001;
       const enableEl = $('modSpeedhackEnable');
@@ -54,7 +53,8 @@
       }
       post({
         type: 'modSaveSpeedhack',
-        speedhackBaseSpeed: enabled ? speed : 1.0
+        speedhackBaseSpeed: enabled ? speed : 1.0,
+        gameDirectory: this.modStatus?.gameDirectory
       });
     },
 

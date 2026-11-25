@@ -30,7 +30,7 @@ public partial class HybridWindow
             if (HandleFontMessage(type, root)) return;         // 新界面：自定义 → 字体
             if (HandleWindowChromeMessage(type, root)) return;   // 新界面自绘标题栏：拖动 / 最小化 / 最大化 / 关闭
             if (HandleDeviceMessage(type, root)) return;         // 新界面：移动设备（只读检测）
-            if ((_loaderRecoveryBusy || _modPackageImportRunning || _modUpdateRunning || _modImportRunning || _modInstallRunning || _modRollbackRunning || _workshopBusy || _modProfileRunning)
+            if (GameFileOperationBusy
                 && type is "modInstall" or "modUninstall" or "modDisableLoader" or "modRestoreLoader"
                     or "modRollbackApply" or "modDownloadUpdate" or "modImportPackage" or "modImport" or "modPickImport" or "modDelete" or "modToggle"
                     or "modToggleBatch" or "modDeleteBatch"
@@ -61,6 +61,7 @@ public partial class HybridWindow
                                 _speedhackManager.GetStoredGameDirectory()
                             }.Concat(SpeedhackManager.EnumerateGameDirectories())));
                         SyncActiveGameToManagers();
+                        await Task.Run(PrepareGameSpeedForLaunch);
                         _ = PostAppVersionAsync();   // 带上当前游戏目录里已装的加载器版本，异步补齐「关于」详情
                         Post(new { type = "homeData", payload = _homeDataService.GetHomeData() });
                         _ = PostSteamBypassSyncAsync();
@@ -561,38 +562,14 @@ public partial class HybridWindow
                     Post(new { type = "modLoaderConfig", payload = new { config = _modManager.ReadLoaderConfig(RequireModGameDirectory()) } });
                     break;
                 case "modSyncSpeedhack":
-                    // 进入 mod 页时同步变速栏状态(不弹窗口)
-                    try
-                    {
-                        Post(new { type = "modSpeedhackSync", payload = new { config = _modManager.ReadLoaderConfig(RequireModGameDirectory()) } });
-                    }
-                    catch
-                    {
-                        // 未选游戏目录等: 忽略, 变速栏保持默认
-                    }
+                    PushGameSpeedSync(_modManager.GetStatus());
+                    break;
+                case "speedModeRead":
+                case "speedModeSave":
+                    await HandleSpeedModeMessageAsync(root, save: type == "speedModeSave");
                     break;
                 case "modSaveSpeedhack":
-                    if (root.TryGetProperty("speedhackBaseSpeed", out var modSpeedhackElement))
-                    {
-                        try
-                        {
-                            var speedhackDirectory = RequireModGameDirectory();
-                            var speedhackValue = modSpeedhackElement.GetDouble();
-                            using var speedhackOp = CreateRollbackJournal().Begin(
-                                "speedhackSave", $"设置变速 {speedhackValue:0.#}x", speedhackDirectory,
-                                includeMods: false, includeLoader: true, includeProfiles: false,
-                                preserveAccountFields: true);
-                            _modManager.SetSpeedhack(speedhackDirectory, speedhackValue);
-                            speedhackOp.Commit();
-                            Post(new { type = "toast", message = speedhackValue > 1.0
-                                ? $"已启用变速：{speedhackValue:F1}x（重启游戏生效）"
-                                : "已禁用变速（恢复 1.0 正常速度，重启游戏生效）" });
-                        }
-                        catch (Exception ex)
-                        {
-                            Post(new { type = "toast", message = $"设置变速失败：{ex.Message}" });
-                        }
-                    }
+                    HandleGameSpeedSave(root);
                     break;
                 case "modSaveLoaderConfig":
                     if (root.TryGetProperty("config", out var modLoaderCfgElement))

@@ -54,6 +54,9 @@ public sealed partial class ModManager
     /// 启用 = 搬回 <c>mods</c>；sidecar 的 enabled 字段同步改写，手动挪回去时也还是同样状态。
     /// 无 sidecar 的 mod 自动补一个。</summary>
     public bool ToggleMod(string gameDirectory, string fileName, bool enabled)
+        => ToggleMod(gameDirectory, fileName, enabled, moveFiles: true);
+
+    private bool ToggleMod(string gameDirectory, string fileName, bool enabled, bool moveFiles)
     {
         if (string.IsNullOrWhiteSpace(gameDirectory) || string.IsNullOrWhiteSpace(fileName))
             throw new ArgumentException("游戏目录或 mod 文件名无效。");
@@ -80,10 +83,10 @@ public sealed partial class ModManager
         // 目录搬家（先写 sidecar 再搬，搬失败也不会留下状态不一致的 sidecar）
         var targetRootName = enabled ? ModsFolderName : DisabledModsFolderName;
         var currentRootName = Path.GetFileName(root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-        if (!string.Equals(currentRootName, targetRootName, StringComparison.OrdinalIgnoreCase))
+        if (moveFiles && !string.Equals(currentRootName, targetRootName, StringComparison.OrdinalIgnoreCase))
             MoveModEntry(loaderRoot, root, dllPath, directoryName, targetRootName);
         ToysLog.Info("mods",
-            $"{(enabled ? "启用" : "禁用")}模组 {fileName}" + (enabled ? "" : "（已搬入 disabled_mods）"));
+            $"{(enabled ? "启用" : "禁用")}模组 {fileName}" + (!enabled && moveFiles ? "（已搬入 disabled_mods）" : ""));
         return enabled;
     }
 
@@ -103,13 +106,29 @@ public sealed partial class ModManager
                 return;
             }
 
-            foreach (var path in new[] { dllPath, Path.ChangeExtension(dllPath, ".json") })
+            var files = new[] { dllPath, Path.ChangeExtension(dllPath, ".json") }
+                .Where(File.Exists)
+                .Select(path => (Source: path, Target: Path.Combine(targetRoot, Path.GetFileName(path))))
+                .ToArray();
+            foreach (var (_, target) in files)
             {
-                if (!File.Exists(path)) continue;
-                var target = Path.Combine(targetRoot, Path.GetFileName(path));
-                if (File.Exists(target))
+                if (File.Exists(target) || Directory.Exists(target))
                     throw new IOException($"目标目录已存在同名文件：{target}");
-                File.Move(path, target);
+            }
+            var moved = 0;
+            try
+            {
+                foreach (var (source, target) in files)
+                {
+                    File.Move(source, target);
+                    moved++;
+                }
+            }
+            catch
+            {
+                for (var index = moved - 1; index >= 0; index--)
+                    File.Move(files[index].Target, files[index].Source);
+                throw;
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)

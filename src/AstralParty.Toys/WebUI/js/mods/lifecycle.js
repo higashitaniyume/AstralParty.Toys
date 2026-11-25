@@ -47,8 +47,6 @@
 
       window.GameLibModule?.init?.();
       this.refreshModStatus();
-      // 只同步变速栏状态(不弹设置窗口; 弹窗仅在点「⚙ 加载器设置」时出现)
-      post({ type: 'modSyncSpeedhack' });
       post({ type: 'workshopModVersions' });
     },
     bindEvents() {

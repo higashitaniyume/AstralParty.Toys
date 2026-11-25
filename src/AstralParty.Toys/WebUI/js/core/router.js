@@ -15,6 +15,8 @@ function runPageHook(pageName) {
     window.SettingsModule?.init();
   } else if (pageName === 'utilities') {
     window.UtilitiesModule?.onShowUtilities?.();
+  } else if (pageName === 'speedhack') {
+    window.SpeedModeModule?.onShow();
   } else if (pageName === 'mods') {
     window.ModsModule?.onShowMods?.();
   } else if (pageName === 'workshop') {
@@ -75,6 +77,7 @@ function showPage(pageName, options = {}) {
   }
 
   if (current?.id === 'accountView') window.MyAccountModule?.onHide();
+  if (current?.id === 'speedhackView') window.SpeedModeModule?.onHide?.();
   updateNavigation(pageName);
   if (!current || immediate) {
     target.classList.remove('hidden', 'page-entering', 'page-leaving');
