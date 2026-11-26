@@ -5,9 +5,12 @@ namespace AstralParty.Toys.Services.Hub;
 public sealed class HubServerConfig
 {
     public int Protocol { get; set; } = 1;
+    public bool PasswordAuthEnabled { get; set; } = true;
     public bool MicrosoftAuthEnabled { get; set; }
     public string MicrosoftClientId { get; set; } = "";
     public string MicrosoftTenant { get; set; } = "common";
+    public bool GoogleAuthEnabled { get; set; }
+    public bool GitHubAuthEnabled { get; set; }
     public string[] Regions { get; set; } = ["cn", "int"];
     public int PollWaitSeconds { get; set; } = 25;
     public int MaxRoomCapacity { get; set; } = 4;
@@ -132,12 +135,16 @@ public sealed class HubBindingSummaryDto
 public sealed class HubUserProfileDto
 {
     public string UserId { get; set; } = "";
+    public string Username { get; set; } = "";
     public string DisplayName { get; set; } = "";
     public string AvatarUrl { get; set; } = "";
     public string PrimaryRegion { get; set; } = "";
     public string PrimaryUid { get; set; } = "";
     public bool IsSelf { get; set; }
     public bool ProfileHidden { get; set; }
+    public bool HasPassword { get; set; }
+    public bool TwoFactorEnabled { get; set; }
+    public bool ReboundFromPreviousOwner { get; set; }
     public HubPrivacySettings? Privacy { get; set; }
     public List<HubBindingSummaryDto> Bindings { get; set; } = [];
     public long CreatedAt { get; set; }
@@ -146,9 +153,52 @@ public sealed class HubUserProfileDto
 
 public sealed class HubAuthResponse
 {
+    public bool RequiresTwoFactor { get; set; }
+    public string TwoFactorTicket { get; set; } = "";
     public string HubToken { get; set; } = "";
     public long ExpiresAt { get; set; }
-    public HubUserProfileDto Me { get; set; } = new();
+    public HubUserProfileDto? Me { get; set; }
+}
+
+public sealed class HubLinkedProviderDto
+{
+    public string Provider { get; set; } = "";
+    public string DisplayName { get; set; } = "";
+}
+
+public sealed class HubSecurityStatusDto
+{
+    public string Username { get; set; } = "";
+    public bool HasPassword { get; set; }
+    public bool TwoFactorEnabled { get; set; }
+    public int RecoveryCodesLeft { get; set; }
+    public string SessionAuthMethod { get; set; } = "";
+    public bool CanResetPasswordWithoutCurrent { get; set; }
+    public int ActiveSessionsCount { get; set; }
+    public List<HubLinkedProviderDto> LinkedProviders { get; set; } = [];
+}
+
+public sealed class HubTotpSetupResponse
+{
+    public string SharedKey { get; set; } = "";
+    public string FormattedKey { get; set; } = "";
+    public string OtpAuthUri { get; set; } = "";
+}
+
+public sealed class HubTotpEnableResponse
+{
+    public bool Enabled { get; set; }
+    public List<string> RecoveryCodes { get; set; } = [];
+}
+
+public sealed class HubRecoveryCodesResponse
+{
+    public List<string> RecoveryCodes { get; set; } = [];
+}
+
+public sealed class HubRevokeSessionsResponse
+{
+    public int Revoked { get; set; }
 }
 
 public sealed class HubInstantSummaryDto

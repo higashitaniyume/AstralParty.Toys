@@ -159,6 +159,85 @@
     </form>
   </dialog>
 
+  <!-- 原生模态弹窗：统一登录 / 注册 / 二次验证 -->
+  <dialog id="hubAuthDialog" class="hub-dialog" closedby="any" aria-labelledby="hubAuthDialogTitle">
+    <form method="dialog" id="hubAuthForm" class="hub-dialog-form">
+      <div class="hub-dialog-head">
+        <h1 id="hubAuthDialogTitle">登录组队大厅</h1>
+        <button type="submit" value="cancel" class="hub-dialog-close" aria-label="关闭">✕</button>
+      </div>
+      <div class="hub-dialog-body">
+        <div id="hubAuthModeTabs" class="hub-auth-tabs" role="tablist" aria-label="登录或注册切换">
+          <button type="button" role="tab" aria-selected="true" class="hub-auth-tab is-active" data-auth-mode="login">账号密码登录</button>
+          <button type="button" role="tab" aria-selected="false" class="hub-auth-tab" data-auth-mode="register">注册新账号</button>
+        </div>
+
+        <div id="hubAuthCredPane">
+          <div class="v2-field">
+            <label for="hubAuthUsername">用户名</label>
+            <input id="hubAuthUsername" name="username" type="text" maxlength="24" required autocomplete="username" spellcheck="false" autocorrect="off" autocapitalize="none" enterkeyhint="next" placeholder="3–24 位字母、数字或 _ . -" />
+          </div>
+          <div class="v2-field">
+            <label for="hubAuthPassword">密码</label>
+            <input id="hubAuthPassword" name="password" type="password" maxlength="128" required autocomplete="current-password" enterkeyhint="done" placeholder="至少 8 位密码" />
+          </div>
+          <div class="v2-field" id="hubAuthConfirmWrap" hidden>
+            <label for="hubAuthConfirmPassword">确认密码</label>
+            <input id="hubAuthConfirmPassword" name="confirmPassword" type="password" maxlength="128" autocomplete="new-password" enterkeyhint="done" placeholder="请再次输入密码" />
+          </div>
+          <label class="hub-auth-recovery-toggle">
+            <input id="hubAuthShowPwd" type="checkbox" />
+            <span>显示密码</span>
+          </label>
+          <div id="hubAuthRegisterWarn" class="hub-notice-warn" hidden>
+            <strong>请自行妥善保管密码（不支持找回密码）：</strong>若忘记密码，可通过已绑定的 Microsoft 账号登录重置密码；或直接注册新账号并通过本机游戏凭据/在线角色重新绑定游戏账号（原账号将自动解绑）。
+          </div>
+          <div class="hub-auth-submit-row">
+            <button type="button" id="hubAuthSubmitBtn" class="v2-btn primary" style="width:100%;">登录</button>
+          </div>
+          <div id="hubAuthOAuthSection">
+            <div class="hub-auth-divider"><span>或使用第三方账号快速登录 / 忘记密码恢复</span></div>
+            <div class="hub-auth-oauth-grid">
+              <button type="button" id="hubAuthMsBtn" class="v2-btn ghost" style="width:100%;">使用 Microsoft 账号登录</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="hubAuth2faPane" hidden>
+          <p class="hub-muted" style="margin-bottom:12px;">账号 <strong id="hubAuth2faUser"></strong> 已开启二次验证，请输入验证器 App 中的 6 位动态码（或切换一次性恢复码）。</p>
+          <div class="v2-field">
+            <label for="hubAuth2faCode" id="hubAuth2faLabel">6 位动态验证码</label>
+            <input id="hubAuth2faCode" type="text" inputmode="numeric" maxlength="32" autocomplete="one-time-code" placeholder="输入 6 位数字" />
+          </div>
+          <label class="hub-auth-recovery-toggle">
+            <input id="hubAuth2faIsRecovery" type="checkbox" />
+            <span>改用一次性备用恢复码</span>
+          </label>
+          <div class="hub-auth-submit-row" style="display:flex;gap:10px;">
+            <button type="button" id="hubAuth2faBackBtn" class="v2-btn ghost">返回</button>
+            <button type="button" id="hubAuth2faSubmitBtn" class="v2-btn primary" style="flex:1;">验证并登录</button>
+          </div>
+        </div>
+
+        <p id="hubAuthErr" class="v2-err" style="margin-top:10px;"></p>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 原生模态弹窗：账号与安全（用户名密码 / 多渠道 OAuth / TOTP 二次验证 / 会话管理） -->
+  <dialog id="hubSecurityDialog" class="hub-dialog hub-dialog-wide" closedby="any" aria-labelledby="hubSecurityDialogTitle">
+    <form method="dialog" class="hub-dialog-form">
+      <div class="hub-dialog-head">
+        <h1 id="hubSecurityDialogTitle">账号与安全</h1>
+        <button type="submit" value="cancel" class="hub-dialog-close" aria-label="关闭">✕</button>
+      </div>
+      <div id="hubSecurityBody" class="hub-dialog-body"></div>
+      <div class="hub-dialog-foot">
+        <button type="submit" value="cancel" class="v2-btn primary" autofocus>完成</button>
+      </div>
+    </form>
+  </dialog>
+
   <!-- 原生模态弹窗：服务地址与桥接诊断 -->
   <dialog id="hubServerDialog" class="hub-dialog" closedby="any" aria-labelledby="hubServerDialogTitle">
     <form method="dialog" class="hub-dialog-form">

@@ -7,6 +7,7 @@ using AstralParty.Toys.Services;
 using AstralParty.Toys.Services.Account;
 using AstralParty.Toys.Services.Hub;
 using AstralParty.Toys.Services.Replay;
+using QRCoder;
 
 namespace AstralParty.Toys;
 
@@ -165,6 +166,18 @@ public partial class HybridWindow
                     await HandleHubSignInAsync().ConfigureAwait(false);
                     break;
 
+                case "hubRegisterPassword":
+                    await HandleHubRegisterPasswordAsync(root).ConfigureAwait(false);
+                    break;
+
+                case "hubLoginPassword":
+                    await HandleHubLoginPasswordAsync(root).ConfigureAwait(false);
+                    break;
+
+                case "hubCompleteTwoFactor":
+                    await HandleHubCompleteTwoFactorAsync(root).ConfigureAwait(false);
+                    break;
+
                 case "hubCancelSignIn":
                     _hubSignInCts?.Cancel();
                     Post(new { type = "hubAuthState", payload = BuildAuthPayload(signingIn: false, error: "已取消登录。") });
@@ -172,6 +185,42 @@ public partial class HybridWindow
 
                 case "hubLogout":
                     await HandleHubLogoutAsync().ConfigureAwait(false);
+                    break;
+
+                case "hubLoadSecurity":
+                    await HandleHubLoadSecurityAsync().ConfigureAwait(false);
+                    break;
+
+                case "hubSavePassword":
+                    await HandleHubSavePasswordAsync(root).ConfigureAwait(false);
+                    break;
+
+                case "hubLinkMicrosoft":
+                    await HandleHubLinkMicrosoftAsync().ConfigureAwait(false);
+                    break;
+
+                case "hubUnlinkProvider":
+                    await HandleHubUnlinkProviderAsync(root).ConfigureAwait(false);
+                    break;
+
+                case "hubTotpSetup":
+                    await HandleHubTotpSetupAsync(root).ConfigureAwait(false);
+                    break;
+
+                case "hubTotpEnable":
+                    await HandleHubTotpEnableAsync(root).ConfigureAwait(false);
+                    break;
+
+                case "hubTotpDisable":
+                    await HandleHubTotpDisableAsync(root).ConfigureAwait(false);
+                    break;
+
+                case "hubTotpRegenerateCodes":
+                    await HandleHubTotpRegenerateCodesAsync(root).ConfigureAwait(false);
+                    break;
+
+                case "hubRevokeOtherSessions":
+                    await HandleHubRevokeOtherSessionsAsync().ConfigureAwait(false);
                     break;
 
                 case "hubRefreshMe":
@@ -430,6 +479,27 @@ public partial class HybridWindow
         await RefreshHubRoomsAsync(cfg.ActiveRegion, null, null).ConfigureAwait(false);
     }
 
+    private async Task CompleteHubAuthLoginAsync(HubAuthResponse result, string toastPrefix)
+    {
+        var api = EnsureHubApiClient();
+        var authService = new HubAuthService(HubConfigStore);
+        if (result.Me is null || string.IsNullOrWhiteSpace(result.HubToken))
+        {
+            throw new InvalidOperationException("登录响应不完整。");
+        }
+
+        authService.SaveSession(result.HubToken, result.ExpiresAt, result.Me);
+        api.SetToken(result.HubToken);
+        _hubMe = result.Me;
+        Post(new { type = "hubAuthState", payload = BuildAuthPayload(signingIn: false) });
+        Post(new { type = "hubAuthSuccess", payload = new { userId = result.Me.UserId, displayName = result.Me.DisplayName } });
+        await PushHubMeAsync(result.Me).ConfigureAwait(false);
+        Post(new { type = "toast", message = $"{toastPrefix}：{result.Me.DisplayName}" });
+
+        var activeRegion = HubConfigStore.Load().Hub.ActiveRegion;
+        await RefreshHubRoomsAsync(activeRegion, null, null).ConfigureAwait(false);
+    }
+
     private async Task HandleHubSignInAsync()
     {
         var api = EnsureHubApiClient();
@@ -445,13 +515,175 @@ public partial class HybridWindow
         var result = await authService.SignInWithBrowserAsync(api, _hubServerConfig, _hubSignInCts.Token)
             .ConfigureAwait(false);
 
-        _hubMe = result.Me;
-        Post(new { type = "hubAuthState", payload = BuildAuthPayload(signingIn: false) });
-        await PushHubMeAsync(result.Me).ConfigureAwait(false);
-        Post(new { type = "toast", message = $"已通过 Microsoft 账号登录：{result.Me.DisplayName}" });
+        await CompleteHubAuthLoginAsync(result, "已通过 Microsoft 账号登录").ConfigureAwait(false);
+    }
 
-        var activeRegion = HubConfigStore.Load().Hub.ActiveRegion;
-        await RefreshHubRoomsAsync(activeRegion, null, null).ConfigureAwait(false);
+    private async Task HandleHubRegisterPasswordAsync(JsonElement root)
+    {
+        var username = ReadJsonString(root, "username").Trim();
+        var password = ReadJsonString(root, "password");
+        var api = EnsureHubApiClient();
+        try
+        {
+            var result = await api.RegisterPasswordAsync(username, password).ConfigureAwait(false);
+            await CompleteHubAuthLoginAsync(result, "已注册并登录").ConfigureAwait(false);
+        }
+        catch (HubApiException ex)
+        {
+            Post(new { type = "hubAuthDialogError", payload = new { error = ex.ErrorCode, message = ex.Message } });
+        }
+    }
+
+    private async Task HandleHubLoginPasswordAsync(JsonElement root)
+    {
+        var username = ReadJsonString(root, "username").Trim();
+        var password = ReadJsonString(root, "password");
+        var api = EnsureHubApiClient();
+        try
+        {
+            var result = await api.LoginPasswordAsync(username, password).ConfigureAwait(false);
+            if (result.RequiresTwoFactor)
+            {
+                Post(new
+                {
+                    type = "hubTwoFactorRequired",
+                    payload = new { twoFactorTicket = result.TwoFactorTicket, username }
+                });
+                return;
+            }
+
+            await CompleteHubAuthLoginAsync(result, "已登录").ConfigureAwait(false);
+        }
+        catch (HubApiException ex)
+        {
+            Post(new { type = "hubAuthDialogError", payload = new { error = ex.ErrorCode, message = ex.Message } });
+        }
+    }
+
+    private async Task HandleHubCompleteTwoFactorAsync(JsonElement root)
+    {
+        var ticket = ReadJsonString(root, "twoFactorTicket");
+        var code = ReadJsonString(root, "code");
+        var isRecoveryCode = root.TryGetProperty("isRecoveryCode", out var rcEl) && rcEl.ValueKind == JsonValueKind.True;
+        var api = EnsureHubApiClient();
+        try
+        {
+            var result = await api.CompleteTwoFactorAsync(ticket, code, isRecoveryCode).ConfigureAwait(false);
+            await CompleteHubAuthLoginAsync(result, "二次验证通过，已登录").ConfigureAwait(false);
+        }
+        catch (HubApiException ex)
+        {
+            Post(new { type = "hubAuthDialogError", payload = new { error = ex.ErrorCode, message = ex.Message } });
+        }
+    }
+
+    private async Task HandleHubLoadSecurityAsync()
+    {
+        var status = await EnsureHubApiClient().GetSecurityStatusAsync().ConfigureAwait(false);
+        Post(new { type = "hubSecurityState", payload = status });
+    }
+
+    private async Task HandleHubSavePasswordAsync(JsonElement root)
+    {
+        var username = ReadJsonStringOrNull(root, "username");
+        var currentPassword = ReadJsonStringOrNull(root, "currentPassword");
+        var newPassword = ReadJsonString(root, "newPassword");
+        var revokeOthers = root.TryGetProperty("revokeOtherSessions", out var rvEl) && rvEl.ValueKind == JsonValueKind.True;
+
+        var status = await EnsureHubApiClient()
+            .SetOrChangePasswordAsync(username, currentPassword, newPassword, revokeOthers)
+            .ConfigureAwait(false);
+        Post(new { type = "hubSecurityState", payload = status });
+        await RefreshHubMeAsync().ConfigureAwait(false);
+        Post(new { type = "toast", message = "账号密码已保存，请妥善保管（服务端不提供找回密码）" });
+    }
+
+    private async Task HandleHubLinkMicrosoftAsync()
+    {
+        var api = EnsureHubApiClient();
+        _hubServerConfig ??= await api.GetConfigAsync().ConfigureAwait(false);
+        _hubSignInCts?.Cancel();
+        _hubSignInCts?.Dispose();
+        _hubSignInCts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+
+        Post(new { type = "toast", message = "请在弹出的浏览器中完成 Microsoft 账号绑定…" });
+        var authService = new HubAuthService(HubConfigStore);
+        var status = await authService.LinkMicrosoftWithBrowserAsync(api, _hubServerConfig, _hubSignInCts.Token)
+            .ConfigureAwait(false);
+        Post(new { type = "hubSecurityState", payload = status });
+        await RefreshHubMeAsync().ConfigureAwait(false);
+        Post(new { type = "toast", message = "已成功绑定 Microsoft 登录渠道（忘记密码时可用于登录恢复）" });
+    }
+
+    private async Task HandleHubUnlinkProviderAsync(JsonElement root)
+    {
+        var provider = ReadJsonString(root, "provider");
+        var status = await EnsureHubApiClient().UnlinkExternalLoginAsync(provider).ConfigureAwait(false);
+        Post(new { type = "hubSecurityState", payload = status });
+        Post(new { type = "toast", message = $"已解绑 {provider} 登录渠道" });
+    }
+
+    private async Task HandleHubTotpSetupAsync(JsonElement root)
+    {
+        var reset = root.TryGetProperty("reset", out var rsEl) && rsEl.ValueKind == JsonValueKind.True;
+        var setup = await EnsureHubApiClient().SetupTotpAsync(reset).ConfigureAwait(false);
+        var qrSvg = RenderTotpQrSvg(setup.OtpAuthUri);
+        Post(new
+        {
+            type = "hubTotpSetupState",
+            payload = new
+            {
+                sharedKey = setup.SharedKey,
+                formattedKey = setup.FormattedKey,
+                otpAuthUri = setup.OtpAuthUri,
+                qrSvg,
+            }
+        });
+    }
+
+    private async Task HandleHubTotpEnableAsync(JsonElement root)
+    {
+        var code = ReadJsonString(root, "code");
+        var res = await EnsureHubApiClient().EnableTotpAsync(code).ConfigureAwait(false);
+        Post(new { type = "hubTotpEnabled", payload = new { recoveryCodes = res.RecoveryCodes } });
+        await HandleHubLoadSecurityAsync().ConfigureAwait(false);
+        await RefreshHubMeAsync().ConfigureAwait(false);
+        Post(new { type = "toast", message = "已开启 TOTP 二次验证，请立即保存一次性备用恢复码！" });
+    }
+
+    private async Task HandleHubTotpDisableAsync(JsonElement root)
+    {
+        var code = ReadJsonStringOrNull(root, "code");
+        var isRecoveryCode = root.TryGetProperty("isRecoveryCode", out var rcEl) && rcEl.ValueKind == JsonValueKind.True;
+        var status = await EnsureHubApiClient().DisableTotpAsync(code, isRecoveryCode).ConfigureAwait(false);
+        Post(new { type = "hubSecurityState", payload = status });
+        await RefreshHubMeAsync().ConfigureAwait(false);
+        Post(new { type = "toast", message = "已关闭 TOTP 二次验证" });
+    }
+
+    private async Task HandleHubTotpRegenerateCodesAsync(JsonElement root)
+    {
+        var code = ReadJsonStringOrNull(root, "code");
+        var res = await EnsureHubApiClient().RegenerateRecoveryCodesAsync(code).ConfigureAwait(false);
+        Post(new { type = "hubTotpRecoveryCodes", payload = new { recoveryCodes = res.RecoveryCodes } });
+        await HandleHubLoadSecurityAsync().ConfigureAwait(false);
+        Post(new { type = "toast", message = "已重新生成 8 个一次性备用恢复码，旧恢复码已失效" });
+    }
+
+    private async Task HandleHubRevokeOtherSessionsAsync()
+    {
+        var res = await EnsureHubApiClient().RevokeOtherSessionsAsync().ConfigureAwait(false);
+        await HandleHubLoadSecurityAsync().ConfigureAwait(false);
+        Post(new { type = "toast", message = $"已注销其它 {res.Revoked} 个设备会话" });
+    }
+
+    private static string RenderTotpQrSvg(string otpAuthUri)
+    {
+        if (string.IsNullOrWhiteSpace(otpAuthUri)) return "";
+        using var generator = new QRCodeGenerator();
+        using var data = generator.CreateQrCode(otpAuthUri, QRCodeGenerator.ECCLevel.M);
+        var svgQr = new SvgQRCode(data);
+        return svgQr.GetGraphic(4, "#111827", "#ffffff", true);
     }
 
     private async Task HandleHubLogoutAsync()
@@ -579,14 +811,16 @@ public partial class HybridWindow
             region = found.Region is { Length: > 0 } ? found.Region : "cn";
         }
 
-        var me = await EnsureHubApiClient().BindGameAccountAsync(region, uid, setPrimary, snapshot).ConfigureAwait(false);
+        var proofSource = syncSnapshot ? "local_live" : null;
+        var me = await EnsureHubApiClient().BindGameAccountAsync(region, uid, setPrimary, snapshot, proofSource).ConfigureAwait(false);
         _hubMe = me;
         await PushHubMeAsync(me).ConfigureAwait(false);
         if (liveFriends is not null)
         {
             Post(new { type = "hubAccountLiveData", payload = new { uid, region, friends = liveFriends, capturedAt } });
         }
-        Post(new { type = "toast", message = $"已绑定游戏账号 {uid}（{(region == "int" ? "国际服" : "国服")}）" });
+        var rebindHint = me.ReboundFromPreviousOwner ? "（已自动从原大厅账号解绑）" : "";
+        Post(new { type = "toast", message = $"已绑定游戏账号 {uid}（{(region == "int" ? "国际服" : "国服")}）{rebindHint}" });
     }
 
     private async Task HandleHubRefreshLiveAccountAsync(JsonElement root)
@@ -638,7 +872,7 @@ public partial class HybridWindow
 
             if (syncToHub && EnsureHubApiClient().HasToken)
             {
-                var me = await EnsureHubApiClient().BindGameAccountAsync(region, uid, setPrimary: false, snapshot)
+                var me = await EnsureHubApiClient().BindGameAccountAsync(region, uid, setPrimary: false, snapshot, proofSource: "local_live")
                     .ConfigureAwait(false);
                 _hubMe = me;
                 await PushHubMeAsync(me).ConfigureAwait(false);
@@ -666,11 +900,12 @@ public partial class HybridWindow
         var region = HubSettlementService.NormalizeRegion(live.Region);
         var setPrimary = !root.TryGetProperty("setPrimary", out var spEl) || spEl.ValueKind != JsonValueKind.False;
         var me = await EnsureHubApiClient()
-            .BindGameAccountAsync(region, live.Uid.ToString(), setPrimary, snapshot: null)
+            .BindGameAccountAsync(region, live.Uid.ToString(), setPrimary, snapshot: null, proofSource: "bridge_live")
             .ConfigureAwait(false);
         _hubMe = me;
         await PushHubMeAsync(me).ConfigureAwait(false);
-        Post(new { type = "toast", message = $"已绑定当前在线游戏角色 UID {live.Uid}（{(region == "int" ? "国际服" : "国服")}）" });
+        var rebindHint = me.ReboundFromPreviousOwner ? "（已自动从原大厅账号解绑）" : "";
+        Post(new { type = "toast", message = $"已绑定当前在线游戏角色 UID {live.Uid}（{(region == "int" ? "国际服" : "国服")}）{rebindHint}" });
     }
 
     private async Task RefreshHubRoomsAsync(string region, string? query, string? status)

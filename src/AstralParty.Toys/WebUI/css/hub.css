@@ -346,3 +346,51 @@ html body dialog.hub-dialog.hub-dialog-wide {
 }
 .hub-inspect-kpi span { display: block; font-size: 11px; color: var(--gp-text-muted); }
 .hub-inspect-kpi strong { display: block; margin-top: 2px; font-size: 15px; font-variant-numeric: tabular-nums; color: var(--v2-text); }
+
+/* 统一登录 / 注册 / 2FA 弹窗与账号安全中心 */
+.hub-auth-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--v2-well);
+  border: 1px solid var(--v2-border);
+  margin-bottom: 16px;
+}
+.hub-auth-tab {
+  height: 36px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--gp-text-sub);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.hub-auth-tab.is-active { background: var(--gp-pink); color: #fff; }
+.hub-auth-submit-row { margin-top: 14px; }
+.hub-auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0 12px;
+  color: var(--gp-text-muted);
+  font-size: 12px;
+}
+.hub-auth-divider::before, .hub-auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--v2-border); }
+.hub-auth-oauth-grid { display: grid; gap: 8px; }
+.hub-auth-recovery-toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--gp-text-sub); cursor: pointer; margin-bottom: 6px; }
+
+.hub-sec-grid { display: grid; gap: 14px; }
+.hub-sec-card { padding: 16px 18px; border-radius: 12px; background: var(--v2-panel-2); border: 1px solid var(--v2-border); }
+.hub-sec-card h3 { margin: 0 0 6px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+.hub-sec-provider-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 10px; background: var(--v2-well); border: 1px solid var(--v2-border); margin-top: 8px; }
+.hub-totp-setup-box { display: grid; grid-template-columns: 188px minmax(0, 1fr); gap: 16px; align-items: center; margin-top: 12px; padding: 14px; border-radius: 12px; background: var(--v2-well); border: 1px solid var(--v2-border); }
+@media (max-width: 680px) { .hub-totp-setup-box { grid-template-columns: 1fr; } }
+.hub-totp-qr { width: 180px; height: 180px; padding: 6px; border-radius: 10px; background: #fff; display: grid; place-items: center; overflow: hidden; }
+.hub-totp-qr svg { width: 100%; height: 100%; display: block; }
+.hub-totp-secret { display: inline-block; padding: 6px 10px; border-radius: 8px; background: var(--v2-panel); border: 1px solid var(--v2-border-strong); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; letter-spacing: .06em; user-select: all; }
+.hub-recovery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-top: 10px; }
+.hub-recovery-code { padding: 7px 10px; border-radius: 8px; background: var(--v2-panel); border: 1px solid var(--v2-border-strong); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; text-align: center; user-select: all; }

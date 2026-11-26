@@ -270,6 +270,20 @@ public sealed class HubServicesTests
                 content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
                 return new HttpResponseMessage(HttpStatusCode.OK) { Content = content };
             }
+            if (req.RequestUri!.AbsolutePath == "/api/hub/auth/login" && req.Method == HttpMethod.Post)
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("""{"requiresTwoFactor":true,"twoFactorTicket":"tfa_abc123"}""", Encoding.UTF8, "application/json")
+                };
+            }
+            if (req.RequestUri!.AbsolutePath == "/api/hub/me/security" && req.Method == HttpMethod.Get)
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("""{"username":"alpha","hasPassword":true,"twoFactorEnabled":true,"recoveryCodesLeft":8,"sessionAuthMethod":"password","activeSessionsCount":2,"linkedProviders":[{"provider":"microsoft","displayName":"Microsoft"}]}""", Encoding.UTF8, "application/json")
+                };
+            }
 
             return new HttpResponseMessage(HttpStatusCode.Unauthorized)
             {
@@ -294,6 +308,15 @@ public sealed class HubServicesTests
         Assert.NotNull(avatar);
         Assert.Equal("image/png", avatar!.Value.ContentType);
         Assert.Equal(4, avatar.Value.Bytes.Length);
+
+        var twoFa = await api.LoginPasswordAsync("alpha", "StrongPassword123");
+        Assert.True(twoFa.RequiresTwoFactor);
+        Assert.Equal("tfa_abc123", twoFa.TwoFactorTicket);
+
+        var sec = await api.GetSecurityStatusAsync();
+        Assert.Equal("alpha", sec.Username);
+        Assert.True(sec.TwoFactorEnabled);
+        Assert.Single(sec.LinkedProviders);
 
         var ex = await Assert.ThrowsAsync<HubApiException>(() => api.GetMeAsync());
         Assert.Equal(HttpStatusCode.Unauthorized, ex.StatusCode);

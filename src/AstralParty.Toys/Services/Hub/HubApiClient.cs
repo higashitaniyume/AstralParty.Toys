@@ -70,6 +70,74 @@ public sealed class HubApiClient : IDisposable
         => SendAsync<HubAuthResponse>(HttpMethod.Post, "/api/hub/auth/microsoft",
             new { code, codeVerifier, redirectUri }, authenticated: false, ct);
 
+    public Task<HubAuthResponse> RegisterPasswordAsync(string username, string password, CancellationToken ct = default)
+        => SendAsync<HubAuthResponse>(HttpMethod.Post, "/api/hub/auth/register",
+            new { username, password }, authenticated: false, ct);
+
+    public Task<HubAuthResponse> LoginPasswordAsync(string username, string password, CancellationToken ct = default)
+        => SendAsync<HubAuthResponse>(HttpMethod.Post, "/api/hub/auth/login",
+            new { username, password }, authenticated: false, ct);
+
+    public Task<HubAuthResponse> CompleteTwoFactorAsync(
+        string twoFactorTicket,
+        string code,
+        bool isRecoveryCode,
+        CancellationToken ct = default)
+        => SendAsync<HubAuthResponse>(HttpMethod.Post, "/api/hub/auth/login/2fa",
+            new { twoFactorTicket, code, isRecoveryCode }, authenticated: false, ct);
+
+    public Task<HubSecurityStatusDto> GetSecurityStatusAsync(CancellationToken ct = default)
+        => SendAsync<HubSecurityStatusDto>(HttpMethod.Get, "/api/hub/me/security", null, authenticated: true, ct);
+
+    public Task<HubSecurityStatusDto> SetOrChangePasswordAsync(
+        string? username,
+        string? currentPassword,
+        string newPassword,
+        bool revokeOtherSessions,
+        CancellationToken ct = default)
+        => SendAsync<HubSecurityStatusDto>(HttpMethod.Post, "/api/hub/me/security/password",
+            new { username, currentPassword, newPassword, revokeOtherSessions }, authenticated: true, ct);
+
+    public Task<HubSecurityStatusDto> LinkMicrosoftAsync(
+        string code,
+        string codeVerifier,
+        string redirectUri,
+        CancellationToken ct = default)
+        => SendAsync<HubSecurityStatusDto>(HttpMethod.Post, "/api/hub/me/security/oauth/microsoft/link",
+            new { code, codeVerifier, redirectUri }, authenticated: true, ct);
+
+    public Task<HubSecurityStatusDto> UnlinkExternalLoginAsync(string provider, CancellationToken ct = default)
+        => SendAsync<HubSecurityStatusDto>(
+            HttpMethod.Delete,
+            $"/api/hub/me/security/oauth/{Uri.EscapeDataString(provider)}",
+            null,
+            authenticated: true,
+            ct);
+
+    public Task<HubTotpSetupResponse> SetupTotpAsync(bool reset = false, CancellationToken ct = default)
+        => SendAsync<HubTotpSetupResponse>(
+            HttpMethod.Post,
+            reset ? "/api/hub/me/security/totp/setup?reset=true" : "/api/hub/me/security/totp/setup",
+            new { },
+            authenticated: true,
+            ct);
+
+    public Task<HubTotpEnableResponse> EnableTotpAsync(string code, CancellationToken ct = default)
+        => SendAsync<HubTotpEnableResponse>(HttpMethod.Post, "/api/hub/me/security/totp/enable",
+            new { code }, authenticated: true, ct);
+
+    public Task<HubSecurityStatusDto> DisableTotpAsync(string? code, bool isRecoveryCode = false, CancellationToken ct = default)
+        => SendAsync<HubSecurityStatusDto>(HttpMethod.Post, "/api/hub/me/security/totp/disable",
+            new { code, isRecoveryCode }, authenticated: true, ct);
+
+    public Task<HubRecoveryCodesResponse> RegenerateRecoveryCodesAsync(string? code, CancellationToken ct = default)
+        => SendAsync<HubRecoveryCodesResponse>(HttpMethod.Post, "/api/hub/me/security/totp/recovery-codes",
+            new { code }, authenticated: true, ct);
+
+    public Task<HubRevokeSessionsResponse> RevokeOtherSessionsAsync(CancellationToken ct = default)
+        => SendAsync<HubRevokeSessionsResponse>(HttpMethod.Post, "/api/hub/me/security/sessions/revoke-others",
+            new { }, authenticated: true, ct);
+
     public async Task LogoutAsync(CancellationToken ct = default)
     {
         if (!HasToken) return;
@@ -103,9 +171,10 @@ public sealed class HubApiClient : IDisposable
         string uid,
         bool setPrimary,
         HubGameSnapshot? snapshot,
+        string? proofSource = null,
         CancellationToken ct = default)
         => SendAsync<HubUserProfileDto>(HttpMethod.Post, "/api/hub/me/bindings",
-            new { region, uid, setPrimary, snapshot }, authenticated: true, ct);
+            new { region, uid, setPrimary, proofSource, snapshot }, authenticated: true, ct);
 
     public Task<HubUserProfileDto> UnbindGameAccountAsync(string region, string uid, CancellationToken ct = default)
         => SendAsync<HubUserProfileDto>(

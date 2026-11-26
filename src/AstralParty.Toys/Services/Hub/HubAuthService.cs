@@ -93,8 +93,7 @@ public sealed class HubAuthService
         });
     }
 
-    public async Task<HubAuthResponse> SignInWithBrowserAsync(
-        HubApiClient api,
+    public async Task<(string Code, string Verifier, string RedirectUri)> AcquireMicrosoftCodeAsync(
         HubServerConfig serverConfig,
         CancellationToken ct)
     {
@@ -120,11 +119,32 @@ public sealed class HubAuthService
             Process.Start(new ProcessStartInfo(authorizeUrl) { UseShellExecute = true });
 
             var code = await WaitForCallbackCodeAsync(listener, state, ct).ConfigureAwait(false);
-            var auth = await api.ExchangeMicrosoftCodeAsync(code, verifier, redirectUri, ct).ConfigureAwait(false);
+            return (code, verifier, redirectUri);
+        }
+    }
+
+    public async Task<HubAuthResponse> SignInWithBrowserAsync(
+        HubApiClient api,
+        HubServerConfig serverConfig,
+        CancellationToken ct)
+    {
+        var (code, verifier, redirectUri) = await AcquireMicrosoftCodeAsync(serverConfig, ct).ConfigureAwait(false);
+        var auth = await api.ExchangeMicrosoftCodeAsync(code, verifier, redirectUri, ct).ConfigureAwait(false);
+        if (auth.Me is not null && !string.IsNullOrWhiteSpace(auth.HubToken))
+        {
             SaveSession(auth.HubToken, auth.ExpiresAt, auth.Me);
             api.SetToken(auth.HubToken);
-            return auth;
         }
+        return auth;
+    }
+
+    public async Task<HubSecurityStatusDto> LinkMicrosoftWithBrowserAsync(
+        HubApiClient api,
+        HubServerConfig serverConfig,
+        CancellationToken ct)
+    {
+        var (code, verifier, redirectUri) = await AcquireMicrosoftCodeAsync(serverConfig, ct).ConfigureAwait(false);
+        return await api.LinkMicrosoftAsync(code, verifier, redirectUri, ct).ConfigureAwait(false);
     }
 
     private static async Task<string> WaitForCallbackCodeAsync(
