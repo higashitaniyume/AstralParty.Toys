@@ -4,7 +4,9 @@
   window.I18N_DICTS = window.I18N_DICTS || {};
   window.I18N_DICTS['zh-Hant'] = {
       'settings.feedback_thanks': '感謝您的回饋、建議與意見～',
+      'nav.hub': '組隊大廳',
       'nav.account': '我的帳號',
+      'account.backToHub': '返回組隊大廳',
       'account.subtitle': '本機直連 · 角色使用、好友狀態與最近對局',
       'account.recent': '最近對局',
       'account.mapLoading': '正在讀取地圖…',

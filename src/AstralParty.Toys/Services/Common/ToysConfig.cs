@@ -24,6 +24,8 @@ public sealed class ToysConfig
 
     public MobileConfigSection Mobile { get; set; } = new();
 
+    public HubConfigSection Hub { get; set; } = new();
+
     /// <summary>把外部写进来的值收拢到合法区间；文件被手改坏时也能继续用。</summary>
     public ToysConfig Normalize()
     {
@@ -35,6 +37,8 @@ public sealed class ToysConfig
         Migration ??= new MigrationConfigSection();
         Mobile ??= new MobileConfigSection();
         Mobile.AdbPath = (Mobile.AdbPath ?? "").Trim();
+        Hub ??= new HubConfigSection();
+        Hub.Normalize();
 
         App.Language = AppLanguage.Normalize(App.Language);
         App.Theme = string.Equals(App.Theme, "light", StringComparison.OrdinalIgnoreCase) ? "light" : "dark";
@@ -142,6 +146,62 @@ public sealed class MobileConfigSection
 {
     /// <summary>玩家指定的 adb.exe 绝对路径；为空时自动按 SDK / PATH 查找。</summary>
     public string AdbPath { get; set; } = "";
+}
+
+public sealed class HubConfigSection
+{
+    public const string DefaultServerUrl = "https://connect.hiynet.com";
+
+    /// <summary>组队大厅后端服务根地址（默认 connect.hiynet.com）。</summary>
+    public string ServerUrl { get; set; } = DefaultServerUrl;
+
+    /// <summary>当前选择的区服（cn / int）。</summary>
+    public string ActiveRegion { get; set; } = "cn";
+
+    /// <summary>上次登录的大厅用户 ID。</summary>
+    public string UserId { get; set; } = "";
+
+    /// <summary>上次登录的昵称缓存。</summary>
+    public string DisplayName { get; set; } = "";
+
+    /// <summary>使用当前 Windows 用户 DPAPI 加密后的 hubToken（Base64）。</summary>
+    public string ProtectedTokenBase64 { get; set; } = "";
+
+    /// <summary>令牌过期时间（Unix 毫秒）。</summary>
+    public long TokenExpiresAt { get; set; }
+
+    public void Normalize()
+    {
+        ServerUrl = NormalizeServerUrl(ServerUrl);
+        ActiveRegion = string.Equals(ActiveRegion?.Trim(), "int", StringComparison.OrdinalIgnoreCase) ? "int" : "cn";
+        UserId = (UserId ?? "").Trim();
+        DisplayName = (DisplayName ?? "").Trim();
+        ProtectedTokenBase64 = (ProtectedTokenBase64 ?? "").Trim();
+        if (TokenExpiresAt < 0) TokenExpiresAt = 0;
+    }
+
+    public static string NormalizeServerUrl(string? raw)
+    {
+        var text = (raw ?? "").Trim().TrimEnd('/');
+        if (text.Length == 0) return DefaultServerUrl;
+        if (!text.Contains("://", StringComparison.Ordinal))
+        {
+            text = text.StartsWith("127.0.0.1", StringComparison.Ordinal) ||
+                   text.StartsWith("localhost", StringComparison.OrdinalIgnoreCase)
+                ? "http://" + text
+                : "https://" + text;
+        }
+
+        if (!Uri.TryCreate(text, UriKind.Absolute, out var uri)) return DefaultServerUrl;
+        if (string.Equals(uri.Scheme, "https", StringComparison.OrdinalIgnoreCase))
+            return text.TrimEnd('/');
+        if (string.Equals(uri.Scheme, "http", StringComparison.OrdinalIgnoreCase) &&
+            (uri.IsLoopback || string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(uri.Host, "127.0.0.1", StringComparison.Ordinal)))
+            return text.TrimEnd('/');
+
+        return DefaultServerUrl;
+    }
 }
 
 /// <summary>

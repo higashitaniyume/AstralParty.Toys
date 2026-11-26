@@ -175,7 +175,7 @@ public sealed partial class ReplayLibraryService
 
     private string GameFile(string replayId) => Path.Combine(GameDirectory, replayId, replayId);
 
-    private string LibraryFile(string replayId) => Path.Combine(LibraryRoot, replayId, replayId);
+    internal string LibraryFile(string replayId) => Path.Combine(LibraryRoot, replayId, replayId);
 
     private string SidecarFile(string replayId) => Path.Combine(IndexDirectory, replayId + ".json");
 

@@ -22,6 +22,7 @@ public partial class HybridWindow
             // 直接传 RootElement 会在「点卸载」这类操作里抛 ObjectDisposedException（System.Text.Json）。
             var root = document.RootElement.Clone();
             var type = root.TryGetProperty("type", out var typeElement) ? typeElement.GetString() : null;
+            if (await HandleHubMessageAsync(type, root)) return;
             if (await HandleMyAccountMessageAsync(type, root)) return;
             if (type is "launchGame" or "accountProfileLaunch") StopMyAccount("game_running");
             if (type is "gameProfileSetActive" or "gameProfileRemove" or "accountProfileActivate" or "targetSetActive") StopMyAccount("game_changed");
@@ -67,6 +68,7 @@ public partial class HybridWindow
                         _ = PostSteamBypassSyncAsync();
                         _ = PushGameProfilesAsync();
                         _ = PushModProfilesAsync();   // 概览页的「模组方案」下拉要能直接用
+                        EnsureHubInitialized();
                         if (GetActiveTargetKind() is not null) PostTargetChanged();
                     }
                     finally

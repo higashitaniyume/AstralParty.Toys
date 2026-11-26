@@ -1,0 +1,147 @@
+<section id="hubView" class="page-view hidden">
+  <div class="hub-page">
+    <header class="hub-header">
+      <div class="hub-header-title">
+        <h2><span data-i18n="nav.hub">组队大厅</span><span class="hub-beta-badge">BETA</span></h2>
+        <p id="hubHeaderSubtitle" class="hub-sub">Microsoft 账号统一名片 · 本机模组自动捕获房号密码 · 结束秒开即时战报</p>
+      </div>
+
+      <div class="hub-header-controls">
+        <div class="hub-region-switch" role="group" aria-label="服务器区服切换（严格隔离）">
+          <button type="button" class="hub-region-btn is-active" data-hub-region="cn">国服 CN</button>
+          <button type="button" class="hub-region-btn" data-hub-region="int">国际服 INT</button>
+        </div>
+
+        <button type="button" class="v2-btn ghost" id="hubBridgePillBtn" title="本机游戏联动状态">
+          <span class="hub-dot" id="hubBridgeDot"></span>
+          <span id="hubBridgePillText">桥接检测中…</span>
+        </button>
+
+        <button type="button" class="v2-btn ghost" id="hubServerBtn">服务设置</button>
+
+        <div id="hubAuthControl" class="hub-auth-control"></div>
+      </div>
+    </header>
+
+    <div class="hub-tablist" focusgroup="tablist nomemory" aria-label="组队大厅功能切换">
+      <button type="button" id="hubTabLobby" role="tab" aria-selected="true" focusgroupstart data-hub-tab="lobby">
+        <span>大厅房间</span>
+        <span class="hub-tab-count" id="hubRoomsBadge" hidden>0</span>
+      </button>
+      <button type="button" id="hubTabProfile" role="tab" aria-selected="false" data-hub-tab="profile">
+        <span>个人主页与绑定</span>
+      </button>
+      <button type="button" id="hubTabSettlement" role="tab" aria-selected="false" data-hub-tab="settlement">
+        <span>两阶段战报</span>
+        <span class="hub-tab-count" id="hubSettlementBadge" hidden>NEW</span>
+      </button>
+    </div>
+
+    <!-- 1. 大厅房间面板 -->
+    <section id="hubPanelLobby" role="tabpanel" aria-labelledby="hubTabLobby" class="hub-tabpanel">
+      <div id="hubLobbyBody" class="hub-tabpanel-inner"></div>
+    </section>
+
+    <!-- 2. 个人主页、1对N绑定、10项隐私开关、本机直连入口与玩家查询 -->
+    <section id="hubPanelProfile" role="tabpanel" aria-labelledby="hubTabProfile" class="hub-tabpanel" hidden>
+      <div id="hubProfileBody" class="hub-tabpanel-inner"></div>
+    </section>
+
+    <!-- 3. 两阶段全屏结算战报 -->
+    <section id="hubPanelSettlement" role="tabpanel" aria-labelledby="hubTabSettlement" class="hub-tabpanel" hidden>
+      <div id="hubSettlementBody" class="hub-tabpanel-inner"></div>
+    </section>
+  </div>
+
+  <!-- 原生模态弹窗：创建房间 -->
+  <dialog id="hubCreateRoomDialog" class="hub-dialog" closedby="any" aria-labelledby="hubCreateDialogTitle">
+    <form method="dialog" id="hubCreateRoomForm" class="hub-dialog-form">
+      <div class="hub-dialog-head">
+        <h1 id="hubCreateDialogTitle">创建组队大厅房间</h1>
+        <button type="submit" value="cancel" class="hub-dialog-close" aria-label="关闭">✕</button>
+      </div>
+      <div class="hub-dialog-body">
+        <div class="v2-field">
+          <label for="hubCreateTitle">房间标题</label>
+          <input id="hubCreateTitle" maxlength="40" required autofocus placeholder="例如：PVE 速刷 / 休闲 4 缺 2" />
+        </div>
+        <div class="v2-field">
+          <label for="hubCreateNote">队伍备注（可选）</label>
+          <input id="hubCreateNote" maxlength="120" placeholder="例如：带图、语音 / 新手友好" />
+        </div>
+        <div class="hub-dialog-row">
+          <div class="v2-field">
+            <label for="hubCreateCapacity">人数上限</label>
+            <select id="hubCreateCapacity" class="v2-select">
+              <option value="4" selected>4 人</option>
+              <option value="3">3 人</option>
+              <option value="2">2 人</option>
+            </select>
+          </div>
+          <div class="v2-field">
+            <label for="hubCreatePassword">大厅密码（可选）</label>
+            <input id="hubCreatePassword" type="password" maxlength="24" autocomplete="off" placeholder="留空则公开加入" />
+          </div>
+        </div>
+        <div class="v2-field">
+          <label for="hubCreateUid">参战游戏账号（UID）</label>
+          <select id="hubCreateUid" class="v2-select"></select>
+          <small>仅展示当前所选区服（<span id="hubCreateRegionLabel">国服 CN</span>）下已绑定的游戏账号。</small>
+        </div>
+        <p id="hubCreateErr" class="v2-err"></p>
+      </div>
+      <div class="hub-dialog-foot">
+        <button type="submit" value="cancel" class="v2-btn ghost">取消</button>
+        <button type="button" id="hubCreateSubmitBtn" class="v2-btn primary">创建并进入房间</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 原生模态弹窗：加入加密房间 / 选择参战 UID -->
+  <dialog id="hubJoinRoomDialog" class="hub-dialog" closedby="any" aria-labelledby="hubJoinDialogTitle">
+    <form method="dialog" id="hubJoinRoomForm" class="hub-dialog-form">
+      <div class="hub-dialog-head">
+        <h1 id="hubJoinDialogTitle">加入组队房间</h1>
+        <button type="submit" value="cancel" class="hub-dialog-close" aria-label="关闭">✕</button>
+      </div>
+      <div class="hub-dialog-body">
+        <p id="hubJoinRoomName" class="hub-muted"></p>
+        <div class="v2-field" id="hubJoinPasswordWrap">
+          <label for="hubJoinPassword">房间密码</label>
+          <input id="hubJoinPassword" type="password" maxlength="24" autocomplete="off" autofocus placeholder="请输入房主设置的大厅密码" />
+        </div>
+        <div class="v2-field">
+          <label for="hubJoinUid">选择该区服参战 UID</label>
+          <select id="hubJoinUid" class="v2-select"></select>
+        </div>
+        <p id="hubJoinErr" class="v2-err"></p>
+      </div>
+      <div class="hub-dialog-foot">
+        <button type="submit" value="cancel" class="v2-btn ghost">取消</button>
+        <button type="button" id="hubJoinSubmitBtn" class="v2-btn primary">确认加入</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 原生模态弹窗：组队大厅服务地址与桥接诊断 -->
+  <dialog id="hubServerDialog" class="hub-dialog" closedby="any" aria-labelledby="hubServerDialogTitle">
+    <form method="dialog" class="hub-dialog-form">
+      <div class="hub-dialog-head">
+        <h1 id="hubServerDialogTitle">组队大厅服务与游戏联动设置</h1>
+        <button type="submit" value="cancel" class="hub-dialog-close" aria-label="关闭">✕</button>
+      </div>
+      <div class="hub-dialog-body">
+        <div class="v2-field">
+          <label for="hubServerUrlInput">后端服务地址</label>
+          <input id="hubServerUrlInput" type="url" autofocus placeholder="https://connect.hiynet.com" />
+          <small>默认使用官方组队节点 <code>https://connect.hiynet.com</code>，本地联调可填 <code>http://127.0.0.1:56700</code>。</small>
+        </div>
+        <div id="hubBridgeDiagBox" class="hub-diag-box"></div>
+      </div>
+      <div class="hub-dialog-foot">
+        <button type="submit" value="cancel" class="v2-btn ghost">关闭</button>
+        <button type="button" id="hubServerSaveBtn" class="v2-btn primary">保存并重连</button>
+      </div>
+    </form>
+  </dialog>
+</section>

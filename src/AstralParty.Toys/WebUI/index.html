@@ -26,6 +26,7 @@
     <!-- 新界面（重做）：放最后，覆盖外壳布局 -->
     <link rel="stylesheet" href="css/v2.css" />
     <link rel="stylesheet" href="css/account.css" />
+    <link rel="stylesheet" href="css/hub.css" />
     <link rel="stylesheet" href="css/motion.css" />
     <link rel="stylesheet" href="css/speedhack.css" />
   </head>
@@ -65,8 +66,8 @@
               /></svg
             ><span data-i18n="nav.profiles">游戏多开</span>
           </button>
-          <button class="nav-crumb-btn" data-page="account">
-            <svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 12c-5 0-9 3-9 6v2h18v-2c0-3-4-6-9-6Z" /></svg><span data-i18n="nav.account">我的账号</span>
+          <button class="nav-crumb-btn" data-page="hub">
+            <svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 12c-5 0-9 3-9 6v2h18v-2c0-3-4-6-9-6Z" /></svg><span data-i18n="nav.hub">组队大厅</span>
           </button>
           <button class="nav-crumb-btn" data-page="tools">
             <svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true">
@@ -169,6 +170,7 @@
         <!-- @include view-utilities.html -->
         <!-- @include view-speedhack.html -->
         <!-- @include view-mods.html -->
+        <!-- @include view-hub.html -->
         <!-- @include view-account.html -->
         <!-- @include view-workshop.html -->
         <!-- @include view-skins.html -->
@@ -206,6 +208,7 @@
     <script src="js/gamelib.js"></script>
     <script src="js/profiles.js"></script>
     <script src="js/account.js"></script>
+    <script src="js/hub/module.js"></script>
     <script src="js/home.js"></script>
     <script src="js/replay/helpers.js"></script>
     <script src="js/replay/state.js"></script>

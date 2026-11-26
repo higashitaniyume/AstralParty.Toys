@@ -23,6 +23,7 @@ public partial class HybridWindow
         _modManager.SaveStoredGameDirectory(dir);
         _speedhackManager.SaveStoredGameDirectory(dir);
         _ = PushResourceModStatusAsync();
+        SyncHubBridgeEndpoints();
     }
 
     private int _gameProfilesRequest;
