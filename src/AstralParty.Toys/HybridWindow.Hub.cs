@@ -729,7 +729,7 @@ public partial class HybridWindow
         using var generator = new QRCodeGenerator();
         using var data = generator.CreateQrCode(otpAuthUri, QRCodeGenerator.ECCLevel.M);
         var svgQr = new SvgQRCode(data);
-        return svgQr.GetGraphic(4, "#111827", "#ffffff", true);
+        return svgQr.GetGraphic(4, "#111827", "#ffffff", true, SvgQRCode.SizingMode.ViewBoxAttribute);
     }
 
     private async Task HandleHubLogoutAsync()

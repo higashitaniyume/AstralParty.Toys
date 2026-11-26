@@ -387,10 +387,10 @@ html body dialog.hub-dialog.hub-dialog-wide {
 .hub-sec-card { padding: 16px 18px; border-radius: 12px; background: var(--v2-panel-2); border: 1px solid var(--v2-border); }
 .hub-sec-card h3 { margin: 0 0 6px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
 .hub-sec-provider-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 10px; background: var(--v2-well); border: 1px solid var(--v2-border); margin-top: 8px; }
-.hub-totp-setup-box { display: grid; grid-template-columns: 188px minmax(0, 1fr); gap: 16px; align-items: center; margin-top: 12px; padding: 14px; border-radius: 12px; background: var(--v2-well); border: 1px solid var(--v2-border); }
+.hub-totp-setup-box { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 16px; align-items: center; margin-top: 12px; padding: 14px; border-radius: 12px; background: var(--v2-well); border: 1px solid var(--v2-border); }
 @media (max-width: 680px) { .hub-totp-setup-box { grid-template-columns: 1fr; } }
-.hub-totp-qr { width: 180px; height: 180px; padding: 6px; border-radius: 10px; background: #fff; display: grid; place-items: center; overflow: hidden; }
-.hub-totp-qr svg { width: 100%; height: 100%; display: block; }
+.hub-totp-qr { width: 200px; height: 200px; padding: 8px; box-sizing: border-box; border-radius: 10px; background: #fff; display: grid; place-items: center; overflow: hidden; }
+.hub-totp-qr svg { width: 100%; height: 100%; display: block; shape-rendering: crispEdges; }
 .hub-totp-secret { display: inline-block; padding: 6px 10px; border-radius: 8px; background: var(--v2-panel); border: 1px solid var(--v2-border-strong); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; letter-spacing: .06em; user-select: all; }
 .hub-recovery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-top: 10px; }
 .hub-recovery-code { padding: 7px 10px; border-radius: 8px; background: var(--v2-panel); border: 1px solid var(--v2-border-strong); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; text-align: center; user-select: all; }
