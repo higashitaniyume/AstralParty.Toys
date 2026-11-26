@@ -275,6 +275,15 @@ host?.addEventListener('message', event => {
       if (window.GameLibModule) window.GameLibModule.renderProfiles(msg.payload);
       break;
 
+    case 'gameDataMigrationStatus':
+    case 'gameDataMigrationPicked':
+    case 'gameDataMigrationProgress':
+    case 'gameDataMigrationDone':
+    case 'gameDataCleanupStatus':
+    case 'gameDataCleanupDone':
+      window.V2SettingsModule?.onGameDataMigration?.(msg.type, msg.payload);
+      break;
+
     case 'accountProfiles':
       AppState.accountProfiles = msg.payload;
       window.AccountProfilesModule?.render(msg.payload);

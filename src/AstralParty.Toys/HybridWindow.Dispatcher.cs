@@ -30,6 +30,7 @@ public partial class HybridWindow
             if (HandleFontMessage(type, root)) return;         // 新界面：自定义 → 字体
             if (HandleWindowChromeMessage(type, root)) return;   // 新界面自绘标题栏：拖动 / 最小化 / 最大化 / 关闭
             if (HandleDeviceMessage(type, root)) return;         // 新界面：移动设备（只读检测）
+            if (HandleGameDataMigrationMessage(type, root)) return; // 新界面：设置 → C 盘迁移
             if (GameFileOperationBusy
                 && type is "modInstall" or "modUninstall" or "modDisableLoader" or "modRestoreLoader"
                     or "modRollbackApply" or "modDownloadUpdate" or "modImportPackage" or "modImport" or "modPickImport" or "modDelete" or "modToggle"

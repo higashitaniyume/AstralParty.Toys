@@ -7,7 +7,8 @@ public partial class HybridWindow
 {
     private bool GameFileOperationBusy =>
         _loaderRecoveryBusy || _modPackageImportRunning || _modUpdateRunning || _modImportRunning ||
-        _modInstallRunning || _modRollbackRunning || _workshopBusy || _modProfileRunning;
+        _modInstallRunning || _modRollbackRunning || _workshopBusy || _modProfileRunning ||
+        _gameDataMigrationBusy;
 
     private void PrepareGameSpeedForLaunch()
     {
