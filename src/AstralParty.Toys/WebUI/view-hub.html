@@ -67,7 +67,7 @@
     <form method="dialog" id="hubCreateRoomForm" class="hub-dialog-form">
       <div class="hub-dialog-head">
         <h1 id="hubCreateDialogTitle">创建组队房间</h1>
-        <button type="submit" value="cancel" class="hub-dialog-close" aria-label="关闭">✕</button>
+        <button type="submit" value="cancel" formnovalidate class="hub-dialog-close" aria-label="关闭">✕</button>
       </div>
       <div class="hub-dialog-body">
         <div class="v2-field">
@@ -109,7 +109,7 @@
         <p id="hubCreateErr" class="v2-err"></p>
       </div>
       <div class="hub-dialog-foot">
-        <button type="submit" value="cancel" class="v2-btn ghost">取消</button>
+        <button type="submit" value="cancel" formnovalidate class="v2-btn ghost">取消</button>
         <button type="button" id="hubCreateSubmitBtn" class="v2-btn primary">创建并进入</button>
       </div>
     </form>
@@ -120,7 +120,7 @@
     <form method="dialog" id="hubJoinRoomForm" class="hub-dialog-form">
       <div class="hub-dialog-head">
         <h1 id="hubJoinDialogTitle">加入组队房间</h1>
-        <button type="submit" value="cancel" class="hub-dialog-close" aria-label="关闭">✕</button>
+        <button type="submit" value="cancel" formnovalidate class="hub-dialog-close" aria-label="关闭">✕</button>
       </div>
       <div class="hub-dialog-body">
         <p id="hubJoinRoomName" class="hub-muted"></p>
@@ -135,7 +135,7 @@
         <p id="hubJoinErr" class="v2-err"></p>
       </div>
       <div class="hub-dialog-foot">
-        <button type="submit" value="cancel" class="v2-btn ghost">取消</button>
+        <button type="submit" value="cancel" formnovalidate class="v2-btn ghost">取消</button>
         <button type="button" id="hubJoinSubmitBtn" class="v2-btn primary">确认加入</button>
       </div>
     </form>
@@ -146,14 +146,14 @@
     <form method="dialog" class="hub-dialog-form">
       <div class="hub-dialog-head">
         <h1 id="hubPrivacyDialogTitle">个人主页隐私设置</h1>
-        <button type="submit" value="cancel" class="hub-dialog-close" aria-label="关闭">✕</button>
+        <button type="submit" value="cancel" formnovalidate class="hub-dialog-close" aria-label="关闭">✕</button>
       </div>
       <div class="hub-dialog-body">
         <p class="hub-muted" style="margin-bottom:14px;">控制其他玩家查看你的公开名片时可见的模块，自己始终可见全部数据。</p>
         <div id="hubPrivacySwitchList" class="hub-switch-list"></div>
       </div>
       <div class="hub-dialog-foot">
-        <button type="submit" value="cancel" class="v2-btn ghost">取消</button>
+        <button type="submit" value="cancel" formnovalidate class="v2-btn ghost">取消</button>
         <button type="button" id="hubSavePrivacyBtn" class="v2-btn primary" autofocus>保存设置</button>
       </div>
     </form>
@@ -164,7 +164,7 @@
     <form method="dialog" id="hubAuthForm" class="hub-dialog-form">
       <div class="hub-dialog-head">
         <h1 id="hubAuthDialogTitle">登录组队大厅</h1>
-        <button type="submit" value="cancel" class="hub-dialog-close" aria-label="关闭">✕</button>
+        <button type="submit" value="cancel" formnovalidate class="hub-dialog-close" aria-label="关闭">✕</button>
       </div>
       <div class="hub-dialog-body">
         <div id="hubAuthModeTabs" class="hub-auth-tabs" role="tablist" aria-label="登录或注册切换">
@@ -224,16 +224,16 @@
     </form>
   </dialog>
 
-  <!-- 原生模态弹窗：账号与安全（用户名密码 / 多渠道 OAuth / TOTP 二次验证 / 会话管理） -->
+  <!-- 原生模态弹窗：账号管理（用户名密码 / 多渠道 OAuth / TOTP 二次验证 / 会话管理） -->
   <dialog id="hubSecurityDialog" class="hub-dialog hub-dialog-wide" closedby="any" aria-labelledby="hubSecurityDialogTitle">
     <form method="dialog" class="hub-dialog-form">
       <div class="hub-dialog-head">
-        <h1 id="hubSecurityDialogTitle">账号与安全</h1>
-        <button type="submit" value="cancel" class="hub-dialog-close" aria-label="关闭">✕</button>
+        <h1 id="hubSecurityDialogTitle">账号管理</h1>
+        <button type="submit" value="cancel" formnovalidate class="hub-dialog-close" aria-label="关闭">✕</button>
       </div>
       <div id="hubSecurityBody" class="hub-dialog-body"></div>
       <div class="hub-dialog-foot">
-        <button type="submit" value="cancel" class="v2-btn primary" autofocus>完成</button>
+        <button type="submit" value="cancel" formnovalidate class="v2-btn primary" autofocus>完成</button>
       </div>
     </form>
   </dialog>
@@ -243,7 +243,7 @@
     <form method="dialog" class="hub-dialog-form">
       <div class="hub-dialog-head">
         <h1 id="hubServerDialogTitle">组队大厅服务与游戏联动设置</h1>
-        <button type="submit" value="cancel" class="hub-dialog-close" aria-label="关闭">✕</button>
+        <button type="submit" value="cancel" formnovalidate class="hub-dialog-close" aria-label="关闭">✕</button>
       </div>
       <div class="hub-dialog-body">
         <div class="v2-field">
@@ -254,7 +254,7 @@
         <div id="hubBridgeDiagBox" class="hub-diag-box"></div>
       </div>
       <div class="hub-dialog-foot">
-        <button type="submit" value="cancel" class="v2-btn ghost">关闭</button>
+        <button type="submit" value="cancel" formnovalidate class="v2-btn ghost">关闭</button>
         <button type="button" id="hubServerSaveBtn" class="v2-btn primary">保存并重连</button>
       </div>
     </form>

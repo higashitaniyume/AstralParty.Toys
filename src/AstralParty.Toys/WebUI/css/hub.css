@@ -394,3 +394,51 @@ html body dialog.hub-dialog.hub-dialog-wide {
 .hub-totp-secret { display: inline-block; padding: 6px 10px; border-radius: 8px; background: var(--v2-panel); border: 1px solid var(--v2-border-strong); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; letter-spacing: .06em; user-select: all; }
 .hub-recovery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-top: 10px; }
 .hub-recovery-code { padding: 7px 10px; border-radius: 8px; background: var(--v2-panel); border: 1px solid var(--v2-border-strong); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; text-align: center; user-select: all; }
+
+.hub-user-chip.is-clickable { cursor: pointer; transition: border-color .14s ease, background .14s ease; }
+.hub-user-chip.is-clickable:hover { border-color: var(--gp-pink); }
+
+/* 浏览器 OAuth 登录期间覆盖整个 Toys 窗口的顶层蒙版 */
+html body dialog.hub-oauth-blocking-dialog {
+  width: min(460px, 90vw);
+  max-width: min(460px, 90vw);
+  border-radius: 16px;
+}
+html body dialog.hub-oauth-blocking-dialog::backdrop {
+  background: rgba(6, 8, 16, .82);
+  -webkit-backdrop-filter: blur(12px) saturate(130%);
+  backdrop-filter: blur(12px) saturate(130%);
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+.hub-oauth-blocking-box {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 32px 28px 26px;
+}
+.hub-oauth-blocking-box h1 {
+  margin: 0;
+  font-size: 19px;
+  color: var(--v2-text);
+}
+.hub-oauth-blocking-actions {
+  margin-top: 8px;
+  display: flex;
+  justify-content: center;
+}
+.hub-oauth-spinner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 23, 118, .22);
+  border-top-color: var(--gp-pink);
+  animation: hub-oauth-spin .85s linear infinite;
+}
+@keyframes hub-oauth-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hub-oauth-spinner { animation: none; border-color: var(--gp-pink); }
+}

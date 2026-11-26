@@ -365,6 +365,34 @@
       selectTab('profile', false);
       renderProfile();
     });
+
+    const oauthDlg = $id('hubOAuthBlockingDialog');
+    oauthDlg?.addEventListener('cancel', e => {
+      // 遵循 dialog 指南：closedby="none" 的浏览器回退守卫，防止误按 Esc 绕过取消逻辑
+      e.preventDefault();
+    });
+    $id('hubOAuthCancelBtn')?.addEventListener('click', () => {
+      setOAuthBlockingOverlay(false);
+      post({ type: 'hubCancelSignIn' });
+    });
+  }
+
+  function setOAuthBlockingOverlay(active, opts = {}) {
+    const dlg = $id('hubOAuthBlockingDialog');
+    if (!dlg) return;
+    if (active) {
+      const authDlg = $id('hubAuthDialog');
+      if (authDlg?.open) authDlg.close('oauth');
+      const titleEl = $id('hubOAuthBlockingTitle');
+      const descEl = $id('hubOAuthBlockingDesc');
+      const btnEl = $id('hubOAuthCancelBtn');
+      if (titleEl) titleEl.textContent = opts.title || '正在从浏览器登录…';
+      if (descEl) descEl.textContent = opts.description || '已启动系统默认浏览器，请在浏览器中完成授权；完成后将自动返回 Toys。';
+      if (btnEl) btnEl.textContent = opts.cancelText || '取消登录';
+      if (!dlg.open) dlg.showModal();
+    } else if (dlg.open) {
+      dlg.close('done');
+    }
   }
 
   function applyPolyfills() {
@@ -573,8 +601,10 @@
     body.innerHTML = `
       <div class="hub-sec-grid">
         <section class="hub-sec-card">
-          <h3>账号与密码 ${sec.hasPassword ? '<span class="hub-pill green">已设置</span>' : '<span class="hub-pill">未设置</span>'}</h3>
-          <p class="hub-muted">${sec.username ? `当前登录用户名：<strong>${esc(sec.username)}</strong>` : '绑定用户名与密码后，无需第三方登录即可直接登录大厅。'}</p>
+          <h3>账号与密码 ${sec.hasPassword ? '<span class="hub-pill green">已设置</span>' : '<span class="hub-pill gold">未设置</span>'}</h3>
+          <p class="hub-muted">${sec.username
+            ? `当前登录用户名：<strong>${esc(sec.username)}</strong>（不支持找回密码，请妥善保管；绑定第三方渠道可用于忘记密码恢复）`
+            : '你当前仅通过第三方渠道登录，尚未设置本地用户名与密码。在此补充绑定后，可直接用账号密码登录，也支持开启 TOTP 二次验证。'}</p>
           ${isOAuthRecovery ? '<p class="hub-muted" style="color:#4ade80;margin-top:4px;">当前为 Microsoft 恢复会话，忘记旧密码时无需输入原密码即可直接重置。</p>' : ''}
           <div class="hub-dialog-row" style="margin-top:12px;">
             ${!sec.username ? `
@@ -596,11 +626,17 @@
               <input id="hubSecConfirmPwd" type="password" maxlength="128" autocomplete="new-password" placeholder="再次输入新密码" />
             </div>
           </div>
-          <div class="hub-toolbar" style="justify-content:space-between;">
-            <label class="hub-auth-recovery-toggle" style="margin:0;">
-              <input id="hubSecRevokeOthers" type="checkbox" />
-              <span>修改后注销其它设备会话</span>
-            </label>
+          <div class="hub-toolbar" style="justify-content:space-between;margin-top:6px;">
+            <div class="hub-toolbar" style="gap:14px;">
+              <label class="hub-auth-recovery-toggle" style="margin:0;">
+                <input id="hubSecShowPwd" type="checkbox" />
+                <span>显示密码</span>
+              </label>
+              <label class="hub-auth-recovery-toggle" style="margin:0;">
+                <input id="hubSecRevokeOthers" type="checkbox" />
+                <span>修改后注销其它设备会话</span>
+              </label>
+            </div>
             <button type="button" class="v2-btn primary" id="hubSecSavePwdBtn">${sec.hasPassword ? (isOAuthRecovery ? '重置密码' : '修改密码') : '绑定用户名和密码'}</button>
           </div>
           <p id="hubSecPwdErr" class="v2-err" style="margin-top:6px;"></p>
@@ -663,6 +699,14 @@
       </div>
     `;
 
+    $id('hubSecShowPwd')?.addEventListener('change', e => {
+      const nextType = e.target.checked ? 'text' : 'password';
+      for (const id of ['hubSecCurPwd', 'hubSecNewPwd', 'hubSecConfirmPwd']) {
+        const el = $id(id);
+        if (el) el.type = nextType;
+      }
+    });
+
     $id('hubSecSavePwdBtn')?.addEventListener('click', () => {
       const err = $id('hubSecPwdErr');
       const username = $id('hubSecUsername')?.value.trim() || null;
@@ -686,7 +730,14 @@
       post({ type: 'hubSavePassword', username, currentPassword, newPassword, revokeOtherSessions });
     });
 
-    $id('hubSecLinkMsBtn')?.addEventListener('click', () => post({ type: 'hubLinkMicrosoft' }));
+    $id('hubSecLinkMsBtn')?.addEventListener('click', () => {
+      setOAuthBlockingOverlay(true, {
+        title: '正在从浏览器绑定 Microsoft…',
+        description: '已启动系统默认浏览器打开 Microsoft 授权页面，请在浏览器中完成确认；完成后将自动返回 Toys。',
+        cancelText: '取消绑定'
+      });
+      post({ type: 'hubLinkMicrosoft' });
+    });
     $id('hubSecUnlinkMsBtn')?.addEventListener('click', () => post({ type: 'hubUnlinkProvider', provider: 'microsoft' }));
     $id('hubTotpStartSetupBtn')?.addEventListener('click', () => post({ type: 'hubTotpSetup', reset: !!S.totpSetup }));
     $id('hubCopyTotpKeyBtn')?.addEventListener('click', () => {
@@ -849,6 +900,11 @@
     $id('hubAuthConfirmPassword')?.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submitAuthCreds(); } });
     $id('hubAuthMsBtn')?.addEventListener('click', () => {
       $id('hubAuthDialog')?.close('oauth');
+      setOAuthBlockingOverlay(true, {
+        title: '正在从浏览器登录…',
+        description: '已启动系统默认浏览器打开 Microsoft 登录页面，请在浏览器中完成授权；完成后将自动返回 Toys。',
+        cancelText: '取消登录'
+      });
       post({ type: 'hubSignIn' });
     });
     $id('hubAuth2faIsRecovery')?.addEventListener('change', e => {
@@ -1046,15 +1102,16 @@
     if (!authEl) return;
     if (S.auth.signingIn) {
       authEl.innerHTML = `
-        <span class="hub-pill gold">请在浏览器完成登录…</span>
+        <span class="hub-pill gold">正在浏览器登录…</span>
         <button type="button" class="v2-btn ghost" data-hub-act="cancel-signin">取消</button>
       `;
     } else if (S.me) {
       authEl.innerHTML = `
-        <div class="hub-user-chip" title="${esc(S.me.displayName)}">
+        <button type="button" class="hub-user-chip is-clickable" data-hub-act="go-profile" title="${esc(S.me.displayName)} · 打开个人主页">
           ${renderAvatar(S.me.avatarUrl, S.me.displayName, 24, 'hub-ms-avatar')}
           <strong>${esc(S.me.displayName)}</strong>
-        </div>
+        </button>
+        <button type="button" class="v2-btn ghost" data-hub-act="security" title="管理用户名、密码、登录渠道与 TOTP 二次验证">账号管理</button>
         <button type="button" class="v2-btn ghost" data-hub-act="logout">退出</button>
       `;
     } else {
@@ -1062,7 +1119,12 @@
     }
 
     authEl.querySelector('[data-hub-act="signin"]')?.addEventListener('click', () => openAuthDialog('login'));
-    authEl.querySelector('[data-hub-act="cancel-signin"]')?.addEventListener('click', () => post({ type: 'hubCancelSignIn' }));
+    authEl.querySelector('[data-hub-act="go-profile"]')?.addEventListener('click', () => selectTab('profile', false));
+    authEl.querySelector('[data-hub-act="security"]')?.addEventListener('click', () => openSecurityDialog());
+    authEl.querySelector('[data-hub-act="cancel-signin"]')?.addEventListener('click', () => {
+      setOAuthBlockingOverlay(false);
+      post({ type: 'hubCancelSignIn' });
+    });
     authEl.querySelector('[data-hub-act="logout"]')?.addEventListener('click', () => post({ type: 'hubLogout' }));
   }
 
@@ -1072,7 +1134,7 @@
 
   function openCreateDialog() {
     if (!S.me) {
-      window.toast?.('请先点击右上角「Microsoft 登录」。');
+      openAuthDialog('login');
       return;
     }
     const bindings = regionBindings(S.region);
@@ -1099,7 +1161,7 @@
 
   function openJoinDialog(room) {
     if (!S.me) {
-      window.toast?.('请先使用 Microsoft 账号登录。');
+      openAuthDialog('login');
       return;
     }
     if (S.currentRoom && S.currentRoom.roomId === room.roomId) {
@@ -1662,13 +1724,14 @@
                 <span>ID: ${esc(me.userId)}</span>
                 ${me.username ? `<span>· @${esc(me.username)}</span>` : ''}
                 <span>· 已绑定 ${(me.bindings || []).length} 个游戏账号</span>
+                ${!me.hasPassword ? '<span class="hub-pill gold">未设密码</span>' : ''}
                 ${me.twoFactorEnabled ? '<span class="hub-pill green">2FA 已开启</span>' : ''}
               </div>
             </div>
           </div>
 
           <div class="hub-toolbar">
-            <button type="button" class="v2-btn primary" id="hubOpenSecurityBtn">账号与安全</button>
+            <button type="button" class="v2-btn primary" id="hubOpenSecurityBtn">账号管理</button>
             <button type="button" class="v2-btn ghost" id="hubOpenPrivacyBtn">隐私设置</button>
             <button type="button" class="v2-btn ghost" id="hubPreviewSelfBtn">预览他人视角</button>
             <button type="button" class="v2-btn ghost" id="hubOpenLocalAccountBtn">凭据管理</button>
@@ -2015,14 +2078,24 @@
         renderLobby();
         renderProfile();
         break;
+      case 'hubOAuthOverlay':
+        setOAuthBlockingOverlay(!!msg.payload?.active, msg.payload || {});
+        break;
       case 'hubAuthSuccess':
         S.twoFactorTicket = '';
         S.twoFactorUser = '';
+        setOAuthBlockingOverlay(false);
         $id('hubAuthDialog')?.close('ok');
         break;
       case 'hubAuthDialogError': {
         const err = $id('hubAuthErr');
         if (err) err.textContent = msg.payload?.message || '认证失败，请重试';
+        break;
+      }
+      case 'hubSecurityError': {
+        const err = $id('hubSecPwdErr');
+        if (err) err.textContent = msg.payload?.message || '操作失败，请重试';
+        window.toast?.(msg.payload?.message || '账号管理操作失败');
         break;
       }
       case 'hubTwoFactorRequired':

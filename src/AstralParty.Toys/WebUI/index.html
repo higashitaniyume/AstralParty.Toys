@@ -169,13 +169,13 @@
           <form method="dialog" class="hub-dialog-form">
             <div class="hub-dialog-head">
               <h1 id="hubDisbandDialogTitle">解散当前组队房间？</h1>
-              <button type="submit" value="cancel" class="hub-dialog-close" aria-label="关闭">✕</button>
+              <button type="submit" value="cancel" formnovalidate class="hub-dialog-close" aria-label="关闭">✕</button>
             </div>
             <div class="hub-dialog-body">
               <p id="hubDisbandDesc" class="hub-muted">解散后房间将立即关闭，所有队员会自动离开。</p>
             </div>
             <div class="hub-dialog-foot">
-              <button type="submit" value="cancel" class="v2-btn ghost" autofocus>取消</button>
+              <button type="submit" value="cancel" formnovalidate class="v2-btn ghost" autofocus>取消</button>
               <button type="button" id="hubConfirmDisbandBtn" class="v2-btn hub-btn-danger">确认解散</button>
             </div>
           </form>
@@ -189,15 +189,25 @@
           <form method="dialog" class="hub-dialog-form">
             <div class="hub-dialog-head">
               <h1 id="hubInspectDialogTitle">查成分 · 玩家档案</h1>
-              <button type="submit" value="cancel" class="hub-dialog-close" aria-label="关闭">✕</button>
+              <button type="submit" value="cancel" formnovalidate class="hub-dialog-close" aria-label="关闭">✕</button>
             </div>
             <div id="hubInspectBody" class="hub-dialog-body"></div>
             <div class="hub-dialog-foot">
               <button type="button" id="hubInspectCopyUidBtn" class="v2-btn ghost" hidden>复制 UID</button>
               <button type="button" id="hubInspectOpenProfileBtn" class="v2-btn ghost" hidden>在个人主页打开</button>
-              <button type="submit" value="cancel" class="v2-btn primary" autofocus>关闭</button>
+              <button type="submit" value="cancel" formnovalidate class="v2-btn primary" autofocus>关闭</button>
             </div>
           </form>
+        </dialog>
+        <dialog id="hubOAuthBlockingDialog" class="hub-dialog hub-oauth-blocking-dialog" closedby="none" aria-labelledby="hubOAuthBlockingTitle">
+          <div class="hub-oauth-blocking-box">
+            <div class="hub-oauth-spinner" aria-hidden="true"></div>
+            <h1 id="hubOAuthBlockingTitle">正在从浏览器登录…</h1>
+            <p id="hubOAuthBlockingDesc" class="hub-muted">已启动系统默认浏览器，请在浏览器中完成授权；完成后将自动返回 Toys。</p>
+            <div class="hub-oauth-blocking-actions">
+              <button type="button" id="hubOAuthCancelBtn" class="v2-btn ghost" autofocus>取消登录</button>
+            </div>
+          </div>
         </dialog>
         <!-- 1. HOME VIEW (In-Game Aesthetic Main Lobby) -->
         <!-- @include view-home.html -->

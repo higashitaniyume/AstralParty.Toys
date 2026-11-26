@@ -180,7 +180,9 @@ public partial class HybridWindow
 
                 case "hubCancelSignIn":
                     _hubSignInCts?.Cancel();
+                    Post(new { type = "hubOAuthOverlay", payload = new { active = false } });
                     Post(new { type = "hubAuthState", payload = BuildAuthPayload(signingIn: false, error: "已取消登录。") });
+                    Post(new { type = "toast", message = "已取消浏览器登录" });
                     break;
 
                 case "hubLogout":
@@ -405,7 +407,7 @@ public partial class HybridWindow
         {
             if (ex.StatusCode == HttpStatusCode.Unauthorized)
             {
-                ClearExpiredHubAuth("登录会话已失效，请重新使用 Microsoft 账号登录。");
+                ClearExpiredHubAuth("登录会话已失效，请重新登录。");
             }
             else
             {
@@ -510,12 +512,31 @@ public partial class HybridWindow
         _hubSignInCts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
 
         Post(new { type = "hubAuthState", payload = BuildAuthPayload(signingIn: true) });
+        Post(new
+        {
+            type = "hubOAuthOverlay",
+            payload = new
+            {
+                active = true,
+                title = "正在从浏览器登录…",
+                description = "已启动系统默认浏览器打开 Microsoft 登录页面，请在浏览器中完成授权；完成后将自动返回 Toys。",
+                cancelText = "取消登录"
+            }
+        });
 
-        var authService = new HubAuthService(HubConfigStore);
-        var result = await authService.SignInWithBrowserAsync(api, _hubServerConfig, _hubSignInCts.Token)
-            .ConfigureAwait(false);
+        try
+        {
+            var authService = new HubAuthService(HubConfigStore);
+            var result = await authService.SignInWithBrowserAsync(api, _hubServerConfig, _hubSignInCts.Token)
+                .ConfigureAwait(false);
 
-        await CompleteHubAuthLoginAsync(result, "已通过 Microsoft 账号登录").ConfigureAwait(false);
+            await CompleteHubAuthLoginAsync(result, "已通过 Microsoft 账号登录").ConfigureAwait(false);
+        }
+        finally
+        {
+            Post(new { type = "hubOAuthOverlay", payload = new { active = false } });
+            Post(new { type = "hubAuthState", payload = BuildAuthPayload(signingIn: false) });
+        }
     }
 
     private async Task HandleHubRegisterPasswordAsync(JsonElement root)
@@ -590,12 +611,19 @@ public partial class HybridWindow
         var newPassword = ReadJsonString(root, "newPassword");
         var revokeOthers = root.TryGetProperty("revokeOtherSessions", out var rvEl) && rvEl.ValueKind == JsonValueKind.True;
 
-        var status = await EnsureHubApiClient()
-            .SetOrChangePasswordAsync(username, currentPassword, newPassword, revokeOthers)
-            .ConfigureAwait(false);
-        Post(new { type = "hubSecurityState", payload = status });
-        await RefreshHubMeAsync().ConfigureAwait(false);
-        Post(new { type = "toast", message = "账号密码已保存，请妥善保管（服务端不提供找回密码）" });
+        try
+        {
+            var status = await EnsureHubApiClient()
+                .SetOrChangePasswordAsync(username, currentPassword, newPassword, revokeOthers)
+                .ConfigureAwait(false);
+            Post(new { type = "hubSecurityState", payload = status });
+            await RefreshHubMeAsync().ConfigureAwait(false);
+            Post(new { type = "toast", message = "账号密码已保存，请妥善保管（服务端不提供找回密码）" });
+        }
+        catch (HubApiException ex)
+        {
+            Post(new { type = "hubSecurityError", payload = new { error = ex.ErrorCode, message = ex.Message } });
+        }
     }
 
     private async Task HandleHubLinkMicrosoftAsync()
@@ -606,13 +634,31 @@ public partial class HybridWindow
         _hubSignInCts?.Dispose();
         _hubSignInCts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
 
-        Post(new { type = "toast", message = "请在弹出的浏览器中完成 Microsoft 账号绑定…" });
-        var authService = new HubAuthService(HubConfigStore);
-        var status = await authService.LinkMicrosoftWithBrowserAsync(api, _hubServerConfig, _hubSignInCts.Token)
-            .ConfigureAwait(false);
-        Post(new { type = "hubSecurityState", payload = status });
-        await RefreshHubMeAsync().ConfigureAwait(false);
-        Post(new { type = "toast", message = "已成功绑定 Microsoft 登录渠道（忘记密码时可用于登录恢复）" });
+        Post(new
+        {
+            type = "hubOAuthOverlay",
+            payload = new
+            {
+                active = true,
+                title = "正在从浏览器绑定 Microsoft…",
+                description = "已启动系统默认浏览器打开 Microsoft 授权页面，请在浏览器中完成确认；完成后将自动返回 Toys。",
+                cancelText = "取消绑定"
+            }
+        });
+
+        try
+        {
+            var authService = new HubAuthService(HubConfigStore);
+            var status = await authService.LinkMicrosoftWithBrowserAsync(api, _hubServerConfig, _hubSignInCts.Token)
+                .ConfigureAwait(false);
+            Post(new { type = "hubSecurityState", payload = status });
+            await RefreshHubMeAsync().ConfigureAwait(false);
+            Post(new { type = "toast", message = "已成功绑定 Microsoft 登录渠道（忘记密码时可用于登录恢复）" });
+        }
+        finally
+        {
+            Post(new { type = "hubOAuthOverlay", payload = new { active = false } });
+        }
     }
 
     private async Task HandleHubUnlinkProviderAsync(JsonElement root)
