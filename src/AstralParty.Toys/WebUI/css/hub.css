@@ -220,15 +220,35 @@ input[type="checkbox"][switch]:focus-visible { outline: 3px solid var(--gp-pink)
 .hub-diag-box { margin-top: 10px; padding: 12px; border-radius: 8px; background: var(--v2-well); border: 1px solid var(--v2-border); font-size: 12px; color: var(--gp-text-sub); line-height: 1.6; }
 
 /* 原生 <dialog> 样式（严格遵守 dialog 指南：不无条件设 display，阻断底层滚动链） */
-.hub-dialog { max-width: min(540px, 92vw); width: 100%; padding: 0; border-radius: 14px; border: 1px solid var(--v2-border-strong); background: var(--v2-panel-solid, #1a1d2e); color: var(--v2-text); box-shadow: 0 24px 60px rgba(0, 0, 0, .55); }
-.hub-dialog.hub-dialog-wide { max-width: min(760px, 94vw); }
+html body dialog.hub-dialog {
+  width: min(680px, 92vw);
+  max-width: min(680px, 92vw);
+  padding: 0;
+  margin: auto;
+  border-radius: 14px;
+  border: 1px solid var(--v2-border-strong);
+  background: var(--v2-panel-solid, #1a1d2e);
+  color: var(--v2-text);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .55);
+}
+html body dialog.hub-dialog.hub-dialog-wide {
+  width: min(880px, 94vw);
+  max-width: min(880px, 94vw);
+}
 .hub-dialog:modal { overscroll-behavior: contain; }
 .hub-dialog::backdrop { background: rgba(6, 8, 16, .68); backdrop-filter: blur(4px); overflow: hidden; overscroll-behavior: contain; }
 .hub-dialog-form { display: grid; }
-.hub-dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--v2-border); }
+.hub-dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 24px; border-bottom: 1px solid var(--v2-border); }
 .hub-dialog-head h1 { margin: 0; font-size: 17px; }
 .hub-dialog-close { width: 30px; height: 30px; border-radius: 8px; border: 0; background: transparent; color: var(--gp-text-sub); font-size: 16px; cursor: pointer; }
 .hub-dialog-close:hover { background: var(--v2-hover); color: var(--v2-text); }
-.hub-dialog-body { padding: 18px 20px; max-height: 70vh; overflow-y: auto; }
-.hub-dialog-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.hub-dialog-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--v2-border); }
+.hub-dialog-body { padding: 20px 24px; max-height: 74vh; overflow-x: hidden; overflow-y: auto; }
+.hub-dialog-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.hub-dialog .v2-field { min-width: 0; }
+.hub-dialog .v2-field :is(input, select, textarea, .v2-select) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.hub-dialog-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 24px; border-top: 1px solid var(--v2-border); }

@@ -41,7 +41,7 @@
 }
 
 .modal-content {
-  width: min(680px, 92vw);
+  width: min(760px, 92vw);
   max-height: 85vh;
   background: linear-gradient(135deg, rgba(22, 28, 50, 0.98) 0%, rgba(14, 18, 34, 0.98) 100%);
   border-radius: var(--gp-radius-lg);
@@ -61,7 +61,7 @@
 
 /* 配置类弹窗：模组配置字段带多语言说明，按内容加宽；普通提示弹窗仍用 680px。 */
 .modal-content.modal-wide {
-  width: min(900px, 94vw);
+  width: min(980px, 94vw);
 }
 
 .modal-header {

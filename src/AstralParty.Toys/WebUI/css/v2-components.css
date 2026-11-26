@@ -81,7 +81,7 @@ body.reduce-motion .v2-modp.is-indeterminate .v2-modp-bar i { animation: none; w
 .v2-livelog-empty { color: var(--gp-text-muted); }
 
 /* ---------- 角色：向导 ---------- */
-.v2-modal-box.wide { width: 600px; }
+.v2-modal-box.wide { width: 780px; }
 .v2-wz-bar { display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-bottom: 1px solid var(--v2-border); font-size: 13px; }
 .v2-wz-step { display: inline-flex; align-items: center; gap: 6px; color: var(--gp-text-muted); white-space: nowrap; }
 .v2-wz-step svg { width: 14px; height: 14px; }
@@ -144,9 +144,9 @@ details.v2-mini summary { cursor: pointer; color: var(--gp-text-sub); font-size:
 /* ---------- 弹窗 / 删除确认 ---------- */
 .v2-modal { position: fixed; inset: 0; z-index: 400; display: none; place-items: center; background: rgba(0, 0, 0, .55); }
 .v2-modal.show { display: grid; }
-.v2-modal-box { width: 520px; max-width: calc(100vw - 32px); max-height: calc(100vh - 48px); overflow-y: auto; background: var(--v2-panel); border: 1px solid var(--v2-border-strong); border-radius: 12px; color: var(--v2-text-soft); font-size: 14px; }
-.v2-modal-box.narrow { width: 440px; }
-.v2-modal-box.changelog-wide { width: 780px; display: flex; flex-direction: column; overflow: hidden; }
+.v2-modal-box { width: 680px; max-width: calc(100vw - 32px); max-height: calc(100vh - 48px); overflow-y: auto; background: var(--v2-panel); border: 1px solid var(--v2-border-strong); border-radius: 12px; color: var(--v2-text-soft); font-size: 14px; }
+.v2-modal-box.narrow { width: 560px; }
+.v2-modal-box.changelog-wide { width: 900px; display: flex; flex-direction: column; overflow: hidden; }
 .v2-cl-head { align-items: flex-start; gap: 12px; }
 .v2-cl-title-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .v2-cl-pills { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -199,11 +199,11 @@ html body #globalModal .modal-close-btn { width: 32px; height: 32px; border-radi
 html body #globalModal .modal-close-btn:hover { background: var(--v2-hover); color: var(--v2-text); transform: none; }
 
 /* 原生 <dialog>（新建皮肤包、角色方案相关的原版表单） */
-html body :is(dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, .skin-modal-dialog) {
-  width: min(520px, 92vw); padding: 20px 22px; color: var(--v2-text-soft); font-size: 14px;
+html body :is(dialog:not(.hub-dialog), #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, .skin-modal-dialog) {
+  width: min(640px, 92vw); padding: 20px 24px; color: var(--v2-text-soft); font-size: 14px;
   background: var(--v2-panel); border: 1px solid var(--v2-border-strong); border-radius: 12px; box-shadow: 0 24px 48px rgba(0, 0, 0, .5);
 }
-html body :is(dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, .skin-modal-dialog)::backdrop { background: rgba(0, 0, 0, .55); backdrop-filter: none; }
+html body :is(dialog:not(.hub-dialog), #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, .skin-modal-dialog)::backdrop { background: rgba(0, 0, 0, .55); backdrop-filter: none; }
 html body :is(dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) h3 { font-size: 16px; font-weight: 600; margin: 0 0 16px; }
 html body :is(dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) label { font-weight: 500; font-size: 14px; color: var(--v2-text-soft); }
 html body :is(dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog) p { color: var(--gp-text-muted); font-size: 13px; }
