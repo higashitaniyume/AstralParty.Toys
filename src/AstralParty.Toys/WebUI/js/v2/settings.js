@@ -2,7 +2,21 @@
 // 数据仍由原版保存：语言 / 动画（i18n、localStorage）、游戏目录（GameLibModule）、回放库设置（AppState.librarySettings）、版本（VersionModule）。
 // 版本详情、更新日志两个弹窗沿用原版。
 (function () {
-  const G = { scan: null, tab: 'ui', logs: [], logsAsked: false, logsLoaded: false };   // 扫描状态：{ mode, running, message, current, candidates }
+  const G = {
+    scan: null,
+    tab: 'ui',
+    logs: [],
+    logsAsked: false,
+    logsLoaded: false,
+    migration: null,
+    migrationLoading: false,
+    migrationBusy: false,
+    migrationProgress: null,
+    cleanup: null,
+    cleanupLoading: false,
+    cleanupSelected: {},
+    cleanupRecycle: false,
+  };   // 扫描状态：{ mode, running, message, current, candidates }
   const U = () => window.V2UI;
   const I = () => window.V2UI.ICON;
   const GL = () => window.GameLibModule;
@@ -168,6 +182,7 @@
   const TABS = [
     ['ui', '界面', 'settings'],
     ['game', '游戏目录', 'sports_esports'],
+    ['storage', '存储与清理', 'folder_open'],
     ['lib', '回放库', 'inventory_2'],
     ['net', '网络', 'refresh'],
     ['logs', '日志', 'description'],
@@ -175,6 +190,175 @@
     ['about', '关于', 'info'],
     ['uninstall', '卸载', 'delete'],
   ];
+
+  function fmtBytes(bytes) {
+    const n = Number(bytes) || 0;
+    if (n < 1024) return `${n} B`;
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let v = n;
+    let i = 0;
+    while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+    return `${v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2)} ${units[i]}`;
+  }
+
+  function requestMigrationStatus() {
+    G.migrationLoading = true;
+    G.cleanupLoading = true;
+    post({ type: 'gameDataCleanupStatus' });
+    post({ type: 'gameDataMigrationStatus' });
+  }
+
+  function selectedCleanupItems() {
+    const items = G.cleanup?.items || [];
+    return items.filter(it => it.safeToClean && G.cleanupSelected[it.id]);
+  }
+
+  function cleanupCardHtml() {
+    const cl = G.cleanup;
+    if (!cl) {
+      return `<div class="v2-card"><div class="v2-card-title"><span>C 盘旧缓存一键清理（推荐）</span>
+          <button class="v2-btn ghost" data-v2g="migRefresh" ${G.cleanupLoading ? 'disabled' : ''}>${I().refresh}重新检测</button></div>
+        <div class="v2-row"><span class="v v2-muted">${G.cleanupLoading ? '正在扫描 C 盘旧版热更缓存与游戏目录状态…' : '点击右上角「重新检测」开始扫描。'}</span></div>
+      </div>`;
+    }
+    if (!cl.available) {
+      return `<div class="v2-card"><div class="v2-card-title"><span>C 盘旧缓存一键清理（推荐）</span>
+          <button class="v2-btn ghost" data-v2g="migRefresh" ${G.cleanupLoading ? 'disabled' : ''}>${I().refresh}重新检测</button></div>
+        <div class="v2-notice" style="margin:12px 18px">${I().info}<span>${esc(cl.error || '未能检测到游戏数据目录。')}</span></div>
+        <div class="v2-row"><span class="k">游戏目录</span><span class="v v2-muted">添加游戏目录后可识别当前游戏版本并扫描旧缓存</span>
+          <button class="v2-btn line" data-v2g="migGoGame">前往游戏目录</button></div>
+      </div>`;
+    }
+
+    const items = cl.items || [];
+    const sel = selectedCleanupItems();
+    const selBytes = sel.reduce((sum, it) => sum + (Number(it.bytes) || 0), 0);
+
+    let badge;
+    let summary;
+    if (cl.totalReclaimableBytes > 0) {
+      badge = `<span class="v2-badge pink">可释放 ${esc(fmtBytes(cl.totalReclaimableBytes))}</span>`;
+      summary = cl.cacheRedirectedToGameDir
+        ? '当前游戏已将热更新资源迁至游戏安装目录，以下旧版本残留可安全一键清理'
+        : '检测到可清理的旧版本残留索引 / 过期资源';
+    } else if (cl.cacheRedirectedToGameDir) {
+      badge = '<span class="v2-badge" style="background:rgba(163,230,53,.15);color:var(--gp-green)">已很干净</span>';
+      summary = 'C 盘未检测到可清理的旧版本热更缓存';
+    } else {
+      badge = '<span class="v2-badge">待确认</span>';
+      summary = '未检测到新版游戏目录重定向配置（如尚未在「游戏目录」添加最新版游戏，请先添加）';
+    }
+
+    const itemRows = items.length ? items.map(it => {
+      const checked = !!(it.safeToClean && G.cleanupSelected[it.id]);
+      const meta = [fmtBytes(it.bytes), `${it.fileCount || 0} 个文件`, it.latestWriteTime ? `最后写入 ${it.latestWriteTime}` : ''].filter(Boolean).join(' · ');
+      return `<div class="v2-row" style="align-items:flex-start">
+        <span class="k" style="padding-top:2px">
+          <label style="display:inline-flex;align-items:center;gap:8px;cursor:${it.safeToClean ? 'pointer' : 'not-allowed'}">
+            <input type="checkbox" data-v2g-cleanup-id="${esc(it.id)}" ${checked ? 'checked' : ''} ${it.safeToClean && !G.migrationBusy ? '' : 'disabled'}>
+            <span>${esc(it.title)}</span>
+          </label>
+        </span>
+        <span class="v" style="white-space:normal">
+          <div><b>${esc(meta)}</b></div>
+          <div class="v2-muted" style="font-size:12px;margin-top:2px">${esc(it.description || '')}</div>
+          ${it.blockedReason ? `<div style="color:var(--gp-gold);font-size:12px;margin-top:4px">${esc(it.blockedReason)}</div>` : ''}
+        </span>
+      </div>`;
+    }).join('') : `<div class="v2-row"><span class="v v2-muted">没有发现需要清理的旧版本缓存或索引文件。</span></div>`;
+
+    return `<div class="v2-card"><div class="v2-card-title"><span>C 盘旧缓存一键清理（推荐）</span>
+        <button class="v2-btn ghost" data-v2g="migRefresh" ${G.cleanupLoading || G.migrationBusy ? 'disabled' : ''}>${I().refresh}重新检测</button></div>
+      <div class="v2-row"><span class="k">检测结论</span><span class="v" style="white-space:normal">${badge} <span style="margin-left:6px">${esc(summary)}</span></span></div>
+      ${cl.activeCatalogVersion ? `<div class="v2-row"><span class="k">受保护数据</span>
+        <span class="v v2-muted" style="white-space:normal">自动保留当前版本 <code>catalog_${esc(cl.activeCatalogVersion)}.*</code>、游戏存档、BnSdk、回放与多开档案</span></div>` : ''}
+      ${cl.gameAddressablesBundlesPath ? `<div class="v2-row"><span class="k">游戏目录缓存</span>
+        <span class="v v2-muted" style="white-space:normal"><span style="font-family:var(--v2-mono);font-size:12px">${esc(cl.gameAddressablesBundlesPath)}</span>（${esc(fmtBytes(cl.gameAddressablesBundlesBytes))}）</span>
+        <button class="v2-btn ghost" data-v2g="cleanupOpenGameBundles">打开</button></div>` : ''}
+      ${itemRows}
+      ${cl.gameRunning ? `<div class="v2-notice" style="margin:10px 18px">${I().info}<span>检测到游戏正在运行，请先完全退出游戏后再执行清理。</span></div>` : ''}
+      ${items.some(i => i.safeToClean) ? `<div class="v2-row">
+        <span class="k">删除方式</span>
+        <span class="v v2-muted"><label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" id="v2gCleanupRecycle" ${G.cleanupRecycle ? 'checked' : ''} ${G.migrationBusy ? 'disabled' : ''}>
+          <span>放入回收站（勾选后不会立即释放 C 盘空间）</span></label></span>
+        <button class="v2-btn primary" data-v2g="cleanupConfirm" ${!sel.length || cl.gameRunning || G.migrationBusy ? 'disabled' : ''}>
+          ${I().trash}一键清理已选项${sel.length ? `（释放 ${esc(fmtBytes(selBytes))}）` : ''}</button>
+      </div>` : ''}
+    </div>`;
+  }
+
+  function storageHtml() {
+    const st = G.migration;
+    let migrationHtml = '';
+    if (!st) {
+      migrationHtml = `<div class="v2-card"><div class="v2-card-title"><span>整目录迁移（NTFS 目录联接 · 进阶）</span>
+          <button class="v2-btn ghost" data-v2g="migRefresh" ${G.migrationLoading ? 'disabled' : ''}>${I().refresh}重新检测</button></div>
+        <div class="v2-row"><span class="v v2-muted">${G.migrationLoading ? '正在检测目录联接状态与可用磁盘…' : '点击「重新检测」读取当前状态。'}</span></div>
+      </div>`;
+    } else if (!st.available) {
+      migrationHtml = `<div class="v2-card"><div class="v2-card-title"><span>整目录迁移（NTFS 目录联接 · 进阶）</span></div>
+        <div class="v2-notice" style="margin:12px 18px">${I().info}<span>${esc(st.error || '未能检测到游戏数据目录。')}</span></div>
+      </div>`;
+    } else {
+      let badge;
+      let summary;
+      if (st.isMigrated && st.targetExists) {
+        badge = '<span class="v2-badge" style="background:rgba(163,230,53,.15);color:var(--gp-green)">已迁移</span>';
+        summary = `已释放 C 盘 <b>${esc(fmtBytes(st.totalBytes))}</b>（共 ${st.fileCount || 0} 个文件）`;
+      } else if (st.isMigrated && !st.targetExists) {
+        badge = '<span class="v2-badge warn">联接失效</span>';
+        summary = '原 C 盘入口指向的目标目录已不存在，请检查目标磁盘是否已断开';
+      } else if (!st.sourceExists) {
+        badge = '<span class="v2-badge">未生成</span>';
+        summary = '尚未检测到本地数据目录';
+      } else {
+        badge = '<span class="v2-badge">未迁移</span>';
+        summary = `当前 C 盘 <code>${esc(st.company)}</code> 目录占用 <b>${esc(fmtBytes(st.totalBytes))}</b>（共 ${st.fileCount || 0} 个文件）`;
+      }
+
+      const drivesList = st.drives || [];
+      let actionCard = '';
+      if (!st.isMigrated && st.sourceExists) {
+        actionCard = `<div class="v2-card" style="margin-top:12px"><div class="v2-card-title"><span>一键迁移到其他盘</span></div>
+          ${drivesList.map(d => `<div class="v2-row">
+            <span class="k">${esc(d.label)}</span>
+            <span class="v v2-muted" style="white-space:normal">可用 ${esc(fmtBytes(d.freeBytes))} · 将存放在 <span style="font-family:var(--v2-mono);font-size:12px">${esc(d.suggestedTarget)}</span></span>
+            <button class="v2-btn line" data-v2g-mig-target="${esc(d.suggestedTarget)}" ${st.gameRunning || G.migrationBusy ? 'disabled' : ''}>迁移到 ${esc(String(d.root || '').replace(/\\+$/, ''))}</button>
+          </div>`).join('')}
+          ${!drivesList.length ? '<div class="v2-row"><span class="v v2-muted">没有检测到可用的其他本地 NTFS 分区，可点击下方手动选择文件夹。</span></div>' : ''}
+          <div class="v2-row"><span class="k">自定义目录</span><span class="v v2-muted">手动挑选任意本地 NTFS 盘中的空文件夹</span>
+            <button class="v2-btn line" data-v2g="migBrowse" ${st.gameRunning || G.migrationBusy ? 'disabled' : ''}>${I().folder}选择文件夹…</button></div>
+        </div>`;
+      } else if (st.isMigrated && st.targetExists) {
+        actionCard = `<div class="v2-card" style="margin-top:12px"><div class="v2-card-title"><span>迁移管理</span></div>
+          <div class="v2-row"><span class="k">更换存放位置</span><span class="v v2-muted" style="white-space:normal">将数据搬到其他盘或新目录，并自动更新 C 盘目录联接</span>
+            <button class="v2-btn line" data-v2g="migBrowse" ${st.gameRunning || G.migrationBusy ? 'disabled' : ''}>${I().folder}更换位置…</button></div>
+          <div class="v2-row"><span class="k">迁回 C 盘</span><span class="v v2-muted" style="white-space:normal">完整搬回 C 盘原位置并移除目录联接（C 盘当前剩余 ${esc(fmtBytes(st.localLowFreeBytes))}）</span>
+            <button class="v2-btn ghost" data-v2g="migRestoreConfirm" ${st.gameRunning || G.migrationBusy ? 'disabled' : ''}>一键迁回 C 盘</button></div>
+        </div>`;
+      }
+
+      const body = `<div class="v2-card"><div class="v2-card-title"><span>整目录迁移（NTFS 目录联接 · 进阶）</span></div>
+        <div class="v2-row"><span class="k">联接状态</span><span class="v" style="white-space:normal">${badge} <span style="margin-left:6px">${summary}</span></span></div>
+        <div class="v2-row"><span class="k">原 C 盘入口</span>
+          <span class="v v2-muted" style="font-family:var(--v2-mono);font-size:12px;white-space:normal">${esc(st.sourcePath)}</span>
+          <button class="v2-btn ghost" data-v2g="migOpenSource" ${st.sourceExists ? '' : 'disabled'}>打开</button></div>
+        ${st.isMigrated && st.targetPath ? `<div class="v2-row"><span class="k">实际存放位置</span>
+          <span class="v" style="font-family:var(--v2-mono);font-size:12px;white-space:normal">${esc(st.targetPath)}</span>
+          <button class="v2-btn ghost" data-v2g="migOpenTarget" ${st.targetExists ? '' : 'disabled'}>打开</button></div>` : ''}
+        <div class="v2-row"><span class="k">适用说明</span><span class="v v2-muted" style="white-space:normal">新版游戏资源已迁入游戏安装目录；仅当您希望把回放、存档与多开档案也整体移出 C 盘时，才需要使用目录联接迁移。</span></div>
+        ${st.isMigrated ? `<div class="v2-notice" style="margin:10px 18px 14px">${I().info}<span>迁移完成后<b>请勿手动删除</b> C 盘原位置的 <code>${esc(st.company)}</code> 文件夹（它是系统目录联接入口）；游戏后续热更新与多开会自动写入新磁盘。</span></div>` : ''}
+      </div>
+      ${actionCard}`;
+
+      migrationHtml = st.isMigrated
+        ? `<div style="margin-top:14px">${body}</div>`
+        : `<details class="v2-mini" style="margin-top:14px"><summary>进阶：整目录迁移到其他盘（NTFS 目录联接）—— 3.3.0+ 通常只需上方清理即可</summary><div style="margin-top:10px">${body}</div></details>`;
+    }
+
+    return `${cleanupCardHtml()}${migrationHtml}`;
+  }
   const QQ_JOIN_URL = 'https://qm.qq.com/cgi-bin/qm/qr?k=tYrqev4U2Xr2PPAA4EkILA0NKmP3zgeU&jump_from=webapi&authKey=jHiIqsg0jEV53dBtQ9V3qXohKKHwLDGmfWprcrg7gueM9pU9iz+ST/QHR6d1j3wa';
   const DISCORD_URL = 'https://discord.gg/SZaYSwGX94';
 
@@ -208,6 +392,7 @@
           || '<div class="v2-empty">还没有添加游戏目录。用「扫描」自动找，或者「添加」手动选。</div>'}
         ${scanHtml()}
       </div>`;
+    else if (tab === 'storage') main = storageHtml();
     else if (tab === 'lib') main = `
       <div class="v2-card"><div class="v2-card-title"><span>回放库</span></div>
         <div class="v2-row"><span class="k">数据文件夹</span>
@@ -223,6 +408,8 @@
           <input id="v2gKeep" class="v2-num" type="number" min="1" max="${cap}" value="${keep}"></div>
         <div class="v2-row"><span class="k">立即整理</span><span class="v v2-muted">现在就按上面的保留局数归档一次</span>
           <button class="v2-btn line" data-v2g="maintainNow">整理</button></div>
+        <div class="v2-row"><span class="k">游戏热更缓存</span><span class="v v2-muted">清理 C 盘旧版本资源残留，或按需整体迁移到其他盘</span>
+          <button class="v2-btn ghost" data-v2g="goStorageTab">前往存储与清理</button></div>
       </div>`;
     else if (tab === 'logs') main = `
       <div class="v2-card"><div class="v2-card-title"><span>日志</span></div>
@@ -362,10 +549,189 @@
       <div class="v2-modal-foot"><span class="v2-top-spacer"></span><button class="v2-btn ghost" data-v2modal="close">知道了</button></div>`, 'narrow');
   }
 
+  function openMigrationProgressModal(title) {
+    U().modalActions.v2gMigCancel = () => {
+      const btn = $('v2gMigCancel');
+      if (btn) { btn.disabled = true; btn.textContent = '正在取消…'; }
+      post({ type: 'gameDataMigrationCancel' });
+    };
+    U().openModal(`
+      <div class="v2-modal-head"><b>${esc(title)}</b></div>
+      <div style="padding:18px">
+        <div class="v2-modp" style="padding:0">
+          <div class="v2-modp-head">
+            <span class="msg" id="v2gMigStage">正在准备…</span>
+            <span class="pct" id="v2gMigPct">0%</span>
+          </div>
+          <div class="v2-modp-bar"><i id="v2gMigBar" style="width:0%"></i></div>
+        </div>
+        <p class="v2-muted" id="v2gMigDetail" style="margin:10px 0 0;font-size:12px">请不要关闭程序或启动游戏…</p>
+      </div>
+      <div class="v2-modal-foot"><span class="v2-top-spacer"></span>
+        <button class="v2-btn ghost" id="v2gMigCancel" data-v2modal="v2gMigCancel">取消</button></div>`, 'narrow');
+    U().setModalCancel(() => {});
+  }
+
+  function updateMigrationProgressModal(p) {
+    if (!p) return;
+    const pct = Math.max(0, Math.min(100, Number(p.percent) || 0));
+    const stageEl = $('v2gMigStage');
+    const pctEl = $('v2gMigPct');
+    const barEl = $('v2gMigBar');
+    const detailEl = $('v2gMigDetail');
+    const cancelEl = $('v2gMigCancel');
+    if (stageEl) stageEl.textContent = p.message || '处理中…';
+    if (pctEl) pctEl.textContent = `${pct}%`;
+    if (barEl) barEl.style.width = `${pct}%`;
+    if (detailEl && (p.totalBytes > 0 || p.totalFiles > 0)) {
+      detailEl.textContent = `${fmtBytes(p.copiedBytes || 0)} / ${fmtBytes(p.totalBytes || 0)} · ${p.copiedFiles || 0}/${p.totalFiles || 0} 个文件`;
+    }
+    if (cancelEl) {
+      const nonCancellable = ['switching', 'cleaning', 'rolling_back', 'done'].includes(String(p.stage || ''));
+      if (nonCancellable) cancelEl.disabled = true;
+    }
+  }
+
+  function openMigrationConfirm(preview) {
+    if (!preview?.ok) {
+      U().openModal(`<div class="v2-modal-head"><b>无法迁移到该位置</b><button class="v2-icon-btn" data-v2modal="close">${I().x}</button></div>
+        <div style="padding:16px 18px;line-height:1.6">${esc(preview?.message || '目标目录校验未通过。')}</div>
+        <div class="v2-modal-foot"><span class="v2-top-spacer"></span><button class="v2-btn ghost" data-v2modal="close">知道了</button></div>`, 'narrow');
+      return;
+    }
+    const st = G.migration || {};
+    const title = st.isMigrated ? '确认更换存放位置？' : '确认一键迁移游戏数据？';
+    const currentPos = st.isMigrated ? st.targetPath : st.sourcePath;
+    U().modalActions.v2gMigStart = () => {
+      G.migrationBusy = true;
+      openMigrationProgressModal(st.isMigrated ? '正在更换游戏数据位置…' : '正在迁移游戏数据…');
+      post({ type: 'gameDataMigrationStart', targetFolder: preview.finalTarget });
+    };
+    U().openModal(`
+      <div class="v2-modal-head"><b>${title}</b><button class="v2-icon-btn" data-v2modal="close">${I().x}</button></div>
+      <div style="padding:16px 18px;font-size:13px;line-height:1.7">
+        <p class="v2-muted" style="margin:0 0 10px">操作流程：完整复制 → SHA-256 校验 → 原位建立 NTFS 目录联接 → 清理旧数据。过程中可随时取消，失败会自动无损回滚。</p>
+        <div><b>当前位置：</b><span style="font-family:var(--v2-mono);font-size:12px">${esc(currentPos || '')}</span></div>
+        <div><b>目标位置：</b><span style="font-family:var(--v2-mono);font-size:12px">${esc(preview.finalTarget)}</span></div>
+        <div><b>数据大小：</b>${esc(fmtBytes(st.totalBytes || 0))}（${st.fileCount || 0} 个文件）</div>
+        <div><b>目标盘可用：</b>${esc(fmtBytes(preview.freeBytes || 0))}</div>
+      </div>
+      <div class="v2-modal-foot"><span class="v2-top-spacer"></span>
+        <button class="v2-btn ghost" data-v2modal="close">取消</button>
+        <button class="v2-btn primary" data-v2modal="v2gMigStart">开始迁移</button></div>`, 'narrow');
+  }
+
+  function openRestoreConfirm() {
+    const st = G.migration || {};
+    U().modalActions.v2gMigRestoreGo = () => {
+      G.migrationBusy = true;
+      openMigrationProgressModal('正在将游戏数据迁回 C 盘…');
+      post({ type: 'gameDataMigrationRestore' });
+    };
+    U().openModal(`
+      <div class="v2-modal-head"><b>确认迁回 C 盘原位置？</b><button class="v2-icon-btn" data-v2modal="close">${I().x}</button></div>
+      <div style="padding:16px 18px;font-size:13px;line-height:1.7">
+        <p class="v2-muted" style="margin:0 0 10px">会将目标盘数据复制并校验回 C 盘原位置，然后移除目录联接并清理目标盘旧数据。</p>
+        <div><b>当前位置：</b><span style="font-family:var(--v2-mono);font-size:12px">${esc(st.targetPath || '')}</span></div>
+        <div><b>迁回位置：</b><span style="font-family:var(--v2-mono);font-size:12px">${esc(st.sourcePath || '')}</span></div>
+        <div><b>需要空间：</b>${esc(fmtBytes(st.totalBytes || 0))}（C 盘当前可用 ${esc(fmtBytes(st.localLowFreeBytes || 0))}）</div>
+      </div>
+      <div class="v2-modal-foot"><span class="v2-top-spacer"></span>
+        <button class="v2-btn ghost" data-v2modal="close">取消</button>
+        <button class="v2-btn primary" data-v2modal="v2gMigRestoreGo">开始迁回</button></div>`, 'narrow');
+  }
+
+  function openCleanupConfirm() {
+    const sel = selectedCleanupItems();
+    if (!sel.length) return;
+    const totalBytes = sel.reduce((sum, it) => sum + (Number(it.bytes) || 0), 0);
+    const totalFiles = sel.reduce((sum, it) => sum + (Number(it.fileCount) || 0), 0);
+    const recycle = !!G.cleanupRecycle;
+    U().modalActions.v2gCleanupGo = () => {
+      G.migrationBusy = true;
+      U().openModal(`
+        <div class="v2-modal-head"><b>正在清理旧缓存…</b></div>
+        <div style="padding:18px;font-size:13px;line-height:1.6">
+          <p style="margin:0">正在${recycle ? '移入回收站' : '删除'}选中的 ${sel.length} 项旧版本缓存（共 ${totalFiles} 个文件），请不要关闭程序或启动游戏…</p>
+        </div>`, 'narrow');
+      U().setModalCancel(() => {});
+      post({ type: 'gameDataCleanupRun', itemIds: sel.map(i => i.id), toRecycleBin: recycle });
+    };
+    U().openModal(`
+      <div class="v2-modal-head"><b>确认清理旧版本缓存？</b><button class="v2-icon-btn" data-v2modal="close">${I().x}</button></div>
+      <div style="padding:16px 18px;font-size:13px;line-height:1.7">
+        <p class="v2-muted" style="margin:0 0 10px">本次将${recycle ? '移入回收站' : '永久删除'}以下旧版残留，<b>不会影响</b>当前版本资源、存档、BnSdk、回放与多开档案：</p>
+        <ul class="v2-confirm-lines" style="margin-top:0">
+          ${sel.map(it => `<li><b>${esc(it.title)}</b>（${esc(fmtBytes(it.bytes))} · ${it.fileCount || 0} 个文件）</li>`).join('')}
+        </ul>
+        <div style="margin-top:10px"><b>预计释放：</b>${esc(fmtBytes(totalBytes))}</div>
+      </div>
+      <div class="v2-modal-foot"><span class="v2-top-spacer"></span>
+        <button class="v2-btn ghost" data-v2modal="close">取消</button>
+        <button class="v2-btn primary" data-v2modal="v2gCleanupGo">${I().trash}立即清理</button></div>`, 'narrow');
+  }
+
+  function onGameDataMigration(type, payload) {
+    if (type === 'gameDataCleanupStatus') {
+      G.cleanup = payload || null;
+      G.cleanupLoading = false;
+      if (payload?.items) {
+        const nextSel = {};
+        payload.items.forEach(it => {
+          if (!it.safeToClean) return;
+          nextSel[it.id] = G.cleanupSelected[it.id] !== undefined ? !!G.cleanupSelected[it.id] : !!it.defaultSelected;
+        });
+        G.cleanupSelected = nextSel;
+      }
+      render();
+      return;
+    }
+    if (type === 'gameDataCleanupDone') {
+      G.migrationBusy = false;
+      if (payload?.status) G.cleanup = payload.status;
+      else post({ type: 'gameDataCleanupStatus' });
+      render();
+      const ok = !!payload?.ok;
+      const warn = payload?.warning ? `<div class="v2-notice" style="margin-top:12px">${I().info}<span>${esc(payload.warning)}</span></div>` : '';
+      U().openModal(`
+        <div class="v2-modal-head"><b>${ok ? '清理完成' : '清理未完成'}</b><button class="v2-icon-btn" data-v2modal="close">${I().x}</button></div>
+        <div style="padding:16px 18px;font-size:13px;line-height:1.6">${esc(payload?.message || '')}${warn}</div>
+        <div class="v2-modal-foot"><span class="v2-top-spacer"></span><button class="v2-btn primary" data-v2modal="close">知道了</button></div>`, 'narrow');
+      return;
+    }
+    if (type === 'gameDataMigrationStatus') {
+      G.migration = payload || null;
+      G.migrationLoading = false;
+      render();
+      return;
+    }
+    if (type === 'gameDataMigrationPicked') {
+      openMigrationConfirm(payload);
+      return;
+    }
+    if (type === 'gameDataMigrationProgress') {
+      updateMigrationProgressModal(payload);
+      return;
+    }
+    if (type === 'gameDataMigrationDone') {
+      G.migrationBusy = false;
+      if (payload?.status) G.migration = payload.status;
+      else requestMigrationStatus();
+      render();
+      const ok = !!payload?.ok;
+      const warn = payload?.warning ? `<div class="v2-notice" style="margin-top:12px">${I().info}<span>${esc(payload.warning)}</span></div>` : '';
+      U().openModal(`
+        <div class="v2-modal-head"><b>${ok ? '操作完成' : '操作未完成'}</b><button class="v2-icon-btn" data-v2modal="close">${I().x}</button></div>
+        <div style="padding:16px 18px;font-size:13px;line-height:1.6">${esc(payload?.message || '')}${warn}</div>
+        <div class="v2-modal-foot"><span class="v2-top-spacer"></span><button class="v2-btn primary" data-v2modal="close">知道了</button></div>`, 'narrow');
+    }
+  }
+
   function render() {
     const root = $('v2Settings'); if (!root) return;
     root.innerHTML = html();
     window.Motion?.content(root, G.tab, '.v2-settings-main');
+    if (G.tab === 'storage' && !G.migration && !G.migrationLoading) requestMigrationStatus();
     if (G.tab === 'logs') {
       // 本次运行的历史只问一次；之后再进日志页直接用已经攒下来的记录
       if (!G.logsAsked) { G.logsAsked = true; post({ type: 'toysLogsRequest' }); }
@@ -400,6 +766,15 @@
     scanCancel: () => post({ type: 'gameScanCancel' }),
     scanClose: () => { G.scan = null; render(); },
     browse: () => post({ type: 'gameProfileBrowse' }),
+    migRefresh: () => { requestMigrationStatus(); render(); },
+    migGoGame: () => { G.tab = 'game'; render(); },
+    goStorageTab: () => { G.tab = 'storage'; requestMigrationStatus(); render(); },
+    migBrowse: () => post({ type: 'gameDataMigrationBrowse' }),
+    migOpenSource: () => post({ type: 'gameDataMigrationOpenSource' }),
+    migOpenTarget: () => post({ type: 'gameDataMigrationOpenTarget' }),
+    migRestoreConfirm: () => openRestoreConfirm(),
+    cleanupConfirm: () => openCleanupConfirm(),
+    cleanupOpenGameBundles: () => post({ type: 'gameDataOpenGameBundles' }),
     libBrowse: () => post({ type: 'libraryBrowseRoot' }),
     libOpen: () => post({ type: 'libraryOpenFolder' }),
     libDataOpen: () => post({ type: 'openDataRoot' }),
@@ -426,7 +801,16 @@
     const t = ev.target;
     if (!t.closest?.('#v2Settings')) return;
     let el;
-    if ((el = t.closest('[data-v2g-tab]'))) { G.tab = el.dataset.v2gTab; render(); return; }
+    if ((el = t.closest('[data-v2g-tab]'))) {
+      G.tab = el.dataset.v2gTab;
+      if (G.tab === 'storage') requestMigrationStatus();
+      render();
+      return;
+    }
+    if ((el = t.closest('[data-v2g-mig-target]'))) {
+      if (!el.disabled) post({ type: 'gameDataMigrationPreview', targetFolder: el.dataset.v2gMigTarget });
+      return;
+    }
     if ((el = t.closest('[data-v2g]'))) { if (!el.disabled) actions[el.dataset.v2g]?.(el); return; }
     if ((el = t.closest('[data-v2g-active]'))) return post({ type: 'gameProfileSetActive', id: el.dataset.v2gActive });
     if ((el = t.closest('[data-v2g-add]'))) {
@@ -466,6 +850,12 @@
     if (t.id === 'v2gMirrorUrl') return saveLibrary({ customGitHubMirrorUrl: t.value.trim() });
     if (t.id === 'v2gWorkshopUrl') return saveLibrary({ workshopUrl: t.value.trim() || null });
     if (t.id === 'v2gLogLevel') return post({ type: 'setLoggingLevel', level: t.value });
+    if (t.id === 'v2gCleanupRecycle') { G.cleanupRecycle = !!t.checked; return; }
+    if (t.dataset?.v2gCleanupId) {
+      G.cleanupSelected[t.dataset.v2gCleanupId] = !!t.checked;
+      render();
+      return;
+    }
   });
 
   // 原版这些数据回来时重画
@@ -488,15 +878,19 @@
     window.chrome?.webview?.addEventListener('message', e => {
       if (e.data?.type === 'appUninstallInfo') return openUninstall(e.data.payload || {});
       if (e.data?.type === 'appUninstallResult') return showUninstallResult(e.data.payload || {});
-      if (e.data?.type !== 'gameProfiles' || !G.scan?.candidates) return;
-      const dirs = new Set((e.data.payload?.profiles || []).map(p => String(p.directory).toLowerCase()));
-      G.scan.candidates.forEach(c => { if (dirs.has(String(c.directory).toLowerCase())) c.alreadyAdded = true; });
-      setTimeout(render);
+      if (e.data?.type === 'gameProfiles') {
+        if (G.tab === 'storage' && !G.migrationBusy) requestMigrationStatus();
+        if (G.scan?.candidates) {
+          const dirs = new Set((e.data.payload?.profiles || []).map(p => String(p.directory).toLowerCase()));
+          G.scan.candidates.forEach(c => { if (dirs.has(String(c.directory).toLowerCase())) c.alreadyAdded = true; });
+          setTimeout(render);
+        }
+      }
     });
     enforceLanguage();
     render();
   });
 
   // 宿主消息（dispatcher）用：实时日志 / 历史日志；render 供内部重画
-  window.V2SettingsModule = { render, log, history, get state() { return G; } };
+  window.V2SettingsModule = { render, log, history, onGameDataMigration, get state() { return G; } };
 })();
