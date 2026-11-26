@@ -468,13 +468,12 @@ public partial class HybridWindow
 
     private async Task HandleHubUpdateProfileAsync(JsonElement root)
     {
-        var displayName = ReadJsonStringOrNull(root, "displayName");
         var primaryRegion = ReadJsonStringOrNull(root, "primaryRegion");
         var primaryUid = ReadJsonStringOrNull(root, "primaryUid");
-        var me = await EnsureHubApiClient().UpdateProfileAsync(displayName, primaryRegion, primaryUid).ConfigureAwait(false);
+        var me = await EnsureHubApiClient().UpdateProfileAsync(null, primaryRegion, primaryUid).ConfigureAwait(false);
         _hubMe = me;
         await PushHubMeAsync(me).ConfigureAwait(false);
-        Post(new { type = "toast", message = "个人档案设置已更新" });
+        Post(new { type = "toast", message = "已切换主展示游戏账号" });
     }
 
     private async Task HandleHubUpdatePrivacyAsync(JsonElement root)

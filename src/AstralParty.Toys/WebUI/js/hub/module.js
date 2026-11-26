@@ -322,10 +322,11 @@
     const statusTxt = ROOM_STATUS_TEXT[room.status] || room.status;
     const avatarsHtml = (room.members || []).slice(0, 4).map(m => {
       const safe = imgUrl(m.avatarUrl);
-      const initial = (m.displayName || m.activeNick || '?').slice(0, 1).toUpperCase();
+      const name = m.activeNick || m.displayName || m.activeUid || '?';
+      const initial = name.slice(0, 1).toUpperCase();
       return safe
-        ? `<img class="hub-bar-avatar" src="${esc(safe)}" alt="" title="${esc(m.displayName)}" width="24" height="24" />`
-        : `<span class="hub-bar-avatar" title="${esc(m.displayName)}">${esc(initial)}</span>`;
+        ? `<img class="hub-bar-avatar" src="${esc(safe)}" alt="" title="${esc(name)}" width="24" height="24" />`
+        : `<span class="hub-bar-avatar" title="${esc(name)}">${esc(initial)}</span>`;
     }).join('');
 
     bar.hidden = false;
@@ -446,7 +447,8 @@
     sel.innerHTML = bindings.map(b =>
       `<option value="${esc(b.uid)}" ${b.isPrimary ? 'selected' : ''}>${esc(b.nick || b.uid)} (UID: ${esc(b.uid)}${b.level ? ` · Lv.${b.level}` : ''})</option>`
     ).join('');
-    $id('hubCreateTitle').value = `${S.me.displayName} 的队伍`;
+    const primaryInRegion = bindings.find(b => b.isPrimary) || bindings[0];
+    $id('hubCreateTitle').value = `${primaryInRegion?.nick || S.me.displayName} 的队伍`;
     $id('hubCreateNote').value = '';
     $id('hubCreatePassword').value = '';
     $id('hubCreateErr').textContent = '';
@@ -614,13 +616,14 @@
 
     const memberCards = room.members.map(m => {
       const [stText, stCls] = GAME_STATES[m.gameState] || [m.gameState, ''];
+      const memberName = m.activeNick || m.displayName || m.activeUid || '玩家';
       return `
         <div class="hub-member-card ${m.self ? 'is-self' : ''}">
           <div class="hub-member-top">
-            ${renderAvatar(m.avatarUrl, m.displayName || m.activeNick, 42, 'hub-avatar round')}
+            ${renderAvatar(m.avatarUrl, memberName, 42, 'hub-avatar round')}
             <div class="hub-member-info">
-              <strong><span>${esc(m.displayName)}</span> ${m.isHost ? '<span class="hub-pill pink">房主</span>' : ''}</strong>
-              <small>${esc(m.activeNick || 'UID')} · ${esc(m.activeUid)}${m.activeLevel ? ` · Lv.${m.activeLevel}` : ''}</small>
+              <strong><span>${esc(memberName)}</span> ${m.isHost ? '<span class="hub-pill pink">房主</span>' : ''}</strong>
+              <small>UID ${esc(m.activeUid)}${m.activeLevel ? ` · Lv.${m.activeLevel}` : ''}</small>
             </div>
           </div>
           <div class="hub-toolbar">
@@ -984,10 +987,7 @@
           <div class="hub-profile-identity">
             ${renderAvatar(me.avatarUrl, me.displayName, 52, 'hub-ms-avatar')}
             <div>
-              <div class="hub-toolbar" style="gap:8px;">
-                <input id="hubDisplayNameInput" class="hub-input" style="min-width:160px;padding:6px 10px;" maxlength="24" value="${esc(me.displayName)}" aria-label="大厅显示昵称" />
-                <button type="button" class="v2-btn ghost" id="hubSaveNameBtn">改名</button>
-              </div>
+              <strong style="font-size:18px;display:block;">${esc(me.displayName)}</strong>
               <div class="hub-muted" style="margin-top:4px;">ID: ${esc(me.userId)} · 已绑定 ${(me.bindings || []).length} 个游戏账号</div>
             </div>
           </div>
@@ -1047,9 +1047,6 @@
     $id('hubOpenLocalAccountBtn')?.addEventListener('click', () => window.showPage?.('account'));
     $id('hubOpenPrivacyBtn')?.addEventListener('click', openPrivacyDialog);
     $id('hubPreviewSelfBtn')?.addEventListener('click', () => me && post({ type: 'hubViewProfile', userId: me.userId }));
-    $id('hubSaveNameBtn')?.addEventListener('click', () => {
-      post({ type: 'hubUpdateProfile', displayName: $id('hubDisplayNameInput')?.value.trim() });
-    });
     $id('hubBindLocalBtn')?.addEventListener('click', () => {
       const uid = $id('hubLocalUidSelect')?.value;
       if (uid) post({ type: 'hubBindLocalAccount', uid, setPrimary: !(me?.bindings?.length), syncSnapshot: true });
