@@ -54,12 +54,14 @@
 
   const S = {
     initialized: false,
+    initializing: true,
     tab: 'lobby',
     region: 'cn',
     serverUrl: 'https://connect.hiynet.com',
     autoJoinEnabled: true,
     serverConfig: null,
-    auth: { signedIn: false, signingIn: false, userId: '', displayName: '', error: '' },
+    auth: { signedIn: false, hasStoredToken: false, signingIn: false, restoring: false, userId: '', displayName: '', error: '' },
+    authSubmitting: false,
     me: null,
     localAccounts: [],
     bridge: { running: false, port: 0, gameFound: false, modInstalled: false, modEnabled: false, sessions: [] },
@@ -465,6 +467,32 @@
     }
   }
 
+  function isAuthBusy() {
+    return !S.me && (S.initializing || !!S.auth.restoring);
+  }
+
+  function setAuthSubmitting(busy) {
+    S.authSubmitting = !!busy;
+    const submitBtn = $id('hubAuthSubmitBtn');
+    const twofaBtn = $id('hubAuth2faSubmitBtn');
+    if (submitBtn) {
+      submitBtn.disabled = S.authSubmitting;
+      if (S.authSubmitting) {
+        submitBtn.innerHTML = `<span style="display:inline-flex;align-items:center;gap:8px;justify-content:center;"><progress class="hub-spinner" aria-label="正在提交"></progress><span>${S.authDialogMode === 'register' ? '注册中…' : '登录中…'}</span></span>`;
+      } else {
+        submitBtn.textContent = S.authDialogMode === 'register' ? '注册并登录' : '登录';
+      }
+    }
+    if (twofaBtn) {
+      twofaBtn.disabled = S.authSubmitting;
+      if (S.authSubmitting) {
+        twofaBtn.innerHTML = `<span style="display:inline-flex;align-items:center;gap:8px;justify-content:center;"><progress class="hub-spinner" aria-label="正在验证"></progress><span>验证中…</span></span>`;
+      } else {
+        twofaBtn.textContent = '验证并登录';
+      }
+    }
+  }
+
   function setAuthDialogMode(mode) {
     S.authDialogMode = mode === 'register' ? 'register' : 'login';
     const isReg = S.authDialogMode === 'register';
@@ -481,8 +509,7 @@
     if (confirmWrap) confirmWrap.hidden = !isReg;
     const warn = $id('hubAuthRegisterWarn');
     if (warn) warn.hidden = !isReg;
-    const submitBtn = $id('hubAuthSubmitBtn');
-    if (submitBtn) submitBtn.textContent = isReg ? '注册并登录' : '登录';
+    setAuthSubmitting(false);
     const err = $id('hubAuthErr');
     if (err) err.textContent = '';
   }
@@ -881,9 +908,11 @@
           return;
         }
         if (err) err.textContent = '';
+        setAuthSubmitting(true);
         post({ type: 'hubRegisterPassword', username, password });
       } else {
         if (err) err.textContent = '';
+        setAuthSubmitting(true);
         post({ type: 'hubLoginPassword', username, password });
       }
     };
@@ -926,6 +955,7 @@
         return;
       }
       if (err) err.textContent = '';
+      setAuthSubmitting(true);
       post({ type: 'hubCompleteTwoFactor', twoFactorTicket: S.twoFactorTicket, code, isRecoveryCode });
     };
     $id('hubAuth2faSubmitBtn')?.addEventListener('click', submit2fa);
@@ -1102,8 +1132,21 @@
     if (!authEl) return;
     if (S.auth.signingIn) {
       authEl.innerHTML = `
-        <span class="hub-pill gold">正在浏览器登录…</span>
+        <span class="hub-auth-loading-pill" role="status" aria-live="polite">
+          <progress class="hub-spinner" aria-label="正在从浏览器登录"></progress>
+          <span>正在浏览器登录…</span>
+        </span>
         <button type="button" class="v2-btn ghost" data-hub-act="cancel-signin">取消</button>
+      `;
+    } else if (isAuthBusy()) {
+      const label = S.auth.hasStoredToken
+        ? `正在自动登录${S.auth.displayName ? ` · ${esc(S.auth.displayName)}` : ''}…`
+        : '正在检查登录状态…';
+      authEl.innerHTML = `
+        <span class="hub-auth-loading-pill" role="status" aria-live="polite">
+          <progress class="hub-spinner" aria-label="${esc(label)}"></progress>
+          <span>${label}</span>
+        </span>
       `;
     } else if (S.me) {
       authEl.innerHTML = `
@@ -1197,7 +1240,19 @@
       badge.hidden = S.rooms.length === 0;
     }
 
-    const needSignInBanner = !S.me ? `
+    const authBusy = isAuthBusy();
+    const needSignInBanner = authBusy ? `
+      <div class="hub-card hub-auth-loading-card" role="status" aria-live="polite">
+        <progress class="hub-spinner hub-spinner-md" aria-label="正在恢复登录状态"></progress>
+        <div>
+          <h3 style="margin:0 0 4px;">${S.auth.hasStoredToken
+            ? `正在自动登录${S.auth.displayName ? `（${esc(S.auth.displayName)}）` : ''}…`
+            : '正在连接组队大厅…'}</h3>
+          <p class="hub-muted">${S.auth.hasStoredToken
+            ? '正在校验本机登录会话并同步账号资料，请稍候。'
+            : '正在检查本地登录会话与服务器状态，请稍候。'}</p>
+        </div>
+      </div>` : !S.me ? `
       <div class="hub-card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
         <div>
           <h3 style="margin:0 0 4px;">登录或注册开始组队</h3>
@@ -1253,7 +1308,9 @@
           </article>
         `;
       }).join('')
-      : `<div class="hub-card"><p class="hub-muted" style="text-align:center;padding:24px 0;">${esc(regionLabel(S.region))} 暂无活跃房间，点击右上角「创建组队房间」开一局吧。</p></div>`;
+      : authBusy
+        ? `<div class="hub-card hub-lobby-loading" role="status" aria-live="polite"><progress class="hub-spinner" aria-label="正在加载房间列表"></progress><span>正在加载 ${esc(regionLabel(S.region))} 房间列表…</span></div>`
+        : `<div class="hub-card"><p class="hub-muted" style="text-align:center;padding:24px 0;">${esc(regionLabel(S.region))} 暂无活跃房间，点击右上角「创建组队房间」开一局吧。</p></div>`;
 
     body.innerHTML = `
       ${needSignInBanner}
@@ -1705,7 +1762,16 @@
     const live = (S.bridge.sessions || []).find(s => s.isLoggedIn);
     const selectedBinding = me ? pickSelectedBinding(me.bindings) : null;
 
-    const masterSection = !me ? `
+    const masterSection = isAuthBusy() ? `
+      <div class="hub-card hub-auth-loading-card" role="status" aria-live="polite">
+        <progress class="hub-spinner hub-spinner-md" aria-label="正在自动登录"></progress>
+        <div>
+          <h3 style="margin:0 0 4px;">${S.auth.hasStoredToken
+            ? `正在自动登录${S.auth.displayName ? `（${esc(S.auth.displayName)}）` : ''}…`
+            : '正在检查登录状态…'}</h3>
+          <p class="hub-muted">正在向组队大厅服务端校验本地登录凭据并同步账号资料，请稍候。</p>
+        </div>
+      </div>` : !me ? `
       <div class="hub-card">
         <div class="hub-card-head"><h3>大厅账号</h3></div>
         <p class="hub-muted">支持账号密码注册登录、Microsoft 登录与 TOTP 二次验证；登录后可绑定游戏账号、查看个人战绩与好友状态。</p>
@@ -2067,12 +2133,13 @@
         S.localAccounts = p.localAccounts || [];
         S.bridge = p.bridge || S.bridge;
         S.initialized = true;
+        S.initializing = false;
         renderAll();
         break;
       }
       case 'hubAuthState':
-        S.auth = msg.payload || S.auth;
-        if (!S.auth.signedIn) S.me = null;
+        S.auth = { ...S.auth, ...(msg.payload || {}) };
+        if (!S.auth.signedIn && !S.auth.restoring) S.me = null;
         renderGlobalRoomBar();
         renderHeader();
         renderLobby();
@@ -2084,10 +2151,13 @@
       case 'hubAuthSuccess':
         S.twoFactorTicket = '';
         S.twoFactorUser = '';
+        S.initializing = false;
+        setAuthSubmitting(false);
         setOAuthBlockingOverlay(false);
         $id('hubAuthDialog')?.close('ok');
         break;
       case 'hubAuthDialogError': {
+        setAuthSubmitting(false);
         const err = $id('hubAuthErr');
         if (err) err.textContent = msg.payload?.message || '认证失败，请重试';
         break;
@@ -2099,7 +2169,11 @@
         break;
       }
       case 'hubTwoFactorRequired':
+        setAuthSubmitting(false);
         showAuthTwoFactorStep(msg.payload?.twoFactorTicket, msg.payload?.username);
+        break;
+      case 'hubError':
+        setAuthSubmitting(false);
         break;
       case 'hubSecurityState':
         S.security = msg.payload || null;
@@ -2251,6 +2325,7 @@
       bindOnce();
       bindContextMenuOnce();
       if (!S.initialized) {
+        S.initializing = true;
         renderAll();
       }
       post({ type: 'hubInit' });

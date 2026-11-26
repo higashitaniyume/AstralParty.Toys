@@ -434,6 +434,9 @@ public partial class HybridWindow
         var cfg = HubConfigStore.Load().Hub;
         var auth = new HubAuthService(HubConfigStore);
 
+        // 先立刻告知前端正在检查/恢复本地会话，避免进入页面时先闪现「未登录」按钮。
+        Post(new { type = "hubAuthState", payload = BuildAuthPayload(signingIn: false, restoring: true) });
+
         try
         {
             _hubServerConfig = await api.GetConfigAsync().ConfigureAwait(false);
@@ -471,7 +474,7 @@ public partial class HybridWindow
                 activeRegion = cfg.ActiveRegion,
                 autoJoinEnabled = _hubAutoJoinEnabled,
                 serverConfig = _hubServerConfig,
-                auth = BuildAuthPayload(signingIn: false),
+                auth = BuildAuthPayload(signingIn: false, restoring: false),
                 me = decoratedMe,
                 localAccounts = DiscoverLocalAccountsForUi(),
                 bridge = BuildBridgeStatusPayload(_hubBridge?.GetActiveSessions() ?? Array.Empty<BridgeSessionState>()),
@@ -1529,7 +1532,7 @@ public partial class HybridWindow
         Post(new { type = "toast", message = toastMessage });
     }
 
-    private object BuildAuthPayload(bool signingIn, string? error = null)
+    private object BuildAuthPayload(bool signingIn, string? error = null, bool restoring = false)
     {
         var cfg = HubConfigStore.Load().Hub;
         var hasToken = EnsureHubApiClient().HasToken;
@@ -1538,6 +1541,7 @@ public partial class HybridWindow
             signedIn = hasToken && _hubMe is not null,
             hasStoredToken = hasToken,
             signingIn,
+            restoring,
             userId = _hubMe?.UserId ?? cfg.UserId,
             displayName = _hubMe?.DisplayName ?? cfg.DisplayName,
             expiresAt = cfg.TokenExpiresAt,

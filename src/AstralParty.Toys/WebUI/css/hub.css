@@ -428,17 +428,149 @@ html body dialog.hub-oauth-blocking-dialog::backdrop {
   display: flex;
   justify-content: center;
 }
-.hub-oauth-spinner {
-  width: 40px;
-  height: 40px;
+
+/* 原生 <progress> 语义旋转加载器（遵循 spinner 指南：conic-gradient + border-area/mask-image 回退 + forced-colors + reduced-motion） */
+@property --arc-start {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --arc-end {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --progress-dash-animation {
+  syntax: "*";
+  inherits: false;
+  initial-value: , hub-progress-dash 2.4s ease-in-out infinite;
+}
+
+progress.hub-spinner:indeterminate::-webkit-progress-bar,
+progress.hub-spinner:indeterminate::-webkit-progress-value,
+progress.hub-spinner:indeterminate::-moz-progress-bar,
+progress.hub-spinner:indeterminate::slider-fill {
+  display: none;
+  background: none;
+}
+
+progress.hub-spinner:indeterminate {
+  --_from: calc(90deg + var(--arc-start, 0deg));
+  --_to: calc(90deg + var(--arc-end, 158deg));
+  --size: 16px;
+  --thickness: 2.5px;
+  --spinner-color: var(--gp-pink, #ff1776);
+  --track-color: rgba(255, 255, 255, .16);
+  --spinner-duration: 1.2s;
+  --_used-spinner-duration: var(--spinner-duration);
+
+  display: inline-block;
+  flex: none;
+  position: relative;
+  width: var(--size);
+  height: var(--size);
   border-radius: 50%;
-  border: 3px solid rgba(255, 23, 118, .22);
-  border-top-color: var(--gp-pink);
-  animation: hub-oauth-spin .85s linear infinite;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: conic-gradient(
+      from var(--_from),
+      var(--spinner-color) calc(var(--_to) - var(--_from)),
+      transparent 0
+    )
+    var(--track-color);
+  animation:
+    hub-progress-spin var(--_used-spinner-duration) linear infinite
+    var(--progress-dash-animation, );
 }
-@keyframes hub-oauth-spin {
-  to { transform: rotate(360deg); }
+
+@supports (background-clip: border-area) {
+  progress.hub-spinner:indeterminate {
+    background-clip: border-area;
+    border: var(--thickness) solid transparent;
+    background-origin: border-box;
+  }
 }
+
+@supports not (background-clip: border-area) {
+  progress.hub-spinner:indeterminate {
+    --clip-boundary: calc(100% - var(--thickness));
+    -webkit-mask-image: radial-gradient(
+      farthest-side,
+      transparent var(--clip-boundary),
+      #000 var(--clip-boundary)
+    );
+    mask-image: radial-gradient(
+      farthest-side,
+      transparent var(--clip-boundary),
+      #000 var(--clip-boundary)
+    );
+  }
+}
+
+progress.hub-spinner.hub-spinner-md:indeterminate {
+  --size: 26px;
+  --thickness: 3px;
+}
+
+progress.hub-spinner.hub-spinner-lg:indeterminate {
+  --size: 42px;
+  --thickness: 3.5px;
+}
+
+@media (forced-colors: active) {
+  progress.hub-spinner:indeterminate {
+    forced-color-adjust: none;
+    --spinner-color: CanvasText;
+    --track-color: Canvas;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .hub-oauth-spinner { animation: none; border-color: var(--gp-pink); }
+  progress.hub-spinner:indeterminate {
+    --_used-spinner-duration: 6s;
+    --progress-dash-animation: ;
+    --arc-end: 158deg;
+  }
+}
+
+@keyframes hub-progress-spin {
+  to { rotate: 1turn; }
+}
+
+@keyframes hub-progress-dash {
+  from { --arc-start: 0deg; --arc-end: 12deg; }
+  50% { --arc-start: 100deg; --arc-end: 350deg; }
+  to { --arc-start: 360deg; --arc-end: 372deg; }
+}
+
+.hub-auth-loading-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--v2-panel);
+  border: 1px solid rgba(255, 23, 118, .32);
+  color: var(--v2-text);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.hub-auth-loading-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-color: rgba(255, 23, 118, .28);
+}
+.hub-lobby-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 28px 0;
+  color: var(--gp-text-muted);
+  font-size: 13px;
 }
