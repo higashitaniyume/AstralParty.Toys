@@ -446,9 +446,22 @@ html body dialog.hub-oauth-blocking-dialog::backdrop {
   initial-value: , hub-progress-dash 2.4s ease-in-out infinite;
 }
 
-progress.hub-spinner:indeterminate::-webkit-progress-bar,
-progress.hub-spinner:indeterminate::-webkit-progress-value,
-progress.hub-spinner:indeterminate::-moz-progress-bar,
+/* 各厂商伪元素必须分开写，避免 Chromium 因不识别 ::-moz-progress-bar / ::slider-fill 丢弃整条规则 */
+progress.hub-spinner:indeterminate::-webkit-progress-inner-element {
+  display: none;
+}
+progress.hub-spinner:indeterminate::-webkit-progress-bar {
+  display: none;
+  background: none;
+}
+progress.hub-spinner:indeterminate::-webkit-progress-value {
+  display: none;
+  background: none;
+}
+progress.hub-spinner:indeterminate::-moz-progress-bar {
+  display: none;
+  background: none;
+}
 progress.hub-spinner:indeterminate::slider-fill {
   display: none;
   background: none;
@@ -467,12 +480,14 @@ progress.hub-spinner:indeterminate {
   display: inline-block;
   flex: none;
   position: relative;
+  box-sizing: border-box;
   width: var(--size);
   height: var(--size);
   border-radius: 50%;
   border: 0;
   padding: 0;
   margin: 0;
+  overflow: hidden;
   appearance: none;
   -webkit-appearance: none;
   background: conic-gradient(
@@ -499,13 +514,13 @@ progress.hub-spinner:indeterminate {
     --clip-boundary: calc(100% - var(--thickness));
     -webkit-mask-image: radial-gradient(
       farthest-side,
-      transparent var(--clip-boundary),
-      #000 var(--clip-boundary)
+      transparent calc(var(--clip-boundary) - 0.5px),
+      #000 calc(var(--clip-boundary) + 0.5px)
     );
     mask-image: radial-gradient(
       farthest-side,
-      transparent var(--clip-boundary),
-      #000 var(--clip-boundary)
+      transparent calc(var(--clip-boundary) - 0.5px),
+      #000 calc(var(--clip-boundary) + 0.5px)
     );
   }
 }
