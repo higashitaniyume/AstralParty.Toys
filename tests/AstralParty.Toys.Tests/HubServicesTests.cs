@@ -129,7 +129,7 @@ public sealed class HubServicesTests
         bridge.Start();
 
         var createId = bridge.EnqueueCreateRoom("测试开黑房", "7391");
-        var pvpId = bridge.EnqueueCreateRoom("测试PVP房", "2468", mapType: 1, mapId: 5);
+        var pvpId = bridge.EnqueueCreateRoom("测试PVP房", "2468", mapType: 1, mapId: 5, targetUid: 1744079, targetRegion: "cn");
         var hbBody = """
         {
           "protocol": 1,
@@ -177,6 +177,34 @@ public sealed class HubServicesTests
         Assert.Equal(8848123L, session.GameRoomId);
         Assert.Equal("7391", session.GamePwd);
         Assert.True(session.IsMaster);
+    }
+
+    [Fact]
+    public void HubLocalBridgeServer_RoutesCommandsToMatchingUidAndRegionOnly()
+    {
+        using var bridge = new HubLocalBridgeServer();
+        bridge.Start();
+
+        var cmdId = bridge.EnqueueCreateRoom("大号车队", "4829", mapType: 4, targetUid: 1744079, targetRegion: "cn");
+
+        var altCn = """{"protocol":1,"sessionId":"alt-cn","isLoggedIn":true,"uid":2222222,"region":"cn","scene":"Home"}""";
+        var altInt = """{"protocol":1,"sessionId":"alt-int","isLoggedIn":true,"uid":1744079,"region":"int","scene":"Home"}""";
+        var mainCn = """{"protocol":1,"sessionId":"main-cn","isLoggedIn":true,"uid":1744079,"region":"cn","scene":"Home"}""";
+
+        using (var d1 = JsonDocument.Parse(bridge.HandleRequestInternal("POST", "/api/bridge/heartbeat", bridge.Token, altCn).Body))
+            Assert.Equal(0, d1.RootElement.GetProperty("commands").GetArrayLength());
+
+        using (var d2 = JsonDocument.Parse(bridge.HandleRequestInternal("POST", "/api/bridge/heartbeat", bridge.Token, altInt).Body))
+            Assert.Equal(0, d2.RootElement.GetProperty("commands").GetArrayLength());
+
+        using (var d3 = JsonDocument.Parse(bridge.HandleRequestInternal("POST", "/api/bridge/heartbeat", bridge.Token, mainCn).Body))
+        {
+            var cmds = d3.RootElement.GetProperty("commands");
+            Assert.Equal(1, cmds.GetArrayLength());
+            Assert.Equal(cmdId, cmds[0].GetProperty("commandId").GetString());
+        }
+
+        Assert.Equal(3, bridge.GetActiveSessions().Count);
     }
 
     [Fact]

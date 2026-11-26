@@ -308,8 +308,13 @@
     });
   }
 
-  function hasLiveGameForRegion(region) {
-    return (S.bridge.sessions || []).some(s => s.isLoggedIn && (!region || !s.region || s.region === region));
+  function hasLiveGameForRoom(room) {
+    if (!room) return false;
+    const selfUid = room.members?.find(m => m.self)?.activeUid || '';
+    return (S.bridge.sessions || []).some(s =>
+      s.isLoggedIn &&
+      (!room.region || !s.region || s.region === room.region) &&
+      (!selfUid || !s.uid || String(s.uid) === String(selfUid)));
   }
 
   function copyGameRoomInfo(gr) {
@@ -333,7 +338,7 @@
     const isHost = S.me && room.hostUserId === S.me.userId;
     const gr = room.gameRoom;
     const hasGameRoom = !!(gr && gr.gameRoomId > 0);
-    const liveGame = hasLiveGameForRegion(room.region);
+    const liveGame = hasLiveGameForRoom(room);
     const modeTag = S.gameMapType === 1 ? 'PVP' : 'PVE';
     const statusTxt = ROOM_STATUS_TEXT[room.status] || room.status;
     const avatarsHtml = (room.members || []).slice(0, 4).map(m => {
@@ -363,8 +368,9 @@
       </div>
       <div class="hub-global-bar-right">
         <button type="button" class="v2-btn ghost hub-bar-btn" data-bar-act="return">回到房间</button>
+        ${!liveGame ? `<button type="button" class="v2-btn ghost hub-bar-btn" data-bar-act="launch-game" title="给 Steam / TapTap 用户快捷启动游戏；其他平台请自行启动">启动游戏</button>` : ''}
         ${isHost
-          ? (!hasGameRoom ? `<button type="button" class="v2-btn primary hub-bar-btn" data-bar-act="launch">${liveGame ? `自动建 ${modeTag} 房` : `启动游戏建 ${modeTag} 房`}</button>` : '')
+          ? (!hasGameRoom ? `<button type="button" class="v2-btn primary hub-bar-btn" data-bar-act="create-game-room">自动建 ${modeTag} 房</button>` : '')
           : (hasGameRoom ? `<button type="button" class="v2-btn primary hub-bar-btn" data-bar-act="join-game">一键进房</button>` : '')}
         ${isHost
           ? `<button type="button" class="v2-btn hub-btn-danger hub-bar-btn" data-bar-act="disband">解散房间</button>`
@@ -377,8 +383,11 @@
       window.showPage?.('hub');
       selectTab('room', false);
     });
-    bar.querySelector('[data-bar-act="launch"]')?.addEventListener('click', () => {
-      post({ type: 'hubHostLaunchGame', mode: 'bypassSteam', mapType: S.gameMapType });
+    bar.querySelector('[data-bar-act="launch-game"]')?.addEventListener('click', () => {
+      post({ type: 'hubLaunchGameOnly', mode: 'bypassSteam' });
+    });
+    bar.querySelector('[data-bar-act="create-game-room"]')?.addEventListener('click', () => {
+      post({ type: 'hubHostCreateGameRoom', mapType: S.gameMapType });
     });
     bar.querySelector('[data-bar-act="join-game"]')?.addEventListener('click', () => {
       if (!gr) return;
@@ -397,11 +406,17 @@
     const box = $id('hubBridgeDiagBox');
     if (!box) return;
     const b = S.bridge;
-    const live = (b.sessions || []).find(s => s.isLoggedIn);
+    const liveList = (b.sessions || []).filter(s => s.isLoggedIn);
+    const liveHtml = liveList.length
+      ? liveList.map(live =>
+        `<div>· ${regionLabel(live.region)} · UID ${esc(live.uid)} · ${esc(live.scene || 'Home')}${live.gameRoomId > 0 ? ` · 游戏房 ${live.gameRoomId}` : ''}</div>`
+      ).join('')
+      : '等待游戏进入主界面';
     box.innerHTML = `
       <div><strong>本机 IPC 端口：</strong>${b.running ? `127.0.0.1:${b.port}` : '未启动'}</div>
       <div><strong>HubBridgeMod：</strong>${!b.gameFound ? '未选择游戏目录' : !b.modInstalled ? '未安装内置桥接模组（可在模组页重装内置加载器获取）' : b.modEnabled ? '已安装并启用' : '已安装但已停用'}</div>
-      <div><strong>游戏连接：</strong>${live ? `${regionLabel(live.region)} · UID ${esc(live.uid)} · ${esc(live.scene || 'Home')}${live.gameRoomId > 0 ? ` · 游戏房 ${live.gameRoomId}` : ''}` : '等待游戏进入主界面'}</div>
+      <div><strong>游戏连接（${liveList.length} 个在线实例）：</strong>${liveList.length ? '' : liveHtml}</div>
+      ${liveList.length ? liveHtml : ''}
     `;
   }
 
@@ -411,16 +426,18 @@
     });
 
     const b = S.bridge;
-    const live = (b.sessions || []).find(s => s.isLoggedIn);
+    const liveList = (b.sessions || []).filter(s => s.isLoggedIn);
     const dot = $id('hubBridgeDot');
     const pillText = $id('hubBridgePillText');
     if (dot && pillText) {
-      dot.className = 'hub-dot ' + (live ? 'online' : b.modInstalled && b.modEnabled ? 'warn' : '');
-      pillText.textContent = live
-        ? `游戏在线 · ${live.uid}`
-        : b.modInstalled && b.modEnabled
-          ? '桥接就绪'
-          : '未装桥接模组';
+      dot.className = 'hub-dot ' + (liveList.length ? 'online' : b.modInstalled && b.modEnabled ? 'warn' : '');
+      pillText.textContent = liveList.length > 1
+        ? `游戏在线 · ${liveList.length} 个实例`
+        : liveList.length === 1
+          ? `游戏在线 · ${liveList[0].uid}`
+          : b.modInstalled && b.modEnabled
+            ? '桥接就绪'
+            : '未装桥接模组';
     }
 
     const authEl = $id('hubAuthControl');
@@ -617,13 +634,10 @@
     const bindings = regionBindings(room.region);
     const gr = room.gameRoom;
     const hasGameRoom = !!(gr && gr.gameRoomId > 0);
-    const liveGame = hasLiveGameForRegion(room.region);
     const modeTag = S.gameMapType === 1 ? 'PVP' : 'PVE';
     const statusTxt = ROOM_STATUS_TEXT[room.status] || room.status;
     const selfMember = room.members.find(m => m.self);
-    const hostLaunchLabel = hasGameRoom
-      ? `重新创建 ${modeTag} 房`
-      : (liveGame ? `自动创建 ${modeTag} 房` : `启动游戏建 ${modeTag} 房`);
+    const hostCreateLabel = hasGameRoom ? `重开 ${modeTag} 房` : `自动建 ${modeTag} 房`;
 
     const gameRoomBanner = hasGameRoom ? `
       <div class="hub-gameroom-banner">
@@ -639,8 +653,8 @@
       </div>` : `
       <div class="hub-notice-warn">
         ${isHost
-          ? `点击「${esc(hostLaunchLabel)}」后，内置 <strong>HubBridgeMod</strong> 会在游戏进入主界面时自动创建房间，并把房号与密码同步到顶部栏与队友。`
-          : '等待房主建房，游戏房号与密码将自动同步到顶部栏并通知进房。'}
+          ? `请自行启动游戏（Steam / TapTap 用户也可点「启动游戏」），点击「${esc(hostCreateLabel)}」后，内置 <strong>HubBridgeMod</strong> 会在对应出战账号进入主界面时自动建房，并把房号与密码同步到顶部栏与队友。`
+          : '请自行启动游戏（Steam / TapTap 用户也可点「启动游戏」），等待房主建房后房号与密码将自动同步到顶部栏并通知进房。'}
       </div>`;
 
     const memberCards = room.members.map(m => {
@@ -692,7 +706,8 @@
               <option value="4" ${S.gameMapType === 4 ? 'selected' : ''}>PVE 模式</option>
               <option value="1" ${S.gameMapType === 1 ? 'selected' : ''}>PVP 模式</option>
             </select>` : ''}
-            ${isHost ? `<button type="button" class="v2-btn primary" id="hubHostLaunchBtn">${esc(hostLaunchLabel)}</button>` : ''}
+            ${isHost ? `<button type="button" class="v2-btn primary" id="hubHostCreateGameBtn">${esc(hostCreateLabel)}</button>` : ''}
+            <button type="button" class="v2-btn ghost" id="hubLaunchGameOnlyBtn" title="给 Steam / TapTap 用户快捷启动游戏；其他平台请自行启动">启动游戏</button>
             ${isHost && room.status === 'finished' ? `<button type="button" class="v2-btn ghost" id="hubReopenBtn">开启下一局</button>` : ''}
             ${room.latestMatch ? `<button type="button" class="v2-btn ghost" id="hubOpenLatestSettleBtn">查看战报</button>` : ''}
             <button type="button" class="v2-btn ghost" id="hubBrowseLobbyBtn">逛房间大厅</button>
@@ -737,7 +752,8 @@
       renderGlobalRoomBar();
       renderRoomPanel();
     });
-    $id('hubHostLaunchBtn')?.addEventListener('click', () => post({ type: 'hubHostLaunchGame', mode: 'bypassSteam', mapType: S.gameMapType }));
+    $id('hubHostCreateGameBtn')?.addEventListener('click', () => post({ type: 'hubHostCreateGameRoom', mapType: S.gameMapType }));
+    $id('hubLaunchGameOnlyBtn')?.addEventListener('click', () => post({ type: 'hubLaunchGameOnly', mode: 'bypassSteam' }));
     $id('hubTriggerJoinBtn')?.addEventListener('click', () => {
       if (!gr) return;
       post({ type: 'hubTriggerBridgeJoin', gameRoomId: gr.gameRoomId, gamePwd: gr.gamePwd, roomServerId: gr.roomServerId });

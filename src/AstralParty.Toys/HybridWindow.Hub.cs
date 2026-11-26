@@ -29,6 +29,7 @@ public partial class HybridWindow
     private string? _hubActiveRoomRegion;
     private string? _hubActiveRoomTitle;
     private string? _hubActiveRoomHostUserId;
+    private string _hubActiveSelfUid = "";
     private long _hubLastReportedGameRoomId;
     private string _hubLastReportedGamePwd = "";
     private string _hubLastAutoJoinedKey = "";
@@ -268,8 +269,13 @@ public partial class HybridWindow
                     }
                     break;
 
+                case "hubHostCreateGameRoom":
                 case "hubHostLaunchGame":
-                    await HandleHubHostLaunchGameAsync(root).ConfigureAwait(false);
+                    await HandleHubHostCreateGameRoomAsync(root).ConfigureAwait(false);
+                    break;
+
+                case "hubLaunchGameOnly":
+                    HandleHubLaunchGameOnly(root);
                     break;
 
                 case "hubTriggerBridgeJoin":
@@ -728,14 +734,32 @@ public partial class HybridWindow
         _hubActiveRoomRegion = null;
         _hubActiveRoomTitle = null;
         _hubActiveRoomHostUserId = null;
+        _hubActiveSelfUid = "";
         _hubLastReportedGameRoomId = 0;
         _hubLastReportedGamePwd = "";
         _hubLastAutoJoinedKey = "";
     }
 
-    private async Task HandleHubHostLaunchGameAsync(JsonElement root)
+    private long TryParseActiveSelfUid()
+        => long.TryParse(_hubActiveSelfUid, out var uid) && uid > 0 ? uid : 0;
+
+    private bool IsMatchingActiveSession(BridgeSessionState? s)
+    {
+        if (s is null || !s.IsLoggedIn || s.Uid <= 0) return false;
+        if (!string.IsNullOrEmpty(_hubActiveRoomRegion) &&
+            !string.IsNullOrEmpty(s.Region) &&
+            !string.Equals(HubSettlementService.NormalizeRegion(s.Region), _hubActiveRoomRegion, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+        var targetUid = TryParseActiveSelfUid();
+        return targetUid <= 0 || s.Uid == targetUid;
+    }
+
+    private async Task HandleHubHostCreateGameRoomAsync(JsonElement root)
     {
         EnsureHubInitialized();
+        SyncHubBridgeEndpoints();
 
         if (!string.IsNullOrEmpty(_hubActiveRoomId))
         {
@@ -743,8 +767,6 @@ public partial class HybridWindow
             await ApplyHubRoomUpdateAsync(room).ConfigureAwait(false);
         }
 
-        var mode = ReadJsonString(root, "mode", "bypassSteam");
-        var profileName = ReadJsonStringOrNull(root, "profileName");
         var gamePwd = ReadJsonString(root, "gamePwd").Trim();
         if (string.IsNullOrEmpty(gamePwd))
         {
@@ -757,21 +779,33 @@ public partial class HybridWindow
             ? _hubActiveRoomTitle!
             : (_hubMe?.DisplayName ?? "AstralParty");
 
+        var targetUid = TryParseActiveSelfUid();
+        var targetRegion = _hubActiveRoomRegion ?? "";
         var sessions = _hubBridge?.GetActiveSessions() ?? Array.Empty<BridgeSessionState>();
-        var liveSession = sessions.FirstOrDefault(s =>
-            s.IsLoggedIn &&
-            (string.IsNullOrEmpty(_hubActiveRoomRegion) ||
-             string.IsNullOrEmpty(s.Region) ||
-             string.Equals(HubSettlementService.NormalizeRegion(s.Region), _hubActiveRoomRegion, StringComparison.OrdinalIgnoreCase)));
+        var liveSession = sessions.FirstOrDefault(IsMatchingActiveSession);
 
-        _hubBridge?.EnqueueCreateRoom(roomName, gamePwd, mapType, mapId);
+        _hubBridge?.EnqueueCreateRoom(roomName, gamePwd, mapType, mapId, targetUid, targetRegion);
 
         if (liveSession is not null)
         {
-            Post(new { type = "toast", message = $"已通知运行中的游戏自动创建 {modeLabel} 房间（密码 {gamePwd}）…" });
+            Post(new { type = "toast", message = $"已通知在线游戏（UID {liveSession.Uid}）自动创建 {modeLabel} 房间（密码 {gamePwd}）…" });
             return;
         }
 
+        if (targetUid > 0 && sessions.Any(s => s.IsLoggedIn && s.Uid > 0))
+        {
+            Post(new { type = "toast", message = $"已下发自动建 {modeLabel} 房指令（密码 {gamePwd}），请使用出战账号 UID {targetUid} 进入主界面后自动建房。" });
+            return;
+        }
+
+        Post(new { type = "toast", message = $"已准备自动建 {modeLabel} 房（密码 {gamePwd}），请自行启动游戏，进入主界面后将自动建房。" });
+    }
+
+    private void HandleHubLaunchGameOnly(JsonElement root)
+    {
+        EnsureHubInitialized();
+        var mode = ReadJsonString(root, "mode", "bypassSteam");
+        var profileName = ReadJsonStringOrNull(root, "profileName");
         Dispatcher.Invoke(() =>
         {
             SyncHubBridgeEndpoints();
@@ -784,7 +818,6 @@ public partial class HybridWindow
                 HandleLaunchGame(mode);
             }
         });
-        Post(new { type = "toast", message = $"正在启动游戏，进入主界面后将自动创建 {modeLabel} 房间（密码 {gamePwd}）…" });
     }
 
     private void HandleHubTriggerBridgeJoin(JsonElement root)
@@ -799,8 +832,11 @@ public partial class HybridWindow
             return;
         }
 
-        _hubBridge.EnqueueJoinRoom(gameRoomId, gamePwd, roomServerId);
-        Post(new { type = "toast", message = $"已向运行中的游戏发送自动进房指令（房间号 {gameRoomId}）。" });
+        var targetUid = TryParseActiveSelfUid();
+        var targetRegion = _hubActiveRoomRegion ?? "";
+        _hubBridge.EnqueueJoinRoom(gameRoomId, gamePwd, roomServerId, targetUid, targetRegion);
+        var uidHint = targetUid > 0 ? $"（目标 UID {targetUid}）" : "";
+        Post(new { type = "toast", message = $"已下发自动进房指令{uidHint}（房间号 {gameRoomId}）。" });
     }
 
     private async Task ApplyHubRoomUpdateAsync(HubRoomDetailDto room, CancellationToken ct = default)
@@ -809,6 +845,7 @@ public partial class HybridWindow
         _hubActiveRoomRegion = room.Region;
         _hubActiveRoomTitle = room.Title;
         _hubActiveRoomHostUserId = room.HostUserId;
+        _hubActiveSelfUid = room.Members.FirstOrDefault(m => m.Self)?.ActiveUid ?? _hubActiveSelfUid;
         var payload = await BuildRoomPayloadAsync(room, ct).ConfigureAwait(false);
         Post(new { type = "hubRoomState", payload });
     }
@@ -820,13 +857,7 @@ public partial class HybridWindow
         if (string.IsNullOrEmpty(roomId) || !api.HasToken || _hubMe is null) return;
         if (!string.Equals(_hubActiveRoomHostUserId, _hubMe.UserId, StringComparison.Ordinal)) return;
 
-        var hostSession = sessions.FirstOrDefault(s =>
-            s.IsLoggedIn &&
-            s.IsMaster &&
-            s.GameRoomId > 0 &&
-            (string.IsNullOrEmpty(_hubActiveRoomRegion) ||
-             string.IsNullOrEmpty(s.Region) ||
-             string.Equals(HubSettlementService.NormalizeRegion(s.Region), _hubActiveRoomRegion, StringComparison.OrdinalIgnoreCase)));
+        var hostSession = sessions.FirstOrDefault(s => IsMatchingActiveSession(s) && s.IsMaster && s.GameRoomId > 0);
         if (hostSession is null) return;
 
         if (hostSession.GameRoomId == _hubLastReportedGameRoomId &&
@@ -935,14 +966,16 @@ public partial class HybridWindow
         var key = $"{room.GameRoom.GameRoomId}:{room.GameRoom.PublishedAt}";
         if (string.Equals(_hubLastAutoJoinedKey, key, StringComparison.Ordinal)) return;
 
+        var targetUid = TryParseActiveSelfUid();
         var live = _hubBridge.GetActiveSessions().FirstOrDefault(s =>
             s.IsLoggedIn &&
             s.Uid > 0 &&
+            (targetUid <= 0 || s.Uid == targetUid) &&
             string.Equals(HubSettlementService.NormalizeRegion(s.Region), room.Region, StringComparison.OrdinalIgnoreCase));
         if (live is null || live.GameRoomId == room.GameRoom.GameRoomId) return;
 
         _hubLastAutoJoinedKey = key;
-        _hubBridge.EnqueueJoinRoom(room.GameRoom.GameRoomId, room.GameRoom.GamePwd, room.GameRoom.RoomServerId);
+        _hubBridge.EnqueueJoinRoom(room.GameRoom.GameRoomId, room.GameRoom.GamePwd, room.GameRoom.RoomServerId, targetUid, room.Region);
         try
         {
             await EnsureHubApiClient().ReportMemberStateAsync(room.RoomId, "joining", null, ct).ConfigureAwait(false);
@@ -970,16 +1003,20 @@ public partial class HybridWindow
                     var uid = env.Data.TryGetProperty("uid", out var uidEl) && uidEl.TryGetInt64(out var u) ? u : 0;
                     var region = HubSettlementService.NormalizeRegion(
                         env.Data.TryGetProperty("region", out var regEl) ? regEl.GetString() : "");
+                    var targetUid = TryParseActiveSelfUid();
                     if (uid > 0 && string.Equals(region, _hubActiveRoomRegion, StringComparison.OrdinalIgnoreCase))
                     {
-                        if (_hubMe is not null &&
+                        if (targetUid <= 0 && _hubMe is not null &&
                             _hubMe.Bindings.Any(b => b.Region == region && b.Uid == uid.ToString()))
                         {
                             try { await api.SwitchActiveUidAsync(roomId, uid.ToString()).ConfigureAwait(false); }
                             catch { }
                         }
-                        try { await api.ReportMemberStateAsync(roomId, "in_lobby").ConfigureAwait(false); }
-                        catch { }
+                        if (targetUid <= 0 || uid == targetUid)
+                        {
+                            try { await api.ReportMemberStateAsync(roomId, "in_lobby").ConfigureAwait(false); }
+                            catch { }
+                        }
                     }
                 }
                 break;
@@ -993,13 +1030,20 @@ public partial class HybridWindow
                     env.Data.ValueKind == JsonValueKind.Object)
                 {
                     var isMaster = env.Data.TryGetProperty("isMaster", out var mEl) && mEl.ValueKind == JsonValueKind.True;
+                    var masterId = env.Data.TryGetProperty("masterId", out var midMasterEl) && midMasterEl.TryGetInt64(out var mId) ? mId : 0;
                     var gameRoomId = env.Data.TryGetProperty("gameRoomId", out var gidEl) && gidEl.TryGetInt64(out var g) ? g : 0;
                     var gamePwd = env.Data.TryGetProperty("gamePwd", out var pwdEl) ? (pwdEl.GetString() ?? "") : "";
                     var srvId = env.Data.TryGetProperty("roomServerId", out var srvEl) && srvEl.TryGetInt32(out var sv) ? sv : 0;
                     var mapId = env.Data.TryGetProperty("mapId", out var midEl) && midEl.TryGetInt32(out var mid) ? mid : 0;
                     var mapType = env.Data.TryGetProperty("mapType", out var mtEl) && mtEl.TryGetInt32(out var mt) ? mt : 0;
+                    var targetUid = TryParseActiveSelfUid();
+                    var sourceSession = _hubBridge?.GetSessionById(env.SessionId);
+                    var regionMatches = sourceSession is null || string.IsNullOrEmpty(sourceSession.Region) ||
+                        string.IsNullOrEmpty(_hubActiveRoomRegion) ||
+                        string.Equals(HubSettlementService.NormalizeRegion(sourceSession.Region), _hubActiveRoomRegion, StringComparison.OrdinalIgnoreCase);
+                    var uidMatches = targetUid <= 0 || (masterId > 0 ? masterId == targetUid : (sourceSession?.Uid == targetUid));
 
-                    if (isMaster && gameRoomId > 0 &&
+                    if (isMaster && gameRoomId > 0 && regionMatches && uidMatches &&
                         (gameRoomId != _hubLastReportedGameRoomId || !string.Equals(gamePwd, _hubLastReportedGamePwd, StringComparison.Ordinal)))
                     {
                         _hubLastReportedGameRoomId = gameRoomId;
@@ -1021,20 +1065,26 @@ public partial class HybridWindow
 
             case "room_entered":
             case "room_joined":
-                if (!string.IsNullOrEmpty(roomId) && api.HasToken)
+            {
+                var sourceSession = _hubBridge?.GetSessionById(env.SessionId);
+                if (!string.IsNullOrEmpty(roomId) && api.HasToken && (sourceSession is null || IsMatchingActiveSession(sourceSession)))
                 {
                     try { await api.ReportMemberStateAsync(roomId, "in_game_room").ConfigureAwait(false); }
                     catch { }
                 }
                 break;
+            }
 
             case "room_left":
-                if (!string.IsNullOrEmpty(roomId) && api.HasToken)
+            {
+                var sourceSession = _hubBridge?.GetSessionById(env.SessionId);
+                if (!string.IsNullOrEmpty(roomId) && api.HasToken && (sourceSession is null || IsMatchingActiveSession(sourceSession)))
                 {
                     try { await api.ReportMemberStateAsync(roomId, "in_lobby").ConfigureAwait(false); }
                     catch { }
                 }
                 break;
+            }
 
             case "create_failed":
             {

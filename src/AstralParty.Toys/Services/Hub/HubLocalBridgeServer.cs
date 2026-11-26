@@ -20,12 +20,20 @@ public sealed class HubLocalBridgeServer : IDisposable
         PropertyNameCaseInsensitive = true,
     };
 
+    private sealed class QueuedBridgeCommand
+    {
+        public required BridgeCommandDto Command { get; init; }
+        public long TargetUid { get; init; }
+        public string TargetRegion { get; init; } = "";
+        public DateTimeOffset EnqueuedAtUtc { get; init; }
+    }
+
     private readonly string _token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)).ToLowerInvariant();
     private readonly object _gate = new();
     private readonly Dictionary<string, BridgeSessionState> _sessions = new(StringComparer.Ordinal);
     private readonly HashSet<string> _seenEventIds = new(StringComparer.Ordinal);
     private readonly Queue<string> _seenEventOrder = new();
-    private readonly ConcurrentQueue<BridgeCommandDto> _pendingCommands = new();
+    private readonly List<QueuedBridgeCommand> _pendingCommands = [];
     private readonly List<string> _writtenEndpointPaths = [];
 
     private HttpListener? _listener;
@@ -126,33 +134,81 @@ public sealed class HubLocalBridgeServer : IDisposable
         }
     }
 
-    public string EnqueueJoinRoom(long gameRoomId, string? gamePwd, int roomServerId)
+    public string EnqueueJoinRoom(
+        long gameRoomId,
+        string? gamePwd,
+        int roomServerId,
+        long targetUid = 0,
+        string? targetRegion = null)
     {
         var cmdId = Guid.NewGuid().ToString("N");
-        _pendingCommands.Enqueue(new BridgeCommandDto
+        var normalizedRegion = NormalizeOptionalRegion(targetRegion);
+        lock (_gate)
         {
-            CommandId = cmdId,
-            Action = "join_room",
-            GameRoomId = gameRoomId,
-            GamePwd = gamePwd ?? "",
-            RoomServerId = roomServerId,
-        });
+            _pendingCommands.RemoveAll(q =>
+                q.Command.Action == "join_room" &&
+                q.TargetUid == targetUid &&
+                string.Equals(q.TargetRegion, normalizedRegion, StringComparison.OrdinalIgnoreCase));
+            _pendingCommands.Add(new QueuedBridgeCommand
+            {
+                Command = new BridgeCommandDto
+                {
+                    CommandId = cmdId,
+                    Action = "join_room",
+                    GameRoomId = gameRoomId,
+                    GamePwd = gamePwd ?? "",
+                    RoomServerId = roomServerId,
+                },
+                TargetUid = targetUid,
+                TargetRegion = normalizedRegion,
+                EnqueuedAtUtc = DateTimeOffset.UtcNow,
+            });
+        }
         return cmdId;
     }
 
-    public string EnqueueCreateRoom(string? roomName, string? gamePwd, int mapType = 4, int mapId = 0)
+    public string EnqueueCreateRoom(
+        string? roomName,
+        string? gamePwd,
+        int mapType = 4,
+        int mapId = 0,
+        long targetUid = 0,
+        string? targetRegion = null)
     {
         var cmdId = Guid.NewGuid().ToString("N");
-        _pendingCommands.Enqueue(new BridgeCommandDto
+        var normalizedRegion = NormalizeOptionalRegion(targetRegion);
+        lock (_gate)
         {
-            CommandId = cmdId,
-            Action = "create_room",
-            RoomName = (roomName ?? "").Trim(),
-            GamePwd = (gamePwd ?? "").Trim(),
-            MapType = mapType > 0 ? mapType : 4,
-            MapId = mapId,
-        });
+            _pendingCommands.RemoveAll(q =>
+                q.Command.Action == "create_room" &&
+                q.TargetUid == targetUid &&
+                string.Equals(q.TargetRegion, normalizedRegion, StringComparison.OrdinalIgnoreCase));
+            _pendingCommands.Add(new QueuedBridgeCommand
+            {
+                Command = new BridgeCommandDto
+                {
+                    CommandId = cmdId,
+                    Action = "create_room",
+                    RoomName = (roomName ?? "").Trim(),
+                    GamePwd = (gamePwd ?? "").Trim(),
+                    MapType = mapType > 0 ? mapType : 4,
+                    MapId = mapId,
+                },
+                TargetUid = targetUid,
+                TargetRegion = normalizedRegion,
+                EnqueuedAtUtc = DateTimeOffset.UtcNow,
+            });
+        }
         return cmdId;
+    }
+
+    public BridgeSessionState? GetSessionById(string? sessionId)
+    {
+        if (string.IsNullOrWhiteSpace(sessionId)) return null;
+        lock (_gate)
+        {
+            return _sessions.TryGetValue(sessionId, out var s) ? CloneSession(s) : null;
+        }
     }
 
     public IReadOnlyList<BridgeSessionState> GetActiveSessions()
@@ -219,35 +275,54 @@ public sealed class HubLocalBridgeServer : IDisposable
         }
 
         List<BridgeSessionState>? snapshot = null;
+        var commands = new List<BridgeCommandDto>();
         try
         {
-            if (sessionId.Length > 0)
+            var now = DateTimeOffset.UtcNow;
+            lock (_gate)
             {
-                lock (_gate)
+                BridgeSessionState? currentSession = null;
+                if (sessionId.Length > 0)
                 {
-                    if (!_sessions.TryGetValue(sessionId, out var session))
+                    if (!_sessions.TryGetValue(sessionId, out currentSession))
                     {
-                        session = new BridgeSessionState { SessionId = sessionId };
-                        _sessions[sessionId] = session;
+                        currentSession = new BridgeSessionState { SessionId = sessionId };
+                        _sessions[sessionId] = currentSession;
                     }
-                    session.LastHeartbeatUtc = DateTimeOffset.UtcNow;
+                    currentSession.LastHeartbeatUtc = now;
                     if (doc is not null && doc.RootElement.ValueKind == JsonValueKind.Object)
                     {
-                        ApplyHeartbeatToSession(session, doc.RootElement);
+                        ApplyHeartbeatToSession(currentSession, doc.RootElement);
                     }
                     snapshot = _sessions.Values.Select(CloneSession).ToList();
+                }
+
+                for (var i = _pendingCommands.Count - 1; i >= 0; i--)
+                {
+                    if (now - _pendingCommands[i].EnqueuedAtUtc > TimeSpan.FromMinutes(3))
+                    {
+                        _pendingCommands.RemoveAt(i);
+                    }
+                }
+
+                for (var i = 0; i < _pendingCommands.Count;)
+                {
+                    var q = _pendingCommands[i];
+                    if (CommandMatchesSession(q, currentSession))
+                    {
+                        commands.Add(q.Command);
+                        _pendingCommands.RemoveAt(i);
+                    }
+                    else
+                    {
+                        i++;
+                    }
                 }
             }
         }
         finally
         {
             doc?.Dispose();
-        }
-
-        var commands = new List<BridgeCommandDto>();
-        while (_pendingCommands.TryDequeue(out var cmd))
-        {
-            commands.Add(cmd);
         }
 
         if (snapshot is not null)
@@ -257,6 +332,32 @@ public sealed class HubLocalBridgeServer : IDisposable
 
         var payload = JsonSerializer.Serialize(new { protocol = 1, commands }, JsonOptions);
         return (200, payload);
+    }
+
+    private static bool CommandMatchesSession(QueuedBridgeCommand queued, BridgeSessionState? session)
+    {
+        if (queued.TargetUid > 0)
+        {
+            if (session is null || !session.IsLoggedIn || session.Uid != queued.TargetUid)
+                return false;
+        }
+
+        if (!string.IsNullOrEmpty(queued.TargetRegion))
+        {
+            if (session is null || string.IsNullOrWhiteSpace(session.Region))
+                return false;
+            var sessionRegion = NormalizeOptionalRegion(session.Region);
+            if (!string.Equals(sessionRegion, queued.TargetRegion, StringComparison.OrdinalIgnoreCase))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static string NormalizeOptionalRegion(string? region)
+    {
+        if (string.IsNullOrWhiteSpace(region)) return "";
+        return HubSettlementService.NormalizeRegion(region);
     }
 
     private static void ApplyHeartbeatToSession(BridgeSessionState s, JsonElement root)
