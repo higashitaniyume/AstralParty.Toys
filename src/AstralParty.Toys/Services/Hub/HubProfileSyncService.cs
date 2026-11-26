@@ -368,12 +368,15 @@ public sealed class HubProfileSyncService
         return new
         {
             profile.UserId,
+            profile.Username,
             profile.DisplayName,
             avatarUrl = hubAvatarUrlMapper?.Invoke(profile.AvatarUrl) ?? "",
             profile.PrimaryRegion,
             profile.PrimaryUid,
             profile.IsSelf,
             profile.ProfileHidden,
+            profile.HasPassword,
+            profile.TwoFactorEnabled,
             profile.Privacy,
             bindings,
             profile.CreatedAt,

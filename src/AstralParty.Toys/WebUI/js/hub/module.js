@@ -634,7 +634,7 @@
               </label>
               <label class="hub-auth-recovery-toggle" style="margin:0;">
                 <input id="hubSecRevokeOthers" type="checkbox" />
-                <span>修改后注销其它设备会话</span>
+                <span>修改后注销其它设备会话（保留本机登录）</span>
               </label>
             </div>
             <button type="button" class="v2-btn primary" id="hubSecSavePwdBtn">${sec.hasPassword ? (isOAuthRecovery ? '重置密码' : '修改密码') : '绑定用户名和密码'}</button>
@@ -2104,6 +2104,12 @@
       case 'hubSecurityState':
         S.security = msg.payload || null;
         if (S.security?.twoFactorEnabled) S.totpSetup = null;
+        if (S.me && S.security) {
+          S.me.username = S.security.username || '';
+          S.me.hasPassword = !!S.security.hasPassword;
+          S.me.twoFactorEnabled = !!S.security.twoFactorEnabled;
+          renderProfile();
+        }
         renderSecurityDialog();
         break;
       case 'hubTotpSetupState':

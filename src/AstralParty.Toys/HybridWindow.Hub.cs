@@ -618,7 +618,13 @@ public partial class HybridWindow
                 .ConfigureAwait(false);
             Post(new { type = "hubSecurityState", payload = status });
             await RefreshHubMeAsync().ConfigureAwait(false);
-            Post(new { type = "toast", message = "账号密码已保存，请妥善保管（服务端不提供找回密码）" });
+            Post(new
+            {
+                type = "toast",
+                message = revokeOthers
+                    ? "账号密码已保存，其它设备会话已注销（本机保持登录），请妥善保管密码"
+                    : "账号密码已保存，请妥善保管（服务端不提供找回密码）"
+            });
         }
         catch (HubApiException ex)
         {
