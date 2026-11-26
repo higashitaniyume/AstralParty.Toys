@@ -2,6 +2,12 @@
 
 欢迎您使用 **AstralParty.Toys**（吉星派对工具箱）与 **CesiumLoader** 模组加载器，衷心感谢您的支持与陪伴！如果您在使用过程中遇到任何问题、Bug 或有功能建议，非常欢迎前往 [GitHub Issues](https://github.com/higashitaniyume/AstralParty.Toys/issues) 提交反馈，也欢迎加入企鹅群 **1078464597**（[点击加群](https://qm.qq.com/cgi-bin/qm/qr?k=tYrqev4U2Xr2PPAA4EkILA0NKmP3zgeU&jump_from=webapi&authKey=jHiIqsg0jEV53dBtQ9V3qXohKKHwLDGmfWprcrg7gueM9pU9iz+ST/QHR6d1j3wa)）或 [Discord 频道](https://discord.gg/SZaYSwGX94) 和我们交流，我们会认真查看并尽力为您排查解决。
 
+## [v2.5.1] - 2026-11-26
+
+### 修复
+
+- 修复移动设备页执行「注入」时提示找不到 `mobile-patcher\CesiumLoader.Mobile.Patcher.dll` 的问题：改为随主程序直接加载内置注入器组件，不再依赖外部 `dotnet` 进程或子目录，便携版、安装版与单文件版均可正常执行注入。
+
 ## [v2.5.0] - 2026-11-25
 
 ### 更新日志弹窗

@@ -236,8 +236,7 @@ public class MobileTests
         var service = new AstralParty.Toys.Mobile.Services.MobileInstallService(
             new SingleFsChannel("android", root, fs),
             new MobileInstallStore(sandbox.Root),
-            new MobileTargetStore(sandbox.Root),
-            "unused");
+            new MobileTargetStore(sandbox.Root));
 
         var target = new MobileTarget
         {
@@ -610,8 +609,7 @@ public class MobileTests
         var service = new AstralParty.Toys.Mobile.Services.MobileInstallService(
             new SingleFsChannel("ios", "Documents/", fs),
             new MobileInstallStore(sandbox.Root),
-            new MobileTargetStore(sandbox.Root),
-            "unused");
+            new MobileTargetStore(sandbox.Root));
 
         var bad = await service.DeleteModAsync(target, "../evil");
         Assert.False(bad.Ok);
@@ -792,14 +790,20 @@ public class MobileTests
     }
 
     [Fact]
-    public void Patcher_IsShippedWithTheApp()
+    public void Patcher_IsReferencedAsClassLibrary()
     {
         var repo = Path.GetFullPath(Path.Combine(TestPaths.AppSourceDirectory, "..", ".."));
-        var patcherProject = Path.Combine(repo, "src", "CesiumLoader.Mobile.Patcher", "CesiumLoader.Mobile.Patcher.csproj");
-        Assert.True(File.Exists(patcherProject), $"注入器工程不存在：{patcherProject}");
-        var appProject = File.ReadAllText(Path.Combine(repo, "src", "AstralParty.Toys", "AstralParty.Toys.csproj"));
-        Assert.Contains("mobile-patcher", appProject);
-        Assert.Contains("CesiumLoader.Mobile.Patcher.csproj", appProject);
+        var patcherProjectPath = Path.Combine(repo, "src", "CesiumLoader.Mobile.Patcher", "CesiumLoader.Mobile.Patcher.csproj");
+        Assert.True(File.Exists(patcherProjectPath), $"注入器工程不存在：{patcherProjectPath}");
+        var patcherProject = File.ReadAllText(patcherProjectPath);
+        Assert.Contains("<OutputType>Library</OutputType>", patcherProject);
+
+        var mobileProject = File.ReadAllText(Path.Combine(repo, "src", "AstralParty.Toys.Mobile", "AstralParty.Toys.Mobile.csproj"));
+        Assert.Contains("CesiumLoader.Mobile.Patcher.csproj", mobileProject);
+
+        var patcherDll = Path.Combine(AppContext.BaseDirectory, "CesiumLoader.Mobile.Patcher.dll");
+        Assert.True(File.Exists(patcherDll), $"输出目录缺少注入器类库：{patcherDll}");
+        Assert.True(File.Exists(Path.Combine(AppContext.BaseDirectory, "Mono.Cecil.dll")), "输出目录缺少 Mono.Cecil.dll");
     }
 
     [RealBundleFact]
@@ -832,24 +836,11 @@ public class MobileTests
     {
         var source = Environment.GetEnvironmentVariable("ASTRAL_TEST_BUNDLE")!;
         using var sandbox = new TestSandbox("ap-mobile-inject-offline");
-        var repo = Path.GetFullPath(Path.Combine(TestPaths.AppSourceDirectory, "..", ".."));
-        var patcher = Path.Combine(
-            repo, "src", "CesiumLoader.Mobile.Patcher", "bin", "Release", "net8.0",
-            "CesiumLoader.Mobile.Patcher.dll");
-        Assert.True(File.Exists(patcher), "请先构建 CesiumLoader.Mobile.Patcher");
 
         var original = File.ReadAllBytes(source);
         var assets = RuntimeAssemblyReader.ReadAllTextAssets(original, out _);
         var before = RuntimeAssemblyReader.Fingerprints(original, out _);
 
-        var info = new ProcessStartInfo
-        {
-            FileName = "dotnet",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            WorkingDirectory = Path.GetDirectoryName(patcher)!,
-        };
         var inputDll = sandbox.Combine("AstralParty.Runtime.dll");
         var outputDll = sandbox.Combine("patched.dll");
         var refs = sandbox.Combine("refs");
@@ -857,21 +848,17 @@ public class MobileTests
         File.WriteAllBytes(inputDll, assets[AddressablesCatalog.RuntimeAssetKey]);
         foreach (var (name, bytes) in assets)
             File.WriteAllBytes(Path.Combine(refs, name.Replace('/', '_')), bytes);
-        foreach (var arg in new[]
-                 {
-                     patcher, "bootstrap", inputDll, outputDll,
-                     "--dir", "CesiumLoader",
-                     "--boot-dll", "CesiumLoader.Android.Bootstrap.dll",
-                     "--boot-type", "CesiumLoader.Android.Bootstrap.Boot",
-                     "--boot-method", "LoadForGame", "--boot-arg", "root",
-                     "--refs", refs,
-                 })
-            info.ArgumentList.Add(arg);
-        using var process = Process.Start(info)!;
-        var stdout = await process.StandardOutput.ReadToEndAsync();
-        var stderr = await process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync();
-        Assert.True(process.ExitCode == 0, stdout + "\n" + stderr);
+
+        var patchResult = CesiumLoader.Mobile.Patcher.MobileAssemblyPatcher.Bootstrap(
+            inputDll,
+            outputDll,
+            "CesiumLoader",
+            "CesiumLoader.Android.Bootstrap.dll",
+            "CesiumLoader.Android.Bootstrap.Boot",
+            "LoadForGame",
+            "root",
+            refs);
+        Assert.True(patchResult.Ok, patchResult.Message);
 
         var patchedDll = await File.ReadAllBytesAsync(outputDll);
         Assert.True(PatchMarkerDetector.ContainsMarker(patchedDll), "注入后找不到引导标记");
@@ -884,7 +871,7 @@ public class MobileTests
         Assert.Equal(
             Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(patchedDll)).ToLowerInvariant(),
             after[AddressablesCatalog.RuntimeAssetKey]);
-        _output.WriteLine(stdout);
+        _output.WriteLine(patchResult.Message);
     }
 
     [Fact]

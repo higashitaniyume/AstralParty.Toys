@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -9,6 +8,7 @@ using AstralParty.Toys.Mobile.Models;
 using AstralParty.Toys.Mobile.Patching;
 using AstralParty.Toys.Mobile.Payload;
 using AstralParty.Toys.Mobile.Targets;
+using CesiumLoader.Mobile.Patcher;
 
 namespace AstralParty.Toys.Mobile.Services;
 
@@ -28,20 +28,17 @@ public sealed class MobileInstallService
     private readonly IDeviceChannel _channel;
     private readonly MobileInstallStore _store;
     private readonly MobileTargetStore _targets;
-    private readonly string _patcherDll;
     private readonly MobileOperationLog? _log;
 
     public MobileInstallService(
         IDeviceChannel channel,
         MobileInstallStore store,
         MobileTargetStore targets,
-        string patcherDll,
         MobileOperationLog? log = null)
     {
         _channel = channel;
         _store = store;
         _targets = targets;
-        _patcherDll = patcherDll;
         _log = log;
     }
 
@@ -957,43 +954,22 @@ public sealed class MobileInstallService
         }
     }
 
-    private async Task<(bool Ok, string Message)> RunPatcherAsync(
+    private Task<(bool Ok, string Message)> RunPatcherAsync(
         string inputDll, string outputDll, string refsDirectory, CancellationToken cancellationToken)
     {
-        if (!File.Exists(_patcherDll))
-            return (false, $"找不到注入器：{_patcherDll}");
-
-        var info = new ProcessStartInfo
+        return Task.Run(() =>
         {
-            FileName = "dotnet",
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            StandardOutputEncoding = Encoding.UTF8,
-            StandardErrorEncoding = Encoding.UTF8,
-            WorkingDirectory = Path.GetDirectoryName(_patcherDll) ?? "",
-        };
-        foreach (var arg in new[]
-                 {
-                     _patcherDll, "bootstrap", inputDll, outputDll,
-                     "--dir", MobilePaths.LoaderRelative,
-                     "--boot-dll", BootDll,
-                     "--boot-type", BootType,
-                     "--boot-method", "LoadForGame",
-                     "--boot-arg", "root",
-                     "--refs", refsDirectory,
-                 })
-            info.ArgumentList.Add(arg);
-
-        using var process = Process.Start(info) ?? throw new IOException("无法启动注入器");
-        var stdout = await process.StandardOutput.ReadToEndAsync(cancellationToken);
-        var stderr = await process.StandardError.ReadToEndAsync(cancellationToken);
-        await process.WaitForExitAsync(cancellationToken);
-        var message = (stdout + "\n" + stderr).Trim();
-        return process.ExitCode == 0
-            ? (true, message)
-            : (false, $"退出码 {process.ExitCode}：{message}");
+            var result = MobileAssemblyPatcher.Bootstrap(
+                inputDll,
+                outputDll,
+                MobilePaths.LoaderRelative,
+                BootDll,
+                BootType,
+                "LoadForGame",
+                "root",
+                refsDirectory);
+            return (result.Ok, result.Message);
+        }, cancellationToken);
     }
 
     private static string SafeFileName(string name)

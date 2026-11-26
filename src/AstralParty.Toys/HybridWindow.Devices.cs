@@ -63,7 +63,6 @@ public partial class HybridWindow
         MobileChannels,
         MobileInstallState,
         MobileDevices.Store,
-        Path.Combine(AppContext.BaseDirectory, "mobile-patcher", "CesiumLoader.Mobile.Patcher.dll"),
         MobileLog);
 
     private MobileSkinService MobileSkins =>

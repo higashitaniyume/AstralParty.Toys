@@ -9,20 +9,16 @@
     <AssemblyName>AstralParty.Toys</AssemblyName>
     <RootNamespace>AstralParty.Toys</RootNamespace>
     <StartupObject>AstralParty.Toys.App</StartupObject>
-    <!-- v2.5.0，程序与安装器数字版本为 2.5.0。 -->
-    <Version>2.5.0</Version>
-    <AssemblyVersion>2.5.0.0</AssemblyVersion>
-    <FileVersion>2.5.0.0</FileVersion>
+    <!-- v2.5.1，程序与安装器数字版本为 2.5.1。 -->
+    <Version>2.5.1</Version>
+    <AssemblyVersion>2.5.1.0</AssemblyVersion>
+    <FileVersion>2.5.1.0</FileVersion>
     <ApplicationIcon>WebUI\images\UT_AccountHeadShot_70902.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ResourceModEngine\ResourceModEngine.csproj" />
     <ProjectReference Include="..\AstralParty.Toys.Mobile\AstralParty.Toys.Mobile.csproj" />
-    <!-- Ship the verified Mono.Cecil injector as a standalone exe; never reference its assembly. -->
-    <ProjectReference Include="..\CesiumLoader.Mobile.Patcher\CesiumLoader.Mobile.Patcher.csproj"
-                      ReferenceOutputAssembly="false"
-                      AdditionalProperties="PublishSingleFile=false;SelfContained=false" />
   </ItemGroup>
 
   <ItemGroup>
@@ -88,15 +84,5 @@
   <ItemGroup>
     <InternalsVisibleTo Include="AstralParty.Toys.Tests" />
   </ItemGroup>
-
-  <!-- 注入器保持独立 exe 形态，整目录随 publish 输出（含 Mono.Cecil 与 runtimeconfig）。 -->
-  <Target Name="CopyMobilePatcherOutput" AfterTargets="Build">
-    <ItemGroup>
-      <MobilePatcherFiles Include="..\CesiumLoader.Mobile.Patcher\bin\$(Configuration)\net8.0\**\*" />
-    </ItemGroup>
-    <Copy SourceFiles="@(MobilePatcherFiles)"
-          DestinationFiles="@(MobilePatcherFiles->'$(TargetDir)mobile-patcher\%(RecursiveDir)%(Filename)%(Extension)')"
-          SkipUnchangedFiles="true" />
-  </Target>
 </Project>
 

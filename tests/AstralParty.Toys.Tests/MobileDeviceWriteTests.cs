@@ -208,9 +208,7 @@ public class MobileDeviceWriteTests
         if (kind == "android") target.AppId = "com.feimo.astralparty.haoyou";
         targets.Upsert(target);
 
-        var repo = Path.GetFullPath(Path.Combine(TestPaths.AppSourceDirectory, "..", ".."));
-        var install = new MobileInstallService(channel, installs, targets, Path.Combine(
-            repo, "src", "CesiumLoader.Mobile.Patcher", "bin", "Release", "net8.0", "CesiumLoader.Mobile.Patcher.dll"));
+        var install = new MobileInstallService(channel, installs, targets);
 
         // 用内嵌载荷里的一个模组打一个本地包
         var modId = "AudioSkinMod";
@@ -294,9 +292,7 @@ public class MobileDeviceWriteTests
         var modId = "AudioSkinMod";
         var payload = BuildTestPayload(sandbox, modId, withConfig: true);
 
-        var repo = Path.GetFullPath(Path.Combine(TestPaths.AppSourceDirectory, "..", ".."));
-        var install = new MobileInstallService(channel, installs, targets, Path.Combine(
-            repo, "src", "CesiumLoader.Mobile.Patcher", "bin", "Release", "net8.0", "CesiumLoader.Mobile.Patcher.dll"));
+        var install = new MobileInstallService(channel, installs, targets);
 
         var root = channel.BuildRoot(targets.LoadTargets().First(t => t.Id == target.Id));
         try
@@ -365,9 +361,7 @@ public class MobileDeviceWriteTests
         var modId = "ActivityLogMod";
         var payload = BuildTestPayload(sandbox, modId, withConfig: false);
 
-        var repo = Path.GetFullPath(Path.Combine(TestPaths.AppSourceDirectory, "..", ".."));
-        var install = new MobileInstallService(channel, installs, targets, Path.Combine(
-            repo, "src", "CesiumLoader.Mobile.Patcher", "bin", "Release", "net8.0", "CesiumLoader.Mobile.Patcher.dll"));
+        var install = new MobileInstallService(channel, installs, targets);
 
         var root = channel.BuildRoot(targets.LoadTargets().First(t => t.Id == target.Id));
         try
@@ -463,13 +457,10 @@ public class MobileDeviceWriteTests
         if (kind == "android") target.AppId = "com.feimo.astralparty.haoyou";
         targets.Upsert(target);
 
-        var repo = Path.GetFullPath(Path.Combine(TestPaths.AppSourceDirectory, "..", ".."));
         // 载荷与线上同源：内嵌的托管包（CI 按安卓仓库 version.json → packages.loaderManaged 同步）
         var payload = MobilePayloadProvisioner.Ensure(sandbox.Root);
 
-        var patcher = Path.Combine(repo, "src", "CesiumLoader.Mobile.Patcher", "bin", "Release", "net8.0",
-            "CesiumLoader.Mobile.Patcher.dll");
-        var install = new MobileInstallService(channel, installs, targets, patcher);
+        var install = new MobileInstallService(channel, installs, targets);
 
         var before = await devices.DetectAsync(target.Id);
         output.WriteLine($"投放前：包名={before.BundleId} loaderPresent={before.LoaderPresent} " +
@@ -523,11 +514,7 @@ public class MobileDeviceWriteTests
         targets.Upsert(target);
         output.WriteLine($"{kind}: target={target.Id} appId={(string.IsNullOrEmpty(target.AppId) ? "(自动识别)" : target.AppId)}");
 
-        var repo = Path.GetFullPath(Path.Combine(TestPaths.AppSourceDirectory, "..", ".."));
-        var patcher = Path.Combine(repo, "src", "CesiumLoader.Mobile.Patcher", "bin", "Release", "net8.0",
-            "CesiumLoader.Mobile.Patcher.dll");
-        Assert.True(File.Exists(patcher), $"先构建注入器：dotnet build src/CesiumLoader.Mobile.Patcher -c Release");
-        var install = new MobileInstallService(channel, installs, targets, patcher);
+        var install = new MobileInstallService(channel, installs, targets);
 
         var before = await devices.DetectAsync(target.Id, (m, p) => output.WriteLine($"  [{p}%] {m}"));
         output.WriteLine($"注入前：state={before.PatchState} inner={before.CodeBundleHash} sha={Short(before.BundleSha256)} " +
