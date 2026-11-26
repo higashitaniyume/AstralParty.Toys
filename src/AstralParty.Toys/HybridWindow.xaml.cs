@@ -150,6 +150,9 @@ public partial class HybridWindow : Window
             WorkshopService.EnsureCoverDirectory();
             WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
                 "workshop.aspatoys.hiynet.localhost", WorkshopService.CoverDirectory, CoreWebView2HostResourceAccessKind.DenyCors);
+            Directory.CreateDirectory(ToysPaths.HubAvatarCacheDirectory);
+            WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                "hubavatars.aspatoys.hiynet.localhost", ToysPaths.HubAvatarCacheDirectory, CoreWebView2HostResourceAccessKind.DenyCors);
             MapBackgroundHost();
             WebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
             WebView.CoreWebView2.Settings.IsStatusBarEnabled = false;
@@ -203,6 +206,9 @@ public partial class HybridWindow : Window
             WorkshopService.EnsureCoverDirectory();
             WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
                 "workshop.aspatoys.hiynet.localhost", WorkshopService.CoverDirectory, CoreWebView2HostResourceAccessKind.DenyCors);
+            Directory.CreateDirectory(ToysPaths.HubAvatarCacheDirectory);
+            WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                "hubavatars.aspatoys.hiynet.localhost", ToysPaths.HubAvatarCacheDirectory, CoreWebView2HostResourceAccessKind.DenyCors);
             MapBackgroundHost();
         }
         catch (Exception ex)

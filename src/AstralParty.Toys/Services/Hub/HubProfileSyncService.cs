@@ -1,4 +1,5 @@
 using AstralParty.Toys.Services.Account;
+using AstralParty.Toys.Services.Replay;
 
 namespace AstralParty.Toys.Services.Hub;
 
@@ -70,12 +71,62 @@ public sealed class HubProfileSyncService
         CancellationToken ct)
     {
         var cred = AccountCredentials.Read(gameDirectory, uid);
-        var region = ToHubRegion(cred.Region);
+        var region = ResolveRegion(cred);
 
         await using var session = new AccountSession(Path.Combine(_appDirectory, "Protocol"), cred);
         var player = await session.LoginAsync(cred, uid, ct).ConfigureAwait(false);
         var showcase = await session.ShowcaseAsync(ct).ConfigureAwait(false);
+        var snapshot = await BuildSnapshotAsync(session, player, showcase, language, ct).ConfigureAwait(false);
+        return (region, snapshot);
+    }
 
+    /// <summary>
+    /// 直连读取最新游戏账号快照与实时好友列表。好友列表仅返回给本机界面展示，绝不进入可上传快照。
+    /// </summary>
+    public async Task<(string Region, HubGameSnapshot Snapshot, object[] Friends, DateTimeOffset CapturedAt)> CaptureLiveAccountAsync(
+        string gameDirectory,
+        string uid,
+        string language,
+        Func<string?, string> assetUrlMapper,
+        AssetLocator assets,
+        CancellationToken ct)
+    {
+        var cred = AccountCredentials.Read(gameDirectory, uid);
+        var region = ResolveRegion(cred);
+
+        await using var session = new AccountSession(Path.Combine(_appDirectory, "Protocol"), cred);
+        var player = await session.LoginAsync(cred, uid, ct).ConfigureAwait(false);
+        var showcase = await session.ShowcaseAsync(ct).ConfigureAwait(false);
+        var snapshot = await BuildSnapshotAsync(session, player, showcase, language, ct).ConfigureAwait(false);
+
+        object[] friendsUi = [];
+        try
+        {
+            var friends = await session.FriendsAsync(ct).ConfigureAwait(false);
+            friendsUi = friends.Select(f => (object)new
+            {
+                f.Uid,
+                f.Name,
+                f.Note,
+                f.Level,
+                f.Status,
+                image = ResolveHeadIconUrl(f.HeadIcon, assets, assetUrlMapper),
+                offlineAt = f.OfflineTime is > 0 and <= 253402300799
+                    ? (DateTimeOffset?)DateTimeOffset.FromUnixTimeSeconds(f.OfflineTime)
+                    : null,
+            }).ToArray();
+        }
+        catch
+        {
+            // 好友列表拉取失败时保留已拿到的账号与战绩快照，不阻断整个刷新流程。
+        }
+
+        return (region, snapshot, friendsUi, DateTimeOffset.UtcNow);
+    }
+
+    private string ResolveRegion(AccountCredentials cred)
+    {
+        var region = ToHubRegion(cred.Region);
         if (region.Length == 0)
         {
             using var protocol = new AccountProtocol(Path.Combine(_appDirectory, "Protocol"));
@@ -83,8 +134,16 @@ public sealed class HubProfileSyncService
             region = ToHubRegion(AccountSession.LoginRegion(protocol.Parse("ConnectC2S", bytes)));
         }
 
-        if (region.Length == 0) region = "cn";
+        return region.Length == 0 ? "cn" : region;
+    }
 
+    private async Task<HubGameSnapshot> BuildSnapshotAsync(
+        AccountSession session,
+        AccountPlayer player,
+        AccountShowcase showcase,
+        string language,
+        CancellationToken ct)
+    {
         var config = new ConfigCatalog(
             new GameProtocolContext(Path.Combine(_appDirectory, "Protocol")),
             Path.Combine(_appDirectory, "GameData"),
@@ -133,7 +192,7 @@ public sealed class HubProfileSyncService
             });
         }
 
-        var snapshot = new HubGameSnapshot
+        return new HubGameSnapshot
         {
             Nick = player.Name,
             HeadIcon = showcase.StandingPainting > 0 ? showcase.StandingPainting : player.StandingPainting,
@@ -177,15 +236,15 @@ public sealed class HubProfileSyncService
             RecentMatches = recentMatches,
             CapturedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
         };
-
-        return (region, snapshot);
     }
 
     public object DecorateProfileForUi(
         HubUserProfileDto profile,
         string language,
         Func<string?, string> assetUrlMapper,
-        AssetLocator assets)
+        AssetLocator assets,
+        Func<string?, string>? hubAvatarUrlMapper = null,
+        Func<string, int>? indexedMapIdLookup = null)
     {
         var config = new ConfigCatalog(
             new GameProtocolContext(Path.Combine(_appDirectory, "Protocol")),
@@ -243,36 +302,52 @@ public sealed class HubProfileSyncService
                     m.Wins,
                     image = m.MapId > 0 ? assetUrlMapper(assets.Map(m.MapId, config.MapAssets(m.MapId))) : "",
                 }).ToArray(),
-                recentMatches = snap.RecentMatches.Select(rm => new
+                recentMatches = snap.RecentMatches.Select(rm =>
                 {
-                    rm.Index,
-                    rm.Rank,
-                    rm.HeroId,
-                    character = string.IsNullOrWhiteSpace(rm.Character) && rm.HeroId > 0
-                        ? config.Character(rm.HeroId)
-                        : rm.Character,
-                    heroImage = rm.HeroId > 0 ? assetUrlMapper(assets.Character(rm.HeroId, config.CharacterAssets(rm.HeroId))) : "",
-                    rm.MapType,
-                    rm.MapName,
-                    rm.ReplayId,
-                    rm.Version,
-                    rm.PlayedAt,
-                    players = rm.Players?.Select(p => new
+                    var indexedMapId = indexedMapIdLookup is not null && !string.IsNullOrWhiteSpace(rm.ReplayId)
+                        ? indexedMapIdLookup(rm.ReplayId)
+                        : 0;
+                    var mapName = !string.IsNullOrWhiteSpace(rm.MapName)
+                        ? rm.MapName
+                        : indexedMapId > 0 ? config.Map(indexedMapId) : "";
+                    var mapImage = indexedMapId > 0
+                        ? assetUrlMapper(assets.Map(indexedMapId, config.MapAssets(indexedMapId)))
+                        : "";
+                    return new
                     {
-                        p.PlayerId,
-                        p.Name,
-                        p.Level,
-                        p.Gold,
-                        p.HeroId,
-                        character = string.IsNullOrWhiteSpace(p.Character) && p.HeroId > 0
-                            ? config.Character(p.HeroId)
-                            : p.Character,
-                        heroImage = p.HeroId > 0 ? assetUrlMapper(assets.Character(p.HeroId, config.CharacterAssets(p.HeroId))) : "",
-                        p.Slot,
-                        p.Rank,
-                        p.GaveUp,
-                        p.PlayerLevel,
-                    }).ToArray(),
+                        rm.Index,
+                        rm.Rank,
+                        rm.HeroId,
+                        character = string.IsNullOrWhiteSpace(rm.Character) && rm.HeroId > 0
+                            ? config.Character(rm.HeroId)
+                            : rm.Character,
+                        heroImage = rm.HeroId > 0 ? assetUrlMapper(assets.Character(rm.HeroId, config.CharacterAssets(rm.HeroId))) : "",
+                        rm.MapType,
+                        mapName,
+                        mapImage,
+                        rm.ReplayId,
+                        rm.Version,
+                        rm.PlayedAt,
+                        canDownload = ReplayCdn.IsValidReplayId(rm.ReplayId, out _),
+                        players = rm.Players?.Select(p => new
+                        {
+                            p.PlayerId,
+                            p.Name,
+                            p.Level,
+                            p.Gold,
+                            p.HeroId,
+                            character = string.IsNullOrWhiteSpace(p.Character) && p.HeroId > 0
+                                ? config.Character(p.HeroId)
+                                : p.Character,
+                            heroImage = p.HeroId > 0 ? assetUrlMapper(assets.Character(p.HeroId, config.CharacterAssets(p.HeroId))) : "",
+                            image = ResolveAvatarUrl(p.HeadIcon, p.HeroId, assets, config, assetUrlMapper),
+                            isSelf = string.Equals(p.PlayerId, b.Uid, StringComparison.Ordinal),
+                            p.Slot,
+                            p.Rank,
+                            p.GaveUp,
+                            p.PlayerLevel,
+                        }).ToArray(),
+                    };
                 }).ToArray(),
             };
 
@@ -294,6 +369,7 @@ public sealed class HubProfileSyncService
         {
             profile.UserId,
             profile.DisplayName,
+            avatarUrl = hubAvatarUrlMapper?.Invoke(profile.AvatarUrl) ?? "",
             profile.PrimaryRegion,
             profile.PrimaryUid,
             profile.IsSelf,
@@ -303,6 +379,15 @@ public sealed class HubProfileSyncService
             profile.CreatedAt,
             profile.LastSeenAt,
         };
+    }
+
+    private static string ResolveHeadIconUrl(int headIcon, AssetLocator assets, Func<string?, string> assetUrlMapper)
+    {
+        if (headIcon <= 0) return "";
+        var photo = assets.Named($"UT_Item_PlayerPhoto_{headIcon}");
+        if (photo.Length > 0) return assetUrlMapper(photo);
+        var headshot = assets.Named($"UT_AccountHeadShot_{headIcon}");
+        return headshot.Length > 0 ? assetUrlMapper(headshot) : "";
     }
 
     private static string ResolveAvatarUrl(

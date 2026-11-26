@@ -232,6 +232,9 @@ public static class ToysPaths
     /// <summary>市场封面 / 贴纸缓存（也是虚拟域名 workshop.* 的根）。</summary>
     public static string WorkshopCacheDirectory => Path.Combine(CacheDirectory, "workshop");
 
+    /// <summary>组队大厅 Microsoft 头像缓存（也是虚拟域名 hubavatars.* 的根）。</summary>
+    public static string HubAvatarCacheDirectory => Path.Combine(CacheDirectory, "hub-avatars");
+
     public static string LogsDirectory => Path.Combine(Root, LogsFolderName);
 
     /// <summary>加载器 / 模组安装历史。</summary>
@@ -255,7 +258,7 @@ public static class ToysPaths
         foreach (var directory in new[]
                  {
                      Root, ReplaysDirectory, ReplayIndexDirectory, CacheDirectory, WorkshopCacheDirectory,
-                     LogsDirectory, StateDirectory, BackgroundsDirectory, ToolsDirectory, SpeedhackDirectory
+                     HubAvatarCacheDirectory, LogsDirectory, StateDirectory, BackgroundsDirectory, ToolsDirectory, SpeedhackDirectory
                  })
         {
             try { Directory.CreateDirectory(directory); }

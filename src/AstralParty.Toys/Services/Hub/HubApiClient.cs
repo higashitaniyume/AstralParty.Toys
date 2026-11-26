@@ -171,6 +171,46 @@ public sealed class HubApiClient : IDisposable
         => SendNoContentAsync(HttpMethod.Post, $"/api/hub/rooms/{Uri.EscapeDataString(roomId)}/leave",
             null, authenticated: true, ct);
 
+    public Task DisbandRoomAsync(string roomId, CancellationToken ct = default)
+        => SendNoContentAsync(HttpMethod.Post, $"/api/hub/rooms/{Uri.EscapeDataString(roomId)}/disband",
+            null, authenticated: true, ct);
+
+    public async Task<(byte[] Bytes, string ContentType)?> DownloadAvatarAsync(string avatarPath, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(avatarPath) || !avatarPath.StartsWith("/api/hub/avatars/", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        const int MaxAvatarBytes = 262_144;
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Get, _baseUrl + avatarPath);
+            using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+            if (!resp.IsSuccessStatusCode) return null;
+
+            var mediaType = (resp.Content.Headers.ContentType?.MediaType ?? "").Trim().ToLowerInvariant();
+            if (mediaType is not ("image/jpeg" or "image/png" or "image/webp")) return null;
+            if (resp.Content.Headers.ContentLength is > MaxAvatarBytes) return null;
+
+            await using var stream = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+            using var ms = new MemoryStream();
+            var buf = new byte[8192];
+            int read;
+            while ((read = await stream.ReadAsync(buf, ct).ConfigureAwait(false)) > 0)
+            {
+                if (ms.Length + read > MaxAvatarBytes) return null;
+                ms.Write(buf, 0, read);
+            }
+
+            return ms.Length == 0 ? null : (ms.ToArray(), mediaType);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     public Task<HubRoomDetailDto> KickMemberAsync(string roomId, string targetUserId, CancellationToken ct = default)
         => SendAsync<HubRoomDetailDto>(HttpMethod.Post, $"/api/hub/rooms/{Uri.EscapeDataString(roomId)}/kick",
             new { targetUserId }, authenticated: true, ct);
@@ -314,9 +354,21 @@ public sealed class HubApiClient : IDisposable
             {
                 using var doc = JsonDocument.Parse(raw);
                 var root = doc.RootElement;
-                if (root.TryGetProperty("error", out var errEl) && errEl.GetString() is { Length: > 0 } err)
-                    code = err;
-                if (root.TryGetProperty("message", out var msgEl) && msgEl.GetString() is { Length: > 0 } msg)
+                if (root.TryGetProperty("error", out var errEl))
+                {
+                    if (errEl.ValueKind == JsonValueKind.Object)
+                    {
+                        if (errEl.TryGetProperty("code", out var cEl) && cEl.GetString() is { Length: > 0 } c)
+                            code = c;
+                        if (errEl.TryGetProperty("message", out var mEl) && mEl.GetString() is { Length: > 0 } m)
+                            message = m;
+                    }
+                    else if (errEl.ValueKind == JsonValueKind.String && errEl.GetString() is { Length: > 0 } err)
+                    {
+                        code = err;
+                    }
+                }
+                if (root.TryGetProperty("message", out var msgEl) && msgEl.ValueKind == JsonValueKind.String && msgEl.GetString() is { Length: > 0 } msg)
                     message = msg;
             }
         }

@@ -41,6 +41,7 @@ public sealed class HubServicesTests
             var url = HubAuthService.BuildAuthorizeUrl("cid-123", "common", "http://127.0.0.1:43210/callback", "st", expectedChallenge);
             Assert.Contains("client_id=cid-123", url);
             Assert.Contains("code_challenge_method=S256", url);
+            Assert.Contains("scope=openid%20profile%20User.Read", url);
             Assert.Contains("redirect_uri=http%3A%2F%2F127.0.0.1%3A43210%2Fcallback", url);
 
             auth.SaveSession("hub-tok-secret", 1900000000000L, new HubUserProfileDto
@@ -174,10 +175,20 @@ public sealed class HubServicesTests
                     Content = new StringContent("""{"region":"cn","rooms":[]}""", Encoding.UTF8, "application/json")
                 };
             }
+            if (req.RequestUri!.AbsolutePath == "/api/hub/rooms/r1/disband" && req.Method == HttpMethod.Post)
+            {
+                return new HttpResponseMessage(HttpStatusCode.NoContent);
+            }
+            if (req.RequestUri!.AbsolutePath == "/api/hub/avatars/u_01")
+            {
+                var content = new ByteArrayContent([0x89, 0x50, 0x4E, 0x47]);
+                content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = content };
+            }
 
             return new HttpResponseMessage(HttpStatusCode.Unauthorized)
             {
-                Content = new StringContent("""{"ok":false,"error":"unauthorized","message":"令牌无效"}""", Encoding.UTF8, "application/json")
+                Content = new StringContent("""{"error":{"code":"unauthorized","message":"令牌无效"}}""", Encoding.UTF8, "application/json")
             };
         });
 
@@ -190,6 +201,14 @@ public sealed class HubServicesTests
         Assert.Equal("Bearer", lastReq!.Headers.Authorization?.Scheme);
         Assert.Equal("my-hub-token", lastReq.Headers.Authorization?.Parameter);
         Assert.Contains("q=pve", lastReq.RequestUri!.Query);
+
+        await api.DisbandRoomAsync("r1");
+        Assert.Equal("/api/hub/rooms/r1/disband", lastReq!.RequestUri!.AbsolutePath);
+
+        var avatar = await api.DownloadAvatarAsync("/api/hub/avatars/u_01?v=1");
+        Assert.NotNull(avatar);
+        Assert.Equal("image/png", avatar!.Value.ContentType);
+        Assert.Equal(4, avatar.Value.Bytes.Length);
 
         var ex = await Assert.ThrowsAsync<HubApiException>(() => api.GetMeAsync());
         Assert.Equal(HttpStatusCode.Unauthorized, ex.StatusCode);

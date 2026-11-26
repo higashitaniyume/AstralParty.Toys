@@ -41,7 +41,7 @@ public sealed class HubAuthService
                + "&response_type=code"
                + $"&redirect_uri={Uri.EscapeDataString(redirectUri)}"
                + "&response_mode=query"
-               + $"&scope={Uri.EscapeDataString("openid profile")}"
+               + $"&scope={Uri.EscapeDataString("openid profile User.Read")}"
                + $"&state={Uri.EscapeDataString(state)}"
                + $"&code_challenge={Uri.EscapeDataString(codeChallenge)}"
                + "&code_challenge_method=S256"

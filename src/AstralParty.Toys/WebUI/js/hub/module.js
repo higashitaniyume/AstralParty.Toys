@@ -1,37 +1,55 @@
-// hub/module.js — 组队大厅（Microsoft OAuth PKCE、1 对 N 绑定、10 项隐私、自动抓房进房、两阶段战报）
+// hub/module.js — 组队大厅（对战平台全局顶栏、Microsoft 头像、弹窗隐私、完整个人账号面板、房主解散）
 (function () {
   'use strict';
 
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const $id = id => document.getElementById(id);
-  const imgUrl = v => typeof v === 'string' && /^https:\/\/(assets|materials\d+)\.aspatoys\.hiynet\.localhost\//.test(v) ? v : '';
+  const imgUrl = v => typeof v === 'string' && /^https:\/\/(assets|materials\d+|hubavatars)\.aspatoys\.hiynet\.localhost\//.test(v) ? v : '';
 
   const MODES = {
     1: '标准', 2: '新手', 3: '无限火力', 4: 'PVE', 5: '战役 PVP', 6: '战役 PVE',
     7: '非对称对抗', 8: '练习 PVP', 9: '练习 PVE', 10: 'PVE 新手', 11: '幸运星争夺战', 12: '词条 PVE'
   };
 
+  const ROOM_STATUS_TEXT = {
+    recruiting: '招募中',
+    launching: '房主启动中',
+    game_ready: '游戏房就绪',
+    playing: '对局中',
+    finished: '已结束',
+    closed: '已关闭'
+  };
+
   const GAME_STATES = {
-    idle: ['大堂待命', ''],
+    idle: ['待命', ''],
     launching: ['启动游戏中…', 'gold'],
-    in_lobby: ['游戏主界面在线', 'green'],
+    in_lobby: ['游戏主界面', 'green'],
     joining: ['自动进房中…', 'gold'],
     in_game_room: ['已进游戏房', 'green'],
     playing: ['对局中', 'pink'],
     join_failed: ['进房失败', 'danger']
   };
 
+  const FRIEND_STATUS_TEXT = {
+    offline: '离线',
+    online: '在线',
+    busy: '忙碌',
+    room: '房间中',
+    playing: '对局中',
+    unknown: '未知'
+  };
+
   const PRIVACY_ITEMS = [
-    ['showLinkedAccounts', '已绑定的游戏 UID 清单', '向他人展示当前大师账号下绑定的国服/国际服 UID'],
-    ['showProfileMeta', '账号等级与活跃时间', '展示游戏等级、经验进度、账号创建与最近登录时间'],
-    ['showCreditAndPraise', '信誉分与获赞数', '展示游戏内信誉评分与累计获赞次数'],
-    ['showSummaryStats', '战绩总览与收藏数量', '展示总场次、胜场/胜率、角色/皮肤/装扮拥有数'],
-    ['showAchievements', '成就徽章', '展示游戏账号已获取的成就标签'],
+    ['showLinkedAccounts', '已绑定的游戏 UID 清单', '向他人展示名下绑定的国服 / 国际服 UID'],
+    ['showProfileMeta', '账号等级与活跃时间', '展示游戏等级、经验进度、创建与最近登录时间'],
+    ['showCreditAndPraise', '信誉分与获赞数', '展示信誉评分与累计获赞次数'],
+    ['showSummaryStats', '战绩总览与收藏数量', '展示总场次、胜场/胜率、角色/皮肤/装扮数'],
+    ['showAchievements', '成就徽章', '展示已获取的成就标签'],
     ['showWinMaps', '地图胜场分布', '展示各张地图的历史胜场数'],
-    ['showCharacters', '角色练度与参战次数', '展示所有已拥有角色的等级、突破与参战次数'],
-    ['showRecentMatches', '近期对局历史', '展示最近 20 场对局的摘要卡片'],
-    ['showMatchDetails', '同局对局明细', '允许他人展开近期对局内所有同局玩家详情'],
-    ['showLobbyPresence', '大厅实时组队状态', '允许在组队大厅中展示你的当前房间状态']
+    ['showCharacters', '角色练度与参战次数', '展示已拥有角色的等级、突破与参战次数'],
+    ['showRecentMatches', '近期对局历史', '展示最近 20 场对局摘要'],
+    ['showMatchDetails', '同局对局明细', '允许他人展开对局内所有同局玩家详情'],
+    ['showLobbyPresence', '公开个人名片与组队状态', '关闭后他人无法查看你的公开名片']
   ];
 
   const S = {
@@ -50,6 +68,15 @@
     roomStatusFilter: '',
     currentRoom: null,
     roomEvents: [],
+    selectedBindingKey: '',
+    profileSubTab: 'characters',
+    charSearch: '',
+    charPlayedOnly: false,
+    friendSearch: '',
+    friendOnlineOnly: false,
+    expandedMatches: {},
+    liveByUid: {},
+    liveLoadingUid: '',
     viewedProfile: null,
     lookupInput: '',
     lookupRegion: 'cn',
@@ -63,8 +90,9 @@
   let _bound = false;
 
   function formatTime(ms) {
-    if (!ms || ms <= 0) return '—';
-    const v = ms < 1e12 ? ms * 1000 : ms;
+    if (!ms) return '—';
+    const v = typeof ms === 'string' ? Date.parse(ms) : (ms < 1e12 ? ms * 1000 : ms);
+    if (!v || Number.isNaN(v)) return '—';
     const d = new Date(v);
     if (Number.isNaN(d.getTime())) return '—';
     const pad = n => String(n).padStart(2, '0');
@@ -73,6 +101,15 @@
 
   function regionLabel(r) {
     return r === 'int' ? '国际服 INT' : '国服 CN';
+  }
+
+  function renderAvatar(url, fallbackName, size = 40, cls = 'hub-avatar') {
+    const safe = imgUrl(url);
+    const initial = (fallbackName || '?').trim().slice(0, 1).toUpperCase();
+    if (safe) {
+      return `<img class="${cls}" src="${esc(safe)}" alt="" width="${size}" height="${size}" style="width:${size}px;height:${size}px;" />`;
+    }
+    return `<span class="${cls}" style="width:${size}px;height:${size}px;font-size:${Math.max(11, Math.round(size * 0.44))}px;" aria-hidden="true">${esc(initial)}</span>`;
   }
 
   function applyPolyfills() {
@@ -84,21 +121,42 @@
         const r = dlg.getBoundingClientRect();
         return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
       };
-      for (const dlg of document.querySelectorAll('#hubView dialog[closedby="any"]')) {
+      for (const dlg of document.querySelectorAll('dialog.hub-dialog[closedby="any"]')) {
         let downOut = false;
         dlg.addEventListener('pointerdown', e => { downOut = outside(e, dlg); });
         dlg.addEventListener('pointerup', e => { if (downOut && outside(e, dlg)) dlg.close('cancel'); });
       }
     }
-    for (const dlg of document.querySelectorAll('#hubView dialog')) {
+    for (const dlg of document.querySelectorAll('dialog.hub-dialog')) {
       dlg.addEventListener('close', () => { dlg.returnValue = ''; });
     }
   }
 
+  function syncRoomTabVisibility() {
+    const tabRoom = $id('hubTabRoom');
+    const badge = $id('hubCurrentRoomBadge');
+    if (!tabRoom) return;
+    const hasRoom = !!S.currentRoom;
+    tabRoom.hidden = !hasRoom;
+    if (hasRoom) {
+      tabRoom.removeAttribute('focusgroup');
+      if (badge) badge.textContent = `${S.currentRoom.members.length}/${S.currentRoom.capacity}`;
+    } else {
+      tabRoom.setAttribute('focusgroup', 'none');
+      if (S.tab === 'room') selectTab('lobby', false);
+    }
+  }
+
   function selectTab(nextTab, focusTab = false) {
+    if (nextTab === 'room' && !S.currentRoom) nextTab = 'lobby';
     S.tab = nextTab;
-    const tabs = Array.from(document.querySelectorAll('#hubView [role="tab"]'));
-    const panels = { lobby: $id('hubPanelLobby'), profile: $id('hubPanelProfile'), settlement: $id('hubPanelSettlement') };
+    const tabs = Array.from(document.querySelectorAll('#hubView .hub-tablist [role="tab"]'));
+    const panels = {
+      lobby: $id('hubPanelLobby'),
+      room: $id('hubPanelRoom'),
+      profile: $id('hubPanelProfile'),
+      settlement: $id('hubPanelSettlement')
+    };
 
     for (const t of tabs) {
       const isSelected = t.dataset.hubTab === nextTab;
@@ -124,19 +182,43 @@
     }
   }
 
+  function openPrivacyDialog() {
+    if (!S.me) return;
+    const priv = S.me.privacy || {};
+    const list = $id('hubPrivacySwitchList');
+    if (!list) return;
+    list.innerHTML = PRIVACY_ITEMS.map(([key, title, desc]) => `
+      <label class="hub-switch-row">
+        <span><strong>${esc(title)}</strong><small>${esc(desc)}</small></span>
+        <input type="checkbox" switch data-hub-priv="${esc(key)}" ${priv[key] ? 'checked' : ''} />
+      </label>
+    `).join('');
+    $id('hubPrivacyDialog')?.showModal();
+  }
+
+  function openDisbandDialog() {
+    if (!S.currentRoom) return;
+    const desc = $id('hubDisbandDesc');
+    if (desc) {
+      desc.textContent = `确认解散房间「${S.currentRoom.title}」？当前房间内共 ${S.currentRoom.members.length} 名成员，解散后所有成员将立即离开。`;
+    }
+    $id('hubDisbandDialog')?.showModal();
+  }
+
   function bindOnce() {
     if (_bound) return;
     _bound = true;
     applyPolyfills();
 
-    const tablist = document.querySelector('#hubView [role="tablist"], #hubView [focusgroup]');
-    const tabs = Array.from(document.querySelectorAll('#hubView [role="tab"]'));
-    tabs.forEach(btn => {
+    const tablist = document.querySelector('#hubView .hub-tablist');
+    const getVisibleTabs = () => Array.from(document.querySelectorAll('#hubView .hub-tablist [role="tab"]')).filter(t => !t.hidden);
+    document.querySelectorAll('#hubView .hub-tablist [role="tab"]').forEach(btn => {
       btn.addEventListener('click', () => selectTab(btn.dataset.hubTab, false));
     });
 
     if (tablist && !Object.hasOwn(HTMLElement.prototype, 'focusGroup')) {
       tablist.addEventListener('keydown', e => {
+        const tabs = getVisibleTabs();
         const idx = tabs.indexOf(document.activeElement);
         if (idx < 0) return;
         let next = -1;
@@ -154,10 +236,6 @@
     document.querySelectorAll('#hubView .hub-region-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const reg = btn.dataset.hubRegion === 'int' ? 'int' : 'cn';
-        if (S.currentRoom && S.currentRoom.region !== reg) {
-          window.toast?.('当前已在其他区服组队房间内，请先退出当前房间再切换区服。');
-          return;
-        }
         S.region = reg;
         renderHeader();
         post({ type: 'hubSetRegion', region: reg, query: S.roomQuery, status: S.roomStatusFilter });
@@ -180,6 +258,20 @@
       const serverUrl = $id('hubServerUrlInput').value.trim();
       $id('hubServerDialog').close('save');
       post({ type: 'hubSaveServerUrl', serverUrl });
+    });
+
+    $id('hubSavePrivacyBtn')?.addEventListener('click', () => {
+      const next = {};
+      $id('hubPrivacySwitchList')?.querySelectorAll('[data-hub-priv]').forEach(inp => {
+        next[inp.dataset.hubPriv] = !!inp.checked;
+      });
+      $id('hubPrivacyDialog')?.close('save');
+      post({ type: 'hubUpdatePrivacy', privacy: next });
+    });
+
+    $id('hubConfirmDisbandBtn')?.addEventListener('click', () => {
+      $id('hubDisbandDialog')?.close('disband');
+      post({ type: 'hubDisbandRoom' });
     });
 
     $id('hubCreateSubmitBtn')?.addEventListener('click', () => {
@@ -214,6 +306,71 @@
     });
   }
 
+  // 全局顶部车队状态条：在任何页面都能看到房间人数、成员头像、一键开房/进房与房主解散
+  function renderGlobalRoomBar() {
+    const bar = $id('hubGlobalRoomBar');
+    if (!bar) return;
+    const room = S.currentRoom;
+    if (!room) {
+      bar.hidden = true;
+      bar.innerHTML = '';
+      return;
+    }
+
+    const isHost = S.me && room.hostUserId === S.me.userId;
+    const gr = room.gameRoom;
+    const statusTxt = ROOM_STATUS_TEXT[room.status] || room.status;
+    const avatarsHtml = (room.members || []).slice(0, 4).map(m => {
+      const safe = imgUrl(m.avatarUrl);
+      const initial = (m.displayName || m.activeNick || '?').slice(0, 1).toUpperCase();
+      return safe
+        ? `<img class="hub-bar-avatar" src="${esc(safe)}" alt="" title="${esc(m.displayName)}" width="24" height="24" />`
+        : `<span class="hub-bar-avatar" title="${esc(m.displayName)}">${esc(initial)}</span>`;
+    }).join('');
+
+    bar.hidden = false;
+    bar.innerHTML = `
+      <div class="hub-global-bar-left">
+        <span class="hub-dot online"></span>
+        <span class="hub-pill">${esc(regionLabel(room.region))}</span>
+        <span class="hub-global-bar-title" title="${esc(room.title)}">${esc(room.title)}</span>
+        <span class="hub-pill pink">已进 ${room.members.length} / ${room.capacity} 人</span>
+        <span class="hub-bar-avatars">${avatarsHtml}</span>
+        ${gr && gr.gameRoomId > 0
+          ? `<span class="hub-pill green">游戏房 #${esc(gr.gameRoomId)}</span>`
+          : `<span class="hub-pill">${esc(statusTxt)}</span>`}
+      </div>
+      <div class="hub-global-bar-right">
+        <button type="button" class="v2-btn ghost hub-bar-btn" data-bar-act="return">回到房间</button>
+        ${isHost
+          ? `<button type="button" class="v2-btn primary hub-bar-btn" data-bar-act="launch">启动游戏开房</button>`
+          : (gr && gr.gameRoomId > 0 ? `<button type="button" class="v2-btn primary hub-bar-btn" data-bar-act="join-game">一键进房</button>` : '')}
+        ${isHost
+          ? `<button type="button" class="v2-btn hub-btn-danger hub-bar-btn" data-bar-act="disband">解散房间</button>`
+          : `<button type="button" class="v2-btn ghost hub-bar-btn" data-bar-act="leave">退出</button>`}
+      </div>
+    `;
+
+    bar.querySelector('[data-bar-act="return"]')?.addEventListener('click', () => {
+      window.showPage?.('hub');
+      selectTab('room', false);
+    });
+    bar.querySelector('[data-bar-act="launch"]')?.addEventListener('click', () => {
+      post({ type: 'hubHostLaunchGame', mode: 'bypassSteam' });
+    });
+    bar.querySelector('[data-bar-act="join-game"]')?.addEventListener('click', () => {
+      if (!gr) return;
+      post({ type: 'hubTriggerBridgeJoin', gameRoomId: gr.gameRoomId, gamePwd: gr.gamePwd, roomServerId: gr.roomServerId });
+    });
+    bar.querySelector('[data-bar-act="disband"]')?.addEventListener('click', () => {
+      bindOnce();
+      openDisbandDialog();
+    });
+    bar.querySelector('[data-bar-act="leave"]')?.addEventListener('click', () => {
+      post({ type: 'hubLeaveRoom' });
+    });
+  }
+
   function renderBridgeDiag() {
     const box = $id('hubBridgeDiagBox');
     if (!box) return;
@@ -221,8 +378,8 @@
     const live = (b.sessions || []).find(s => s.isLoggedIn);
     box.innerHTML = `
       <div><strong>本机 IPC 端口：</strong>${b.running ? `127.0.0.1:${b.port}` : '未启动'}</div>
-      <div><strong>HubBridgeMod：</strong>${!b.gameFound ? '未选择游戏目录' : !b.modInstalled ? '未安装内置组队桥接模组（可在模组页重装内置加载器获取）' : b.modEnabled ? '已安装并启用' : '已安装但被停用'}</div>
-      <div><strong>实时游戏连接：</strong>${live ? `已登录 ${regionLabel(live.region)} · UID ${esc(live.uid)} · 场景 ${esc(live.scene || 'Home')}${live.gameRoomId > 0 ? ` · 游戏房 ${live.gameRoomId}` : ''}` : '等待游戏启动并进入主界面'}</div>
+      <div><strong>HubBridgeMod：</strong>${!b.gameFound ? '未选择游戏目录' : !b.modInstalled ? '未安装内置桥接模组（可在模组页重装内置加载器获取）' : b.modEnabled ? '已安装并启用' : '已安装但已停用'}</div>
+      <div><strong>游戏连接：</strong>${live ? `${regionLabel(live.region)} · UID ${esc(live.uid)} · ${esc(live.scene || 'Home')}${live.gameRoomId > 0 ? ` · 游戏房 ${live.gameRoomId}` : ''}` : '等待游戏进入主界面'}</div>
     `;
   }
 
@@ -240,7 +397,7 @@
       pillText.textContent = live
         ? `游戏在线 · ${live.uid}`
         : b.modInstalled && b.modEnabled
-          ? '桥接就绪（待开游戏）'
+          ? '桥接就绪'
           : '未装桥接模组';
     }
 
@@ -248,21 +405,19 @@
     if (!authEl) return;
     if (S.auth.signingIn) {
       authEl.innerHTML = `
-        <span class="hub-pill gold">请在浏览器完成 Microsoft 登录…</span>
+        <span class="hub-pill gold">请在浏览器完成登录…</span>
         <button type="button" class="v2-btn ghost" data-hub-act="cancel-signin">取消</button>
       `;
     } else if (S.me) {
       authEl.innerHTML = `
-        <div class="hub-user-chip">
-          <span>MS</span>
+        <div class="hub-user-chip" title="${esc(S.me.displayName)}">
+          ${renderAvatar(S.me.avatarUrl, S.me.displayName, 24, 'hub-ms-avatar')}
           <strong>${esc(S.me.displayName)}</strong>
         </div>
         <button type="button" class="v2-btn ghost" data-hub-act="logout">退出</button>
       `;
     } else {
-      authEl.innerHTML = `
-        <button type="button" class="v2-btn primary" data-hub-act="signin">Microsoft 登录</button>
-      `;
+      authEl.innerHTML = `<button type="button" class="v2-btn primary" data-hub-act="signin">Microsoft 登录</button>`;
     }
 
     authEl.querySelector('[data-hub-act="signin"]')?.addEventListener('click', () => post({ type: 'hubSignIn' }));
@@ -276,12 +431,12 @@
 
   function openCreateDialog() {
     if (!S.me) {
-      window.toast?.('请先点击右上角「Microsoft 登录」再创建组队房间。');
+      window.toast?.('请先点击右上角「Microsoft 登录」。');
       return;
     }
     const bindings = regionBindings(S.region);
     if (!bindings.length) {
-      window.toast?.(`你还没有绑定 ${regionLabel(S.region)} 游戏 UID，先前往「个人主页与绑定」绑定。`);
+      window.toast?.(`请先在「个人主页」绑定一个 ${regionLabel(S.region)} 游戏账号。`);
       selectTab('profile', false);
       return;
     }
@@ -303,9 +458,13 @@
       window.toast?.('请先使用 Microsoft 账号登录。');
       return;
     }
+    if (S.currentRoom && S.currentRoom.roomId === room.roomId) {
+      selectTab('room', false);
+      return;
+    }
     const bindings = regionBindings(room.region);
     if (!bindings.length) {
-      window.toast?.(`你还没有绑定 ${regionLabel(room.region)} 游戏 UID，先前往「个人主页与绑定」绑定。`);
+      window.toast?.(`请先在「个人主页」绑定一个 ${regionLabel(room.region)} 游戏账号。`);
       selectTab('profile', false);
       return;
     }
@@ -321,6 +480,7 @@
     $id('hubJoinRoomDialog').showModal();
   }
 
+  // 房间大厅始终显示全部车队列表（即使已在房间内也可自由查看）
   function renderLobby() {
     const body = $id('hubLobbyBody');
     if (!body) return;
@@ -331,60 +491,65 @@
       badge.hidden = S.rooms.length === 0;
     }
 
-    if (S.currentRoom) {
-      renderActiveRoom(body, S.currentRoom);
-      return;
-    }
-
     const needSignInBanner = !S.me ? `
       <div class="hub-card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
         <div>
-          <h3 style="margin:0 0 4px;">使用 Microsoft 账号即可加入组队大厅</h3>
-          <p class="hub-muted">采用标准桌面 OAuth PKCE 登录，不保存密码与机密；1 个大厅账号可绑定多个国服 / 国际服游戏 UID。</p>
+          <h3 style="margin:0 0 4px;">登录 Microsoft 账号开始组队</h3>
+          <p class="hub-muted">支持绑定多个国服 / 国际服游戏账号，快速建房并自动同步游戏房号。</p>
         </div>
         <button type="button" class="v2-btn primary" id="hubInlineSignInBtn">Microsoft 登录</button>
       </div>` : '';
 
     const cards = S.rooms.length
       ? S.rooms.map(r => {
-        const statusCls = r.status === 'recruiting' ? 'green' : r.status === 'in_game' ? 'pink' : r.status === 'settled' ? 'gold' : '';
-        const statusTxt = { recruiting: '招募中', host_launching: '房主启动中', in_game: '游戏内', settled: '已结束' }[r.status] || r.status;
+        const isMine = S.currentRoom && S.currentRoom.roomId === r.roomId;
+        const statusCls = r.status === 'recruiting' ? 'green' : r.status === 'playing' || r.status === 'game_ready' ? 'pink' : r.status === 'finished' ? 'gold' : '';
+        const statusTxt = ROOM_STATUS_TEXT[r.status] || r.status;
         return `
-          <article class="hub-room-card">
+          <article class="hub-room-card ${isMine ? 'is-mine' : ''}">
             <div class="hub-room-card-top">
-              <h4>${esc(r.title)}</h4>
+              <h4>${esc(r.title)} ${isMine ? '<span class="hub-pill pink">我的房间</span>' : ''}</h4>
               <span class="hub-pill ${statusCls}">${esc(statusTxt)}</span>
             </div>
             <div class="hub-room-note">${esc(r.note || '暂无备注')}</div>
             <div class="hub-room-meta">
               <span class="hub-pill">${esc(regionLabel(r.region))}</span>
-              <span>房主：${esc(r.hostDisplayName)} (${esc(r.hostActiveUid)})</span>
+              <span class="hub-room-host">
+                ${renderAvatar(r.hostAvatarUrl, r.hostDisplayName, 22, 'hub-ms-avatar')}
+                <span>${esc(r.hostDisplayName)} (${esc(r.hostActiveUid)})</span>
+              </span>
               ${r.hasPassword ? '<span class="hub-pill gold">加密</span>' : ''}
             </div>
             <div class="hub-room-foot">
               <span class="hub-muted">${r.memberCount} / ${r.capacity} 人 · ${formatTime(r.lastActivityAt)}</span>
-              <button type="button" class="v2-btn primary" data-hub-join="${esc(r.roomId)}">加入队伍</button>
+              ${isMine
+                ? `<button type="button" class="v2-btn primary" data-hub-enter-mine="1">回到我的房间</button>`
+                : `<button type="button" class="v2-btn primary" data-hub-join="${esc(r.roomId)}">加入队伍</button>`}
             </div>
           </article>
         `;
       }).join('')
-      : `<div class="hub-card"><p class="hub-muted" style="text-align:center;padding:24px 0;">${esc(regionLabel(S.region))} 当前暂无招募中的队伍，点击右上角「创建组队房间」开一局吧。</p></div>`;
+      : `<div class="hub-card"><p class="hub-muted" style="text-align:center;padding:24px 0;">${esc(regionLabel(S.region))} 暂无活跃房间，点击右上角「创建组队房间」开一局吧。</p></div>`;
 
     body.innerHTML = `
       ${needSignInBanner}
       <div class="hub-card">
         <div class="hub-card-head">
           <div class="hub-toolbar">
-            <input id="hubSearchInput" class="hub-input" value="${esc(S.roomQuery)}" placeholder="搜索房名、备注、房主或 UID" />
+            <input id="hubSearchInput" class="hub-input" value="${esc(S.roomQuery)}" placeholder="搜索房名、备注或房间号" />
             <select id="hubStatusSelect" class="v2-select">
               <option value="" ${S.roomStatusFilter === '' ? 'selected' : ''}>全部状态</option>
-              <option value="recruiting" ${S.roomStatusFilter === 'recruiting' ? 'selected' : ''}>仅看招募中</option>
-              <option value="in_game" ${S.roomStatusFilter === 'in_game' ? 'selected' : ''}>游戏中</option>
-              <option value="settled" ${S.roomStatusFilter === 'settled' ? 'selected' : ''}>已结算</option>
+              <option value="recruiting" ${S.roomStatusFilter === 'recruiting' ? 'selected' : ''}>招募中</option>
+              <option value="game_ready" ${S.roomStatusFilter === 'game_ready' ? 'selected' : ''}>游戏房就绪</option>
+              <option value="playing" ${S.roomStatusFilter === 'playing' ? 'selected' : ''}>对局中</option>
+              <option value="finished" ${S.roomStatusFilter === 'finished' ? 'selected' : ''}>已结束</option>
             </select>
             <button type="button" class="v2-btn ghost" id="hubRefreshRoomsBtn">刷新</button>
           </div>
-          <button type="button" class="v2-btn primary" id="hubOpenCreateBtn">+ 创建组队房间</button>
+          <div class="hub-toolbar">
+            ${S.currentRoom ? `<button type="button" class="v2-btn ghost" id="hubBackToRoomBtn">回到当前房间 (${S.currentRoom.members.length}/${S.currentRoom.capacity})</button>` : ''}
+            <button type="button" class="v2-btn primary" id="hubOpenCreateBtn">+ 创建组队房间</button>
+          </div>
         </div>
         <div class="hub-rooms-grid">${cards}</div>
       </div>
@@ -392,6 +557,7 @@
 
     $id('hubInlineSignInBtn')?.addEventListener('click', () => post({ type: 'hubSignIn' }));
     $id('hubOpenCreateBtn')?.addEventListener('click', openCreateDialog);
+    $id('hubBackToRoomBtn')?.addEventListener('click', () => selectTab('room', false));
     $id('hubRefreshRoomsBtn')?.addEventListener('click', () => {
       S.roomQuery = $id('hubSearchInput')?.value || '';
       S.roomStatusFilter = $id('hubStatusSelect')?.value || '';
@@ -402,6 +568,9 @@
     });
     $id('hubStatusSelect')?.addEventListener('change', () => $id('hubRefreshRoomsBtn')?.click());
 
+    body.querySelectorAll('[data-hub-enter-mine]').forEach(btn => {
+      btn.addEventListener('click', () => selectTab('room', false));
+    });
     body.querySelectorAll('[data-hub-join]').forEach(btn => {
       btn.addEventListener('click', () => {
         const room = S.rooms.find(x => x.roomId === btn.dataset.hubJoin);
@@ -410,11 +579,20 @@
     });
   }
 
-  function renderActiveRoom(body, room) {
+  function renderRoomPanel() {
+    const body = $id('hubRoomBody');
+    if (!body) return;
+    const room = S.currentRoom;
+    if (!room) {
+      body.innerHTML = '<div class="hub-card"><p class="hub-muted">当前未加入任何组队房间。</p></div>';
+      return;
+    }
+
     const isHost = S.me && room.hostUserId === S.me.userId;
     const bindings = regionBindings(room.region);
     const gr = room.gameRoom;
-    const statusTxt = { recruiting: '招募中', host_launching: '房主正在启动游戏', in_game: '游戏房间已就绪', settled: '本局已结算' }[room.status] || room.status;
+    const statusTxt = ROOM_STATUS_TEXT[room.status] || room.status;
+    const selfMember = room.members.find(m => m.self);
 
     const gameRoomBanner = gr && gr.gameRoomId > 0 ? `
       <div class="hub-gameroom-banner">
@@ -430,8 +608,8 @@
       </div>` : `
       <div class="hub-notice-warn">
         ${isHost
-          ? '请先启动游戏并在游戏内手动创建一个组队房间；装有内置 <strong>HubBridgeMod</strong> 的游戏客户端会自动捕获房号与密码并广播给队友。'
-          : '等待房主启动游戏并在游戏内创建房间；房主建房后，这里会自动捕获房号并触发队友自动进房。'}
+          ? '启动游戏并在游戏内建房后，内置 <strong>HubBridgeMod</strong> 会自动同步房号与密码给队友。'
+          : '等待房主在游戏内建房，建房后将自动同步房号并通知进房。'}
       </div>`;
 
     const memberCards = room.members.map(m => {
@@ -439,9 +617,9 @@
       return `
         <div class="hub-member-card ${m.self ? 'is-self' : ''}">
           <div class="hub-member-top">
-            <div class="hub-avatar">${esc((m.activeNick || m.displayName || '?').slice(0, 1))}</div>
+            ${renderAvatar(m.avatarUrl, m.displayName || m.activeNick, 42, 'hub-avatar round')}
             <div class="hub-member-info">
-              <strong>${esc(m.displayName)} ${m.isHost ? '<span class="hub-pill pink">房主</span>' : ''}</strong>
+              <strong><span>${esc(m.displayName)}</span> ${m.isHost ? '<span class="hub-pill pink">房主</span>' : ''}</strong>
               <small>${esc(m.activeNick || 'UID')} · ${esc(m.activeUid)}${m.activeLevel ? ` · Lv.${m.activeLevel}` : ''}</small>
             </div>
           </div>
@@ -451,7 +629,7 @@
           </div>
           ${m.joinError ? `<small style="color:#fb7185;">${esc(m.joinError)}</small>` : ''}
           <div class="hub-member-actions">
-            <button type="button" class="v2-btn ghost" data-hub-view-user="${esc(m.userId)}">查看资料</button>
+            <button type="button" class="v2-btn ghost" data-hub-view-user="${esc(m.userId)}">查看主页</button>
             ${isHost && !m.isHost ? `<button type="button" class="v2-btn ghost" data-hub-kick="${esc(m.userId)}">移出</button>` : ''}
           </div>
         </div>
@@ -477,11 +655,14 @@
               <span>自动进房</span>
               <input id="hubAutoJoinSwitch" type="checkbox" switch ${S.autoJoinEnabled ? 'checked' : ''} />
             </label>
-            ${bindings.length > 1 ? `<select id="hubRoomSwitchUid" class="v2-select">${bindings.map(b => `<option value="${esc(b.uid)}">${esc(b.nick || b.uid)} (${esc(b.uid)})</option>`).join('')}</select>` : ''}
-            ${isHost ? `<button type="button" class="v2-btn primary" id="hubHostLaunchBtn">启动游戏去开房</button>` : ''}
-            ${isHost && room.status === 'settled' ? `<button type="button" class="v2-btn ghost" id="hubReopenBtn">开启下一局招募</button>` : ''}
-            ${room.latestMatch ? `<button type="button" class="v2-btn ghost" id="hubOpenLatestSettleBtn">查看本局结算</button>` : ''}
-            <button type="button" class="v2-btn ghost" id="hubLeaveRoomBtn">退出房间</button>
+            ${bindings.length > 1 ? `<select id="hubRoomSwitchUid" class="v2-select">${bindings.map(b => `<option value="${esc(b.uid)}" ${selfMember?.activeUid === b.uid ? 'selected' : ''}>${esc(b.nick || b.uid)} (${esc(b.uid)})</option>`).join('')}</select>` : ''}
+            ${isHost ? `<button type="button" class="v2-btn primary" id="hubHostLaunchBtn">启动游戏开房</button>` : ''}
+            ${isHost && room.status === 'finished' ? `<button type="button" class="v2-btn ghost" id="hubReopenBtn">开启下一局</button>` : ''}
+            ${room.latestMatch ? `<button type="button" class="v2-btn ghost" id="hubOpenLatestSettleBtn">查看战报</button>` : ''}
+            <button type="button" class="v2-btn ghost" id="hubBrowseLobbyBtn">逛房间大厅</button>
+            ${isHost
+              ? `<button type="button" class="v2-btn hub-btn-danger" id="hubDisbandRoomBtn">解散房间</button>`
+              : `<button type="button" class="v2-btn ghost" id="hubLeaveRoomBtn">退出房间</button>`}
           </div>
         </div>
         ${gameRoomBanner}
@@ -511,7 +692,9 @@
       S.autoJoinEnabled = e.target.checked;
       post({ type: 'hubSetAutoJoin', enabled: S.autoJoinEnabled });
     });
+    $id('hubBrowseLobbyBtn')?.addEventListener('click', () => selectTab('lobby', false));
     $id('hubLeaveRoomBtn')?.addEventListener('click', () => post({ type: 'hubLeaveRoom' }));
+    $id('hubDisbandRoomBtn')?.addEventListener('click', openDisbandDialog);
     $id('hubReopenBtn')?.addEventListener('click', () => post({ type: 'hubReopenRoom' }));
     $id('hubHostLaunchBtn')?.addEventListener('click', () => post({ type: 'hubHostLaunchGame', mode: 'bypassSteam' }));
     $id('hubTriggerJoinBtn')?.addEventListener('click', () => {
@@ -555,117 +738,317 @@
     });
   }
 
+  function pickSelectedBinding(bindings) {
+    if (!bindings?.length) return null;
+    const found = bindings.find(b => `${b.region}:${b.uid}` === S.selectedBindingKey);
+    if (found) return found;
+    const primary = bindings.find(b => b.isPrimary) || bindings[0];
+    S.selectedBindingKey = `${primary.region}:${primary.uid}`;
+    return primary;
+  }
+
+  function renderMatchDetailTable(players) {
+    if (!players?.length) return '<div class="account-match-detail"><p class="hub-muted">暂无同局玩家明细</p></div>';
+    const rows = players.map(p => `
+      <tr class="${p.isSelf ? 'self' : ''}">
+        <td>${p.rank > 0 ? esc(p.rank) : '—'}</td>
+        <td>
+          <div class="account-detail-player">
+            ${imgUrl(p.image) ? `<img class="account-detail-avatar" src="${esc(p.image)}" alt="" loading="lazy" />` : '<span class="account-detail-avatar placeholder" aria-hidden="true"></span>'}
+            <div>
+              <strong>${esc(p.name || p.playerId)}</strong>${p.isSelf ? ' <em class="account-tag">我</em>' : ''}
+              <small>Lv.${esc(p.playerLevel ?? '—')}</small>
+            </div>
+          </div>
+        </td>
+        <td>${esc(p.character || p.heroId || '—')}</td>
+        <td>${esc(p.level)}</td>
+        <td>${esc(p.gold)}</td>
+        <td>${p.gaveUp ? '放弃' : '—'}</td>
+      </tr>
+    `).join('');
+    return `
+      <div class="account-match-detail">
+        <table class="account-detail-table">
+          <thead>
+            <tr><th>排名</th><th>玩家</th><th>角色</th><th>局内等级</th><th>星币</th><th>状态</th></tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  function renderBoundShowcaseHtml(binding) {
+    if (!binding) {
+      return `<div class="hub-card"><p class="hub-muted">尚未绑定游戏账号，在上方选择一个本机 UID 或在线游戏角色即可展示完整战绩与好友状态。</p></div>`;
+    }
+
+    const snap = binding.snapshot;
+    const hasLocalCred = (S.localAccounts || []).some(a => a.uid === binding.uid);
+    const isRefreshing = S.liveLoadingUid === binding.uid;
+    const liveData = S.liveByUid[binding.uid] || null;
+    const need = Number(snap?.expNeed) || 0;
+    const exp = Number(snap?.exp) || 0;
+    const expPct = need > 0 ? Math.max(0, Math.min(100, exp / need * 100)) : 0;
+
+    const characters = snap?.characters || [];
+    const topChar = [...characters].sort((a, b) => (Number(b.fightCount) || 0) - (Number(a.fightCount) || 0))[0];
+    const fights = snap?.fightCount ?? 0;
+    const wins = snap?.winCount ?? 0;
+    const winRate = fights > 0 ? `${(wins * 100 / fights).toFixed(1)}%` : '—';
+    const winMaps = snap?.winMaps || [];
+    const achievements = (snap?.achievements || []).filter(a => a && a.name);
+    const matches = snap?.recentMatches || [];
+
+    const statCard = (label, val) => `<article class="account-stat"><span>${esc(label)}</span><strong>${esc(val)}</strong></article>`;
+    const statsGrid = snap ? [
+      statCard('总对局', fights || '—'),
+      statCard('胜场', wins || '—'),
+      statCard('胜率', winRate),
+      statCard('获赞', snap.praiseNum ?? '—'),
+      statCard('角色卡', snap.roleCardCount || characters.length || '—'),
+      statCard('皮肤', snap.skinCount ?? '—'),
+      statCard('装扮', snap.adornCount ?? '—'),
+      statCard('通关地图', winMaps.length),
+      statCard('最常用角色', snap.useHeroName || topChar?.name || '—'),
+      statCard('信誉分', snap.creditScore ?? '—'),
+      statCard('注册时间', formatTime(snap.createdAtGame)),
+      statCard('最近登录', formatTime(snap.lastLoginAtGame))
+    ].join('') : '';
+
+    // 角色使用子面板
+    const charQ = S.charSearch.trim().toLowerCase();
+    const filteredChars = characters.filter(c => (!S.charPlayedOnly || (Number(c.fightCount) || 0) > 0) && `${c.name || ''} ${c.id}`.toLowerCase().includes(charQ));
+    const charsHtml = `
+      <div class="hub-toolbar">
+        <input id="hubCharSearch" class="hub-input" value="${esc(S.charSearch)}" placeholder="筛选角色名或 ID…" />
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+          <input id="hubCharPlayedOnly" type="checkbox" ${S.charPlayedOnly ? 'checked' : ''} /> 仅看使用过
+        </label>
+        <span class="hub-muted">共 ${filteredChars.length} / ${characters.length} 名角色</span>
+      </div>
+      <div class="account-character-grid">
+        ${filteredChars.length ? filteredChars.map(c => `
+          <article class="account-character">
+            ${imgUrl(c.image) ? `<img src="${esc(c.image)}" alt="" loading="lazy" />` : '<div class="account-avatar" aria-hidden="true"></div>'}
+            <div>
+              <strong>${esc(c.name || `#${c.id}`)}</strong>
+              <span>${c.level > 0 ? `<em class="account-tag">Lv.${esc(c.level)}</em>` : ''}${c.breakthrough ? '<em class="account-tag breakthrough">已突破</em>' : ''}<b>${c.fightCount == null ? '—' : esc(c.fightCount)}</b>场</span>
+            </div>
+          </article>
+        `).join('') : '<p class="account-empty">暂无匹配的角色数据</p>'}
+      </div>`;
+
+    // 最近对局子面板
+    const matchesHtml = `
+      <div class="account-recent">
+        ${matches.length ? matches.map(m => {
+          const key = `${binding.uid}:${m.replayId || ('i' + m.index)}`;
+          const open = !!S.expandedMatches[key];
+          const downloadable = m.canDownload === true && /^\d{1,32}$/.test(m.replayId || '');
+          const modeTxt = MODES[m.mapType] || `模式 ${m.mapType ?? '—'}`;
+          return `
+            <article class="account-match">
+              <div class="account-match-main">
+                <strong>
+                  ${imgUrl(m.mapImage) ? `<img class="account-match-map" src="${esc(m.mapImage)}" alt="" loading="lazy" />` : (imgUrl(m.heroImage) ? `<img class="account-match-map" src="${esc(m.heroImage)}" alt="" loading="lazy" />` : '')}
+                  <span>${esc(m.mapName || modeTxt)}</span>
+                </strong>
+                <span>${esc(m.character || '未知角色')} · 第 ${m.rank > 0 ? esc(m.rank) : '—'} 名</span>
+                <small>${esc(modeTxt)} · ${esc(formatTime(m.playedAt))}${m.version ? ` · ${esc(m.version)}` : ''}</small>
+                <small class="account-replay-id">回放 ID ${esc(m.replayId || '—')}</small>
+              </div>
+              <div class="account-match-actions">
+                ${downloadable ? `<button type="button" class="v2-btn" data-hub-dl-replay="${esc(m.replayId)}" data-hub-dl-region="${esc(binding.region)}">下载回放</button>` : '<span class="hub-muted">无回放</span>'}
+                ${m.players?.length ? `<button type="button" class="v2-btn" data-hub-toggle-detail="${esc(key)}">${open ? '收起详情' : '查看详情'}</button>` : ''}
+              </div>
+              ${open ? renderMatchDetailTable(m.players) : ''}
+            </article>
+          `;
+        }).join('') : '<p class="account-empty">暂无近期对局记录，点击上方「直连刷新最新战绩与好友」同步。</p>'}
+      </div>`;
+
+    // 好友状态子面板
+    const friendQ = S.friendSearch.trim().toLowerCase();
+    const friendsList = liveData?.friends || null;
+    const filteredFriends = (friendsList || []).filter(f =>
+      (!S.friendOnlineOnly || f.status !== 'offline') &&
+      `${f.name || ''} ${f.note || ''} ${f.uid || ''}`.toLowerCase().includes(friendQ)
+    );
+    const friendsHtml = `
+      <div class="hub-toolbar">
+        <input id="hubFriendSearch" class="hub-input" value="${esc(S.friendSearch)}" placeholder="搜索好友昵称、备注或 UID…" />
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+          <input id="hubFriendOnlineOnly" type="checkbox" ${S.friendOnlineOnly ? 'checked' : ''} /> 仅看在线
+        </label>
+        ${hasLocalCred ? `<button type="button" class="v2-btn ghost" id="hubRefreshFriendsBtn" ${isRefreshing ? 'disabled' : ''}>${isRefreshing ? '刷新中…' : '刷新好友状态'}</button>` : ''}
+        ${liveData?.capturedAt ? `<span class="hub-muted">更新于 ${esc(formatTime(liveData.capturedAt))}</span>` : ''}
+      </div>
+      <div class="account-friends">
+        ${friendsList === null
+          ? `<p class="account-empty">${hasLocalCred ? '点击「刷新好友状态」或上方「直连刷新最新战绩与好友」查看实时好友状态。' : '当前机器未检测到该 UID 的本机游戏凭据。'}</p>`
+          : filteredFriends.length
+            ? filteredFriends.map(f => {
+              const st = FRIEND_STATUS_TEXT[f.status] ? f.status : 'unknown';
+              return `
+                <article class="account-friend">
+                  ${imgUrl(f.image) ? `<img class="account-avatar" src="${esc(f.image)}" alt="" loading="lazy" />` : '<div class="account-avatar" aria-hidden="true"></div>'}
+                  <div class="account-friend-main">
+                    <strong>${esc(f.name)}</strong>
+                    ${f.note ? `<small>${esc(f.note)}</small>` : ''}
+                    <small>UID ${esc(f.uid)} · Lv.${esc(f.level)}</small>
+                    ${st === 'offline' && f.offlineAt ? `<small>上次离线 · ${esc(formatTime(f.offlineAt))}</small>` : ''}
+                  </div>
+                  <span class="account-badge ${esc(st)}">${esc(FRIEND_STATUS_TEXT[st] || '未知')}</span>
+                </article>`;
+            }).join('')
+            : '<p class="account-empty">暂无匹配的好友</p>'}
+      </div>`;
+
+    return `
+      <div class="hub-card">
+        <div class="hub-showcase-head">
+          <div class="hub-showcase-id">
+            ${renderAvatar(binding.headImage || snap?.headImage, binding.nick || binding.uid, 56, 'hub-showcase-avatar')}
+            <div class="account-profile-main">
+              <div class="account-profile-title">
+                <strong>${esc(snap?.nick || binding.nick || binding.uid)}</strong>
+                <span class="hub-pill">${esc(regionLabel(binding.region))}</span>
+                ${binding.isPrimary ? '<span class="hub-pill pink">主号</span>' : ''}
+                <span class="account-uid">UID ${esc(binding.uid)}</span>
+              </div>
+              <div class="account-profile-level">
+                <span>Lv.${esc(snap?.level ?? binding.level ?? 0)}</span>
+                ${need > 0
+                  ? `<div class="account-exp" role="img" aria-label="${esc(exp + ' / ' + need)}"><i style="width:${expPct.toFixed(1)}%"></i></div><small>${esc(exp)} / ${esc(need)}</small>`
+                  : (snap ? `<small>${esc(exp)} EXP</small>` : '<small>未同步详细快照</small>')}
+                ${snap?.capturedAt ? `<small class="hub-muted">· 同步于 ${esc(formatTime(snap.capturedAt))}</small>` : ''}
+              </div>
+            </div>
+          </div>
+
+          <div class="hub-toolbar">
+            ${hasLocalCred ? `<button type="button" class="v2-btn primary" id="hubRefreshLiveBtn" ${isRefreshing ? 'disabled' : ''}>${isRefreshing ? '正在刷新…' : '直连刷新最新战绩与好友'}</button>` : ''}
+            ${!binding.isPrimary ? `<button type="button" class="v2-btn ghost" data-hub-primary="${esc(binding.region)}:${esc(binding.uid)}">设为主号</button>` : ''}
+            <button type="button" class="v2-btn ghost" data-hub-unbind="${esc(binding.region)}:${esc(binding.uid)}">解绑</button>
+          </div>
+        </div>
+
+        ${snap ? `
+          <div class="account-stat-grid">${statsGrid}</div>
+          <div class="account-achievements">
+            <span class="account-section-label">成就徽章</span>
+            ${achievements.length
+              ? `<div class="account-chips">${achievements.map(a => `<span class="account-chip">${esc(a.name)}</span>`).join('')}</div>`
+              : '<span class="hub-muted">暂无成就展示</span>'}
+          </div>
+          <div class="account-winmaps">
+            <span class="account-section-label">通关地图 · ${winMaps.length}</span>
+            ${winMaps.length
+              ? `<div class="account-chips">${winMaps.map(m => `<span class="account-chip">${imgUrl(m.image) ? `<img class="account-map-thumb" src="${esc(m.image)}" alt="" loading="lazy" />` : ''}${esc(m.name || `地图 ${m.mapId}`)}<b>${esc(m.wins)}</b><small>胜</small></span>`).join('')}</div>`
+              : '<span class="hub-muted">暂无地图胜场记录</span>'}
+          </div>
+        ` : `<div class="hub-notice-warn">该账号当前仅绑定了 UID，点击「直连刷新最新战绩与好友」即可拉取完整等级、角色、战绩与好友列表。</div>`}
+
+        <div class="hub-subtabs" role="tablist" aria-label="游戏账号详情切换">
+          <button type="button" role="tab" aria-selected="${S.profileSubTab === 'characters'}" data-hub-subtab="characters">角色使用 (${characters.length})</button>
+          <button type="button" role="tab" aria-selected="${S.profileSubTab === 'matches'}" data-hub-subtab="matches">最近对局 (${matches.length})</button>
+          <button type="button" role="tab" aria-selected="${S.profileSubTab === 'friends'}" data-hub-subtab="friends">好友状态${friendsList ? ` (${friendsList.length})` : ''}</button>
+        </div>
+
+        <div role="tabpanel" ${S.profileSubTab === 'characters' ? '' : 'hidden'}>${charsHtml}</div>
+        <div role="tabpanel" ${S.profileSubTab === 'matches' ? '' : 'hidden'}>${matchesHtml}</div>
+        <div role="tabpanel" ${S.profileSubTab === 'friends' ? '' : 'hidden'}>${friendsHtml}</div>
+      </div>`;
+  }
+
   function renderProfile() {
     const body = $id('hubProfileBody');
     if (!body) return;
 
     const me = S.me;
-    const priv = me?.privacy || {};
     const live = (S.bridge.sessions || []).find(s => s.isLoggedIn);
+    const selectedBinding = me ? pickSelectedBinding(me.bindings) : null;
 
-    const accountSection = !me ? `
+    const masterSection = !me ? `
       <div class="hub-card">
-        <div class="hub-card-head"><h3>Microsoft 大厅账号</h3></div>
-        <p class="hub-muted">登录后即可创建/加入组队房间、绑定多个游戏 UID，并在下方管理 10 项公开隐私权限。</p>
+        <div class="hub-card-head"><h3>Microsoft 账号</h3></div>
+        <p class="hub-muted">登录后可绑定游戏账号、查看个人战绩与好友状态，并管理公开隐私设置。</p>
         <div class="hub-toolbar" style="margin-top:12px;">
           <button type="button" class="v2-btn primary" id="hubProfileSignInBtn">Microsoft 登录</button>
-          <button type="button" class="v2-btn ghost" id="hubOpenLocalAccountBtn">打开本机直连我的账号（好友在线 / 凭据管理）</button>
+          <button type="button" class="v2-btn ghost" id="hubOpenLocalAccountBtn">本机凭据管理</button>
         </div>
       </div>` : `
-      <div class="hub-profile-grid">
-        <div class="hub-card">
-          <div class="hub-card-head">
-            <h3>大师名片与 1 对 N 游戏 UID 绑定</h3>
-            <button type="button" class="v2-btn ghost" id="hubPreviewSelfBtn">预览他人视角</button>
-          </div>
-          <div class="v2-field">
-            <label for="hubDisplayNameInput">大厅显示昵称</label>
-            <div class="hub-toolbar">
-              <input id="hubDisplayNameInput" class="hub-input" maxlength="24" value="${esc(me.displayName)}" />
-              <button type="button" class="v2-btn primary" id="hubSaveNameBtn">保存昵称</button>
+      <div class="hub-card">
+        <div class="hub-profile-master">
+          <div class="hub-profile-identity">
+            ${renderAvatar(me.avatarUrl, me.displayName, 52, 'hub-ms-avatar')}
+            <div>
+              <div class="hub-toolbar" style="gap:8px;">
+                <input id="hubDisplayNameInput" class="hub-input" style="min-width:160px;padding:6px 10px;" maxlength="24" value="${esc(me.displayName)}" aria-label="大厅显示昵称" />
+                <button type="button" class="v2-btn ghost" id="hubSaveNameBtn">改名</button>
+              </div>
+              <div class="hub-muted" style="margin-top:4px;">ID: ${esc(me.userId)} · 已绑定 ${(me.bindings || []).length} 个游戏账号</div>
             </div>
           </div>
 
-          <div class="hub-notice-warn" style="margin:12px 0;">
-            安全约定：<strong>Toys 永不上传您的 <code>account.json</code> 登录凭据或好友列表</strong>；仅同步公开游戏档案快照与 UID 归属，供队友组队确认。
-          </div>
-
-          <div class="hub-binding-list">
-            ${(me.bindings || []).length ? me.bindings.map(b => `
-              <div class="hub-binding-row">
-                <div class="hub-binding-main">
-                  ${imgUrl(b.headImage) ? `<img class="hub-avatar" src="${esc(b.headImage)}" alt="" />` : `<div class="hub-avatar">${esc((b.nick || b.uid).slice(0, 1))}</div>`}
-                  <div>
-                    <strong>${esc(b.nick || '未同步昵称')} ${b.isPrimary ? '<span class="hub-pill pink">主号</span>' : ''} <span class="hub-pill">${esc(regionLabel(b.region))}</span></strong>
-                    <div class="hub-muted">UID: ${esc(b.uid)}${b.level ? ` · Lv.${b.level}` : ''}${b.updatedAt ? ` · 更新于 ${formatTime(b.updatedAt)}` : ''}</div>
-                  </div>
-                </div>
-                <div class="hub-toolbar">
-                  ${!b.isPrimary ? `<button type="button" class="v2-btn ghost" data-hub-primary="${esc(b.region)}:${esc(b.uid)}">设为主号</button>` : ''}
-                  <button type="button" class="v2-btn ghost" data-hub-sync-uid="${esc(b.uid)}">同步本机战绩快照</button>
-                  <button type="button" class="v2-btn ghost" data-hub-unbind="${esc(b.region)}:${esc(b.uid)}">解绑</button>
-                </div>
-              </div>
-            `).join('') : '<p class="hub-muted">尚未绑定任何游戏账号。</p>'}
-          </div>
-
-          <div class="hub-toolbar" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--v2-border);">
-            <select id="hubLocalUidSelect" class="v2-select">
-              ${(S.localAccounts || []).length
-                ? S.localAccounts.map(a => `<option value="${esc(a.uid)}">${esc(a.uid)} (${esc(regionLabel(a.region))})</option>`).join('')
-                : '<option value="">未发现本机凭据（请先在本机直连模块同意授权并导出凭据）</option>'}
-            </select>
-            <button type="button" class="v2-btn primary" id="hubBindLocalBtn" ${(S.localAccounts || []).length ? '' : 'disabled'}>从本机凭据绑定并同步</button>
-            ${live ? `<button type="button" class="v2-btn ghost" id="hubBindBridgeBtn">直接绑定在线游戏角色 (${esc(live.uid)})</button>` : ''}
-            <button type="button" class="v2-btn ghost" id="hubOpenLocalAccountBtn">本机直连我的账号</button>
+          <div class="hub-toolbar">
+            <button type="button" class="v2-btn primary" id="hubOpenPrivacyBtn">隐私设置</button>
+            <button type="button" class="v2-btn ghost" id="hubPreviewSelfBtn">预览他人视角</button>
+            <button type="button" class="v2-btn ghost" id="hubOpenLocalAccountBtn">凭据管理</button>
           </div>
         </div>
 
-        <div class="hub-card">
-          <div class="hub-card-head">
-            <h3>10 项个人主页隐私开关（服务端强制生效）</h3>
-            <button type="button" class="v2-btn primary" id="hubSavePrivacyBtn">保存隐私设置</button>
-          </div>
-          <div class="hub-switch-list">
-            ${PRIVACY_ITEMS.map(([key, title, desc]) => `
-              <label class="hub-switch-row">
-                <span><strong>${esc(title)}</strong><small>${esc(desc)}</small></span>
-                <input type="checkbox" switch data-hub-priv="${esc(key)}" ${priv[key] ? 'checked' : ''} />
-              </label>
-            `).join('')}
-          </div>
+        <div class="hub-binding-strip">
+          ${(me.bindings || []).map(b => {
+            const key = `${b.region}:${b.uid}`;
+            const isSel = selectedBinding && key === `${selectedBinding.region}:${selectedBinding.uid}`;
+            return `
+              <button type="button" class="hub-binding-pill ${isSel ? 'is-active' : ''}" data-hub-select-binding="${esc(key)}">
+                ${imgUrl(b.headImage) ? `<img src="${esc(b.headImage)}" alt="" />` : ''}
+                <span>${esc(b.nick || b.uid)}</span>
+                <span class="hub-pill">${esc(b.region === 'int' ? 'INT' : 'CN')}</span>
+              </button>`;
+          }).join('')}
+          <select id="hubLocalUidSelect" class="v2-select" aria-label="选择本机游戏 UID">
+            ${(S.localAccounts || []).length
+              ? S.localAccounts.map(a => `<option value="${esc(a.uid)}">UID ${esc(a.uid)}${a.region ? ` (${esc(regionLabel(a.region))})` : ''}</option>`).join('')
+              : '<option value="">未检测到本机游戏凭据</option>'}
+          </select>
+          <button type="button" class="v2-btn ghost" id="hubBindLocalBtn" ${(S.localAccounts || []).length ? '' : 'disabled'}>+ 绑定并同步本机账号</button>
+          ${live ? `<button type="button" class="v2-btn ghost" id="hubBindBridgeBtn">+ 绑定在线角色 (${esc(live.uid)})</button>` : ''}
         </div>
-      </div>`;
+      </div>
+      ${renderBoundShowcaseHtml(selectedBinding)}`;
 
     const lookupSection = `
-      <div class="hub-card">
-        <div class="hub-card-head">
-          <h3>玩家公开资料查询</h3>
-          <div class="hub-toolbar">
+      <details class="hub-details-box" ${S.viewedProfile ? 'open' : ''}>
+        <summary>
+          <span>玩家公开名片查询</span>
+          <span class="hub-muted">按游戏 UID 或大厅 ID 查他人资料</span>
+        </summary>
+        <div class="hub-details-body">
+          <div class="hub-toolbar" style="margin-bottom:12px;">
             <select id="hubLookupRegion" class="v2-select">
-              <option value="cn" ${S.lookupRegion === 'cn' ? 'selected' : ''}>按国服 UID 查</option>
-              <option value="int" ${S.lookupRegion === 'int' ? 'selected' : ''}>按国际服 UID 查</option>
-              <option value="user" ${S.lookupRegion === 'user' ? 'selected' : ''}>按大厅 UserID 查</option>
+              <option value="cn" ${S.lookupRegion === 'cn' ? 'selected' : ''}>国服 UID</option>
+              <option value="int" ${S.lookupRegion === 'int' ? 'selected' : ''}>国际服 UID</option>
+              <option value="user" ${S.lookupRegion === 'user' ? 'selected' : ''}>大厅 UserID</option>
             </select>
             <input id="hubLookupInput" class="hub-input" value="${esc(S.lookupInput)}" placeholder="输入游戏 UID 或 UserID" />
-            <button type="button" class="v2-btn primary" id="hubLookupBtn">查询公开名片</button>
+            <button type="button" class="v2-btn primary" id="hubLookupBtn">查询</button>
           </div>
+          ${renderViewedProfileHtml(S.viewedProfile)}
         </div>
-        ${renderViewedProfileHtml(S.viewedProfile)}
-      </div>`;
+      </details>`;
 
-    body.innerHTML = accountSection + lookupSection;
+    body.innerHTML = masterSection + lookupSection;
 
     $id('hubProfileSignInBtn')?.addEventListener('click', () => post({ type: 'hubSignIn' }));
     $id('hubOpenLocalAccountBtn')?.addEventListener('click', () => window.showPage?.('account'));
+    $id('hubOpenPrivacyBtn')?.addEventListener('click', openPrivacyDialog);
     $id('hubPreviewSelfBtn')?.addEventListener('click', () => me && post({ type: 'hubViewProfile', userId: me.userId }));
     $id('hubSaveNameBtn')?.addEventListener('click', () => {
       post({ type: 'hubUpdateProfile', displayName: $id('hubDisplayNameInput')?.value.trim() });
-    });
-    $id('hubSavePrivacyBtn')?.addEventListener('click', () => {
-      const next = {};
-      body.querySelectorAll('[data-hub-priv]').forEach(inp => { next[inp.dataset.hubPriv] = !!inp.checked; });
-      post({ type: 'hubUpdatePrivacy', privacy: next });
     });
     $id('hubBindLocalBtn')?.addEventListener('click', () => {
       const uid = $id('hubLocalUidSelect')?.value;
@@ -675,14 +1058,76 @@
       post({ type: 'hubBindBridgeAccount', setPrimary: !(me?.bindings?.length) });
     });
 
+    body.querySelectorAll('[data-hub-select-binding]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        S.selectedBindingKey = btn.dataset.hubSelectBinding;
+        renderProfile();
+      });
+    });
+
+    const triggerLiveRefresh = () => {
+      if (!selectedBinding) return;
+      post({ type: 'hubRefreshLiveAccount', uid: selectedBinding.uid, syncToHub: true });
+    };
+    $id('hubRefreshLiveBtn')?.addEventListener('click', triggerLiveRefresh);
+    $id('hubRefreshFriendsBtn')?.addEventListener('click', triggerLiveRefresh);
+
+    body.querySelectorAll('[data-hub-subtab]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        S.profileSubTab = btn.dataset.hubSubtab;
+        renderProfile();
+      });
+    });
+
+    $id('hubCharSearch')?.addEventListener('input', e => {
+      S.charSearch = e.target.value;
+      const pos = e.target.selectionStart;
+      renderProfile();
+      const el = $id('hubCharSearch');
+      if (el) { el.focus(); el.setSelectionRange(pos, pos); }
+    });
+    $id('hubCharPlayedOnly')?.addEventListener('change', e => {
+      S.charPlayedOnly = e.target.checked;
+      renderProfile();
+    });
+    $id('hubFriendSearch')?.addEventListener('input', e => {
+      S.friendSearch = e.target.value;
+      const pos = e.target.selectionStart;
+      renderProfile();
+      const el = $id('hubFriendSearch');
+      if (el) { el.focus(); el.setSelectionRange(pos, pos); }
+    });
+    $id('hubFriendOnlineOnly')?.addEventListener('change', e => {
+      S.friendOnlineOnly = e.target.checked;
+      renderProfile();
+    });
+
+    body.querySelectorAll('[data-hub-toggle-detail]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.hubToggleDetail;
+        S.expandedMatches[key] = !S.expandedMatches[key];
+        renderProfile();
+      });
+    });
+    body.querySelectorAll('[data-hub-dl-replay]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.hubDlReplay;
+        const reg = btn.dataset.hubDlRegion;
+        if (/^\d{1,32}$/.test(id || '')) {
+          window.ReplayModule?.openDownloadDialog({
+            replayId: id,
+            cdn: reg === 'int' ? 'GlobalProd' : 'CnProd',
+            autoStart: true
+          });
+        }
+      });
+    });
+
     body.querySelectorAll('[data-hub-primary]').forEach(btn => {
       btn.addEventListener('click', () => {
         const [region, uid] = btn.dataset.hubPrimary.split(':');
         post({ type: 'hubUpdateProfile', primaryRegion: region, primaryUid: uid });
       });
-    });
-    body.querySelectorAll('[data-hub-sync-uid]').forEach(btn => {
-      btn.addEventListener('click', () => post({ type: 'hubBindLocalAccount', uid: btn.dataset.hubSyncUid, setPrimary: false, syncSnapshot: true }));
     });
     body.querySelectorAll('[data-hub-unbind]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -701,9 +1146,9 @@
   }
 
   function renderViewedProfileHtml(p) {
-    if (!p) return '<p class="hub-muted">点击房间队友的「查看资料」或在上方输入游戏 UID / UserID 查看经对方隐私设置裁切后的公开名片。</p>';
+    if (!p) return '<p class="hub-muted">点击房间队友的「查看主页」或在上方输入 UID 查看公开名片。</p>';
     if (p.profileHidden) {
-      return `<div class="hub-notice-warn"><strong>${esc(p.displayName)}</strong> 已关闭所有公开档案模块或仅允许好友/队内可见。</div>`;
+      return `<div class="hub-notice-warn"><strong>${esc(p.displayName)}</strong> 已关闭公开档案展示。</div>`;
     }
 
     const bindingsHtml = (p.bindings || []).map(b => {
@@ -711,14 +1156,14 @@
       return `
         <div class="hub-card" style="background:var(--v2-panel-2);margin-top:10px;">
           <div class="hub-card-head">
-            <div class="hub-binding-main">
-              ${imgUrl(b.headImage) ? `<img class="hub-avatar" src="${esc(b.headImage)}" alt="" />` : `<div class="hub-avatar">${esc((b.nick || p.displayName || '?').slice(0, 1))}</div>`}
+            <div class="hub-member-top">
+              ${renderAvatar(b.headImage, b.nick || p.displayName, 40, 'hub-avatar')}
               <div>
                 <strong>${esc(b.nick || p.displayName)} <span class="hub-pill">${esc(regionLabel(b.region))}</span></strong>
                 <div class="hub-muted">UID ${esc(b.uid)}${b.level ? ` · Lv.${b.level}` : ''}${snap?.creditScore ? ` · 信誉分 ${snap.creditScore}` : ''}${snap?.praiseNum ? ` · 获赞 ${snap.praiseNum}` : ''}</div>
               </div>
             </div>
-            ${snap ? `<span class="hub-pill">快照 ${formatTime(snap.capturedAt)}</span>` : '<span class="hub-pill">暂无战绩快照</span>'}
+            ${snap ? `<span class="hub-pill">更新于 ${formatTime(snap.capturedAt)}</span>` : '<span class="hub-pill">暂无战绩快照</span>'}
           </div>
           ${snap ? `
             <div class="hub-toolbar" style="margin-bottom:10px;">
@@ -745,10 +1190,11 @@
     return `
       <div>
         <div class="hub-toolbar">
+          ${renderAvatar(p.avatarUrl, p.displayName, 36, 'hub-ms-avatar')}
           <strong>${esc(p.displayName)}</strong>
-          <span class="hub-muted">UserID: ${esc(p.userId)} · 最近活跃 ${formatTime(p.lastSeenAt)}</span>
+          <span class="hub-muted">ID: ${esc(p.userId)}${p.lastSeenAt ? ` · 最近活跃 ${formatTime(p.lastSeenAt)}` : ''}</span>
         </div>
-        ${bindingsHtml || '<p class="hub-muted" style="margin-top:10px;">对方隐藏了绑定的游戏 UID 清单。</p>'}
+        ${bindingsHtml || '<p class="hub-muted" style="margin-top:10px;">对方未公开绑定的游戏 UID。</p>'}
       </div>`;
   }
 
@@ -759,8 +1205,8 @@
     if (!S.stage1) {
       body.innerHTML = `
         <div class="hub-card">
-          <h3>暂无本会话对局结算记录</h3>
-          <p class="hub-muted">在游戏内安装 <strong>HubBridgeMod</strong> 并完成一局游戏后，对局结束瞬间将自动弹出「Stage 1 即时战报」，并在后台继续轮询官方回放 CDN 补齐「Stage 2 全量深度数据」。</p>
+          <h3>暂无本会话对局战报</h3>
+          <p class="hub-muted">完成一局游戏后，这里会自动展示即时战报并拉取官方完整回放数据。</p>
         </div>`;
       return;
     }
@@ -768,11 +1214,11 @@
     const s1 = S.stage1;
     const s2 = S.stage2;
     const st2Label = S.stage2Status === 'ready'
-      ? ['Stage 2 完整战报就绪', 'green']
+      ? ['完整战报就绪', 'green']
       : S.stage2Status === 'polling'
-        ? ['Stage 2 官方回放拉取中…', 'gold']
+        ? ['官方回放拉取中…', 'gold']
         : S.stage2Status === 'failed'
-          ? ['Stage 2 暂未就绪', 'danger']
+          ? ['完整回放暂未就绪', 'danger']
           : ['等待拉取回放', ''];
 
     const mergedPlayers = (s1.players || []).map(p => {
@@ -807,7 +1253,7 @@
     const stage2Details = s2 ? `
       <div class="hub-card">
         <div class="hub-card-head">
-          <h3>Stage 2 官方回放深度拆解</h3>
+          <h3>官方回放深度拆解</h3>
           <span class="hub-muted">耗时 ${esc(s2.durationText)} · ${esc(s2.roundCount)} 轮 (${esc(s2.turnCount)} 行动) · ${esc(s2.resultText)}</span>
         </div>
         <div class="hub-toolbar">
@@ -828,8 +1274,8 @@
         </div>
         <div class="hub-toolbar">
           <span class="hub-pill ${st2Label[1]}">${esc(st2Label[0])}</span>
-          ${s1.replayId && S.stage2Status !== 'ready' ? `<button type="button" class="v2-btn ghost" id="hubRetryStage2Btn">重试拉取 CDN</button>` : ''}
-          ${s2 ? `<button type="button" class="v2-btn primary" id="hubOpenFullReplayBtn">在回放分析器中打开完整时间线</button>` : ''}
+          ${s1.replayId && S.stage2Status !== 'ready' ? `<button type="button" class="v2-btn ghost" id="hubRetryStage2Btn">重试拉取回放</button>` : ''}
+          ${s2 ? `<button type="button" class="v2-btn primary" id="hubOpenFullReplayBtn">打开完整回放时间线</button>` : ''}
         </div>
       </div>
       ${S.stage2Message ? `<div class="hub-muted">${esc(S.stage2Message)}</div>` : ''}
@@ -846,8 +1292,11 @@
   }
 
   function renderAll() {
+    syncRoomTabVisibility();
+    renderGlobalRoomBar();
     renderHeader();
     renderLobby();
+    renderRoomPanel();
     renderProfile();
     renderSettlement();
   }
@@ -872,6 +1321,7 @@
       case 'hubAuthState':
         S.auth = msg.payload || S.auth;
         if (!S.auth.signedIn) S.me = null;
+        renderGlobalRoomBar();
         renderHeader();
         renderLobby();
         renderProfile();
@@ -879,10 +1329,26 @@
       case 'hubMe':
         S.me = msg.payload?.me || null;
         S.localAccounts = msg.payload?.localAccounts || S.localAccounts;
+        renderGlobalRoomBar();
         renderHeader();
         renderLobby();
+        renderRoomPanel();
         renderProfile();
         break;
+      case 'hubAccountLiveState': {
+        const p = msg.payload || {};
+        S.liveLoadingUid = p.loading ? (p.uid || '') : '';
+        renderProfile();
+        break;
+      }
+      case 'hubAccountLiveData': {
+        const p = msg.payload || {};
+        if (p.uid) {
+          S.liveByUid[p.uid] = { friends: p.friends || [], capturedAt: p.capturedAt, region: p.region || 'cn' };
+        }
+        renderProfile();
+        break;
+      }
       case 'hubViewedProfile':
         S.viewedProfile = msg.payload || null;
         renderProfile();
@@ -900,10 +1366,18 @@
         S.rooms = msg.payload?.rooms || [];
         renderLobby();
         break;
-      case 'hubRoomState':
+      case 'hubRoomState': {
+        const wasInRoom = !!S.currentRoom;
         S.currentRoom = msg.payload || null;
+        syncRoomTabVisibility();
+        renderGlobalRoomBar();
         renderLobby();
+        renderRoomPanel();
+        if (!wasInRoom && S.currentRoom) {
+          selectTab('room', false);
+        }
         break;
+      }
       case 'hubRoomReset':
         S.roomEvents = [];
         break;
@@ -914,13 +1388,16 @@
           if (!known.has(ev.id)) S.roomEvents.push(ev);
         }
         if (S.roomEvents.length > 150) S.roomEvents.splice(0, S.roomEvents.length - 150);
-        if (S.currentRoom) renderLobby();
+        if (S.currentRoom) renderRoomPanel();
         break;
       }
       case 'hubRoomLeft':
         S.currentRoom = null;
         S.roomEvents = [];
+        syncRoomTabVisibility();
+        renderGlobalRoomBar();
         renderLobby();
+        renderRoomPanel();
         break;
       case 'hubSettlementStage1':
         S.stage1 = msg.payload;

@@ -133,6 +133,7 @@ public sealed class HubUserProfileDto
 {
     public string UserId { get; set; } = "";
     public string DisplayName { get; set; } = "";
+    public string AvatarUrl { get; set; } = "";
     public string PrimaryRegion { get; set; } = "";
     public string PrimaryUid { get; set; } = "";
     public bool IsSelf { get; set; }
@@ -178,6 +179,7 @@ public sealed class HubRoomMemberDto
 {
     public string UserId { get; set; } = "";
     public string DisplayName { get; set; } = "";
+    public string AvatarUrl { get; set; } = "";
     public string ActiveUid { get; set; } = "";
     public string ActiveNick { get; set; } = "";
     public int ActiveHeadIcon { get; set; }
@@ -204,6 +206,7 @@ public sealed class HubRoomSummaryDto
     public string Status { get; set; } = "recruiting";
     public string HostUserId { get; set; } = "";
     public string HostDisplayName { get; set; } = "";
+    public string HostAvatarUrl { get; set; } = "";
     public string HostActiveUid { get; set; } = "";
     public long CreatedAt { get; set; }
     public long LastActivityAt { get; set; }

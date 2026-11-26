@@ -1,4 +1,7 @@
+using System.Collections.Concurrent;
 using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using AstralParty.Toys.Services;
 using AstralParty.Toys.Services.Account;
@@ -14,6 +17,7 @@ public partial class HybridWindow
     private HubLocalBridgeServer? _hubBridge;
     private HubSettlementService? _hubSettlement;
     private AssetLocator? _hubAssets;
+    private readonly ConcurrentDictionary<string, string> _hubAvatarUrlCache = new(StringComparer.Ordinal);
 
     private CancellationTokenSource? _hubSignInCts;
     private CancellationTokenSource? _hubStreamCts;
@@ -183,6 +187,10 @@ public partial class HybridWindow
                     await HandleHubBindLocalAccountAsync(root).ConfigureAwait(false);
                     break;
 
+                case "hubRefreshLiveAccount":
+                    await HandleHubRefreshLiveAccountAsync(root).ConfigureAwait(false);
+                    break;
+
                 case "hubBindBridgeAccount":
                     await HandleHubBindBridgeAccountAsync(root).ConfigureAwait(false);
                     break;
@@ -193,7 +201,7 @@ public partial class HybridWindow
                     var uid = ReadJsonString(root, "uid");
                     var me = await EnsureHubApiClient().UnbindGameAccountAsync(region, uid).ConfigureAwait(false);
                     _hubMe = me;
-                    PushHubMe(me);
+                    await PushHubMeAsync(me).ConfigureAwait(false);
                     Post(new { type = "toast", message = $"已解绑游戏账号 {uid}" });
                     break;
                 }
@@ -202,7 +210,7 @@ public partial class HybridWindow
                 {
                     var userId = ReadJsonString(root, "userId");
                     var profile = await EnsureHubApiClient().GetProfileAsync(userId).ConfigureAwait(false);
-                    PushHubViewedProfile(profile);
+                    await PushHubViewedProfileAsync(profile).ConfigureAwait(false);
                     break;
                 }
 
@@ -211,7 +219,7 @@ public partial class HybridWindow
                     var region = HubSettlementService.NormalizeRegion(ReadJsonString(root, "region"));
                     var uid = ReadJsonString(root, "uid");
                     var profile = await EnsureHubApiClient().GetProfileByUidAsync(region, uid).ConfigureAwait(false);
-                    PushHubViewedProfile(profile);
+                    await PushHubViewedProfileAsync(profile).ConfigureAwait(false);
                     break;
                 }
 
@@ -236,12 +244,16 @@ public partial class HybridWindow
                     await HandleHubLeaveRoomAsync().ConfigureAwait(false);
                     break;
 
+                case "hubDisbandRoom":
+                    await HandleHubDisbandRoomAsync().ConfigureAwait(false);
+                    break;
+
                 case "hubKickMember":
                     if (!string.IsNullOrEmpty(_hubActiveRoomId))
                     {
                         var targetUserId = ReadJsonString(root, "targetUserId");
                         var room = await EnsureHubApiClient().KickMemberAsync(_hubActiveRoomId, targetUserId).ConfigureAwait(false);
-                        ApplyHubRoomUpdate(room);
+                        await ApplyHubRoomUpdateAsync(room).ConfigureAwait(false);
                     }
                     break;
 
@@ -250,7 +262,7 @@ public partial class HybridWindow
                     {
                         var activeUid = ReadJsonString(root, "activeUid");
                         var room = await EnsureHubApiClient().SwitchActiveUidAsync(_hubActiveRoomId, activeUid).ConfigureAwait(false);
-                        ApplyHubRoomUpdate(room);
+                        await ApplyHubRoomUpdateAsync(room).ConfigureAwait(false);
                     }
                     break;
 
@@ -277,7 +289,7 @@ public partial class HybridWindow
                     if (!string.IsNullOrEmpty(_hubActiveRoomId))
                     {
                         var room = await EnsureHubApiClient().ReopenRoomAsync(_hubActiveRoomId).ConfigureAwait(false);
-                        ApplyHubRoomUpdate(room);
+                        await ApplyHubRoomUpdateAsync(room).ConfigureAwait(false);
                     }
                     break;
 
@@ -357,7 +369,6 @@ public partial class HybridWindow
             try
             {
                 _hubMe = await api.GetMeAsync().ConfigureAwait(false);
-                PushHubMe(_hubMe);
             }
             catch (HubApiException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
             {
@@ -371,6 +382,7 @@ public partial class HybridWindow
             }
         }
 
+        var decoratedMe = _hubMe is null ? null : await BuildDecoratedProfileAsync(_hubMe).ConfigureAwait(false);
         Post(new
         {
             type = "hubInitState",
@@ -381,7 +393,7 @@ public partial class HybridWindow
                 autoJoinEnabled = _hubAutoJoinEnabled,
                 serverConfig = _hubServerConfig,
                 auth = BuildAuthPayload(signingIn: false),
-                me = _hubMe is null ? null : BuildDecoratedProfile(_hubMe),
+                me = decoratedMe,
                 localAccounts = DiscoverLocalAccountsForUi(),
                 bridge = BuildBridgeStatusPayload(_hubBridge?.GetActiveSessions() ?? Array.Empty<BridgeSessionState>()),
             }
@@ -407,7 +419,7 @@ public partial class HybridWindow
 
         _hubMe = result.Me;
         Post(new { type = "hubAuthState", payload = BuildAuthPayload(signingIn: false) });
-        PushHubMe(result.Me);
+        await PushHubMeAsync(result.Me).ConfigureAwait(false);
         Post(new { type = "toast", message = $"已通过 Microsoft 账号登录：{result.Me.DisplayName}" });
 
         var activeRegion = HubConfigStore.Load().Hub.ActiveRegion;
@@ -451,7 +463,7 @@ public partial class HybridWindow
         }
 
         _hubMe = await api.GetMeAsync().ConfigureAwait(false);
-        PushHubMe(_hubMe);
+        await PushHubMeAsync(_hubMe).ConfigureAwait(false);
     }
 
     private async Task HandleHubUpdateProfileAsync(JsonElement root)
@@ -461,7 +473,7 @@ public partial class HybridWindow
         var primaryUid = ReadJsonStringOrNull(root, "primaryUid");
         var me = await EnsureHubApiClient().UpdateProfileAsync(displayName, primaryRegion, primaryUid).ConfigureAwait(false);
         _hubMe = me;
-        PushHubMe(me);
+        await PushHubMeAsync(me).ConfigureAwait(false);
         Post(new { type = "toast", message = "个人档案设置已更新" });
     }
 
@@ -471,18 +483,12 @@ public partial class HybridWindow
                       ?? new HubPrivacySettings();
         var me = await EnsureHubApiClient().UpdatePrivacyAsync(privacy).ConfigureAwait(false);
         _hubMe = me;
-        PushHubMe(me);
-        Post(new { type = "toast", message = "10 项隐私开关已同步生效" });
+        await PushHubMeAsync(me).ConfigureAwait(false);
+        Post(new { type = "toast", message = "隐私设置已保存" });
     }
 
     private async Task HandleHubBindLocalAccountAsync(JsonElement root)
     {
-        if (!MyAccountConsent.Granted)
-        {
-            Post(new { type = "toast", message = "请先阅读并确认隐私与凭据安全说明，再读取本机账号凭据。" });
-            return;
-        }
-
         var directory = _modManager.ResolveGameDirectory();
         if (string.IsNullOrWhiteSpace(directory))
         {
@@ -500,21 +506,45 @@ public partial class HybridWindow
             return;
         }
 
+        if (!MyAccountConsent.Granted)
+        {
+            MyAccountConsent.Accept();
+        }
+
         if (syncSnapshot && MyAccountGameRunning(directory))
         {
-            Post(new { type = "toast", message = "检测到游戏正在运行：为防互踢，请退出游戏后再同步完整战绩快照，或通过「绑定当前在线游戏角色」仅绑定 UID。" });
+            Post(new { type = "toast", message = "检测到游戏正在运行，请退出游戏后再同步完整战绩，或使用「绑定在线角色」。" });
             return;
         }
 
         var sync = new HubProfileSyncService(_appDirectory);
         string region;
         HubGameSnapshot? snapshot = null;
+        object[]? liveFriends = null;
+        DateTimeOffset? capturedAt = null;
 
         if (syncSnapshot)
         {
-            Post(new { type = "toast", message = $"正在本机直连读取 {uid} 的公开战绩与角色快照…" });
-            (region, snapshot) = await sync.CaptureLocalSnapshotAsync(directory, uid, _libraryService.Settings.Language, CancellationToken.None)
-                .ConfigureAwait(false);
+            Post(new { type = "hubAccountLiveState", payload = new { uid, loading = true } });
+            Post(new { type = "toast", message = $"正在同步 UID {uid} 的账号数据…" });
+            try
+            {
+                var live = await sync.CaptureLiveAccountAsync(
+                    directory,
+                    uid,
+                    _libraryService.Settings.Language,
+                    p => AssetUrl(p ?? ""),
+                    EnsureHubAssets(),
+                    CancellationToken.None).ConfigureAwait(false);
+                region = live.Region;
+                snapshot = live.Snapshot;
+                liveFriends = live.Friends;
+                capturedAt = live.CapturedAt;
+            }
+            finally
+            {
+                Post(new { type = "hubAccountLiveState", payload = new { uid, loading = false } });
+            }
         }
         else
         {
@@ -524,8 +554,76 @@ public partial class HybridWindow
 
         var me = await EnsureHubApiClient().BindGameAccountAsync(region, uid, setPrimary, snapshot).ConfigureAwait(false);
         _hubMe = me;
-        PushHubMe(me);
+        await PushHubMeAsync(me).ConfigureAwait(false);
+        if (liveFriends is not null)
+        {
+            Post(new { type = "hubAccountLiveData", payload = new { uid, region, friends = liveFriends, capturedAt } });
+        }
         Post(new { type = "toast", message = $"已绑定游戏账号 {uid}（{(region == "int" ? "国际服" : "国服")}）" });
+    }
+
+    private async Task HandleHubRefreshLiveAccountAsync(JsonElement root)
+    {
+        var directory = _modManager.ResolveGameDirectory();
+        if (string.IsNullOrWhiteSpace(directory))
+        {
+            Post(new { type = "toast", message = "未检测到有效的游戏安装目录。" });
+            return;
+        }
+
+        var uid = ReadJsonString(root, "uid");
+        var syncToHub = !root.TryGetProperty("syncToHub", out var stEl) || stEl.ValueKind != JsonValueKind.False;
+        if (!AccountCredentials.ValidUid(uid))
+        {
+            Post(new { type = "toast", message = "请选择要刷新的游戏 UID。" });
+            return;
+        }
+
+        if (!AccountCredentials.Discover(directory).Contains(uid))
+        {
+            Post(new { type = "toast", message = $"本机未找到 UID {uid} 的登录凭据，无法直连刷新。" });
+            return;
+        }
+
+        if (MyAccountGameRunning(directory))
+        {
+            Post(new { type = "hubAccountLiveState", payload = new { uid, loading = false, gameRunning = true } });
+            Post(new { type = "toast", message = "游戏正在运行，请退出游戏后再直连刷新战绩与好友状态。" });
+            return;
+        }
+
+        if (!MyAccountConsent.Granted)
+        {
+            MyAccountConsent.Accept();
+        }
+
+        Post(new { type = "hubAccountLiveState", payload = new { uid, loading = true } });
+        try
+        {
+            var sync = new HubProfileSyncService(_appDirectory);
+            var (region, snapshot, friends, capturedAt) = await sync.CaptureLiveAccountAsync(
+                directory,
+                uid,
+                _libraryService.Settings.Language,
+                p => AssetUrl(p ?? ""),
+                EnsureHubAssets(),
+                CancellationToken.None).ConfigureAwait(false);
+
+            if (syncToHub && EnsureHubApiClient().HasToken)
+            {
+                var me = await EnsureHubApiClient().BindGameAccountAsync(region, uid, setPrimary: false, snapshot)
+                    .ConfigureAwait(false);
+                _hubMe = me;
+                await PushHubMeAsync(me).ConfigureAwait(false);
+            }
+
+            Post(new { type = "hubAccountLiveData", payload = new { uid, region, friends, capturedAt } });
+            Post(new { type = "toast", message = $"已刷新 {snapshot.Nick}（UID {uid}）的最新战绩与好友状态" });
+        }
+        finally
+        {
+            Post(new { type = "hubAccountLiveState", payload = new { uid, loading = false } });
+        }
     }
 
     private async Task HandleHubBindBridgeAccountAsync(JsonElement root)
@@ -544,7 +642,7 @@ public partial class HybridWindow
             .BindGameAccountAsync(region, live.Uid.ToString(), setPrimary, snapshot: null)
             .ConfigureAwait(false);
         _hubMe = me;
-        PushHubMe(me);
+        await PushHubMeAsync(me).ConfigureAwait(false);
         Post(new { type = "toast", message = $"已绑定当前在线游戏角色 UID {live.Uid}（{(region == "int" ? "国际服" : "国服")}）" });
     }
 
@@ -553,7 +651,8 @@ public partial class HybridWindow
         try
         {
             var list = await EnsureHubApiClient().ListRoomsAsync(region, query, status).ConfigureAwait(false);
-            Post(new { type = "hubRoomsList", payload = list });
+            var payload = await BuildRoomListPayloadAsync(list).ConfigureAwait(false);
+            Post(new { type = "hubRoomsList", payload });
         }
         catch (Exception ex)
         {
@@ -573,9 +672,10 @@ public partial class HybridWindow
 
         var room = await EnsureHubApiClient().CreateRoomAsync(region, title, note, password, capacity, activeUid)
             .ConfigureAwait(false);
-        ApplyHubRoomUpdate(room);
+        await ApplyHubRoomUpdateAsync(room).ConfigureAwait(false);
         StartRoomStream(room.RoomId, room.Cursor);
         Post(new { type = "toast", message = $"已创建组队房间「{room.Title}」" });
+        await RefreshHubRoomsAsync(region, null, null).ConfigureAwait(false);
     }
 
     private async Task HandleHubJoinRoomAsync(JsonElement root)
@@ -585,21 +685,17 @@ public partial class HybridWindow
         var activeUid = ReadJsonStringOrNull(root, "activeUid");
 
         var room = await EnsureHubApiClient().JoinRoomAsync(roomId, password, activeUid).ConfigureAwait(false);
-        ApplyHubRoomUpdate(room);
+        await ApplyHubRoomUpdateAsync(room).ConfigureAwait(false);
         StartRoomStream(room.RoomId, room.Cursor);
         Post(new { type = "toast", message = $"已加入房间「{room.Title}」" });
+        await RefreshHubRoomsAsync(room.Region, null, null).ConfigureAwait(false);
     }
 
     private async Task HandleHubLeaveRoomAsync()
     {
         var roomId = _hubActiveRoomId;
         StopRoomStream();
-        _hubActiveRoomId = null;
-        _hubActiveRoomRegion = null;
-        _hubActiveRoomHostUserId = null;
-        _hubLastReportedGameRoomId = 0;
-        _hubLastReportedGamePwd = "";
-        _hubLastAutoJoinedKey = "";
+        ClearLocalActiveRoomState();
 
         if (!string.IsNullOrEmpty(roomId))
         {
@@ -611,12 +707,36 @@ public partial class HybridWindow
         await RefreshHubRoomsAsync(HubConfigStore.Load().Hub.ActiveRegion, null, null).ConfigureAwait(false);
     }
 
+    private async Task HandleHubDisbandRoomAsync()
+    {
+        var roomId = _hubActiveRoomId;
+        if (string.IsNullOrEmpty(roomId)) return;
+
+        await EnsureHubApiClient().DisbandRoomAsync(roomId).ConfigureAwait(false);
+        StopRoomStream();
+        ClearLocalActiveRoomState();
+
+        Post(new { type = "hubRoomLeft", payload = new { reason = "disbanded" } });
+        Post(new { type = "toast", message = "已解散组队房间" });
+        await RefreshHubRoomsAsync(HubConfigStore.Load().Hub.ActiveRegion, null, null).ConfigureAwait(false);
+    }
+
+    private void ClearLocalActiveRoomState()
+    {
+        _hubActiveRoomId = null;
+        _hubActiveRoomRegion = null;
+        _hubActiveRoomHostUserId = null;
+        _hubLastReportedGameRoomId = 0;
+        _hubLastReportedGamePwd = "";
+        _hubLastAutoJoinedKey = "";
+    }
+
     private async Task HandleHubHostLaunchGameAsync(JsonElement root)
     {
         if (!string.IsNullOrEmpty(_hubActiveRoomId))
         {
             var room = await EnsureHubApiClient().NotifyHostLaunchingAsync(_hubActiveRoomId).ConfigureAwait(false);
-            ApplyHubRoomUpdate(room);
+            await ApplyHubRoomUpdateAsync(room).ConfigureAwait(false);
         }
 
         var mode = ReadJsonString(root, "mode", "bypassSteam");
@@ -651,12 +771,13 @@ public partial class HybridWindow
         Post(new { type = "toast", message = $"已向运行中的游戏发送自动进房指令（房间号 {gameRoomId}）。" });
     }
 
-    private void ApplyHubRoomUpdate(HubRoomDetailDto room)
+    private async Task ApplyHubRoomUpdateAsync(HubRoomDetailDto room, CancellationToken ct = default)
     {
         _hubActiveRoomId = room.RoomId;
         _hubActiveRoomRegion = room.Region;
         _hubActiveRoomHostUserId = room.HostUserId;
-        Post(new { type = "hubRoomState", payload = room });
+        var payload = await BuildRoomPayloadAsync(room, ct).ConfigureAwait(false);
+        Post(new { type = "hubRoomState", payload });
     }
 
     private void StartRoomStream(string roomId, long afterCursor)
@@ -693,7 +814,7 @@ public partial class HybridWindow
                 currentEpoch = stream.Epoch;
                 cursor = stream.NextAfter;
 
-                ApplyHubRoomUpdate(stream.Room);
+                await ApplyHubRoomUpdateAsync(stream.Room, ct).ConfigureAwait(false);
                 if (stream.Events.Count > 0)
                 {
                     Post(new { type = "hubRoomEvents", payload = new { roomId, events = stream.Events } });
@@ -713,8 +834,13 @@ public partial class HybridWindow
                 }
                 else
                 {
-                    _hubActiveRoomId = null;
+                    ClearLocalActiveRoomState();
                     Post(new { type = "hubRoomLeft", payload = new { reason = ex.ErrorCode, message = ex.Message } });
+                    if (ex.ErrorCode == "room_gone")
+                    {
+                        Post(new { type = "toast", message = "当前组队房间已被解散或关闭。" });
+                    }
+                    await RefreshHubRoomsAsync(HubConfigStore.Load().Hub.ActiveRegion, null, null).ConfigureAwait(false);
                 }
                 break;
             }
@@ -808,7 +934,7 @@ public partial class HybridWindow
                         {
                             var updated = await api.ReportGameRoomAsync(roomId, gameRoomId, gamePwd, srvId, mapId, mapType)
                                 .ConfigureAwait(false);
-                            ApplyHubRoomUpdate(updated);
+                            await ApplyHubRoomUpdateAsync(updated).ConfigureAwait(false);
                         }
                         catch (Exception ex)
                         {
@@ -869,7 +995,7 @@ public partial class HybridWindow
                     try
                     {
                         var finished = await api.FinishMatchAsync(roomId, summary).ConfigureAwait(false);
-                        ApplyHubRoomUpdate(finished.Room);
+                        await ApplyHubRoomUpdateAsync(finished.Room).ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
@@ -979,41 +1105,198 @@ public partial class HybridWindow
         };
     }
 
-    private object BuildDecoratedProfile(HubUserProfileDto profile)
-        => new HubProfileSyncService(_appDirectory)
-            .DecorateProfileForUi(profile, _libraryService.Settings.Language, p => AssetUrl(p ?? ""), EnsureHubAssets());
-
-    private void PushHubMe(HubUserProfileDto profile)
+    private async Task<string> ResolveHubAvatarUrlAsync(string? serverPath, CancellationToken ct = default)
     {
+        if (string.IsNullOrWhiteSpace(serverPath) || !serverPath.StartsWith("/api/hub/avatars/", StringComparison.Ordinal))
+        {
+            return "";
+        }
+
+        var api = EnsureHubApiClient();
+        var cacheKey = $"{api.BaseUrl}|{serverPath}";
+        if (_hubAvatarUrlCache.TryGetValue(cacheKey, out var cached))
+        {
+            return cached;
+        }
+
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(cacheKey)))[..16].ToLowerInvariant();
+        var dir = ToysPaths.HubAvatarCacheDirectory;
+        try
+        {
+            Directory.CreateDirectory(dir);
+            foreach (var ext in new[] { ".jpg", ".png", ".webp" })
+            {
+                var existing = Path.Combine(dir, $"av_{hash}{ext}");
+                if (File.Exists(existing) && new FileInfo(existing).Length > 0)
+                {
+                    var url = $"https://hubavatars.aspatoys.hiynet.localhost/av_{hash}{ext}";
+                    _hubAvatarUrlCache[cacheKey] = url;
+                    return url;
+                }
+            }
+
+            var downloaded = await api.DownloadAvatarAsync(serverPath, ct).ConfigureAwait(false);
+            if (downloaded is null) return "";
+
+            var fileExt = downloaded.Value.ContentType switch
+            {
+                "image/png" => ".png",
+                "image/webp" => ".webp",
+                _ => ".jpg",
+            };
+            var fileName = $"av_{hash}{fileExt}";
+            var target = Path.Combine(dir, fileName);
+            var tmp = target + ".tmp";
+            await File.WriteAllBytesAsync(tmp, downloaded.Value.Bytes, ct).ConfigureAwait(false);
+            File.Move(tmp, target, overwrite: true);
+
+            var localUrl = $"https://hubavatars.aspatoys.hiynet.localhost/{fileName}";
+            _hubAvatarUrlCache[cacheKey] = localUrl;
+            return localUrl;
+        }
+        catch
+        {
+            return "";
+        }
+    }
+
+    private async Task<object> BuildDecoratedProfileAsync(HubUserProfileDto profile, CancellationToken ct = default)
+    {
+        var avatar = await ResolveHubAvatarUrlAsync(profile.AvatarUrl, ct).ConfigureAwait(false);
+        return new HubProfileSyncService(_appDirectory).DecorateProfileForUi(
+            profile,
+            _libraryService.Settings.Language,
+            p => AssetUrl(p ?? ""),
+            EnsureHubAssets(),
+            hubAvatarUrlMapper: _ => avatar,
+            indexedMapIdLookup: id => _libraryService.IndexedMapId(id));
+    }
+
+    private async Task<object> BuildRoomPayloadAsync(HubRoomDetailDto room, CancellationToken ct = default)
+    {
+        var avatarTasks = room.Members
+            .Select(m => m.AvatarUrl)
+            .Where(u => !string.IsNullOrWhiteSpace(u))
+            .Distinct(StringComparer.Ordinal)
+            .ToDictionary(u => u, u => ResolveHubAvatarUrlAsync(u, ct), StringComparer.Ordinal);
+        if (avatarTasks.Count > 0)
+        {
+            await Task.WhenAll(avatarTasks.Values).ConfigureAwait(false);
+        }
+
+        return new
+        {
+            room.RoomId,
+            room.Region,
+            room.Title,
+            room.Note,
+            room.HasPassword,
+            room.Capacity,
+            room.OnlineCount,
+            room.Status,
+            room.HostUserId,
+            room.Epoch,
+            room.Cursor,
+            room.CreatedAt,
+            room.LastActivityAt,
+            room.GameRoom,
+            room.LatestMatch,
+            room.ServerTime,
+            members = room.Members.Select(m => new
+            {
+                m.UserId,
+                m.DisplayName,
+                avatarUrl = !string.IsNullOrWhiteSpace(m.AvatarUrl) && avatarTasks.TryGetValue(m.AvatarUrl, out var t) ? t.Result : "",
+                m.ActiveUid,
+                m.ActiveNick,
+                m.ActiveHeadIcon,
+                m.ActiveLevel,
+                m.IsHost,
+                m.Online,
+                m.Self,
+                m.GameState,
+                m.JoinError,
+                m.JoinedAt,
+                m.LastSeenAt,
+            }).ToArray(),
+        };
+    }
+
+    private async Task<object> BuildRoomListPayloadAsync(HubRoomListResponse list, CancellationToken ct = default)
+    {
+        var avatarTasks = list.Rooms
+            .Select(r => r.HostAvatarUrl)
+            .Where(u => !string.IsNullOrWhiteSpace(u))
+            .Distinct(StringComparer.Ordinal)
+            .ToDictionary(u => u, u => ResolveHubAvatarUrlAsync(u, ct), StringComparer.Ordinal);
+        if (avatarTasks.Count > 0)
+        {
+            await Task.WhenAll(avatarTasks.Values).ConfigureAwait(false);
+        }
+
+        return new
+        {
+            list.Region,
+            rooms = list.Rooms.Select(r => new
+            {
+                r.RoomId,
+                r.Region,
+                r.Title,
+                r.Note,
+                r.HasPassword,
+                r.Capacity,
+                r.MemberCount,
+                r.OnlineCount,
+                r.Status,
+                r.HostUserId,
+                r.HostDisplayName,
+                hostAvatarUrl = !string.IsNullOrWhiteSpace(r.HostAvatarUrl) && avatarTasks.TryGetValue(r.HostAvatarUrl, out var t) ? t.Result : "",
+                r.HostActiveUid,
+                r.CreatedAt,
+                r.LastActivityAt,
+            }).ToArray(),
+        };
+    }
+
+    private async Task PushHubMeAsync(HubUserProfileDto profile, CancellationToken ct = default)
+    {
+        var me = await BuildDecoratedProfileAsync(profile, ct).ConfigureAwait(false);
         Post(new
         {
             type = "hubMe",
             payload = new
             {
-                me = BuildDecoratedProfile(profile),
+                me,
                 localAccounts = DiscoverLocalAccountsForUi(),
             }
         });
     }
 
-    private void PushHubViewedProfile(HubUserProfileDto profile)
+    private async Task PushHubViewedProfileAsync(HubUserProfileDto profile, CancellationToken ct = default)
     {
+        var decorated = await BuildDecoratedProfileAsync(profile, ct).ConfigureAwait(false);
         Post(new
         {
             type = "hubViewedProfile",
-            payload = BuildDecoratedProfile(profile)
+            payload = decorated
         });
     }
 
     private object[] DiscoverLocalAccountsForUi()
     {
-        if (!MyAccountConsent.Granted) return [];
         var dir = _modManager.ResolveGameDirectory();
         if (string.IsNullOrWhiteSpace(dir)) return [];
 
-        return new HubProfileSyncService(_appDirectory)
-            .DiscoverLocalAccounts(dir)
-            .Select(x => (object)new { uid = x.Uid, region = x.Region })
+        if (MyAccountConsent.Granted)
+        {
+            return new HubProfileSyncService(_appDirectory)
+                .DiscoverLocalAccounts(dir)
+                .Select(x => (object)new { uid = x.Uid, region = x.Region })
+                .ToArray();
+        }
+
+        return AccountCredentials.Discover(dir)
+            .Select(uid => (object)new { uid, region = "" })
             .ToArray();
     }
 
