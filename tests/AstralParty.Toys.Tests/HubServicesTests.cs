@@ -128,7 +128,8 @@ public sealed class HubServicesTests
         using var bridge = new HubLocalBridgeServer();
         bridge.Start();
 
-        var createId = bridge.EnqueueCreateRoom("测试开黑房", "7391", mapType: 1, mapId: 5);
+        var createId = bridge.EnqueueCreateRoom("测试开黑房", "7391");
+        var pvpId = bridge.EnqueueCreateRoom("测试PVP房", "2468", mapType: 1, mapId: 5);
         var hbBody = """
         {
           "protocol": 1,
@@ -142,7 +143,7 @@ public sealed class HubServicesTests
             "gamePwd": "7391",
             "roomServerId": 1,
             "mapId": 5,
-            "mapType": 1,
+            "mapType": 4,
             "masterId": 1744079,
             "isMaster": true,
             "state": "Wait",
@@ -156,13 +157,17 @@ public sealed class HubServicesTests
 
         using var doc = JsonDocument.Parse(hb.Body);
         var cmds = doc.RootElement.GetProperty("commands");
-        Assert.Equal(1, cmds.GetArrayLength());
+        Assert.Equal(2, cmds.GetArrayLength());
         Assert.Equal(createId, cmds[0].GetProperty("commandId").GetString());
         Assert.Equal("create_room", cmds[0].GetProperty("action").GetString());
         Assert.Equal("测试开黑房", cmds[0].GetProperty("roomName").GetString());
         Assert.Equal("7391", cmds[0].GetProperty("gamePwd").GetString());
-        Assert.Equal(1, cmds[0].GetProperty("mapType").GetInt32());
-        Assert.Equal(5, cmds[0].GetProperty("mapId").GetInt32());
+        Assert.Equal(4, cmds[0].GetProperty("mapType").GetInt32());
+
+        Assert.Equal(pvpId, cmds[1].GetProperty("commandId").GetString());
+        Assert.Equal("create_room", cmds[1].GetProperty("action").GetString());
+        Assert.Equal(1, cmds[1].GetProperty("mapType").GetInt32());
+        Assert.Equal(5, cmds[1].GetProperty("mapId").GetInt32());
 
         var session = Assert.Single(bridge.GetActiveSessions());
         Assert.True(session.IsLoggedIn);

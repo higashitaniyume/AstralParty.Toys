@@ -84,7 +84,8 @@
     stage2: null,
     stage2Status: 'idle',
     stage2Message: '',
-    pendingJoinRoom: null
+    pendingJoinRoom: null,
+    gameMapType: 4
   };
 
   let _bound = false;
@@ -281,6 +282,7 @@
         return;
       }
       $id('hubCreateErr').textContent = '';
+      S.gameMapType = Number($id('hubCreateGameMode')?.value || 4) === 1 ? 1 : 4;
       post({
         type: 'hubCreateRoom',
         region: S.region,
@@ -332,6 +334,7 @@
     const gr = room.gameRoom;
     const hasGameRoom = !!(gr && gr.gameRoomId > 0);
     const liveGame = hasLiveGameForRegion(room.region);
+    const modeTag = S.gameMapType === 1 ? 'PVP' : 'PVE';
     const statusTxt = ROOM_STATUS_TEXT[room.status] || room.status;
     const avatarsHtml = (room.members || []).slice(0, 4).map(m => {
       const safe = imgUrl(m.avatarUrl);
@@ -361,7 +364,7 @@
       <div class="hub-global-bar-right">
         <button type="button" class="v2-btn ghost hub-bar-btn" data-bar-act="return">回到房间</button>
         ${isHost
-          ? (!hasGameRoom ? `<button type="button" class="v2-btn primary hub-bar-btn" data-bar-act="launch">${liveGame ? '自动创建游戏房' : '启动游戏开房'}</button>` : '')
+          ? (!hasGameRoom ? `<button type="button" class="v2-btn primary hub-bar-btn" data-bar-act="launch">${liveGame ? `自动建 ${modeTag} 房` : `启动游戏建 ${modeTag} 房`}</button>` : '')
           : (hasGameRoom ? `<button type="button" class="v2-btn primary hub-bar-btn" data-bar-act="join-game">一键进房</button>` : '')}
         ${isHost
           ? `<button type="button" class="v2-btn hub-btn-danger hub-bar-btn" data-bar-act="disband">解散房间</button>`
@@ -375,7 +378,7 @@
       selectTab('room', false);
     });
     bar.querySelector('[data-bar-act="launch"]')?.addEventListener('click', () => {
-      post({ type: 'hubHostLaunchGame', mode: 'bypassSteam' });
+      post({ type: 'hubHostLaunchGame', mode: 'bypassSteam', mapType: S.gameMapType });
     });
     bar.querySelector('[data-bar-act="join-game"]')?.addEventListener('click', () => {
       if (!gr) return;
@@ -467,6 +470,8 @@
     ).join('');
     const primaryInRegion = bindings.find(b => b.isPrimary) || bindings[0];
     $id('hubCreateTitle').value = `${primaryInRegion?.nick || S.me.displayName} 的队伍`;
+    const modeSel = $id('hubCreateGameMode');
+    if (modeSel) modeSel.value = String(S.gameMapType || 4);
     $id('hubCreateNote').value = '';
     $id('hubCreatePassword').value = '';
     $id('hubCreateErr').textContent = '';
@@ -613,16 +618,19 @@
     const gr = room.gameRoom;
     const hasGameRoom = !!(gr && gr.gameRoomId > 0);
     const liveGame = hasLiveGameForRegion(room.region);
+    const modeTag = S.gameMapType === 1 ? 'PVP' : 'PVE';
     const statusTxt = ROOM_STATUS_TEXT[room.status] || room.status;
     const selfMember = room.members.find(m => m.self);
-    const hostLaunchLabel = hasGameRoom ? '重新创建游戏房' : (liveGame ? '自动创建游戏房' : '启动游戏开房');
+    const hostLaunchLabel = hasGameRoom
+      ? `重新创建 ${modeTag} 房`
+      : (liveGame ? `自动创建 ${modeTag} 房` : `启动游戏建 ${modeTag} 房`);
 
     const gameRoomBanner = hasGameRoom ? `
       <div class="hub-gameroom-banner">
         <div class="hub-gameroom-codes">
           <div><div class="hub-muted">游戏房间号</div><strong>${esc(gr.gameRoomId)}</strong></div>
           <div><div class="hub-muted">房间密码</div><strong>${esc(gr.gamePwd || '无密码')}</strong></div>
-          <div><div class="hub-muted">线路 / 地图</div><strong>#${esc(gr.roomServerId)} · 地图 ${esc(gr.mapId)}</strong></div>
+          <div><div class="hub-muted">模式 / 地图</div><strong>${esc(MODES[gr.mapType] || '自定义')} · 地图 ${esc(gr.mapId)}</strong></div>
         </div>
         <div class="hub-toolbar">
           <button type="button" class="v2-btn ghost" id="hubCopyGameCodeBtn">复制房号密码</button>
@@ -680,6 +688,10 @@
               <input id="hubAutoJoinSwitch" type="checkbox" switch ${S.autoJoinEnabled ? 'checked' : ''} />
             </label>
             ${bindings.length > 1 ? `<select id="hubRoomSwitchUid" class="v2-select">${bindings.map(b => `<option value="${esc(b.uid)}" ${selfMember?.activeUid === b.uid ? 'selected' : ''}>${esc(b.nick || b.uid)} (${esc(b.uid)})</option>`).join('')}</select>` : ''}
+            ${isHost ? `<select id="hubHostMapTypeSelect" class="v2-select" title="自动建房游戏模式">
+              <option value="4" ${S.gameMapType === 4 ? 'selected' : ''}>PVE 模式</option>
+              <option value="1" ${S.gameMapType === 1 ? 'selected' : ''}>PVP 模式</option>
+            </select>` : ''}
             ${isHost ? `<button type="button" class="v2-btn primary" id="hubHostLaunchBtn">${esc(hostLaunchLabel)}</button>` : ''}
             ${isHost && room.status === 'finished' ? `<button type="button" class="v2-btn ghost" id="hubReopenBtn">开启下一局</button>` : ''}
             ${room.latestMatch ? `<button type="button" class="v2-btn ghost" id="hubOpenLatestSettleBtn">查看战报</button>` : ''}
@@ -720,7 +732,12 @@
     $id('hubLeaveRoomBtn')?.addEventListener('click', () => post({ type: 'hubLeaveRoom' }));
     $id('hubDisbandRoomBtn')?.addEventListener('click', openDisbandDialog);
     $id('hubReopenBtn')?.addEventListener('click', () => post({ type: 'hubReopenRoom' }));
-    $id('hubHostLaunchBtn')?.addEventListener('click', () => post({ type: 'hubHostLaunchGame', mode: 'bypassSteam' }));
+    $id('hubHostMapTypeSelect')?.addEventListener('change', e => {
+      S.gameMapType = Number(e.target.value) === 1 ? 1 : 4;
+      renderGlobalRoomBar();
+      renderRoomPanel();
+    });
+    $id('hubHostLaunchBtn')?.addEventListener('click', () => post({ type: 'hubHostLaunchGame', mode: 'bypassSteam', mapType: S.gameMapType }));
     $id('hubTriggerJoinBtn')?.addEventListener('click', () => {
       if (!gr) return;
       post({ type: 'hubTriggerBridgeJoin', gameRoomId: gr.gameRoomId, gamePwd: gr.gamePwd, roomServerId: gr.roomServerId });

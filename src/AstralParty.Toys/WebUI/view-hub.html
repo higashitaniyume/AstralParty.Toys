@@ -80,6 +80,13 @@
         </div>
         <div class="hub-dialog-row">
           <div class="v2-field">
+            <label for="hubCreateGameMode">游戏模式</label>
+            <select id="hubCreateGameMode" class="v2-select">
+              <option value="4" selected>PVE（默认）</option>
+              <option value="1">PVP（标准对战）</option>
+            </select>
+          </div>
+          <div class="v2-field">
             <label for="hubCreateCapacity">人数上限</label>
             <select id="hubCreateCapacity" class="v2-select">
               <option value="4" selected>4 人</option>
@@ -87,15 +94,17 @@
               <option value="2">2 人</option>
             </select>
           </div>
+        </div>
+        <div class="hub-dialog-row">
           <div class="v2-field">
             <label for="hubCreatePassword">房间密码（可选）</label>
             <input id="hubCreatePassword" type="password" maxlength="24" autocomplete="off" placeholder="留空则公开加入" />
           </div>
-        </div>
-        <div class="v2-field">
-          <label for="hubCreateUid">出战账号（UID）</label>
-          <select id="hubCreateUid" class="v2-select"></select>
-          <small>当前区服：<span id="hubCreateRegionLabel">国服 CN</span></small>
+          <div class="v2-field">
+            <label for="hubCreateUid">出战账号（UID）</label>
+            <select id="hubCreateUid" class="v2-select"></select>
+            <small>当前区服：<span id="hubCreateRegionLabel">国服 CN</span></small>
+          </div>
         </div>
         <p id="hubCreateErr" class="v2-err"></p>
       </div>

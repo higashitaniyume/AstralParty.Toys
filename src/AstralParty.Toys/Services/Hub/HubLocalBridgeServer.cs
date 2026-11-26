@@ -140,7 +140,7 @@ public sealed class HubLocalBridgeServer : IDisposable
         return cmdId;
     }
 
-    public string EnqueueCreateRoom(string? roomName, string? gamePwd, int mapType = 1, int mapId = 0)
+    public string EnqueueCreateRoom(string? roomName, string? gamePwd, int mapType = 4, int mapId = 0)
     {
         var cmdId = Guid.NewGuid().ToString("N");
         _pendingCommands.Enqueue(new BridgeCommandDto
@@ -149,7 +149,7 @@ public sealed class HubLocalBridgeServer : IDisposable
             Action = "create_room",
             RoomName = (roomName ?? "").Trim(),
             GamePwd = (gamePwd ?? "").Trim(),
-            MapType = mapType > 0 ? mapType : 1,
+            MapType = mapType > 0 ? mapType : 4,
             MapId = mapId,
         });
         return cmdId;

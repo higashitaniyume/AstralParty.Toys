@@ -750,8 +750,9 @@ public partial class HybridWindow
         {
             gamePwd = RandomNumberGenerator.GetInt32(1000, 10000).ToString();
         }
-        var mapType = root.TryGetProperty("mapType", out var mtEl) && mtEl.TryGetInt32(out var mt) && mt > 0 ? mt : 1;
+        var mapType = root.TryGetProperty("mapType", out var mtEl) && mtEl.TryGetInt32(out var mt) && mt > 0 ? mt : 4;
         var mapId = root.TryGetProperty("mapId", out var midEl) && midEl.TryGetInt32(out var mid) && mid > 0 ? mid : 0;
+        var modeLabel = mapType == 1 ? "PVP" : "PVE";
         var roomName = !string.IsNullOrWhiteSpace(_hubActiveRoomTitle)
             ? _hubActiveRoomTitle!
             : (_hubMe?.DisplayName ?? "AstralParty");
@@ -767,7 +768,7 @@ public partial class HybridWindow
 
         if (liveSession is not null)
         {
-            Post(new { type = "toast", message = $"已通知运行中的游戏自动创建房间（密码 {gamePwd}）…" });
+            Post(new { type = "toast", message = $"已通知运行中的游戏自动创建 {modeLabel} 房间（密码 {gamePwd}）…" });
             return;
         }
 
@@ -783,7 +784,7 @@ public partial class HybridWindow
                 HandleLaunchGame(mode);
             }
         });
-        Post(new { type = "toast", message = $"正在启动游戏，进入主界面后将自动创建房间（密码 {gamePwd}）…" });
+        Post(new { type = "toast", message = $"正在启动游戏，进入主界面后将自动创建 {modeLabel} 房间（密码 {gamePwd}）…" });
     }
 
     private void HandleHubTriggerBridgeJoin(JsonElement root)
