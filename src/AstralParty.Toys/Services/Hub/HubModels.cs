@@ -193,6 +193,16 @@ public sealed class HubRoomMemberDto
     public long LastSeenAt { get; set; }
 }
 
+public sealed class HubRoomMemberPreviewDto
+{
+    public string UserId { get; set; } = "";
+    public string DisplayName { get; set; } = "";
+    public string AvatarUrl { get; set; } = "";
+    public string ActiveUid { get; set; } = "";
+    public long ActiveLevel { get; set; }
+    public bool IsHost { get; set; }
+}
+
 public sealed class HubRoomSummaryDto
 {
     public string RoomId { get; set; } = "";
@@ -208,6 +218,7 @@ public sealed class HubRoomSummaryDto
     public string HostDisplayName { get; set; } = "";
     public string HostAvatarUrl { get; set; } = "";
     public string HostActiveUid { get; set; } = "";
+    public List<HubRoomMemberPreviewDto> Members { get; set; } = [];
     public long CreatedAt { get; set; }
     public long LastActivityAt { get; set; }
 }

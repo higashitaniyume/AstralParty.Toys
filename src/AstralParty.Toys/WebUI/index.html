@@ -180,6 +180,25 @@
             </div>
           </form>
         </dialog>
+        <span id="hubContextAnchor" class="hub-menu-anchor" aria-hidden="true"></span>
+        <div popover="auto" id="hubPlayerContextMenu" class="hub-context-menu">
+          <div id="hubContextMenuHead" class="hub-context-menu-head"></div>
+          <div id="hubContextMenuList" class="hub-context-menu-list" focusgroup="menu nomemory" role="menu" aria-label="玩家操作菜单"></div>
+        </div>
+        <dialog id="hubInspectDialog" class="hub-dialog hub-dialog-wide" closedby="any" aria-labelledby="hubInspectDialogTitle">
+          <form method="dialog" class="hub-dialog-form">
+            <div class="hub-dialog-head">
+              <h1 id="hubInspectDialogTitle">查成分 · 玩家档案</h1>
+              <button type="submit" value="cancel" class="hub-dialog-close" aria-label="关闭">✕</button>
+            </div>
+            <div id="hubInspectBody" class="hub-dialog-body"></div>
+            <div class="hub-dialog-foot">
+              <button type="button" id="hubInspectCopyUidBtn" class="v2-btn ghost" hidden>复制 UID</button>
+              <button type="button" id="hubInspectOpenProfileBtn" class="v2-btn ghost" hidden>在个人主页打开</button>
+              <button type="submit" value="cancel" class="v2-btn primary" autofocus>关闭</button>
+            </div>
+          </form>
+        </dialog>
         <!-- 1. HOME VIEW (In-Game Aesthetic Main Lobby) -->
         <!-- @include view-home.html -->
         <!-- @include view-replays.html -->

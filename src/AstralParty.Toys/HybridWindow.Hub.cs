@@ -226,6 +226,26 @@ public partial class HybridWindow
                     break;
                 }
 
+                case "hubInspectProfile":
+                {
+                    var userId = ReadJsonString(root, "userId");
+                    var region = HubSettlementService.NormalizeRegion(ReadJsonString(root, "region"));
+                    var uid = ReadJsonString(root, "uid");
+                    try
+                    {
+                        var profile = !string.IsNullOrWhiteSpace(userId)
+                            ? await EnsureHubApiClient().GetProfileAsync(userId).ConfigureAwait(false)
+                            : await EnsureHubApiClient().GetProfileByUidAsync(region, uid).ConfigureAwait(false);
+                        var decorated = await BuildDecoratedProfileAsync(profile).ConfigureAwait(false);
+                        Post(new { type = "hubInspectProfileResult", payload = new { userId, ok = true, profile = decorated } });
+                    }
+                    catch (HubApiException ex)
+                    {
+                        Post(new { type = "hubInspectProfileResult", payload = new { userId, ok = false, error = ex.Message } });
+                    }
+                    break;
+                }
+
                 case "hubListRooms":
                 {
                     var region = HubSettlementService.NormalizeRegion(
@@ -1358,7 +1378,7 @@ public partial class HybridWindow
     private async Task<object> BuildRoomListPayloadAsync(HubRoomListResponse list, CancellationToken ct = default)
     {
         var avatarTasks = list.Rooms
-            .Select(r => r.HostAvatarUrl)
+            .SelectMany(r => r.Members.Select(m => m.AvatarUrl).Prepend(r.HostAvatarUrl))
             .Where(u => !string.IsNullOrWhiteSpace(u))
             .Distinct(StringComparer.Ordinal)
             .ToDictionary(u => u, u => ResolveHubAvatarUrlAsync(u, ct), StringComparer.Ordinal);
@@ -1366,6 +1386,9 @@ public partial class HybridWindow
         {
             await Task.WhenAll(avatarTasks.Values).ConfigureAwait(false);
         }
+
+        string ResolveAv(string? url) =>
+            !string.IsNullOrWhiteSpace(url) && avatarTasks.TryGetValue(url, out var t) ? t.Result : "";
 
         return new
         {
@@ -1383,8 +1406,17 @@ public partial class HybridWindow
                 r.Status,
                 r.HostUserId,
                 r.HostDisplayName,
-                hostAvatarUrl = !string.IsNullOrWhiteSpace(r.HostAvatarUrl) && avatarTasks.TryGetValue(r.HostAvatarUrl, out var t) ? t.Result : "",
+                hostAvatarUrl = ResolveAv(r.HostAvatarUrl),
                 r.HostActiveUid,
+                members = r.Members.Select(m => new
+                {
+                    m.UserId,
+                    m.DisplayName,
+                    avatarUrl = ResolveAv(m.AvatarUrl),
+                    m.ActiveUid,
+                    m.ActiveLevel,
+                    m.IsHost,
+                }).ToArray(),
                 r.CreatedAt,
                 r.LastActivityAt,
             }).ToArray(),

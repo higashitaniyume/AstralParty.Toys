@@ -85,10 +85,13 @@
     stage2Status: 'idle',
     stage2Message: '',
     pendingJoinRoom: null,
-    gameMapType: 4
+    gameMapType: 4,
+    inspectState: null
   };
 
   let _bound = false;
+  let _ctxBound = false;
+  const _enterOnOpen = new WeakSet();
 
   function formatTime(ms) {
     if (!ms) return '—';
@@ -104,13 +107,258 @@
     return r === 'int' ? '国际服 INT' : '国服 CN';
   }
 
-  function renderAvatar(url, fallbackName, size = 40, cls = 'hub-avatar') {
+  function renderAvatar(url, fallbackName, size = 40, cls = 'hub-avatar', extraAttrs = '') {
     const safe = imgUrl(url);
     const initial = (fallbackName || '?').trim().slice(0, 1).toUpperCase();
+    const attrs = extraAttrs ? ` ${extraAttrs}` : '';
     if (safe) {
-      return `<img class="${cls}" src="${esc(safe)}" alt="" width="${size}" height="${size}" style="width:${size}px;height:${size}px;" />`;
+      return `<img class="${cls}" src="${esc(safe)}" alt="" width="${size}" height="${size}" style="width:${size}px;height:${size}px;"${attrs} />`;
     }
-    return `<span class="${cls}" style="width:${size}px;height:${size}px;font-size:${Math.max(11, Math.round(size * 0.44))}px;" aria-hidden="true">${esc(initial)}</span>`;
+    return `<span class="${cls}" style="width:${size}px;height:${size}px;font-size:${Math.max(11, Math.round(size * 0.44))}px;" aria-hidden="true"${attrs}>${esc(initial)}</span>`;
+  }
+
+  function inspectAttrs(info) {
+    const uid = info.activeUid || info.uid || '';
+    const name = info.activeNick || info.displayName || uid || '玩家';
+    const level = info.activeLevel || info.level || 0;
+    const region = info.region || S.region || 'cn';
+    const title = `右键查成分 · ${name}${uid ? ` (UID ${uid})` : ''}`;
+    return `data-hub-inspect-user="${esc(info.userId || '')}" data-hub-inspect-name="${esc(name)}" data-hub-inspect-uid="${esc(uid)}" data-hub-inspect-avatar="${esc(info.avatarUrl || '')}" data-hub-inspect-level="${esc(level)}" data-hub-inspect-region="${esc(region)}" title="${esc(title)}"`;
+  }
+
+  function hideContextMenu() {
+    const menu = $id('hubPlayerContextMenu');
+    if (!menu) return;
+    if (typeof menu.hidePopover === 'function') {
+      try { if (menu.matches(':popover-open')) menu.hidePopover(); } catch { }
+    }
+    menu.classList.remove(':popover-open');
+  }
+
+  function renderInspectDialog() {
+    const st = S.inspectState;
+    const titleEl = $id('hubInspectDialogTitle');
+    const bodyEl = $id('hubInspectBody');
+    const copyBtn = $id('hubInspectCopyUidBtn');
+    const openBtn = $id('hubInspectOpenProfileBtn');
+    if (!st || !bodyEl) return;
+
+    if (titleEl) {
+      titleEl.textContent = `查成分 · ${st.profile?.displayName || st.name || '玩家档案'}`;
+    }
+
+    const uid = st.uid || st.profile?.primaryUid || st.profile?.bindings?.[0]?.uid || '';
+    if (copyBtn) {
+      copyBtn.hidden = !uid;
+      copyBtn.dataset.uid = uid;
+    }
+    if (openBtn) {
+      openBtn.hidden = !st.profile;
+    }
+
+    if (st.loading) {
+      bodyEl.innerHTML = `<p class="hub-muted" style="padding:20px 0;text-align:center;">正在拉取 ${esc(st.name || '该玩家')} 的公开战绩与档案…</p>`;
+      return;
+    }
+
+    if (st.error) {
+      bodyEl.innerHTML = `<div class="hub-notice-warn">${esc(st.error)}</div>`;
+      return;
+    }
+
+    bodyEl.innerHTML = renderViewedProfileHtml(st.profile);
+  }
+
+  function openInspectDialog(target) {
+    if (!target || (!target.userId && !target.uid)) return;
+    S.inspectState = {
+      loading: true,
+      userId: target.userId || '',
+      uid: target.uid || '',
+      region: target.region || S.region || 'cn',
+      name: target.name || target.uid || '玩家',
+      profile: null,
+      error: ''
+    };
+    renderInspectDialog();
+    const dlg = $id('hubInspectDialog');
+    if (dlg && !dlg.open) dlg.showModal();
+    post({
+      type: 'hubInspectProfile',
+      userId: target.userId || '',
+      region: target.region || S.region || 'cn',
+      uid: target.uid || ''
+    });
+  }
+
+  function openPlayerContextMenu(el, clientX, clientY) {
+    const menu = $id('hubPlayerContextMenu');
+    const anchor = $id('hubContextAnchor');
+    const head = $id('hubContextMenuHead');
+    const list = $id('hubContextMenuList');
+    if (!menu || !anchor || !head || !list) return;
+
+    const target = {
+      userId: el.dataset.hubInspectUser || '',
+      name: el.dataset.hubInspectName || '玩家',
+      uid: el.dataset.hubInspectUid || '',
+      avatarUrl: el.dataset.hubInspectAvatar || '',
+      level: Number(el.dataset.hubInspectLevel || 0),
+      region: el.dataset.hubInspectRegion || S.region || 'cn'
+    };
+    if (!target.userId && !target.uid) return;
+
+    const metaParts = [];
+    if (target.uid) metaParts.push(`UID ${target.uid}`);
+    if (target.level > 0) metaParts.push(`Lv.${target.level}`);
+    head.innerHTML = `
+      ${renderAvatar(target.avatarUrl, target.name, 28, 'hub-ms-avatar')}
+      <div class="hub-context-menu-head-text">
+        <strong>${esc(target.name)}</strong>
+        <small>${esc(metaParts.join(' · ') || regionLabel(target.region))}</small>
+      </div>
+    `;
+
+    list.innerHTML = `
+      <button type="button" role="menuitem" class="hub-context-menu-item" data-ctx-act="inspect">
+        <span>查成分（战绩与档案）</span>
+        <small>弹窗</small>
+      </button>
+      ${target.uid ? `
+        <button type="button" role="menuitem" class="hub-context-menu-item" data-ctx-act="copy-uid">
+          <span>复制游戏 UID</span>
+          <small>${esc(target.uid)}</small>
+        </button>` : ''}
+      ${target.userId ? `
+        <button type="button" role="menuitem" class="hub-context-menu-item" data-ctx-act="open-profile">
+          <span>在个人主页打开</span>
+        </button>` : ''}
+    `;
+
+    list.querySelector('[data-ctx-act="inspect"]')?.addEventListener('click', () => {
+      hideContextMenu();
+      openInspectDialog(target);
+    });
+    list.querySelector('[data-ctx-act="copy-uid"]')?.addEventListener('click', () => {
+      hideContextMenu();
+      navigator.clipboard?.writeText(target.uid);
+      window.toast?.(`已复制游戏 UID：${target.uid}`);
+    });
+    list.querySelector('[data-ctx-act="open-profile"]')?.addEventListener('click', () => {
+      hideContextMenu();
+      window.showPage?.('hub');
+      selectTab('profile', false);
+      post({ type: 'hubViewProfile', userId: target.userId });
+    });
+
+    const hasAnchor = typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('anchor-name: --a');
+    if (hasAnchor) {
+      anchor.style.left = `${clientX}px`;
+      anchor.style.top = `${clientY}px`;
+      menu.style.removeProperty('left');
+      menu.style.removeProperty('top');
+      menu.style.removeProperty('right');
+    } else {
+      const clampedX = Math.max(8, Math.min(clientX, window.innerWidth - 250));
+      const clampedY = Math.max(8, Math.min(clientY, window.innerHeight - 170));
+      menu.style.removeProperty('right');
+      menu.style.left = `${clampedX}px`;
+      menu.style.top = `${clampedY}px`;
+    }
+
+    _enterOnOpen.add(menu);
+    if (typeof menu.showPopover === 'function') {
+      try {
+        if (menu.matches(':popover-open')) menu.hidePopover();
+        if (hasAnchor) menu.showPopover({ source: anchor });
+        else menu.showPopover();
+      } catch {
+        try { menu.showPopover(); } catch { menu.classList.add(':popover-open'); }
+      }
+    } else {
+      menu.classList.add(':popover-open');
+      list.querySelector('button:not(:disabled)')?.focus();
+    }
+  }
+
+  function bindContextMenuOnce() {
+    if (_ctxBound) return;
+    _ctxBound = true;
+
+    const menu = $id('hubPlayerContextMenu');
+    const list = $id('hubContextMenuList');
+
+    document.addEventListener('contextmenu', e => {
+      const target = e.target?.closest?.('[data-hub-inspect-user]');
+      if (!target) return;
+      e.preventDefault();
+      // 键盘 ContextMenu / Shift+F10 触发时（无鼠标坐标）以元素左下角为锚点打开
+      if (e.clientX === 0 && e.clientY === 0) {
+        const rect = target.getBoundingClientRect();
+        openPlayerContextMenu(target, rect.left + rect.width / 2, rect.bottom);
+      }
+    });
+
+    document.addEventListener('pointerup', e => {
+      if (!(e.button === 2 || (e.button === 0 && e.ctrlKey))) return;
+      const target = e.target?.closest?.('[data-hub-inspect-user]');
+      if (!target) return;
+      openPlayerContextMenu(target, e.clientX, e.clientY);
+    });
+
+    menu?.addEventListener('toggle', e => {
+      if (e.newState === 'open' && _enterOnOpen.has(menu)) {
+        _enterOnOpen.delete(menu);
+        list?.querySelector('button:not(:disabled)')?.focus();
+      }
+    });
+
+    if (list && !Object.hasOwn(HTMLElement.prototype, 'focusGroup')) {
+      list.addEventListener('keydown', e => {
+        const items = Array.from(list.querySelectorAll('button:not(:disabled)'));
+        if (!items.length) return;
+        const idx = items.indexOf(document.activeElement);
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          items[(idx + 1 + items.length) % items.length].focus();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          items[(idx - 1 + items.length) % items.length].focus();
+        } else if (e.key === 'Home') {
+          e.preventDefault();
+          items[0].focus();
+        } else if (e.key === 'End') {
+          e.preventDefault();
+          items[items.length - 1].focus();
+        } else if (e.key === 'Escape') {
+          hideContextMenu();
+        }
+      });
+    }
+
+    if (!Object.hasOwn(HTMLElement.prototype, 'popover')) {
+      document.addEventListener('pointerdown', e => {
+        if (menu && menu.classList.contains(':popover-open') && !menu.contains(e.target)) {
+          hideContextMenu();
+        }
+      });
+    }
+
+    $id('hubInspectCopyUidBtn')?.addEventListener('click', e => {
+      const uid = e.currentTarget?.dataset?.uid;
+      if (!uid) return;
+      navigator.clipboard?.writeText(uid);
+      window.toast?.(`已复制游戏 UID：${uid}`);
+    });
+    $id('hubInspectOpenProfileBtn')?.addEventListener('click', () => {
+      const profile = S.inspectState?.profile;
+      if (!profile) return;
+      $id('hubInspectDialog')?.close('open-profile');
+      S.viewedProfile = profile;
+      window.showPage?.('hub');
+      selectTab('profile', false);
+      renderProfile();
+    });
   }
 
   function applyPolyfills() {
@@ -345,9 +593,10 @@
       const safe = imgUrl(m.avatarUrl);
       const name = m.activeNick || m.displayName || m.activeUid || '?';
       const initial = name.slice(0, 1).toUpperCase();
+      const attrs = inspectAttrs({ ...m, region: room.region });
       return safe
-        ? `<img class="hub-bar-avatar" src="${esc(safe)}" alt="" title="${esc(name)}" width="24" height="24" />`
-        : `<span class="hub-bar-avatar" title="${esc(name)}">${esc(initial)}</span>`;
+        ? `<img class="hub-bar-avatar hub-inspectable-avatar" src="${esc(safe)}" alt="" width="24" height="24" ${attrs} />`
+        : `<span class="hub-bar-avatar hub-inspectable-avatar" ${attrs}>${esc(initial)}</span>`;
     }).join('');
 
     bar.hidden = false;
@@ -547,6 +796,24 @@
         const isMine = S.currentRoom && S.currentRoom.roomId === r.roomId;
         const statusCls = r.status === 'recruiting' ? 'green' : r.status === 'playing' || r.status === 'game_ready' ? 'pink' : r.status === 'finished' ? 'gold' : '';
         const statusTxt = ROOM_STATUS_TEXT[r.status] || r.status;
+        const previewMembers = (r.members && r.members.length)
+          ? r.members
+          : [{
+            userId: r.hostUserId,
+            displayName: r.hostDisplayName,
+            avatarUrl: r.hostAvatarUrl,
+            activeUid: r.hostActiveUid,
+            activeLevel: 0,
+            isHost: true
+          }];
+        const membersHtml = previewMembers.map(m => {
+          const attrs = inspectAttrs({ ...m, region: r.region });
+          return `
+            <span class="hub-lobby-member-chip ${m.isHost ? 'is-host' : ''}" ${attrs}>
+              ${renderAvatar(m.avatarUrl, m.displayName || m.activeUid, 22, 'hub-ms-avatar')}
+              <span class="hub-chip-name">${esc(m.displayName || m.activeUid)}</span>
+            </span>`;
+        }).join('');
         return `
           <article class="hub-room-card ${isMine ? 'is-mine' : ''}">
             <div class="hub-room-card-top">
@@ -556,11 +823,11 @@
             <div class="hub-room-note">${esc(r.note || '暂无备注')}</div>
             <div class="hub-room-meta">
               <span class="hub-pill">${esc(regionLabel(r.region))}</span>
-              <span class="hub-room-host">
-                ${renderAvatar(r.hostAvatarUrl, r.hostDisplayName, 22, 'hub-ms-avatar')}
-                <span>${esc(r.hostDisplayName)} (${esc(r.hostActiveUid)})</span>
-              </span>
               ${r.hasPassword ? '<span class="hub-pill gold">加密</span>' : ''}
+              <span class="hub-muted">右键头像查成分</span>
+            </div>
+            <div class="hub-lobby-members">
+              <div class="hub-lobby-member-strip">${membersHtml}</div>
             </div>
             <div class="hub-room-foot">
               <span class="hub-muted">${r.memberCount} / ${r.capacity} 人 · ${formatTime(r.lastActivityAt)}</span>
@@ -660,10 +927,11 @@
     const memberCards = room.members.map(m => {
       const [stText, stCls] = GAME_STATES[m.gameState] || [m.gameState, ''];
       const memberName = m.activeNick || m.displayName || m.activeUid || '玩家';
+      const attrs = inspectAttrs({ ...m, region: room.region });
       return `
         <div class="hub-member-card ${m.self ? 'is-self' : ''}">
           <div class="hub-member-top">
-            ${renderAvatar(m.avatarUrl, memberName, 42, 'hub-avatar round')}
+            ${renderAvatar(m.avatarUrl, memberName, 42, 'hub-avatar round hub-inspectable-avatar', attrs)}
             <div class="hub-member-info">
               <strong><span>${esc(memberName)}</span> ${m.isHost ? '<span class="hub-pill pink">房主</span>' : ''}</strong>
               <small>UID ${esc(m.activeUid)}${m.activeLevel ? ` · Lv.${m.activeLevel}` : ''}</small>
@@ -1199,35 +1467,50 @@
 
     const bindingsHtml = (p.bindings || []).map(b => {
       const snap = b.snapshot;
+      const fights = Number(snap?.fightCount) || 0;
+      const wins = Number(snap?.winCount) || 0;
+      const winRate = fights > 0 ? `${(wins * 100 / fights).toFixed(1)}%` : '—';
+      const winMaps = snap?.winMaps || [];
       return `
-        <div class="hub-card" style="background:var(--v2-panel-2);margin-top:10px;">
+        <div class="hub-card" style="background:var(--v2-panel-2);margin-top:12px;">
           <div class="hub-card-head">
             <div class="hub-member-top">
-              ${renderAvatar(b.headImage, b.nick || p.displayName, 40, 'hub-avatar')}
+              ${renderAvatar(b.headImage || snap?.headImage, b.nick || p.displayName, 44, 'hub-avatar')}
               <div>
-                <strong>${esc(b.nick || p.displayName)} <span class="hub-pill">${esc(regionLabel(b.region))}</span></strong>
-                <div class="hub-muted">UID ${esc(b.uid)}${b.level ? ` · Lv.${b.level}` : ''}${snap?.creditScore ? ` · 信誉分 ${snap.creditScore}` : ''}${snap?.praiseNum ? ` · 获赞 ${snap.praiseNum}` : ''}</div>
+                <strong>${esc(snap?.nick || b.nick || p.displayName)} <span class="hub-pill">${esc(regionLabel(b.region))}</span>${b.isPrimary ? ' <span class="hub-pill pink">主号</span>' : ''}</strong>
+                <div class="hub-muted">UID ${esc(b.uid)}${(snap?.level ?? b.level) ? ` · Lv.${snap?.level ?? b.level}` : ''}${snap?.useHeroName ? ` · 常用 ${esc(snap.useHeroName)}` : ''}</div>
               </div>
             </div>
             ${snap ? `<span class="hub-pill">更新于 ${formatTime(snap.capturedAt)}</span>` : '<span class="hub-pill">暂无战绩快照</span>'}
           </div>
           ${snap ? `
-            <div class="hub-toolbar" style="margin-bottom:10px;">
-              ${snap.fightCount ? `<span class="hub-pill">总对局 ${snap.fightCount}</span>` : ''}
-              ${snap.winCount ? `<span class="hub-pill pink">胜场 ${snap.winCount}</span>` : ''}
-              ${snap.roleCardCount ? `<span class="hub-pill">角色 ${snap.roleCardCount}</span>` : ''}
-              ${snap.skinCount ? `<span class="hub-pill">皮肤 ${snap.skinCount}</span>` : ''}
-              ${(snap.achievements || []).slice(0, 6).map(a => `<span class="hub-pill gold">${esc(a.name)}</span>`).join('')}
+            <div class="hub-inspect-kpis">
+              <div class="hub-inspect-kpi"><span>总对局</span><strong>${fights || '—'}</strong></div>
+              <div class="hub-inspect-kpi"><span>胜场</span><strong>${wins || '—'}</strong></div>
+              <div class="hub-inspect-kpi"><span>胜率</span><strong>${esc(winRate)}</strong></div>
+              <div class="hub-inspect-kpi"><span>信誉分</span><strong>${snap.creditScore || '—'}</strong></div>
+              <div class="hub-inspect-kpi"><span>获赞</span><strong>${snap.praiseNum || '—'}</strong></div>
+              <div class="hub-inspect-kpi"><span>角色 / 皮肤</span><strong>${snap.roleCardCount || '—'} / ${snap.skinCount || '—'}</strong></div>
             </div>
+            ${(snap.achievements || []).length ? `
+              <div class="hub-muted" style="margin-bottom:6px;">成就徽章</div>
+              <div class="hub-toolbar" style="margin-bottom:10px;">
+                ${snap.achievements.slice(0, 8).map(a => `<span class="hub-pill gold">${esc(a.name)}</span>`).join('')}
+              </div>` : ''}
+            ${winMaps.length ? `
+              <div class="hub-muted" style="margin-bottom:6px;">通关地图 (${winMaps.length})</div>
+              <div class="hub-toolbar" style="margin-bottom:10px;">
+                ${winMaps.slice(0, 8).map(m => `<span class="hub-pill">${esc(m.name || `地图 ${m.mapId}`)} · ${m.wins}胜</span>`).join('')}
+              </div>` : ''}
             ${(snap.characters || []).length ? `
               <div class="hub-muted" style="margin-bottom:6px;">常用角色</div>
               <div class="hub-toolbar">
-                ${snap.characters.slice(0, 8).map(c => `<span class="hub-pill">${esc(c.name || `#${c.id}`)} Lv.${c.level}${c.fightCount != null ? ` · ${c.fightCount}场` : ''}</span>`).join('')}
+                ${snap.characters.slice(0, 10).map(c => `<span class="hub-pill">${esc(c.name || `#${c.id}`)} Lv.${c.level}${c.fightCount != null ? ` · ${c.fightCount}场` : ''}</span>`).join('')}
               </div>` : ''}
             ${(snap.recentMatches || []).length ? `
               <div class="hub-muted" style="margin:10px 0 6px;">近期对局 (${snap.recentMatches.length})</div>
               <div class="hub-toolbar">
-                ${snap.recentMatches.slice(0, 6).map(m => `<span class="hub-pill">#${m.rank} ${esc(m.character || '')} · ${esc(MODES[m.mapType] || '对局')} · ${formatTime(m.playedAt)}</span>`).join('')}
+                ${snap.recentMatches.slice(0, 8).map(m => `<span class="hub-pill">#${m.rank} ${esc(m.character || '')} · ${esc(MODES[m.mapType] || '对局')} · ${formatTime(m.playedAt)}</span>`).join('')}
               </div>` : ''}
           ` : ''}
         </div>`;
@@ -1399,6 +1682,20 @@
         S.viewedProfile = msg.payload || null;
         renderProfile();
         break;
+      case 'hubInspectProfileResult': {
+        const p = msg.payload || {};
+        if (!S.inspectState) break;
+        S.inspectState.loading = false;
+        if (p.ok && p.profile) {
+          S.inspectState.profile = p.profile;
+          S.inspectState.error = '';
+        } else {
+          S.inspectState.profile = null;
+          S.inspectState.error = p.error || '未能获取该玩家的公开档案。';
+        }
+        renderInspectDialog();
+        break;
+      }
       case 'hubBridgeSessions':
         S.bridge = msg.payload || S.bridge;
         renderGlobalRoomBar();
@@ -1476,9 +1773,16 @@
     }
   }
 
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindContextMenuOnce, { once: true });
+  } else {
+    bindContextMenuOnce();
+  }
+
   window.HubModule = {
     onShow() {
       bindOnce();
+      bindContextMenuOnce();
       if (!S.initialized) {
         renderAll();
       }

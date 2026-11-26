@@ -123,6 +123,26 @@
 .hub-room-note { font-size: 13px; color: var(--gp-text-sub); min-height: 20px; overflow-wrap: anywhere; }
 .hub-room-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; color: var(--gp-text-muted); }
 .hub-room-host { display: inline-flex; align-items: center; gap: 6px; }
+.hub-lobby-members { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.hub-lobby-member-strip { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.hub-lobby-member-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px 2px 3px;
+  border-radius: 999px;
+  background: var(--v2-well);
+  border: 1px solid var(--v2-border);
+  font-size: 12px;
+  color: var(--v2-text);
+  cursor: context-menu;
+  transition: border-color .14s ease, transform .12s ease;
+}
+.hub-lobby-member-chip.is-host { border-color: rgba(255, 23, 118, .45); }
+.hub-lobby-member-chip:hover { border-color: var(--gp-pink); transform: translateY(-1px); }
+.hub-lobby-member-chip span.hub-chip-name { max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hub-inspectable-avatar { cursor: context-menu; transition: transform .12s ease, box-shadow .12s ease; }
+.hub-inspectable-avatar:hover { transform: scale(1.06); box-shadow: 0 0 0 2px var(--gp-pink); }
 .hub-room-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--v2-border); }
 
 /* 房间内部视图 */
@@ -252,3 +272,77 @@ html body dialog.hub-dialog.hub-dialog-wide {
   box-sizing: border-box;
 }
 .hub-dialog-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 24px; border-top: 1px solid var(--v2-border); }
+
+/* 右键查成分原生 Popover 菜单（遵循 context-menu 指南） */
+.hub-menu-anchor { position: fixed; inline-size: 0; block-size: 0; pointer-events: none; }
+[popover].hub-context-menu {
+  margin: 0;
+  inset: auto;
+  padding: 6px;
+  min-width: 224px;
+  max-width: min(290px, 90vw);
+  border-radius: 12px;
+  border: 1px solid var(--v2-border-strong);
+  background: var(--v2-panel-solid, #1a1d2e);
+  color: var(--v2-text);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .55);
+  position-area: block-end span-inline-end;
+  position-try: flip-inline, flip-block, flip-start;
+  z-index: 600;
+}
+[popover].hub-context-menu:is(:popover-open, .\:popover-open) { display: block; }
+@supports not selector(:popover-open) {
+  [popover].hub-context-menu:not(.\:popover-open) { display: none; }
+}
+.hub-context-menu-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 8px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--v2-border);
+  min-width: 0;
+}
+.hub-context-menu-head-text { min-width: 0; flex: 1; }
+.hub-context-menu-head-text strong { display: block; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hub-context-menu-head-text small { display: block; font-size: 11px; color: var(--gp-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hub-context-menu-list { display: grid; gap: 2px; }
+.hub-context-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--v2-text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.hub-context-menu-item:hover,
+.hub-context-menu-item:focus-visible {
+  background: var(--v2-pink-soft);
+  color: var(--gp-pink);
+  outline: none;
+}
+.hub-context-menu-item small { font-size: 11px; color: var(--gp-text-muted); }
+
+/* 查成分弹窗里的关键指标网格 */
+.hub-inspect-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.hub-inspect-kpi {
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: var(--v2-well);
+  border: 1px solid var(--v2-border);
+}
+.hub-inspect-kpi span { display: block; font-size: 11px; color: var(--gp-text-muted); }
+.hub-inspect-kpi strong { display: block; margin-top: 2px; font-size: 15px; font-variant-numeric: tabular-nums; color: var(--v2-text); }
