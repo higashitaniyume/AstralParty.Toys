@@ -294,6 +294,9 @@ public sealed class BridgeCommandDto
     public long GameRoomId { get; set; }
     public string GamePwd { get; set; } = "";
     public int RoomServerId { get; set; }
+    public string RoomName { get; set; } = "";
+    public int MapType { get; set; }
+    public int MapId { get; set; }
 }
 
 public sealed class BridgeEventEnvelope

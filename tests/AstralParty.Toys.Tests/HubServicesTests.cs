@@ -123,6 +123,58 @@ public sealed class HubServicesTests
     }
 
     [Fact]
+    public void HubLocalBridgeServer_EnqueuesCreateRoomAndSyncsHeartbeatState()
+    {
+        using var bridge = new HubLocalBridgeServer();
+        bridge.Start();
+
+        var createId = bridge.EnqueueCreateRoom("测试开黑房", "7391", mapType: 1, mapId: 5);
+        var hbBody = """
+        {
+          "protocol": 1,
+          "sessionId": "s2",
+          "isLoggedIn": true,
+          "uid": 1744079,
+          "region": "cn",
+          "scene": "Home",
+          "room": {
+            "gameRoomId": 8848123,
+            "gamePwd": "7391",
+            "roomServerId": 1,
+            "mapId": 5,
+            "mapType": 1,
+            "masterId": 1744079,
+            "isMaster": true,
+            "state": "Wait",
+            "playerCount": 1
+          }
+        }
+        """;
+
+        var hb = bridge.HandleRequestInternal("POST", "/api/bridge/heartbeat", bridge.Token, hbBody);
+        Assert.Equal(200, hb.StatusCode);
+
+        using var doc = JsonDocument.Parse(hb.Body);
+        var cmds = doc.RootElement.GetProperty("commands");
+        Assert.Equal(1, cmds.GetArrayLength());
+        Assert.Equal(createId, cmds[0].GetProperty("commandId").GetString());
+        Assert.Equal("create_room", cmds[0].GetProperty("action").GetString());
+        Assert.Equal("测试开黑房", cmds[0].GetProperty("roomName").GetString());
+        Assert.Equal("7391", cmds[0].GetProperty("gamePwd").GetString());
+        Assert.Equal(1, cmds[0].GetProperty("mapType").GetInt32());
+        Assert.Equal(5, cmds[0].GetProperty("mapId").GetInt32());
+
+        var session = Assert.Single(bridge.GetActiveSessions());
+        Assert.True(session.IsLoggedIn);
+        Assert.Equal(1744079L, session.Uid);
+        Assert.Equal("cn", session.Region);
+        Assert.Equal("Home", session.Scene);
+        Assert.Equal(8848123L, session.GameRoomId);
+        Assert.Equal("7391", session.GamePwd);
+        Assert.True(session.IsMaster);
+    }
+
+    [Fact]
     public void HubSettlementService_ParsesGameFinishedEventAndNormalizesRegion()
     {
         var json = """

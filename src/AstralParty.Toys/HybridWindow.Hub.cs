@@ -27,6 +27,7 @@ public partial class HybridWindow
     private HubUserProfileDto? _hubMe;
     private string? _hubActiveRoomId;
     private string? _hubActiveRoomRegion;
+    private string? _hubActiveRoomTitle;
     private string? _hubActiveRoomHostUserId;
     private long _hubLastReportedGameRoomId;
     private string _hubLastReportedGamePwd = "";
@@ -75,6 +76,7 @@ public partial class HybridWindow
                     _hubBridge.SessionsChanged += sessions =>
                     {
                         Post(new { type = "hubBridgeSessions", payload = BuildBridgeStatusPayload(sessions) });
+                        _ = TrySyncHostGameRoomFromSessionsAsync(sessions);
                     };
                     _hubBridge.Start();
                 }
@@ -724,6 +726,7 @@ public partial class HybridWindow
     {
         _hubActiveRoomId = null;
         _hubActiveRoomRegion = null;
+        _hubActiveRoomTitle = null;
         _hubActiveRoomHostUserId = null;
         _hubLastReportedGameRoomId = 0;
         _hubLastReportedGamePwd = "";
@@ -732,6 +735,8 @@ public partial class HybridWindow
 
     private async Task HandleHubHostLaunchGameAsync(JsonElement root)
     {
+        EnsureHubInitialized();
+
         if (!string.IsNullOrEmpty(_hubActiveRoomId))
         {
             var room = await EnsureHubApiClient().NotifyHostLaunchingAsync(_hubActiveRoomId).ConfigureAwait(false);
@@ -740,6 +745,32 @@ public partial class HybridWindow
 
         var mode = ReadJsonString(root, "mode", "bypassSteam");
         var profileName = ReadJsonStringOrNull(root, "profileName");
+        var gamePwd = ReadJsonString(root, "gamePwd").Trim();
+        if (string.IsNullOrEmpty(gamePwd))
+        {
+            gamePwd = RandomNumberGenerator.GetInt32(1000, 10000).ToString();
+        }
+        var mapType = root.TryGetProperty("mapType", out var mtEl) && mtEl.TryGetInt32(out var mt) && mt > 0 ? mt : 1;
+        var mapId = root.TryGetProperty("mapId", out var midEl) && midEl.TryGetInt32(out var mid) && mid > 0 ? mid : 0;
+        var roomName = !string.IsNullOrWhiteSpace(_hubActiveRoomTitle)
+            ? _hubActiveRoomTitle!
+            : (_hubMe?.DisplayName ?? "AstralParty");
+
+        var sessions = _hubBridge?.GetActiveSessions() ?? Array.Empty<BridgeSessionState>();
+        var liveSession = sessions.FirstOrDefault(s =>
+            s.IsLoggedIn &&
+            (string.IsNullOrEmpty(_hubActiveRoomRegion) ||
+             string.IsNullOrEmpty(s.Region) ||
+             string.Equals(HubSettlementService.NormalizeRegion(s.Region), _hubActiveRoomRegion, StringComparison.OrdinalIgnoreCase)));
+
+        _hubBridge?.EnqueueCreateRoom(roomName, gamePwd, mapType, mapId);
+
+        if (liveSession is not null)
+        {
+            Post(new { type = "toast", message = $"已通知运行中的游戏自动创建房间（密码 {gamePwd}）…" });
+            return;
+        }
+
         Dispatcher.Invoke(() =>
         {
             SyncHubBridgeEndpoints();
@@ -752,6 +783,7 @@ public partial class HybridWindow
                 HandleLaunchGame(mode);
             }
         });
+        Post(new { type = "toast", message = $"正在启动游戏，进入主界面后将自动创建房间（密码 {gamePwd}）…" });
     }
 
     private void HandleHubTriggerBridgeJoin(JsonElement root)
@@ -774,9 +806,51 @@ public partial class HybridWindow
     {
         _hubActiveRoomId = room.RoomId;
         _hubActiveRoomRegion = room.Region;
+        _hubActiveRoomTitle = room.Title;
         _hubActiveRoomHostUserId = room.HostUserId;
         var payload = await BuildRoomPayloadAsync(room, ct).ConfigureAwait(false);
         Post(new { type = "hubRoomState", payload });
+    }
+
+    private async Task TrySyncHostGameRoomFromSessionsAsync(IReadOnlyList<BridgeSessionState> sessions)
+    {
+        var roomId = _hubActiveRoomId;
+        var api = EnsureHubApiClient();
+        if (string.IsNullOrEmpty(roomId) || !api.HasToken || _hubMe is null) return;
+        if (!string.Equals(_hubActiveRoomHostUserId, _hubMe.UserId, StringComparison.Ordinal)) return;
+
+        var hostSession = sessions.FirstOrDefault(s =>
+            s.IsLoggedIn &&
+            s.IsMaster &&
+            s.GameRoomId > 0 &&
+            (string.IsNullOrEmpty(_hubActiveRoomRegion) ||
+             string.IsNullOrEmpty(s.Region) ||
+             string.Equals(HubSettlementService.NormalizeRegion(s.Region), _hubActiveRoomRegion, StringComparison.OrdinalIgnoreCase)));
+        if (hostSession is null) return;
+
+        if (hostSession.GameRoomId == _hubLastReportedGameRoomId &&
+            string.Equals(hostSession.GamePwd, _hubLastReportedGamePwd, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _hubLastReportedGameRoomId = hostSession.GameRoomId;
+        _hubLastReportedGamePwd = hostSession.GamePwd;
+        try
+        {
+            var updated = await api.ReportGameRoomAsync(
+                roomId,
+                hostSession.GameRoomId,
+                hostSession.GamePwd,
+                hostSession.RoomServerId,
+                hostSession.MapId,
+                hostSession.MapType).ConfigureAwait(false);
+            await ApplyHubRoomUpdateAsync(updated).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            ToysLog.Warn("hub", $"从心跳同步房主游戏房间号失败：{ex.Message}");
+        }
     }
 
     private void StartRoomStream(string roomId, long afterCursor)
@@ -961,10 +1035,19 @@ public partial class HybridWindow
                 }
                 break;
 
+            case "create_failed":
+            {
+                var reason = env.Data.ValueKind == JsonValueKind.Object
+                    ? (ReadJsonStringOrNull(env.Data, "message") ?? ReadJsonStringOrNull(env.Data, "reason") ?? "自动创建游戏房间失败")
+                    : "自动创建游戏房间失败";
+                Post(new { type = "toast", message = reason });
+                break;
+            }
+
             case "join_failed":
             {
-                var reason = env.Data.ValueKind == JsonValueKind.Object && env.Data.TryGetProperty("reason", out var rEl)
-                    ? (rEl.GetString() ?? "自动进房失败")
+                var reason = env.Data.ValueKind == JsonValueKind.Object
+                    ? (ReadJsonStringOrNull(env.Data, "message") ?? ReadJsonStringOrNull(env.Data, "reason") ?? "自动进房失败")
                     : "自动进房失败";
                 Post(new { type = "toast", message = reason });
                 if (!string.IsNullOrEmpty(roomId) && api.HasToken)

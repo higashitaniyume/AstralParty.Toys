@@ -306,7 +306,18 @@
     });
   }
 
-  // 全局顶部车队状态条：在任何页面都能看到房间人数、成员头像、一键开房/进房与房主解散
+  function hasLiveGameForRegion(region) {
+    return (S.bridge.sessions || []).some(s => s.isLoggedIn && (!region || !s.region || s.region === region));
+  }
+
+  function copyGameRoomInfo(gr) {
+    if (!gr || !(gr.gameRoomId > 0)) return;
+    const text = gr.gamePwd ? `${gr.gameRoomId} 密码:${gr.gamePwd}` : String(gr.gameRoomId);
+    navigator.clipboard?.writeText(text);
+    window.toast?.(`已复制游戏房间信息：${text}`);
+  }
+
+  // 全局顶部车队状态条：在任何页面都能看到房间人数、成员头像、游戏房号与密码、一键开房/进房与房主解散
   function renderGlobalRoomBar() {
     const bar = $id('hubGlobalRoomBar');
     if (!bar) return;
@@ -319,6 +330,8 @@
 
     const isHost = S.me && room.hostUserId === S.me.userId;
     const gr = room.gameRoom;
+    const hasGameRoom = !!(gr && gr.gameRoomId > 0);
+    const liveGame = hasLiveGameForRegion(room.region);
     const statusTxt = ROOM_STATUS_TEXT[room.status] || room.status;
     const avatarsHtml = (room.members || []).slice(0, 4).map(m => {
       const safe = imgUrl(m.avatarUrl);
@@ -337,21 +350,26 @@
         <span class="hub-global-bar-title" title="${esc(room.title)}">${esc(room.title)}</span>
         <span class="hub-pill pink">已进 ${room.members.length} / ${room.capacity} 人</span>
         <span class="hub-bar-avatars">${avatarsHtml}</span>
-        ${gr && gr.gameRoomId > 0
-          ? `<span class="hub-pill green">游戏房 #${esc(gr.gameRoomId)}</span>`
+        ${hasGameRoom
+          ? `<span class="hub-bar-code-group">
+               <span class="hub-pill green hub-bar-code-pill">房号 <strong>${esc(gr.gameRoomId)}</strong></span>
+               <span class="hub-pill gold hub-bar-code-pill">密码 <strong>${esc(gr.gamePwd || '无')}</strong></span>
+               <button type="button" class="v2-btn ghost hub-bar-copy-btn" data-bar-act="copy-code">复制</button>
+             </span>`
           : `<span class="hub-pill">${esc(statusTxt)}</span>`}
       </div>
       <div class="hub-global-bar-right">
         <button type="button" class="v2-btn ghost hub-bar-btn" data-bar-act="return">回到房间</button>
         ${isHost
-          ? `<button type="button" class="v2-btn primary hub-bar-btn" data-bar-act="launch">启动游戏开房</button>`
-          : (gr && gr.gameRoomId > 0 ? `<button type="button" class="v2-btn primary hub-bar-btn" data-bar-act="join-game">一键进房</button>` : '')}
+          ? (!hasGameRoom ? `<button type="button" class="v2-btn primary hub-bar-btn" data-bar-act="launch">${liveGame ? '自动创建游戏房' : '启动游戏开房'}</button>` : '')
+          : (hasGameRoom ? `<button type="button" class="v2-btn primary hub-bar-btn" data-bar-act="join-game">一键进房</button>` : '')}
         ${isHost
           ? `<button type="button" class="v2-btn hub-btn-danger hub-bar-btn" data-bar-act="disband">解散房间</button>`
           : `<button type="button" class="v2-btn ghost hub-bar-btn" data-bar-act="leave">退出</button>`}
       </div>
     `;
 
+    bar.querySelector('[data-bar-act="copy-code"]')?.addEventListener('click', () => copyGameRoomInfo(gr));
     bar.querySelector('[data-bar-act="return"]')?.addEventListener('click', () => {
       window.showPage?.('hub');
       selectTab('room', false);
@@ -593,10 +611,13 @@
     const isHost = S.me && room.hostUserId === S.me.userId;
     const bindings = regionBindings(room.region);
     const gr = room.gameRoom;
+    const hasGameRoom = !!(gr && gr.gameRoomId > 0);
+    const liveGame = hasLiveGameForRegion(room.region);
     const statusTxt = ROOM_STATUS_TEXT[room.status] || room.status;
     const selfMember = room.members.find(m => m.self);
+    const hostLaunchLabel = hasGameRoom ? '重新创建游戏房' : (liveGame ? '自动创建游戏房' : '启动游戏开房');
 
-    const gameRoomBanner = gr && gr.gameRoomId > 0 ? `
+    const gameRoomBanner = hasGameRoom ? `
       <div class="hub-gameroom-banner">
         <div class="hub-gameroom-codes">
           <div><div class="hub-muted">游戏房间号</div><strong>${esc(gr.gameRoomId)}</strong></div>
@@ -610,8 +631,8 @@
       </div>` : `
       <div class="hub-notice-warn">
         ${isHost
-          ? '启动游戏并在游戏内建房后，内置 <strong>HubBridgeMod</strong> 会自动同步房号与密码给队友。'
-          : '等待房主在游戏内建房，建房后将自动同步房号并通知进房。'}
+          ? `点击「${esc(hostLaunchLabel)}」后，内置 <strong>HubBridgeMod</strong> 会在游戏进入主界面时自动创建房间，并把房号与密码同步到顶部栏与队友。`
+          : '等待房主建房，游戏房号与密码将自动同步到顶部栏并通知进房。'}
       </div>`;
 
     const memberCards = room.members.map(m => {
@@ -659,7 +680,7 @@
               <input id="hubAutoJoinSwitch" type="checkbox" switch ${S.autoJoinEnabled ? 'checked' : ''} />
             </label>
             ${bindings.length > 1 ? `<select id="hubRoomSwitchUid" class="v2-select">${bindings.map(b => `<option value="${esc(b.uid)}" ${selfMember?.activeUid === b.uid ? 'selected' : ''}>${esc(b.nick || b.uid)} (${esc(b.uid)})</option>`).join('')}</select>` : ''}
-            ${isHost ? `<button type="button" class="v2-btn primary" id="hubHostLaunchBtn">启动游戏开房</button>` : ''}
+            ${isHost ? `<button type="button" class="v2-btn primary" id="hubHostLaunchBtn">${esc(hostLaunchLabel)}</button>` : ''}
             ${isHost && room.status === 'finished' ? `<button type="button" class="v2-btn ghost" id="hubReopenBtn">开启下一局</button>` : ''}
             ${room.latestMatch ? `<button type="button" class="v2-btn ghost" id="hubOpenLatestSettleBtn">查看战报</button>` : ''}
             <button type="button" class="v2-btn ghost" id="hubBrowseLobbyBtn">逛房间大厅</button>
@@ -704,12 +725,7 @@
       if (!gr) return;
       post({ type: 'hubTriggerBridgeJoin', gameRoomId: gr.gameRoomId, gamePwd: gr.gamePwd, roomServerId: gr.roomServerId });
     });
-    $id('hubCopyGameCodeBtn')?.addEventListener('click', () => {
-      if (!gr) return;
-      const text = gr.gamePwd ? `${gr.gameRoomId} 密码:${gr.gamePwd}` : String(gr.gameRoomId);
-      navigator.clipboard?.writeText(text);
-      window.toast?.(`已复制游戏房间信息：${text}`);
-    });
+    $id('hubCopyGameCodeBtn')?.addEventListener('click', () => copyGameRoomInfo(gr));
     $id('hubRoomSwitchUid')?.addEventListener('change', e => {
       post({ type: 'hubSwitchActiveUid', activeUid: e.target.value });
     });
@@ -1352,8 +1368,10 @@
         break;
       case 'hubBridgeSessions':
         S.bridge = msg.payload || S.bridge;
+        renderGlobalRoomBar();
         renderHeader();
         renderBridgeDiag();
+        if (S.currentRoom) renderRoomPanel();
         renderProfile();
         break;
       case 'hubAutoJoinChanged':

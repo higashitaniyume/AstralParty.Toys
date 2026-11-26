@@ -140,6 +140,21 @@ public sealed class HubLocalBridgeServer : IDisposable
         return cmdId;
     }
 
+    public string EnqueueCreateRoom(string? roomName, string? gamePwd, int mapType = 1, int mapId = 0)
+    {
+        var cmdId = Guid.NewGuid().ToString("N");
+        _pendingCommands.Enqueue(new BridgeCommandDto
+        {
+            CommandId = cmdId,
+            Action = "create_room",
+            RoomName = (roomName ?? "").Trim(),
+            GamePwd = (gamePwd ?? "").Trim(),
+            MapType = mapType > 0 ? mapType : 1,
+            MapId = mapId,
+        });
+        return cmdId;
+    }
+
     public IReadOnlyList<BridgeSessionState> GetActiveSessions()
     {
         var now = DateTimeOffset.UtcNow;
@@ -185,13 +200,17 @@ public sealed class HubLocalBridgeServer : IDisposable
     private (int StatusCode, string Body) HandleHeartbeat(string body)
     {
         string sessionId = "";
+        JsonDocument? doc = null;
         try
         {
             if (!string.IsNullOrWhiteSpace(body))
             {
-                using var doc = JsonDocument.Parse(body);
-                if (doc.RootElement.TryGetProperty("sessionId", out var sidEl))
+                doc = JsonDocument.Parse(body);
+                if (doc.RootElement.ValueKind == JsonValueKind.Object &&
+                    doc.RootElement.TryGetProperty("sessionId", out var sidEl))
+                {
                     sessionId = (sidEl.GetString() ?? "").Trim();
+                }
             }
         }
         catch
@@ -200,18 +219,29 @@ public sealed class HubLocalBridgeServer : IDisposable
         }
 
         List<BridgeSessionState>? snapshot = null;
-        if (sessionId.Length > 0)
+        try
         {
-            lock (_gate)
+            if (sessionId.Length > 0)
             {
-                if (!_sessions.TryGetValue(sessionId, out var session))
+                lock (_gate)
                 {
-                    session = new BridgeSessionState { SessionId = sessionId };
-                    _sessions[sessionId] = session;
+                    if (!_sessions.TryGetValue(sessionId, out var session))
+                    {
+                        session = new BridgeSessionState { SessionId = sessionId };
+                        _sessions[sessionId] = session;
+                    }
+                    session.LastHeartbeatUtc = DateTimeOffset.UtcNow;
+                    if (doc is not null && doc.RootElement.ValueKind == JsonValueKind.Object)
+                    {
+                        ApplyHeartbeatToSession(session, doc.RootElement);
+                    }
+                    snapshot = _sessions.Values.Select(CloneSession).ToList();
                 }
-                session.LastHeartbeatUtc = DateTimeOffset.UtcNow;
-                snapshot = _sessions.Values.Select(CloneSession).ToList();
             }
+        }
+        finally
+        {
+            doc?.Dispose();
         }
 
         var commands = new List<BridgeCommandDto>();
@@ -227,6 +257,39 @@ public sealed class HubLocalBridgeServer : IDisposable
 
         var payload = JsonSerializer.Serialize(new { protocol = 1, commands }, JsonOptions);
         return (200, payload);
+    }
+
+    private static void ApplyHeartbeatToSession(BridgeSessionState s, JsonElement root)
+    {
+        s.IsLoggedIn = ReadBool(root, "isLoggedIn", s.IsLoggedIn);
+        s.Uid = ReadLong(root, "uid", s.Uid);
+        s.Region = ReadString(root, "region", s.Region);
+        s.Scene = ReadString(root, "scene", s.Scene);
+
+        if (root.TryGetProperty("room", out var roomEl))
+        {
+            if (roomEl.ValueKind == JsonValueKind.Object)
+            {
+                s.GameRoomId = ReadLong(roomEl, "gameRoomId", s.GameRoomId);
+                s.GamePwd = ReadString(roomEl, "gamePwd", s.GamePwd);
+                s.RoomServerId = ReadInt(roomEl, "roomServerId", s.RoomServerId);
+                s.MapId = ReadInt(roomEl, "mapId", s.MapId);
+                s.MapType = ReadInt(roomEl, "mapType", s.MapType);
+                s.MasterId = ReadLong(roomEl, "masterId", s.MasterId);
+                s.IsMaster = ReadBool(roomEl, "isMaster", s.IsMaster);
+                s.RoomState = ReadString(roomEl, "state", s.RoomState);
+                s.PlayerCount = ReadInt(roomEl, "playerCount", s.PlayerCount);
+            }
+            else if (roomEl.ValueKind == JsonValueKind.Null)
+            {
+                s.GameRoomId = 0;
+                s.GamePwd = "";
+                s.RoomServerId = 0;
+                s.IsMaster = false;
+                s.RoomState = "";
+                s.PlayerCount = 0;
+            }
+        }
     }
 
     private (int StatusCode, string Body) HandleEvents(string body)
