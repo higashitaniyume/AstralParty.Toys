@@ -4,7 +4,7 @@
 (function () {
   const G = {
     scan: null,
-    tab: 'ui',
+    tab: 'credits',
     logs: [],
     logsAsked: false,
     logsLoaded: false,
@@ -180,6 +180,7 @@
   }
 
   const TABS = [
+    ['credits', '感谢', 'favorite'],
     ['ui', '界面', 'settings'],
     ['game', '游戏目录', 'sports_esports'],
     ['storage', '存储与清理', 'folder_open'],
@@ -366,7 +367,7 @@
     const cap = LS().capacity || 10, keep = LS().keepInGame || cap;
     const info = window.VersionModule?.info;
     const mirror = LS().githubMirrorType || 'gh-proxy';
-    const tab = TABS.some(([k]) => k === G.tab) ? G.tab : 'ui';
+    const tab = TABS.some(([k]) => k === G.tab) ? G.tab : 'credits';
     const side = TABS.map(([k, label, icon]) => {
       const on = k === tab ? ' on' : '';
       const danger = k === 'uninstall' ? ' danger' : '';
@@ -374,7 +375,8 @@
       return `<button class="v2-side-tab${on}${danger}" data-v2g-tab="${k}" role="tab" aria-selected="${k === tab}">${window.Icons?.svg(icon) || ''}<span>${esc(label)}</span>${dot}</button>`;
     }).join('');
     let main = '';
-    if (tab === 'ui') main = `
+    if (tab === 'credits') main = window.V2Credits?.render?.() || '';
+    else if (tab === 'ui') main = `
       <div class="v2-card"><div class="v2-card-title"><span>界面</span></div>
         <div class="v2-row"><span class="k">界面动画</span><span class="v v2-muted">关掉后切页、弹窗都没有过渡动画</span>
           <label class="v2-switch"><input type="checkbox" id="v2gMotion" ${motionOn() ? 'checked' : ''}><span></span></label></div>
