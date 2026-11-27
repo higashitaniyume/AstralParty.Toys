@@ -64,7 +64,11 @@ public partial class HybridWindow : Window
         _gameLibrary = new GameLibraryService();
         // 界面上的「运行日志」：每次写日志都转发一条给网页（Post 会自己切到 UI 线程）
         Services.ToysLog.Written += OnToysLogWritten;
-        Closed += (_, _) => Services.ToysLog.Written -= OnToysLogWritten;
+        Closed += (_, _) =>
+        {
+            Services.ToysLog.Written -= OnToysLogWritten;
+            DisposeHub();
+        };
     }
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -146,6 +150,9 @@ public partial class HybridWindow : Window
             WorkshopService.EnsureCoverDirectory();
             WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
                 "workshop.aspatoys.hiynet.localhost", WorkshopService.CoverDirectory, CoreWebView2HostResourceAccessKind.DenyCors);
+            Directory.CreateDirectory(ToysPaths.HubAvatarCacheDirectory);
+            WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                "hubavatars.aspatoys.hiynet.localhost", ToysPaths.HubAvatarCacheDirectory, CoreWebView2HostResourceAccessKind.DenyCors);
             MapBackgroundHost();
             WebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
             WebView.CoreWebView2.Settings.IsStatusBarEnabled = false;
@@ -199,6 +206,9 @@ public partial class HybridWindow : Window
             WorkshopService.EnsureCoverDirectory();
             WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
                 "workshop.aspatoys.hiynet.localhost", WorkshopService.CoverDirectory, CoreWebView2HostResourceAccessKind.DenyCors);
+            Directory.CreateDirectory(ToysPaths.HubAvatarCacheDirectory);
+            WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                "hubavatars.aspatoys.hiynet.localhost", ToysPaths.HubAvatarCacheDirectory, CoreWebView2HostResourceAccessKind.DenyCors);
             MapBackgroundHost();
         }
         catch (Exception ex)

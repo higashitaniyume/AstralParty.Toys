@@ -26,6 +26,7 @@
     <!-- 新界面（重做）：放最后，覆盖外壳布局 -->
     <link rel="stylesheet" href="css/v2.css" />
     <link rel="stylesheet" href="css/account.css" />
+    <link rel="stylesheet" href="css/hub.css" />
     <link rel="stylesheet" href="css/motion.css" />
     <link rel="stylesheet" href="css/speedhack.css" />
   </head>
@@ -65,8 +66,8 @@
               /></svg
             ><span data-i18n="nav.profiles">游戏多开</span>
           </button>
-          <button class="nav-crumb-btn" data-page="account">
-            <svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 12c-5 0-9 3-9 6v2h18v-2c0-3-4-6-9-6Z" /></svg><span data-i18n="nav.account">我的账号</span>
+          <button class="nav-crumb-btn" data-page="hub">
+            <svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 12c-5 0-9 3-9 6v2h18v-2c0-3-4-6-9-6Z" /></svg><span data-i18n="nav.hub">组队大厅</span>
           </button>
           <button class="nav-crumb-btn" data-page="tools">
             <svg class="nav-ico" viewBox="0 -960 960 960" aria-hidden="true">
@@ -163,12 +164,58 @@
 
       <!-- Main Views Container -->
       <main class="page-container">
+        <aside id="hubGlobalRoomBar" class="hub-global-bar" hidden aria-label="当前组队房间"></aside>
+        <dialog id="hubDisbandDialog" class="hub-dialog" closedby="any" aria-labelledby="hubDisbandDialogTitle">
+          <form method="dialog" class="hub-dialog-form">
+            <div class="hub-dialog-head">
+              <h1 id="hubDisbandDialogTitle">解散当前组队房间？</h1>
+              <button type="submit" value="cancel" formnovalidate class="hub-dialog-close" aria-label="关闭">✕</button>
+            </div>
+            <div class="hub-dialog-body">
+              <p id="hubDisbandDesc" class="hub-muted">解散后房间将立即关闭，所有队员会自动离开。</p>
+            </div>
+            <div class="hub-dialog-foot">
+              <button type="submit" value="cancel" formnovalidate class="v2-btn ghost" autofocus>取消</button>
+              <button type="button" id="hubConfirmDisbandBtn" class="v2-btn hub-btn-danger">确认解散</button>
+            </div>
+          </form>
+        </dialog>
+        <span id="hubContextAnchor" class="hub-menu-anchor" aria-hidden="true"></span>
+        <div popover="auto" id="hubPlayerContextMenu" class="hub-context-menu">
+          <div id="hubContextMenuHead" class="hub-context-menu-head"></div>
+          <div id="hubContextMenuList" class="hub-context-menu-list" focusgroup="menu nomemory" role="menu" aria-label="玩家操作菜单"></div>
+        </div>
+        <dialog id="hubInspectDialog" class="hub-dialog hub-dialog-wide" closedby="any" aria-labelledby="hubInspectDialogTitle">
+          <form method="dialog" class="hub-dialog-form">
+            <div class="hub-dialog-head">
+              <h1 id="hubInspectDialogTitle">查成分 · 玩家档案</h1>
+              <button type="submit" value="cancel" formnovalidate class="hub-dialog-close" aria-label="关闭">✕</button>
+            </div>
+            <div id="hubInspectBody" class="hub-dialog-body"></div>
+            <div class="hub-dialog-foot">
+              <button type="button" id="hubInspectCopyUidBtn" class="v2-btn ghost" hidden>复制 UID</button>
+              <button type="button" id="hubInspectOpenProfileBtn" class="v2-btn ghost" hidden>在个人主页打开</button>
+              <button type="submit" value="cancel" formnovalidate class="v2-btn primary" autofocus>关闭</button>
+            </div>
+          </form>
+        </dialog>
+        <dialog id="hubOAuthBlockingDialog" class="hub-dialog hub-oauth-blocking-dialog" closedby="none" aria-labelledby="hubOAuthBlockingTitle">
+          <div class="hub-oauth-blocking-box">
+            <progress class="hub-spinner hub-spinner-lg" aria-label="正在从浏览器登录"></progress>
+            <h1 id="hubOAuthBlockingTitle">正在从浏览器登录…</h1>
+            <p id="hubOAuthBlockingDesc" class="hub-muted">已启动系统默认浏览器，请在浏览器中完成授权；完成后将自动返回 Toys。</p>
+            <div class="hub-oauth-blocking-actions">
+              <button type="button" id="hubOAuthCancelBtn" class="v2-btn ghost" autofocus>取消登录</button>
+            </div>
+          </div>
+        </dialog>
         <!-- 1. HOME VIEW (In-Game Aesthetic Main Lobby) -->
         <!-- @include view-home.html -->
         <!-- @include view-replays.html -->
         <!-- @include view-utilities.html -->
         <!-- @include view-speedhack.html -->
         <!-- @include view-mods.html -->
+        <!-- @include view-hub.html -->
         <!-- @include view-account.html -->
         <!-- @include view-workshop.html -->
         <!-- @include view-skins.html -->
@@ -206,6 +253,7 @@
     <script src="js/gamelib.js"></script>
     <script src="js/profiles.js"></script>
     <script src="js/account.js"></script>
+    <script src="js/hub/module.js"></script>
     <script src="js/home.js"></script>
     <script src="js/replay/helpers.js"></script>
     <script src="js/replay/state.js"></script>

@@ -7,6 +7,8 @@ function runPageHook(pageName) {
     window.AccountProfilesModule?.onShow();
   } else if (pageName === 'account') {
     window.MyAccountModule?.onShow();
+  } else if (pageName === 'hub') {
+    window.HubModule?.onShow();
   } else if (pageName === 'tools') {
     window.ReplayModule?.onShowTools();
   } else if (pageName === 'wiki') {
@@ -32,8 +34,8 @@ function runPageHook(pageName) {
 
 function updateNavigation(pageName) {
   document.body.classList.toggle('page-home-active', pageName === 'home');
-  // 模组详情是「市场」下面的子页面，面包屑仍然高亮市场。
-  const activePage = pageName === 'workshopDetail' ? 'workshop' : pageName;
+  // 模组详情是「市场」下面的子页面，面包屑仍然高亮市场；「我的账号」并入「组队大厅」。
+  const activePage = pageName === 'workshopDetail' ? 'workshop' : pageName === 'account' ? 'hub' : pageName;
   document.querySelectorAll('.nav-crumb-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.page === activePage);
   });

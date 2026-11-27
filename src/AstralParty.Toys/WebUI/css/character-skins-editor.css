@@ -103,7 +103,7 @@
   margin-left: 8px;
 }
 :is(.skin-modal-dialog, #characterCreateDialog, #characterSchemeCreateDialog, #characterBindingDialog, #characterSchemeMetaDialog, #audioCreateDialog, #audioEditMetaDialog, #audioDuplicateDialog, #audioDeleteConfirmDialog, #audioExtractConfirmDialog) {
-  width: min(480px, calc(100vw - 48px));
+  width: min(640px, calc(100vw - 48px));
   max-height: calc(100vh - 64px);
   padding: 28px;
   background: var(--cs-surface);

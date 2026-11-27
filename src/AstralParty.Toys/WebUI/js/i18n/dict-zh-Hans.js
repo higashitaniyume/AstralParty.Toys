@@ -4,7 +4,9 @@
   window.I18N_DICTS = window.I18N_DICTS || {};
   window.I18N_DICTS['zh-Hans'] = {
       'settings.feedback_thanks': '感谢您的反馈、建议与意见～',
+      'nav.hub': '组队大厅',
       'nav.account': '我的账号',
+      'account.backToHub': '返回组队大厅',
       'account.subtitle': '本机直连 · 角色使用、好友状态与最近对局',
       'account.recent': '最近对局',
       'account.mapLoading': '正在读取地图…',

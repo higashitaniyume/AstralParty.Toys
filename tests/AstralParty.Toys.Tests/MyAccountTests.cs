@@ -574,8 +574,11 @@ public sealed class MyAccountTests : IDisposable
     [Fact]
     public void AccountNavigationIsAlwaysVisibleWithoutAnInterfaceToggle()
     {
-        Assert.Contains("class=\"nav-crumb-btn\" data-page=\"account\">", Web("index.html"));
+        // 「我的账号」已并入「组队大厅」子页面，左侧导航固定展示组队大厅入口（无隐藏开关）
+        Assert.Contains("class=\"nav-crumb-btn\" data-page=\"hub\">", Web("index.html"));
+        Assert.DoesNotContain("data-page=\"hub\" hidden", Web("index.html"));
         Assert.DoesNotContain("data-page=\"account\" hidden", Web("index.html"));
+        Assert.Contains("showPage?.('account')", Web("js/hub/module.js"));
         var router = Web("js/core/router.js");
         Assert.DoesNotContain("showMyAccount", router);
         Assert.DoesNotContain("AccountNavigation", router);
@@ -635,7 +638,8 @@ public sealed class MyAccountTests : IDisposable
     public void PageAssetsNavigationAndLifecycleAreEmbedded()
     {
         string index = Web("index.html");
-        Assert.Contains("data-page=\"account\"", index);
+        Assert.Contains("data-page=\"hub\"", index);
+        Assert.Contains("id=\"hubView\"", index);
         Assert.Contains("id=\"accountView\"", index);
         Assert.Contains("id=\"accountStats\"", index);
         Assert.Contains("js/account.js", index);

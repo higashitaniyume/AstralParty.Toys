@@ -4,7 +4,9 @@
   window.I18N_DICTS = window.I18N_DICTS || {};
   window.I18N_DICTS['en'] = {
       'settings.feedback_thanks': 'Thank you for your feedback, suggestions and ideas!',
+      'nav.hub': 'Team Hub',
       'nav.account': 'My account',
+      'account.backToHub': 'Back to Team Hub',
       'account.subtitle': 'Local connection · Characters, friends and recent matches',
       'account.recent': 'Recent matches',
       'account.mapLoading': 'Reading map…',
