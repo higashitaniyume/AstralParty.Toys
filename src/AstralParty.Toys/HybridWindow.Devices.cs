@@ -11,6 +11,7 @@ namespace AstralParty.Toys;
 
 public partial class HybridWindow
 {
+    private readonly object _mobileDevicesLock = new();
     private MobileDeviceService? _mobileDevices;
     private MobileInstallService? _mobileInstall;
     private MobileSkinService? _mobileSkins;
@@ -45,13 +46,19 @@ public partial class HybridWindow
     {
         get
         {
-            if (_mobileDevices is null)
+            if (_mobileDevices is not null)
+                return _mobileDevices;
+
+            lock (_mobileDevicesLock)
             {
-                AndroidChannel.CustomAdbPath = AppConfigStore.Load().Mobile.AdbPath;
-                _mobileDevices = new MobileDeviceService(ToysPaths.StateDirectory, [new IosChannel(), new AndroidChannel()],
-                    MobileLog, MobileInstallState);
+                if (_mobileDevices is null)
+                {
+                    AndroidChannel.CustomAdbPath = AppConfigStore.Load().Mobile.AdbPath;
+                    _mobileDevices = new MobileDeviceService(ToysPaths.StateDirectory, [new IosChannel(), new AndroidChannel()],
+                        MobileLog, MobileInstallState);
+                }
+                return _mobileDevices;
             }
-            return _mobileDevices;
         }
     }
 
@@ -480,14 +487,23 @@ public partial class HybridWindow
         if (id.StartsWith(localPrefix, StringComparison.Ordinal))
         {
             var profileId = id[localPrefix.Length..];
+            if (string.IsNullOrEmpty(profileId))
+                profileId = _gameLibrary.GetActive()?.Id ?? "";
             MobileDevices.SetActiveLocal(profileId);
-            HandleGameProfileSetActive(profileId);
-        }
-        else
-        {
-            MobileDevices.SetActiveMobile(id);
+            if (!string.IsNullOrEmpty(profileId))
+            {
+                _gameLibrary.SetActive(profileId);
+                SyncActiveGameToManagers();
+            }
+
+            _ = PushGameProfilesAsync();
+            _ = PushModStatusAsync();
+            _ = PushSpeedhackStatusAsync();
+            PostTargetChanged();
+            return;
         }
 
+        MobileDevices.SetActiveMobile(id);
         _ = PushGameProfilesAsync();
         PostTargetChanged();
     }

@@ -133,6 +133,7 @@ body.v2-maximized .v2-win .restore { display: block; }
 .v2-top-spacer { flex: 1; }
 .v2-global-game { background: transparent; border-color: var(--v2-border); color: var(--v2-text-soft); }
 .v2-global-game:hover { background: var(--v2-hover); color: var(--v2-text); border-color: var(--v2-border-strong); }
+.v2-global-game:active:not(:disabled) { scale: 1; }
 .v2-tb-btn { display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; border-radius: 6px; color: var(--gp-text-sub); font-size: 13px; }
 .v2-tb-btn:hover { background: var(--v2-hover); color: var(--v2-text); }
 .v2-tb-btn svg { width: 16px; height: 16px; }

@@ -1251,9 +1251,18 @@
   let guardRaf = 0;
 
   function switchBackToLocal() {
-    const localTarget = (AppState.gameProfiles?.targets || []).find(t => t.kind === 'local');
-    if (localTarget) post({ type: 'targetSetActive', id: localTarget.id });
-    else window.showPage?.('settings');
+    const targets = AppState.gameProfiles?.targets || [];
+    const profiles = AppState.gameProfiles?.profiles || [];
+    const preferredId = AppState.gameProfiles?.activeId || profiles.find(p => p.active)?.id || profiles[0]?.id || '';
+    const localTarget =
+      (preferredId && targets.find(t => t.kind === 'local' && t.id === `local:${preferredId}`))
+      || targets.find(t => t.kind === 'local')
+      || (preferredId ? { id: `local:${preferredId}` } : null);
+    post({ type: 'targetSetActive', id: localTarget ? localTarget.id : 'local:' });
+    if (!localTarget) {
+      window.V2SettingsModule?.openTab?.('game');
+      window.showPage?.('settings');
+    }
   }
 
   function renderNoticeStrip() {
@@ -1267,20 +1276,26 @@
       strip.id = 'targetNotice';
       strip.className = 'dv-target-notice';
       strip.setAttribute('role', 'status');
+      strip.innerHTML = `
+        <div class="dv-target-notice-body">
+          ${icon('smartphone')}
+          <span data-tg-text></span>
+        </div>
+        <div class="dv-target-notice-actions">
+          <button type="button" class="v2-btn line dv-target-notice-btn" data-tg-reset></button>
+        </div>`;
       strip.addEventListener('click', e => { if (e.target.closest('[data-tg-reset]')) switchBackToLocal(); });
       const header = document.querySelector('.global-header');
       if (!header?.parentNode) return;
       header.parentNode.insertBefore(strip, header.nextSibling);
     }
     const label = TARGET.label || tr('devices.title');
-    strip.innerHTML = `
-      <div class="dv-target-notice-body">
-        ${icon('smartphone')}
-        <span><b>${esc(tr('devices.targetDevice', { name: label }))}</b>${TARGET.online ? '' : ' · ' + esc(tr('devices.offline'))} — ${esc(tr('devices.unsupportedWhy'))}</span>
-      </div>
-      <div class="dv-target-notice-actions">
-        <button type="button" class="v2-btn line dv-target-notice-btn" data-tg-reset>${esc(tr('devices.switchToLocal'))}</button>
-      </div>`;
+    const textHtml = `<b>${esc(tr('devices.targetDevice', { name: label }))}</b>${TARGET.online ? '' : ' · ' + esc(tr('devices.offline'))} — ${esc(tr('devices.unsupportedWhy'))}`;
+    const btnText = tr('devices.switchToLocal');
+    const textEl = strip.querySelector('[data-tg-text]');
+    const btnEl = strip.querySelector('[data-tg-reset]');
+    if (textEl && textEl.innerHTML !== textHtml) textEl.innerHTML = textHtml;
+    if (btnEl && btnEl.textContent !== btnText) btnEl.textContent = btnText;
   }
 
   function blockElement(el, reasonText, mobile) {
@@ -1309,6 +1324,15 @@
     }
   }
 
+  const guardObserver = new MutationObserver(records => {
+    if (applyingGuard || !targetIsMobile()) return;
+    const hasExternalMutation = records.some(r => {
+      const el = r.target instanceof Element ? r.target : r.target?.parentElement;
+      return !el?.closest?.('#targetNotice');
+    });
+    if (hasExternalMutation) scheduleGuardApply();
+  });
+
   function applyTargetGuard() {
     if (applyingGuard) return;
     applyingGuard = true;
@@ -1323,6 +1347,7 @@
       });
       renderNoticeStrip();
     } finally {
+      guardObserver.takeRecords();
       applyingGuard = false;
     }
   }
@@ -1335,6 +1360,7 @@
   window.TargetGuard = {
     apply: applyTargetGuard,
     isMobile: targetIsMobile,
+    switchToLocal: switchBackToLocal,
     get: () => ({ ...TARGET }),
     set(next) {
       TARGET.kind = next?.kind === 'mobile' ? 'mobile' : 'local';
@@ -1344,9 +1370,7 @@
     },
   };
 
-  new MutationObserver(() => {
-    if (!applyingGuard && targetIsMobile()) scheduleGuardApply();
-  }).observe(document.body, { childList: true, subtree: true });
+  guardObserver.observe(document.body, { childList: true, subtree: true });
 
   window.addEventListener('appLanguageChanged', () => { render(); applyTargetGuard(); });
   window.matchMedia?.('(min-width: 1200px)').addEventListener?.('change', () => render());

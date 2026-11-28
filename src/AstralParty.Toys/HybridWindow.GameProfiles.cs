@@ -82,21 +82,28 @@ public partial class HybridWindow
             });
         }
 
-        foreach (var device in MobileDevices.GetTargets())
+        try
         {
-            targets.Add(new
+            foreach (var device in MobileDevices.GetTargets())
             {
-                id = device.Id,
-                kind = "mobile",
-                label = device.Label,
-                subtitle = $"{device.Kind} · {device.Serial}" +
-                           (string.IsNullOrEmpty(device.AppId) ? "" : " · " + device.AppId),
-                editionLabel = device.Kind == "ios" ? "iOS" : "Android",
-                active = activeMobile is not null &&
-                         string.Equals(activeMobile.TargetId, device.Id, StringComparison.OrdinalIgnoreCase),
-                online = device.Online,
-                valid = true,
-            });
+                targets.Add(new
+                {
+                    id = device.Id,
+                    kind = "mobile",
+                    label = device.Label,
+                    subtitle = $"{device.Kind} · {device.Serial}" +
+                               (string.IsNullOrEmpty(device.AppId) ? "" : " · " + device.AppId),
+                    editionLabel = device.Kind == "ios" ? "iOS" : "Android",
+                    active = activeMobile is not null &&
+                             string.Equals(activeMobile.TargetId, device.Id, StringComparison.OrdinalIgnoreCase),
+                    online = device.Online,
+                    valid = true,
+                });
+            }
+        }
+        catch
+        {
+            // 移动设备存储读取失败时仍保留本机档案目标
         }
 
         return targets.ToArray();
@@ -108,7 +115,14 @@ public partial class HybridWindow
         try
         {
             var active = MobileDevices.GetActive();
-            return string.Equals(active.Kind, "mobile", StringComparison.OrdinalIgnoreCase) ? active : null;
+            if (!string.Equals(active.Kind, "mobile", StringComparison.OrdinalIgnoreCase) ||
+                string.IsNullOrWhiteSpace(active.TargetId))
+                return null;
+
+            return MobileDevices.GetTargets().Any(t =>
+                string.Equals(t.Id, active.TargetId, StringComparison.OrdinalIgnoreCase))
+                ? active
+                : null;
         }
         catch
         {
@@ -223,11 +237,13 @@ public partial class HybridWindow
                 return;
             }
             var view = _gameLibrary.AddDirectory(folder, activate: true);
+            try { MobileDevices.SetActiveLocal(view.Id); } catch { }
             SyncActiveGameToManagers();
             Post(new { type = "toast", message = $"已添加并切换到：{view.Label}" });
             _ = PushGameProfilesAsync();
             _ = PushModStatusAsync();
             _ = PushSpeedhackStatusAsync();
+            PostTargetChanged();
         }
         catch (Exception ex)
         {
@@ -243,19 +259,30 @@ public partial class HybridWindow
             return;
         }
         var view = _gameLibrary.AddDirectory(directory, activate);
-        if (activate) SyncActiveGameToManagers();
+        if (activate)
+        {
+            try { MobileDevices.SetActiveLocal(view.Id); } catch { }
+            SyncActiveGameToManagers();
+        }
         Post(new { type = "toast", message = activate ? $"已添加并切换到：{view.Label}" : $"已添加：{view.Label}" });
         _ = PushGameProfilesAsync();
-        if (activate) { _ = PushModStatusAsync(); _ = PushSpeedhackStatusAsync(); }
+        if (activate)
+        {
+            _ = PushModStatusAsync();
+            _ = PushSpeedhackStatusAsync();
+            PostTargetChanged();
+        }
     }
 
     private void HandleGameProfileSetActive(string id)
     {
+        try { MobileDevices.SetActiveLocal(id); } catch { }
         _gameLibrary.SetActive(id);
         SyncActiveGameToManagers();
         _ = PushGameProfilesAsync();
         _ = PushModStatusAsync();
         _ = PushSpeedhackStatusAsync();
+        PostTargetChanged();
     }
 
     private void HandleGameProfileOpen(string id)

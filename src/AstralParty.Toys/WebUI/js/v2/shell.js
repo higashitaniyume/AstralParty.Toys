@@ -60,6 +60,10 @@
   let menuFns = [];
   function openMenu(anchor, items) {
     let m = $('v2Menu');
+    if (m && m.classList.contains('show') && m._restoreFocus === anchor) {
+      closeMenu();
+      return;
+    }
     if (!m) {
       m = document.createElement('div'); m.id = 'v2Menu'; m.className = 'v2-menu'; document.body.appendChild(m);
       m.addEventListener('click', e => {
@@ -333,15 +337,29 @@
     },
   };
 
+  function resolveTargets() {
+    const targets = AppState.gameProfiles?.targets;
+    if (Array.isArray(targets) && targets.length > 0) return targets;
+    return (AppState.gameProfiles?.profiles || []).map(p => ({
+      id: `local:${p.id}`,
+      kind: 'local',
+      label: p.label,
+      subtitle: p.directory,
+      editionLabel: p.editionLabel,
+      active: !!p.active,
+      online: p.directoryExists !== false,
+    }));
+  }
+
   // 标题栏「当前目标」切换器：本机游戏档案 + 已发现的移动设备，一个列表里选。
   // 本机条目沿用 gameProfileSetActive（会同步模组/变速器状态），设备条目发 targetSetActive；
   // 两边都由宿主写 active-target.json，然后广播 targetChanged。
   function openTargetMenu(el) {
-    const targets = AppState.gameProfiles?.targets || [];
+    const targets = resolveTargets();
     if (!targets.length) {
       openMenu(el, [
         { label: '添加游戏目录…', icon: ICON.plus, fn: () => post({ type: 'gameProfileBrowse' }) },
-        { label: '管理游戏目录…', icon: ICON.sliders, fn: () => showPage('settings') },
+        { label: '管理游戏目录…', icon: ICON.sliders, fn: () => { window.V2SettingsModule?.openTab?.('game'); showPage('settings'); } },
       ]);
       return;
     }
@@ -366,7 +384,7 @@
       ...items,
       '-',
       { label: '添加游戏目录…', icon: ICON.plus, fn: () => post({ type: 'gameProfileBrowse' }) },
-      { label: '管理游戏目录…', icon: ICON.sliders, fn: () => showPage('settings') },
+      { label: '管理游戏目录…', icon: ICON.sliders, fn: () => { window.V2SettingsModule?.openTab?.('game'); showPage('settings'); } },
       ...(devices.length ? [] : [{ label: '连接移动设备…', icon: ICON.smartToy, fn: () => showPage('devices') }]),
     ]);
   }
@@ -374,7 +392,7 @@
   function renderGlobalTarget() {
     const btn = $('v2GlobalGameBtn');
     if (!btn) return;
-    const targets = AppState.gameProfiles?.targets || [];
+    const targets = resolveTargets();
     const activeId = AppState.gameProfiles?.activeTargetId || '';
     const cur = targets.find(t => t.id === activeId) || targets.find(t => t.active);
 

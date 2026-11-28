@@ -399,11 +399,77 @@
       </div>`;
   }
 
+  function resolvedTargets() {
+    const rawTargets = AppState.gameProfiles?.targets;
+    if (Array.isArray(rawTargets) && rawTargets.length > 0) return rawTargets;
+    return profiles().map(p => ({
+      id: `local:${p.id}`,
+      kind: 'local',
+      label: p.label,
+      subtitle: p.directory,
+      editionLabel: p.editionLabel,
+      active: !!p.active,
+      online: p.directoryExists !== false,
+    }));
+  }
+
+  function targetSwitchState() {
+    const targets = resolvedTargets();
+    const activeTargetId = AppState.gameProfiles?.activeTargetId || targets.find(t => t.active)?.id || '';
+    const curTarget = targets.find(t => t.id === activeTargetId) || targets.find(t => t.active) || null;
+    const isMobileTarget = curTarget?.kind === 'mobile' || !!window.TargetGuard?.isMobile?.();
+    return { targets, activeTargetId, curTarget, isMobileTarget };
+  }
+
+  function activeTargetCardHtml() {
+    const { targets, activeTargetId, curTarget, isMobileTarget } = targetSwitchState();
+    const localTargets = targets.filter(t => t.kind !== 'mobile');
+    const mobileTargets = targets.filter(t => t.kind === 'mobile');
+    const guard = window.TargetGuard?.get?.();
+    const mobileName = curTarget?.kind === 'mobile' ? curTarget.label : (guard?.label || '移动设备');
+    const mobileOffline = curTarget?.kind === 'mobile' ? curTarget.online === false : !guard?.online;
+    const badge = isMobileTarget
+      ? `<span class="v2-badge pink">移动设备${mobileOffline ? ' · 离线' : ''}</span>`
+      : curTarget
+        ? '<span class="v2-badge">本机</span>'
+        : '<span class="v2-badge off">未选择</span>';
+    const localOptions = localTargets.map(t => {
+      const text = `[${t.editionLabel || ''}] ${t.label}${t.online === false ? '（目录不存在）' : ''}`;
+      return `<option value="${esc(t.id)}" ${t.id === activeTargetId ? 'selected' : ''}>${esc(text)}</option>`;
+    }).join('');
+    const mobileOptions = mobileTargets.map(t => {
+      const text = `[${t.editionLabel || '设备'}] ${t.label}${t.online === false ? '（离线）' : ''}`;
+      return `<option value="${esc(t.id)}" ${t.id === activeTargetId ? 'selected' : ''}>${esc(text)}</option>`;
+    }).join('');
+    const optionsHtml = targets.length
+      ? `${localTargets.length ? `<optgroup label="本机游戏">${localOptions}</optgroup>` : ''}${mobileTargets.length ? `<optgroup label="移动设备">${mobileOptions}</optgroup>` : ''}`
+      : '<option value="" disabled selected>未添加游戏目录</option>';
+    return `
+      <div class="v2-card" style="margin-bottom:14px">
+        <div class="v2-card-title">
+          <span>当前操作目标 ${badge}</span>
+          ${isMobileTarget ? `<span style="display:inline-flex;gap:8px;align-items:center">
+            <button type="button" class="v2-btn ghost" data-v2g="goDevicesPage">前往移动设备</button>
+            <button type="button" class="v2-btn primary" data-v2g="switchToLocal">切回本机</button>
+          </span>` : ''}
+        </div>
+        <div class="v2-row">
+          <span class="k">目标切换</span>
+          <span class="v v2-muted" style="white-space:normal">切换当前正在操作的本机游戏或移动设备（标题栏下拉框打不开时可在这里切换）</span>
+          <select id="v2gActiveTarget" class="v2-select" aria-label="切换当前操作目标" ${targets.length ? '' : 'disabled'}>
+            ${optionsHtml}
+          </select>
+        </div>
+        ${isMobileTarget ? `<div class="v2-row"><span class="k">设备状态</span><span class="v v2-muted" style="white-space:normal">当前正在操作移动设备「${esc(mobileName)}」${mobileOffline ? '（已离线）' : ''}，部分仅限桌面端的功能会暂时禁用。点击右侧「切回本机」或在上方重新选择本机游戏即可恢复。</span></div>` : ''}
+      </div>`;
+  }
+
   function html() {
     const cap = LS().capacity || 10, keep = LS().keepInGame || cap;
     const info = window.VersionModule?.info;
     const mirror = LS().githubMirrorType || 'gh-proxy';
     const tab = TABS.some(([k]) => k === G.tab) ? G.tab : 'credits';
+    const { isMobileTarget } = targetSwitchState();
     const side = TABS.map(([k, label, icon]) => {
       const on = k === tab ? ' on' : '';
       const danger = k === 'uninstall' ? ' danger' : '';
@@ -417,16 +483,19 @@
         <div class="v2-row"><span class="k">界面动画</span><span class="v v2-muted">关掉后切页、弹窗都没有过渡动画</span>
           <label class="v2-switch"><input type="checkbox" id="v2gMotion" ${motionOn() ? 'checked' : ''}><span></span></label></div>
       </div>${sidebarCardHtml()}`;
-    else if (tab === 'game') main = `
+    else if (tab === 'game') main = `${activeTargetCardHtml()}
       <div class="v2-card"><div class="v2-card-title"><span>游戏目录 <span class="v2-muted" style="font-weight:400">${profiles().length} 个</span></span>
           <span><button class="v2-btn ghost" data-v2g="scanQuick" ${G.scan?.running ? 'disabled' : ''}>${I().search}扫描</button>
           <button class="v2-btn ghost" data-v2g="browse">${I().plus}添加</button></span></div>
-        ${profiles().map(g => `<div class="v2-row">
+        ${profiles().map(g => {
+          const isCurrentLocal = !isMobileTarget && g.active;
+          return `<div class="v2-row">
           <span class="k"><span class="v2-tag">${esc(g.editionLabel || '')}</span> ${esc(g.label || '')}</span>
           <span class="v" style="white-space:normal"><span style="font-family:var(--v2-mono);font-size:13px">${esc(g.directory)}</span>
             ${g.directoryExists === false ? '<br><span style="color:var(--gp-gold);font-size:12px">目录不存在</span>' : g.valid === false ? '<br><span style="color:var(--gp-gold);font-size:12px">没找到游戏主程序</span>' : ''}</span>
-          ${g.active ? '<span class="v2-badge pink">当前</span>' : `<button class="v2-btn ghost" data-v2g-active="${esc(g.id)}">设为当前</button>`}
-          <button class="v2-icon-btn" data-v2g-menu="${esc(g.id)}" data-v2menu title="更多">${I().more}</button></div>`).join('')
+          ${isCurrentLocal ? '<span class="v2-badge pink">当前</span>' : `<button class="v2-btn ghost" data-v2g-active="${esc(g.id)}">${isMobileTarget ? '切回此目录' : '设为当前'}</button>`}
+          <button class="v2-icon-btn" data-v2g-menu="${esc(g.id)}" data-v2menu title="更多">${I().more}</button></div>`;
+        }).join('')
           || '<div class="v2-empty">还没有添加游戏目录。用「扫描」自动找，或者「添加」手动选。</div>'}
         ${scanHtml()}
       </div>`;
@@ -836,6 +905,11 @@
     uninstall: () => post({ type: 'appUninstallInfo' }),
     sidebarShowAll: () => { window.V2Sidebar?.showAll?.(); render(); toast('已显示全部侧边栏入口'); },
     sidebarReset: () => { window.V2Sidebar?.resetDefault?.(); render(); toast('已恢复默认侧边栏设置'); },
+    switchToLocal: () => {
+      if (window.TargetGuard?.switchToLocal) window.TargetGuard.switchToLocal();
+      else post({ type: 'targetSetActive', id: 'local:' });
+    },
+    goDevicesPage: () => window.showPage?.('devices'),
     copyUrl: el => Promise.resolve(navigator.clipboard?.writeText(el.dataset.url)).then(() => toast('已复制地址'), () => toast('复制失败：' + el.dataset.url)),
   };
 
@@ -854,7 +928,7 @@
       return;
     }
     if ((el = t.closest('[data-v2g]'))) { if (!el.disabled) actions[el.dataset.v2g]?.(el); return; }
-    if ((el = t.closest('[data-v2g-active]'))) return post({ type: 'gameProfileSetActive', id: el.dataset.v2gActive });
+    if ((el = t.closest('[data-v2g-active]'))) return post({ type: 'targetSetActive', id: `local:${el.dataset.v2gActive}` });
     if ((el = t.closest('[data-v2g-add]'))) {
       const c = G.scan?.candidates?.[Number(el.dataset.v2gAdd)];
       if (c) post({ type: 'gameProfileAddPath', directory: c.directory, activate: !profiles().some(p => p.active) });
@@ -892,6 +966,7 @@
     if (t.id === 'v2gMirrorUrl') return saveLibrary({ customGitHubMirrorUrl: t.value.trim() });
     if (t.id === 'v2gWorkshopUrl') return saveLibrary({ workshopUrl: t.value.trim() || null });
     if (t.id === 'v2gWorkshopThreads') return saveLibrary({ workshopDownloadThreads: parseInt(t.value, 10) || 8 });
+    if (t.id === 'v2gActiveTarget' && t.value) return post({ type: 'targetSetActive', id: t.value });
     if (t.id === 'v2gLogLevel') return post({ type: 'setLoggingLevel', level: t.value });
     if (t.id === 'v2gCleanupRecycle') { G.cleanupRecycle = !!t.checked; return; }
     if (t.dataset?.v2gCleanupId) {
@@ -929,6 +1004,7 @@
     window.chrome?.webview?.addEventListener('message', e => {
       if (e.data?.type === 'appUninstallInfo') return openUninstall(e.data.payload || {});
       if (e.data?.type === 'appUninstallResult') return showUninstallResult(e.data.payload || {});
+      if (e.data?.type === 'targetChanged') { setTimeout(render); return; }
       if (e.data?.type === 'gameProfiles') {
         if (G.tab === 'storage' && !G.migrationBusy) requestMigrationStatus();
         if (G.scan?.candidates) {
@@ -942,6 +1018,10 @@
     render();
   });
 
+  function openTab(tab) {
+    if (TABS.some(([k]) => k === tab)) { G.tab = tab; render(); }
+  }
+
   // 宿主消息（dispatcher）用：实时日志 / 历史日志；render 供内部重画
-  window.V2SettingsModule = { render, log, history, onGameDataMigration, get state() { return G; } };
+  window.V2SettingsModule = { render, openTab, log, history, onGameDataMigration, get state() { return G; } };
 })();
