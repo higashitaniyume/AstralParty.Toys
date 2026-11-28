@@ -2,6 +2,14 @@
 
 欢迎您使用 **AstralParty.Toys**（吉星派对工具箱）与 **CesiumLoader** 模组加载器，衷心感谢您的支持与陪伴！如果您在使用过程中遇到任何问题、Bug 或有功能建议，非常欢迎前往 [GitHub Issues](https://github.com/higashitaniyume/AstralParty.Toys/issues) 提交反馈，也欢迎加入企鹅群 **1078464597**（[点击加群](https://qm.qq.com/cgi-bin/qm/qr?k=tYrqev4U2Xr2PPAA4EkILA0NKmP3zgeU&jump_from=webapi&authKey=jHiIqsg0jEV53dBtQ9V3qXohKKHwLDGmfWprcrg7gueM9pU9iz+ST/QHR6d1j3wa)）或 [Discord 频道](https://discord.gg/SZaYSwGX94) 和我们交流，我们会认真查看并尽力为您排查解决。
 
+## [v2.5.4] - 2026-11-28
+
+### 修复与改进
+
+- 修复当前目标为移动设备时，顶部提示栏「切回本机」按钮点击无响应以及切换本机游戏目录后未退出移动设备状态的问题。
+- 在「系统设置 → 游戏目录」顶部新增「当前操作目标」卡片，提供原生下拉切换框与「切回本机」快捷按钮，作为标题栏游戏切换器的兜底入口；当前为移动设备时，下方本机目录列表支持直接点击「切回此目录」。
+- 优化标题栏「当前目标」切换菜单交互：支持再次点击按钮收起菜单，并在部分场景下改善目标列表回退与点击稳定性。
+
 ## [v2.5.3] - 2026-11-28
 
 ### 市场与资源包
