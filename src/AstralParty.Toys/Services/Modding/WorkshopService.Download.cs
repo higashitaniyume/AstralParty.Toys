@@ -53,52 +53,43 @@ public sealed partial class WorkshopService
     // ============================== 下载 ==============================
 
     /// <summary>下载模组包到临时文件，边下边算 SHA-256；调用方负责删除文件。</summary>
-    public async Task<(string Sha256, long SizeBytes)> DownloadPackageAsync(
+    public Task<(string Sha256, long SizeBytes)> DownloadPackageAsync(
         string url,
         string targetPath,
         IProgress<WorkshopDownloadProgress>? progress,
         CancellationToken cancellationToken)
-    {
-        using var response = await DownloadHttp.GetAsync(
-            url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-        if (response.StatusCode == HttpStatusCode.NotFound)
-            throw new WorkshopException("下载地址返回 404：作者可能已删除这个版本。");
-        if (response.StatusCode == HttpStatusCode.ServiceUnavailable)
-            throw new WorkshopException("市场暂时关闭了接口，请稍后再试。");
-        if (!response.IsSuccessStatusCode)
-            throw new WorkshopException($"下载失败：HTTP {(int)response.StatusCode}");
+        => DownloadPackageAsync(
+            url,
+            targetPath,
+            progress,
+            cancellationToken,
+            MaxPackageBytes,
+            WorkshopDownloadEngine.DefaultThreads,
+            expectedSha256: null,
+            resumeCacheDirectory: null);
 
-        var total = response.Content.Headers.ContentLength;
-        if (total is > MaxPackageBytes)
-            throw new WorkshopException($"模组包有 {total.Value / 1024d / 1024d:0.0} MB，超过 {MaxPackageBytes / 1024 / 1024} MB 上限。");
-
-        await using var input = await response.Content.ReadAsStreamAsync(cancellationToken);
-        await using var output = new FileStream(
-            targetPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 128 * 1024, useAsync: true);
-
-        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-        var buffer = new byte[128 * 1024];
-        long received = 0;
-        progress?.Report(new WorkshopDownloadProgress(0, total));
-
-        while (true)
-        {
-            var read = await input.ReadAsync(buffer, cancellationToken);
-            if (read == 0) break;
-
-            received += read;
-            if (received > MaxPackageBytes)
-                throw new WorkshopException($"下载超过 {MaxPackageBytes / 1024 / 1024} MB 上限，已中止。");
-
-            hash.AppendData(buffer, 0, read);
-            await output.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
-            progress?.Report(new WorkshopDownloadProgress(received, total));
-        }
-
-        await output.FlushAsync(cancellationToken);
-        var sha = Convert.ToHexString(hash.GetHashAndReset()).ToLowerInvariant();
-        return (sha, received);
-    }
+    /// <summary>
+    /// 支持指定包体积上限、并发线程数与期望 SHA-256 的下载入口（支持 HTTP Range 多线程与断点续传）。
+    /// </summary>
+    public Task<(string Sha256, long SizeBytes)> DownloadPackageAsync(
+        string url,
+        string targetPath,
+        IProgress<WorkshopDownloadProgress>? progress,
+        CancellationToken cancellationToken,
+        long maxPackageBytes,
+        int maxThreads = WorkshopDownloadEngine.DefaultThreads,
+        string? expectedSha256 = null,
+        string? resumeCacheDirectory = null)
+        => WorkshopDownloadEngine.DownloadAsync(
+            DownloadHttp,
+            url,
+            targetPath,
+            string.IsNullOrWhiteSpace(resumeCacheDirectory) ? Path.Combine(CoverRoot, "downloads") : resumeCacheDirectory,
+            progress,
+            cancellationToken,
+            maxPackageBytes,
+            maxThreads,
+            expectedSha256);
 
     // ============================== 辅助 ==============================
 
@@ -196,6 +187,7 @@ public sealed partial class WorkshopService
             {
                 AllowAutoRedirect = true,
                 MaxAutomaticRedirections = 8,
+                MaxConnectionsPerServer = 32,
                 AutomaticDecompression = DecompressionMethods.None,
                 UseCookies = false,
                 ConnectTimeout = TimeSpan.FromSeconds(20),

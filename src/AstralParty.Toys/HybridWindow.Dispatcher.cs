@@ -680,6 +680,48 @@ public partial class HybridWindow
                     HandleWorkshopInstallConfirmAnswer(
                         root.TryGetProperty("accept", out var workshopAccept) && workshopAccept.GetBoolean());
                     break;
+                case "workshopResourceList":
+                    await HandleWorkshopResourceListAsync(root);
+                    break;
+                case "workshopResourceDetail":
+                    if (root.TryGetProperty("id", out var resDetailId) &&
+                        resDetailId.GetString() is { Length: > 0 } resDetailValue)
+                        await HandleWorkshopResourceDetailAsync(resDetailValue);
+                    break;
+                case "workshopResourceInstall":
+                    if (root.TryGetProperty("id", out var resInstallId) &&
+                        resInstallId.GetString() is { Length: > 0 } resInstallValue)
+                    {
+                        var resVersion = root.TryGetProperty("version", out var resVersionEl)
+                            ? resVersionEl.GetString()
+                            : null;
+                        _ = HandleWorkshopResourceInstallAsync(resInstallValue, resVersion);
+                    }
+                    break;
+                case "workshopSetDownloadThreads":
+                    if (root.TryGetProperty("threads", out var threadsEl) && threadsEl.TryGetInt32(out var threadsVal))
+                    {
+                        var cur = _libraryService.Settings;
+                        _libraryService.SaveSettings(new Services.Replay.ReplayLibrarySettings
+                        {
+                            LibraryRoot = cur.LibraryRoot,
+                            AutoMaintain = cur.AutoMaintain,
+                            KeepInGame = cur.KeepInGame,
+                            Language = cur.Language,
+                            WorkshopUrl = cur.WorkshopUrl,
+                            WorkshopConsentVersion = cur.WorkshopConsentVersion,
+                            WorkshopConsentAt = cur.WorkshopConsentAt,
+                            WorkshopDownloadThreads = Math.Clamp(threadsVal, 1, 16),
+                            AutoCheckUpdates = cur.AutoCheckUpdates,
+                            AutoDownloadUpdates = cur.AutoDownloadUpdates,
+                            AutoInstallUpdates = cur.AutoInstallUpdates,
+                            AutoChangelogPopup = cur.AutoChangelogPopup,
+                            GitHubMirrorType = cur.GitHubMirrorType,
+                            CustomGitHubMirrorUrl = cur.CustomGitHubMirrorUrl
+                        });
+                        Post(new { type = "librarySettings", payload = BuildLibrarySettingsPayload() });
+                    }
+                    break;
                 case "modCheckUpdate":
                     var checkMirrorType = root.TryGetProperty("mirrorType", out var cmt) ? cmt.GetString() : null;
                     var checkCustomUrl = root.TryGetProperty("customMirrorUrl", out var ccu) ? ccu.GetString() : null;
@@ -952,9 +994,13 @@ public partial class HybridWindow
             {
                 Post(new { type = "workshopOpenMod", payload = new { id = modId, version = version ?? "" } });
             }
+            else if (AspatoysProtocol.TryParseInstallResource(arg, out var resourceId, out var resourceVersion))
+            {
+                Post(new { type = "workshopOpenResource", payload = new { id = resourceId, version = resourceVersion ?? "" } });
+            }
             else
             {
-                Post(new { type = "toast", message = "这个 aspatoys 链接格式不对，打不开模组详情。" });
+                Post(new { type = "toast", message = "这个 aspatoys 链接格式不对，打不开详情页。" });
             }
         }
     }

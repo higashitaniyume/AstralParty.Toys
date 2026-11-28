@@ -40,6 +40,104 @@ body:not(.reduce-motion) #workshopView:not(.page-entering) .workshop-scroll {
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 
+.workshop-threads-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 4px;
+  color: var(--gp-gold);
+}
+
+.workshop-threads-picker .mi {
+  width: 15px;
+  height: 15px;
+}
+
+.workshop-threads-select {
+  height: 32px !important;
+  font-size: 12px !important;
+  padding: 0 10px !important;
+}
+
+/* ============================== 目录切换 & 资源类型筛选 ============================== */
+
+.workshop-catalog-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 10px 26px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(14, 17, 29, 0.55);
+}
+
+.workshop-catalog-switch {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-full);
+  background: rgba(10, 13, 24, 0.72);
+  gap: 3px;
+}
+
+.workshop-catalog-tab {
+  padding: 6px 15px;
+  border: 0;
+  border-radius: var(--gp-radius-full);
+  background: transparent;
+  color: var(--gp-text-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.16s ease, color 0.16s ease;
+}
+
+.workshop-catalog-tab:hover {
+  color: var(--gp-text-main);
+}
+
+.workshop-catalog-tab.is-active {
+  background: linear-gradient(135deg, var(--gp-pink), #ec4899);
+  color: #fff;
+}
+
+.workshop-type-pills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.workshop-type-pills.hidden {
+  display: none;
+}
+
+.workshop-type-pill {
+  padding: 5px 12px;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-full);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--gp-text-sub);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background-color 0.16s ease, color 0.16s ease;
+}
+
+.workshop-type-pill:hover {
+  border-color: var(--gp-border-highlight);
+  color: var(--gp-text-main);
+}
+
+.workshop-type-pill.is-active {
+  border-color: rgba(56, 189, 248, 0.55);
+  background: rgba(56, 189, 248, 0.16);
+  color: var(--gp-blue);
+}
+
 /* ============================== 工具栏 ============================== */
 
 .workshop-toolbar {
@@ -246,6 +344,55 @@ body:not(.reduce-motion) #workshopView:not(.page-entering) .workshop-scroll {
   font-size: 10.5px;
   font-weight: 700;
   backdrop-filter: blur(6px);
+}
+
+.workshop-type-badge {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  padding: 2px 9px;
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  border-radius: var(--gp-radius-full);
+  background: rgba(12, 16, 28, 0.78);
+  color: var(--gp-blue);
+  font-size: 10.5px;
+  font-weight: 700;
+  backdrop-filter: blur(6px);
+}
+
+.workshop-rating-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 2px 8px;
+  border: 1px solid rgba(244, 63, 94, 0.5);
+  border-radius: var(--gp-radius-full);
+  background: rgba(15, 18, 30, 0.78);
+  color: #fda4af;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.workshop-type-pill-inline,
+.workshop-rating-pill-inline {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--gp-radius-full);
+  font-size: 10.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.workshop-type-pill-inline {
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  background: rgba(56, 189, 248, 0.12);
+  color: var(--gp-blue);
+}
+
+.workshop-rating-pill-inline {
+  border: 1px solid rgba(250, 204, 21, 0.45);
+  background: rgba(250, 204, 21, 0.12);
+  color: var(--gp-gold);
 }
 
 .workshop-card-body {

@@ -143,14 +143,28 @@ public sealed class StickerCatalogItem
 /// <summary>下载进度（总量未知时 Percent 为 null）。</summary>
 public sealed class WorkshopDownloadProgress
 {
-    public WorkshopDownloadProgress(long receivedBytes, long? totalBytes)
+    public WorkshopDownloadProgress(
+        long receivedBytes,
+        long? totalBytes,
+        double bytesPerSecond = 0,
+        int activeThreads = 1,
+        bool resumable = false,
+        bool resumed = false)
     {
         ReceivedBytes = receivedBytes;
         TotalBytes = totalBytes;
+        BytesPerSecond = bytesPerSecond;
+        ActiveThreads = activeThreads;
+        Resumable = resumable;
+        Resumed = resumed;
     }
 
     public long ReceivedBytes { get; }
     public long? TotalBytes { get; }
+    public double BytesPerSecond { get; }
+    public int ActiveThreads { get; }
+    public bool Resumable { get; }
+    public bool Resumed { get; }
 
     public int? Percent => TotalBytes is > 0
         ? (int)Math.Clamp(ReceivedBytes * 100 / TotalBytes.Value, 0, 100)

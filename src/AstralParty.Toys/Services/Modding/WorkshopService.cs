@@ -31,6 +31,9 @@ public sealed partial class WorkshopService
     /// <summary>单个模组包上限：与回放下载一样走本地临时文件，不占内存。</summary>
     public const long MaxPackageBytes = 256L * 1024 * 1024;
 
+    /// <summary>单个资源模组包上限：允许最大 2 GB 的音频/视频/皮肤合集包。</summary>
+    public const long MaxResourcePackageBytes = 2L * 1024 * 1024 * 1024;
+
     /// <summary>
     /// 市场请求的用户代理，Forge 用它统计客户端版本。
     /// 格式与 Forge 的解析规则一致：<c>AstralParty Toys/1.2.0</c>。

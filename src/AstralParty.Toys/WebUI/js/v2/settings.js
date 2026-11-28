@@ -148,7 +148,7 @@
   // 回放库设置：宿主收到缺字段会当成「默认 / 关闭」，所以每次都把四个字段一起送
   function saveLibrary(patch) {
     const s = { libraryRoot: LS().libraryRoot || null, autoMaintain: !!LS().autoMaintain, keepInGame: LS().keepInGame || LS().capacity || 10,
-      workshopUrl: LS().workshopUrl || null, ...patch };
+      workshopUrl: LS().workshopUrl || null, workshopDownloadThreads: Number(LS().workshopDownloadThreads || 8), ...patch };
     s.keepInGame = Math.min(Math.max(parseInt(s.keepInGame, 10) || 10, 1), LS().capacity || 10);
     post({ type: 'librarySaveSettings', ...s });
   }
@@ -439,6 +439,8 @@
           <input id="v2gMirrorUrl" class="v2-select" style="min-width:260px" placeholder="https://example.com/" value="${esc(LS().customGitHubMirrorUrl || '')}"></div>` : ''}
         <div class="v2-row"><span class="k">市场地址</span><span class="v v2-muted" style="white-space:normal">模组市场（Forge）的 API 根地址。留空或格式不正确会回退到默认值</span>
           <input id="v2gWorkshopUrl" class="v2-select" style="min-width:260px" placeholder="${esc(LS().defaultWorkshopUrl || 'https://forge.hiynet.com')}" value="${esc(LS().workshopUrl || '')}"></div>
+        <div class="v2-row"><span class="k">市场下载线程</span><span class="v v2-muted" style="white-space:normal">多线程分段并发下载并支持断点续传，推荐保持 8～16 线程提升大包速度</span>
+          <select id="v2gWorkshopThreads" class="v2-select">${[1, 4, 8, 12, 16].map(n => `<option value="${n}" ${(Number(LS().workshopDownloadThreads || 8) === n) ? 'selected' : ''}>${n === 1 ? '1 线程（单连接）' : `${n} 线程${n === 8 ? '（推荐）' : ''}`}</option>`).join('')}</select></div>
       </div>`;
     else if (tab === 'update') main = `
       <div class="v2-card"><div class="v2-card-title"><span>软件更新</span></div>
@@ -851,6 +853,7 @@
     if (t.id === 'v2gMirror') return saveLibrary({ githubMirrorType: t.value });
     if (t.id === 'v2gMirrorUrl') return saveLibrary({ customGitHubMirrorUrl: t.value.trim() });
     if (t.id === 'v2gWorkshopUrl') return saveLibrary({ workshopUrl: t.value.trim() || null });
+    if (t.id === 'v2gWorkshopThreads') return saveLibrary({ workshopDownloadThreads: parseInt(t.value, 10) || 8 });
     if (t.id === 'v2gLogLevel') return post({ type: 'setLoggingLevel', level: t.value });
     if (t.id === 'v2gCleanupRecycle') { G.cleanupRecycle = !!t.checked; return; }
     if (t.dataset?.v2gCleanupId) {

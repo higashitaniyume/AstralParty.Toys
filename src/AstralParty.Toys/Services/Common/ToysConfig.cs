@@ -110,6 +110,9 @@ public sealed class WorkshopConfigSection
 
     /// <summary>同意时间（UTC）。</summary>
     public DateTimeOffset? ConsentAtUtc { get; set; }
+
+    /// <summary>市场下载并发线程数（1–16，默认 8；支持断点续传）。</summary>
+    public int DownloadThreads { get; set; } = 8;
 }
 
 public sealed class UpdateConfigSection

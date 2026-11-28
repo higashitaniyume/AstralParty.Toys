@@ -107,6 +107,58 @@ public class MobileTests
         Assert.Throws<InvalidDataException>(() => MobileModPackage.Read(empty));
     }
 
+    [Fact]
+    public void ModPackage_IgnoresConfigJsonAndMatchesDllSidecar()
+    {
+        using var sandbox = new TestSandbox("ap-mobile-zip-sidecar");
+
+        // config.json 与其他根目录 json 排在前面时，仍应命中与 DLL 同名的 <ModId>.json
+        var withConfig = sandbox.Combine("chat.zip");
+        using (var archive = ZipFile.Open(withConfig, ZipArchiveMode.Create))
+        {
+            WriteZipEntry(archive, "InMatchChatMod/config.json", Encoding.UTF8.GetBytes("{\"Enabled\":true}"));
+            WriteZipEntry(archive, "InMatchChatMod/extra.json", Encoding.UTF8.GetBytes("{\"note\":\"extra\"}"));
+            WriteZipEntry(archive, "InMatchChatMod/InMatchChatMod.dll", [1, 2, 3]);
+            WriteZipEntry(archive, "InMatchChatMod/InMatchChatMod.json",
+                Encoding.UTF8.GetBytes(
+                    "{\"id\":\"InMatchChatMod\",\"name\":\"局内聊天\",\"version\":\"1.2.1\",\"platforms\":[\"windows\",\"android\"]}"));
+        }
+
+        var chatPackage = MobileModPackage.Read(withConfig);
+        Assert.Equal("InMatchChatMod", chatPackage.ModId);
+        Assert.Equal("局内聊天", chatPackage.Name);
+        Assert.Equal("1.2.1", chatPackage.Version);
+        Assert.Equal(new[] { "windows", "android" }, chatPackage.Platforms);
+        Assert.Contains(chatPackage.Entries, e => e.RelativePath == "config.json");
+        Assert.Contains(chatPackage.Entries, e => e.RelativePath == "extra.json");
+
+        // 平铺包（无顶层目录）带 config.json 和额外 json 时，同样匹配 <ModId>.dll 对应的 sidecar
+        var flatZip = sandbox.Combine("flat.zip");
+        using (var archive = ZipFile.Open(flatZip, ZipArchiveMode.Create))
+        {
+            WriteZipEntry(archive, "config.json", Encoding.UTF8.GetBytes("{\"Enabled\":true}"));
+            WriteZipEntry(archive, "assets.json", Encoding.UTF8.GetBytes("{}"));
+            WriteZipEntry(archive, "FlatMod.dll", [4, 5, 6]);
+            WriteZipEntry(archive, "FlatMod.json",
+                Encoding.UTF8.GetBytes("{\"id\":\"FlatMod\",\"name\":\"平铺模组\",\"version\":\"0.1.0\"}"));
+        }
+
+        var flatPackage = MobileModPackage.Read(flatZip);
+        Assert.Equal("FlatMod", flatPackage.ModId);
+        Assert.Equal("平铺模组", flatPackage.Name);
+
+        // 只有 config.json 没有 sidecar 时，应提示缺少 sidecar，而不是误报缺少 config.dll
+        var configOnlyZip = sandbox.Combine("config-only.zip");
+        using (var archive = ZipFile.Open(configOnlyZip, ZipArchiveMode.Create))
+        {
+            WriteZipEntry(archive, "DemoMod/config.json", Encoding.UTF8.GetBytes("{\"Enabled\":true}"));
+            WriteZipEntry(archive, "DemoMod/DemoMod.dll", [7, 8, 9]);
+        }
+
+        var ex = Assert.Throws<InvalidDataException>(() => MobileModPackage.Read(configOnlyZip));
+        Assert.Contains("sidecar", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static void WriteZipEntry(ZipArchive archive, string name, byte[] bytes)
     {
         var entry = archive.CreateEntry(name);

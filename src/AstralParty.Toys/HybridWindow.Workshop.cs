@@ -400,15 +400,9 @@ public partial class HybridWindow
 
             var url = WorkshopService.ResolveUrl(baseUrl, selected.DownloadUrl);
 
-            var lastPercent = -1;
             var progress = new InlineProgress<WorkshopDownloadProgress>(value =>
             {
-                // 每 128 KB 都发一条消息太吵：百分比变化才回推。
                 var percent = value.Percent;
-                if (percent is not null && percent == lastPercent) return;
-                if (percent is null && value.ReceivedBytes / (512 * 1024) == lastPercent) return;
-                lastPercent = percent ?? (int)(value.ReceivedBytes / (512 * 1024));
-
                 Post(new
                 {
                     type = "workshopProgress",
@@ -418,12 +412,23 @@ public partial class HybridWindow
                         phase = "download",
                         receivedBytes = value.ReceivedBytes,
                         totalBytes = value.TotalBytes,
-                        percent
+                        percent,
+                        bytesPerSecond = value.BytesPerSecond,
+                        activeThreads = value.ActiveThreads,
+                        resumable = value.Resumable,
+                        resumed = value.Resumed
                     }
                 });
             });
 
-            var (sha256, sizeBytes) = await _workshopService.DownloadPackageAsync(url, temporary, progress, token);
+            var (sha256, sizeBytes) = await _workshopService.DownloadPackageAsync(
+                url,
+                temporary,
+                progress,
+                token,
+                WorkshopService.MaxPackageBytes,
+                _libraryService.Settings.WorkshopDownloadThreads,
+                selected.Sha256);
 
             if (!sha256.Equals(selected.Sha256, StringComparison.OrdinalIgnoreCase))
                 throw new WorkshopException(

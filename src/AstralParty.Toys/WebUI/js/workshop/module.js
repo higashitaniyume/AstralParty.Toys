@@ -34,7 +34,13 @@
     sort: savedSort(),
     viewMode: localStorage.getItem('workshop_view_mode') || 'list',
     statusFilter: 'all',
+    catalog: 'mods',
+    resourceTypes: [],
+    resourceType: '',
+    rating: '',
+    downloadThreads: 8,
     detail: null,
+    detailKind: 'mod',
     detailId: '',
     detailTab: 'details',
     detailError: '',
@@ -42,6 +48,7 @@
     pendingListScroll: null,
     mdCache: new Map(),
     installingId: '',
+    installingKind: 'mod',
     installName: '',
     installVersion: '',
     installStatus: '',
@@ -51,7 +58,10 @@
     pendingPage: 0,
     consent: 'unknown',
     externalMod: null,
-    details: new Map()
+    externalResource: null,
+    lastInstalledJump: null,
+    details: new Map(),
+    resourceDetails: new Map()
   };
 
   const t = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
@@ -129,6 +139,9 @@
   }
 
   function actionFor(item) {
+    if (state.catalog === 'resources' && window.WorkshopResources) {
+      return window.WorkshopResources.actionForResource(item, { t, compareVersions });
+    }
     if (item.builtIn) {
       return { label: t('workshop.builtin'), disabled: true, chip: 'builtin' };
     }
@@ -171,6 +184,9 @@
   }
 
   function progressLabel(progress) {
+    if (window.WorkshopResources?.formatProgressDetail) {
+      return window.WorkshopResources.formatProgressDetail(progress, t, formatBytes);
+    }
     if (!progress) return '';
     if (progress.phase === 'prepare') return t('workshop.preparing');
     if (progress.phase === 'verify') return t('workshop.verifying');
@@ -197,12 +213,7 @@
   }
 
   function installToastText(progress) {
-    if (!progress) return t('workshop.preparing');
-    if (progress.phase === 'prepare') return t('workshop.preparing');
-    if (progress.phase === 'verify') return t('workshop.verifying');
-    if (progress.phase === 'install') return t('workshop.installing');
-    if (typeof progress.percent === 'number') return t('workshop.downloading_percent', { percent: progress.percent });
-    return t('workshop.downloading');
+    return progressLabel(progress);
   }
 
   function renderInstallToast() {
@@ -471,12 +482,26 @@
     }
 
     grid.innerHTML = isList
-      ? filtered.map(rowMarkup).join('')
-      : filtered.map(cardMarkup).join('');
+      ? filtered
+          .map(item =>
+            state.catalog === 'resources' && window.WorkshopResources
+              ? window.WorkshopResources.renderRow(item, { t, formatBytes, coverMarkup, chipFor })
+              : rowMarkup(item)
+          )
+          .join('')
+      : filtered
+          .map(item =>
+            state.catalog === 'resources' && window.WorkshopResources
+              ? window.WorkshopResources.renderCard(item, { t, formatBytes, coverMarkup, chipFor })
+              : cardMarkup(item)
+          )
+          .join('');
     syncCards();
     window.Icons?.hydrate(grid);
-    window.StickerModule?.syncAfterRender();
-    window.Motion?.content(grid, JSON.stringify([state.viewMode, filtered.map(item => item.id)]));
+    if (state.catalog === 'mods') {
+      window.StickerModule?.syncAfterRender();
+    }
+    window.Motion?.content(grid, JSON.stringify([state.catalog, state.viewMode, filtered.map(item => item.id)]));
   }
 
   // 按当前安装状态刷新所有卡片的按钮/进度条（不重建节点）。
@@ -531,6 +556,96 @@
     const base = state.baseUrl || AppState.librarySettings?.workshopUrl || 'https://forge.hiynet.com';
     node.textContent = base;
     node.title = base;
+
+    const threadsSelect = $('workshopThreadsSelect');
+    if (threadsSelect) {
+      const threads = Number(AppState.librarySettings?.workshopDownloadThreads || state.downloadThreads || 8);
+      state.downloadThreads = threads;
+      threadsSelect.value = String([1, 4, 8, 12, 16].includes(threads) ? threads : 8);
+    }
+  }
+
+  function syncCatalogControls() {
+    const isRes = state.catalog === 'resources';
+    $('workshopCatalogModsBtn')?.classList.toggle('is-active', !isRes);
+    $('workshopCatalogModsBtn')?.setAttribute('aria-selected', String(!isRes));
+    $('workshopCatalogResourcesBtn')?.classList.toggle('is-active', isRes);
+    $('workshopCatalogResourcesBtn')?.setAttribute('aria-selected', String(isRes));
+
+    $('workshopRatingSelect')?.classList.toggle('hidden', !isRes);
+
+    const statusSelect = $('workshopStatusSelect');
+    if (statusSelect) {
+      const builtinOpt = statusSelect.querySelector('option[value="builtin"]');
+      if (builtinOpt) builtinOpt.hidden = isRes;
+      if (isRes && statusSelect.value === 'builtin') {
+        statusSelect.value = 'all';
+        state.statusFilter = 'all';
+      }
+    }
+
+    const sortSelect = $('workshopSortSelect');
+    if (sortSelect) {
+      const sizeOpt = sortSelect.querySelector('option[value="size"]');
+      if (sizeOpt) sizeOpt.hidden = !isRes;
+      if (!isRes && sortSelect.value === 'size') {
+        state.sort = savedSort();
+        sortSelect.value = state.sort;
+      }
+    }
+
+    const searchInput = $('workshopSearchInput');
+    if (searchInput) {
+      searchInput.placeholder = t(isRes ? 'workshop.search_resources_placeholder' : 'workshop.search_placeholder');
+    }
+
+    renderResourceTypePills();
+  }
+
+  function renderResourceTypePills() {
+    const bar = $('workshopResourceTypesBar');
+    if (!bar) return;
+    const isRes = state.catalog === 'resources';
+    bar.classList.toggle('hidden', !isRes);
+    if (!isRes) return;
+
+    const types = Array.isArray(state.resourceTypes) ? state.resourceTypes.filter(x => x && x.enabled !== false) : [];
+    const pills = [
+      `<button type="button" class="workshop-type-pill${!state.resourceType ? ' is-active' : ''}" data-resource-type="">${esc(
+        t('workshop.types_all')
+      )}</button>`,
+      ...types.map(
+        item =>
+          `<button type="button" class="workshop-type-pill${
+            state.resourceType === item.type ? ' is-active' : ''
+          }" data-resource-type="${esc(item.type)}" title="${esc(item.description || '')}">${esc(
+            item.displayName || item.type
+          )}</button>`
+      )
+    ];
+    bar.innerHTML = pills.join('');
+  }
+
+  function setCatalog(catalog) {
+    const next = catalog === 'resources' ? 'resources' : 'mods';
+    if (state.catalog === next) return;
+    state.catalog = next;
+    state.loading = false;
+    state.items = [];
+    state.total = 0;
+    state.page = 1;
+    state.pages = 1;
+    state.tag = '';
+    if (next === 'mods' && state.sort === 'size') state.sort = savedSort();
+
+    const tagSelect = $('workshopTagSelect');
+    if (tagSelect) tagSelect.value = '';
+    const sortSelect = $('workshopSortSelect');
+    if (sortSelect) sortSelect.value = state.sort;
+
+    $('workshopPager')?.classList.add('hidden');
+    syncCatalogControls();
+    load(1);
   }
 
   function load(page) {
@@ -541,8 +656,22 @@
     state.loading = true;
     state.page = Math.max(1, page || 1);
     hideNotice();
+    syncCatalogControls();
     renderGrid();
     syncSource();
+
+    if (state.catalog === 'resources') {
+      post({
+        type: 'workshopResourceList',
+        resourceType: state.resourceType,
+        query: state.query,
+        tag: state.tag,
+        rating: state.rating,
+        sort: state.sort,
+        page: state.page
+      });
+      return;
+    }
 
     post({
       type: 'workshopList',
@@ -590,26 +719,31 @@
     return `${base}/mods/${encodeURIComponent(modId)}#comments`;
   }
 
-  function openDetail(id, tab) {
+  function openDetail(id, tab, kind) {
     if (state.consent !== 'granted') {
       openConsentModal();
       return;
     }
     if (!id) return;
 
+    const targetKind = kind || state.catalog || 'mod';
+    const isRes = targetKind === 'resources' || targetKind === 'resource';
+    const cacheMap = isRes ? state.resourceDetails : state.details;
+
     const listScroll = document.querySelector('#workshopView .workshop-scroll');
     state.listScrollTop = listScroll ? listScroll.scrollTop : 0;
+    state.detailKind = isRes ? 'resource' : 'mod';
     state.detailId = id;
     state.detailTab = tab || 'details';
     state.detailError = '';
 
-    const cached = state.details.get(id);
+    const cached = cacheMap.get(id);
     state.detail = cached || null;
 
     showPage('workshopDetail');
     renderDetailPage();
 
-    if (!cached) post({ type: 'workshopDetail', id });
+    if (!cached) post({ type: isRes ? 'workshopResourceDetail' : 'workshopDetail', id });
   }
 
   // 从外部链接或应用内入口打开指定市场详情，由用户在详情页确认安装。
@@ -621,6 +755,7 @@
       toast('这个 aspatoys 链接里没有模组 ID，打不开模组详情。');
       return;
     }
+    state.catalog = 'mods';
     state.externalMod = { id, version, refresh: payload?.refresh === true };
 
     if (state.consent === 'granted') {
@@ -641,7 +776,36 @@
     if (!pending?.id || state.consent !== 'granted') return;
     state.externalMod = null;
     if (pending.refresh) state.details.delete(pending.id);
-    openDetail(pending.id, pending.version ? 'versions' : 'details');
+    openDetail(pending.id, pending.version ? 'versions' : 'details', 'mod');
+  }
+
+  function openExternalResourceRequest(payload) {
+    const id = String(payload?.id || '').trim();
+    const version = String(payload?.version || '').trim();
+    if (!id) {
+      toast('这个 aspatoys 链接里没有资源 ID，打不开资源详情。');
+      return;
+    }
+    state.catalog = 'resources';
+    syncCatalogControls();
+    state.externalResource = { id, version };
+
+    if (state.consent === 'granted') {
+      openExternalResourceNow();
+      return;
+    }
+    if (state.consent === 'required') {
+      openConsentModal();
+      return;
+    }
+    load(1);
+  }
+
+  function openExternalResourceNow() {
+    const pending = state.externalResource;
+    if (!pending?.id || state.consent !== 'granted') return;
+    state.externalResource = null;
+    openDetail(pending.id, pending.version ? 'versions' : 'details', 'resource');
   }
 
   function backToList() {
@@ -653,7 +817,7 @@
     state.detailId = id;
     state.detail = null;
     renderDetailPage();
-    post({ type: 'workshopDetail', id });
+    post({ type: state.detailKind === 'resource' ? 'workshopResourceDetail' : 'workshopDetail', id });
   }
 
   function detailActionMarkup(mod) {
@@ -896,10 +1060,20 @@
     const panels = tabs
       .map(([id]) => {
         const active = state.detailTab === id;
+        const isRes = state.detailKind === 'resource' && window.WorkshopResources;
+        const resCtx = { t, formatBytes, formatDate, describePlatforms, externalUrl, markdownHtml };
         let body = '';
-        if (id === 'details') body = detailFacts(mod) + detailDownloadBlock(mod) + detailDescriptionBlock(mod);
-        else if (id === 'versions') body = detailVersionsPanel(mod);
-        else if (id === 'readme') body = detailReadmePanel(mod);
+        if (id === 'details') {
+          body = isRes
+            ? window.WorkshopResources.renderDetailFacts(mod, resCtx) +
+              detailDownloadBlock(mod) +
+              detailDescriptionBlock(mod)
+            : detailFacts(mod) + detailDownloadBlock(mod) + detailDescriptionBlock(mod);
+        } else if (id === 'versions') {
+          body = isRes
+            ? window.WorkshopResources.renderDetailVersions(mod, resCtx)
+            : detailVersionsPanel(mod);
+        } else if (id === 'readme') body = detailReadmePanel(mod);
         else body = detailLicensePanel(mod);
 
         return `<section class="workshop-tab-panel" role="tabpanel" id="workshopPanel-${id}"
@@ -999,11 +1173,26 @@
       return;
     }
 
-    host.innerHTML = `${detailHeroMarkup(state.detail)}${detailTabsMarkup(state.detail)}`;
-    window.Motion?.content(host, state.detail.id);
+    const hero =
+      state.detailKind === 'resource' && window.WorkshopResources
+        ? window.WorkshopResources.renderDetailHero(state.detail, {
+            state,
+            t,
+            formatBytes,
+            formatDate,
+            coverMarkup,
+            chipFor,
+            compareVersions
+          })
+        : detailHeroMarkup(state.detail);
+
+    host.innerHTML = `${hero}${detailTabsMarkup(state.detail)}`;
+    window.Motion?.content(host, `${state.detailKind}:${state.detail.id}`);
     window.Icons?.hydrate(host);
-    window.StickerModule?.syncAfterRender();
-    window.StickerModule?.requestCounts([state.detail.id]);
+    if (state.detailKind === 'mod') {
+      window.StickerModule?.syncAfterRender();
+      window.StickerModule?.requestCounts([state.detail.id]);
+    }
 
     const title = $('workshopDetailTitle');
     if (title) title.textContent = state.detail.name || t('workshop.detail_title');
@@ -1035,7 +1224,12 @@
     if (!mod) return;
 
     const holder = $('workshopDetailAction');
-    if (holder) holder.innerHTML = detailActionMarkup(mod);
+    if (holder) {
+      holder.innerHTML =
+        state.detailKind === 'resource' && window.WorkshopResources
+          ? window.WorkshopResources.renderDetailAction(mod, { state, t, compareVersions })
+          : detailActionMarkup(mod);
+    }
 
     updateDetailProgress();
 
@@ -1127,7 +1321,7 @@
   }
 
 
-  function install(id, version) {
+  function install(id, version, kind) {
     if (state.consent !== 'granted') {
       openConsentModal();
       return;
@@ -1138,7 +1332,11 @@
       return;
     }
 
+    const installKind = kind || (AppState.currentPage === 'workshopDetail' ? state.detailKind : state.catalog) || 'mod';
+    const isRes = installKind === 'resource' || installKind === 'resources';
+
     state.installingId = id;
+    state.installingKind = isRes ? 'resource' : 'mod';
     state.installName = installDisplayName(id);
     state.installVersion = version || '';
     state.installStatus = 'running';
@@ -1151,13 +1349,37 @@
     if (state.detail?.id === id) syncDetailActions();
     updateDetailProgress();
 
-    post({ type: 'workshopInstall', id, version: version || '' });
+    if (isRes) {
+      post({ type: 'workshopResourceInstall', id, version: version || '' });
+    } else {
+      post({ type: 'workshopInstall', id, version: version || '' });
+    }
   }
 
   function cancel() {
     if (!state.installingId) return;
     post({ type: 'workshopCancelDownload' });
     toast(t('workshop.cancelling'));
+  }
+
+  function jumpToManagePage(jumpPage) {
+    if (!jumpPage) return;
+    if (jumpPage === 'devices') {
+      showPage('devices');
+      return;
+    }
+    const tabMap = {
+      skins: 'cards',
+      characterSkins: 'characters',
+      audioSkins: 'audio',
+      resourceMods: 'resource',
+      homeBackground: 'homebg'
+    };
+    const targetTab = tabMap[jumpPage] || 'cards';
+    showPage('skins');
+    window.setTimeout(() => {
+      document.querySelector(`#skinsView [data-v2s-tab="${targetTab}"]`)?.click();
+    }, 60);
   }
 
   const WorkshopModule = {
@@ -1173,6 +1395,10 @@
       openExternalModRequest(payload);
     },
 
+    openExternalResource(payload) {
+      openExternalResourceRequest(payload);
+    },
+
     init() {
       if (this.initialized) return;
       this.initialized = true;
@@ -1183,6 +1409,30 @@
         state.loading = false;
         // 只先藏起来，不要清 DOM：翻页按钮和页码要留着给 renderPager 更新
         $('workshopPager')?.classList.add('hidden');
+        load(1);
+      });
+
+      $('workshopCatalogModsBtn')?.addEventListener('click', () => setCatalog('mods'));
+      $('workshopCatalogResourcesBtn')?.addEventListener('click', () => setCatalog('resources'));
+
+      $('workshopResourceTypesBar')?.addEventListener('click', event => {
+        const pill = event.target.closest('[data-resource-type]');
+        if (!pill) return;
+        state.resourceType = pill.getAttribute('data-resource-type') || '';
+        renderResourceTypePills();
+        load(1);
+      });
+
+      $('workshopThreadsSelect')?.addEventListener('change', event => {
+        const val = parseInt(event.target.value, 10);
+        if (!Number.isFinite(val)) return;
+        state.downloadThreads = val;
+        post({ type: 'workshopSetDownloadThreads', threads: val });
+        toast(t('workshop.threads_updated', { count: val }));
+      });
+
+      $('workshopRatingSelect')?.addEventListener('change', event => {
+        state.rating = event.target.value || '';
         load(1);
       });
 
@@ -1310,10 +1560,26 @@
           return;
         }
 
+        const previewBtn = event.target.closest('[data-preview-index]');
+        if (previewBtn && state.detail?.previews && window.WorkshopResources) {
+          window.WorkshopResources.openPreviewLightbox(
+            state.detail.previews,
+            previewBtn.getAttribute('data-preview-index'),
+            state.detail.name || state.detail.id
+          );
+          return;
+        }
+
+        const jumpBtn = event.target.closest('[data-jump-page]');
+        if (jumpBtn) {
+          jumpToManagePage(jumpBtn.getAttribute('data-jump-page'));
+          return;
+        }
+
         const installBtn = event.target.closest('[data-install]');
         if (installBtn) {
           event.preventDefault();
-          install(installBtn.getAttribute('data-install'), installBtn.getAttribute('data-version'));
+          install(installBtn.getAttribute('data-install'), installBtn.getAttribute('data-version'), state.detailKind);
 
         }
       });
@@ -1339,6 +1605,7 @@
       window.addEventListener('appLanguageChanged', () => {
         // 名称/简介/更新说明都是服务端按语言返回的，必须重新取，不能只重画旧数据。
         state.details.clear();
+        state.resourceDetails.clear();
         state.mdCache.clear();
         const detailId = state.detail?.id;
         state.detail = null;
@@ -1383,21 +1650,27 @@
       state.page = 1;
       state.query = '';
       state.tag = '';
+      state.resourceType = '';
+      state.rating = '';
       state.sort = savedSort();
       state.statusFilter = 'all';
       state.loaded = false;
       state.details.clear();
+      state.resourceDetails.clear();
       state.mdCache.clear();
 
       const searchInput = $('workshopSearchInput');
       if (searchInput) searchInput.value = '';
       const tagSelect = $('workshopTagSelect');
       if (tagSelect) tagSelect.value = '';
+      const ratingSelect = $('workshopRatingSelect');
+      if (ratingSelect) ratingSelect.value = '';
       const sortSelect = $('workshopSortSelect');
       if (sortSelect) sortSelect.value = state.sort;
       const statusSelect = $('workshopStatusSelect');
       if (statusSelect) statusSelect.value = 'all';
 
+      syncCatalogControls();
       state.loading = false;
       // 重新进入市场：先藏翻页条，等新数据回来由 renderPager 决定是否显示
       $('workshopPager')?.classList.add('hidden');
@@ -1436,11 +1709,16 @@
 
       toast(t('workshop.consent_granted'));
       load(1);
-      // 网页唤起时还没同意的：同意完直接续跑到模组详情，不用用户再点一次
+      // 网页唤起时还没同意的：同意完直接续跑到详情，不用用户再点一次
       openExternalModNow();
+      openExternalResourceNow();
     },
 
     renderList(payload) {
+      if (state.catalog !== 'mods') {
+        state.loading = false;
+        return;
+      }
       state.loading = false;
       state.loaded = true;
       const pendingPage = state.pendingPage;
@@ -1489,16 +1767,73 @@
 
       if (pendingPage) load(pendingPage);
 
-      // 网页唤起探同意状态的：列表回来且已同意时，续跑到模组详情
+      // 网页唤起探同意状态的：列表回来且已同意时，续跑到详情
       openExternalModNow();
+      openExternalResourceNow();
+    },
+
+    renderResourceList(payload) {
+      if (state.catalog !== 'resources') {
+        state.loading = false;
+        return;
+      }
+      state.loading = false;
+      state.loaded = true;
+      const pendingPage = state.pendingPage;
+      state.pendingPage = 0;
+
+      if (!payload) return;
+      if (payload.baseUrl) state.baseUrl = payload.baseUrl;
+      if (payload.downloadThreads) state.downloadThreads = payload.downloadThreads;
+      syncSource();
+
+      if (payload.error) {
+        state.items = [];
+        state.total = 0;
+        state.pages = 1;
+        renderGrid();
+        renderPager();
+        notice(
+          `<p>${esc(t('workshop.error'))}</p><p class="workshop-notice-detail">${esc(
+            payload.error
+          )}</p><button class="secondary-btn" data-retry="1">${esc(t('workshop.retry'))}</button>`,
+          'error'
+        );
+        const retry = $('workshopNotice')?.querySelector('[data-retry]');
+        if (retry) retry.addEventListener('click', () => load(1), { once: true });
+        return;
+      }
+
+      if (Array.isArray(payload.resourceTypes) && payload.resourceTypes.length) {
+        state.resourceTypes = payload.resourceTypes;
+      }
+      state.items = Array.isArray(payload.items) ? payload.items : [];
+      state.total = payload.total || 0;
+      state.page = payload.page || 1;
+      state.pageSize = payload.pageSize || 24;
+      state.tags = Array.isArray(payload.tags) ? payload.tags : [];
+      state.pages = Math.max(1, Math.ceil(state.total / Math.max(1, state.pageSize)));
+      state.consent = 'granted';
+
+      syncCatalogControls();
+      syncTagOptions();
+      renderGrid();
+      renderPager();
+
+      if (state.items.length) {
+        notice(t('workshop.total_resources', { total: fmt(state.total) }), 'muted');
+      } else {
+        hideNotice();
+      }
+
+      if (pendingPage) load(pendingPage);
+      openExternalResourceNow();
     },
 
     renderDetail(payload) {
-      if (!payload) return;
+      if (!payload || state.detailKind !== 'mod') return;
 
       const expectedId = payload.mod?.id || payload.id || '';
-      // 已经打开了别的模组：这条是上一次请求的迟到回复，丢掉。
-      // 注意不要用 AppState.currentPage 判断——页面切换动画期间它还是旧值。
       if (expectedId && state.detailId && expectedId !== state.detailId) return;
 
       if (payload.error) {
@@ -1516,6 +1851,32 @@
       state.detailId = mod.id;
       state.details.set(mod.id, mod);
       state.mdCache.delete(`${mod.id}:readme`);
+
+      renderDetailPage();
+    },
+
+    renderResourceDetail(payload) {
+      if (!payload || state.detailKind !== 'resource') return;
+
+      const expectedId = payload.resource?.id || payload.id || '';
+      if (expectedId && state.detailId && expectedId !== state.detailId) return;
+
+      if (payload.error) {
+        state.detailError = payload.error;
+        renderDetailPage();
+        return;
+      }
+
+      const res = payload.resource;
+      if (!res) return;
+
+      if (payload.baseUrl) state.baseUrl = payload.baseUrl;
+      if (payload.downloadThreads) state.downloadThreads = payload.downloadThreads;
+      state.detailError = '';
+      state.detail = res;
+      state.detailId = res.id;
+      state.resourceDetails.set(res.id, res);
+      state.mdCache.delete(`${res.id}:readme`);
 
       renderDetailPage();
     },
@@ -1546,13 +1907,22 @@
         phase: payload.phase || 'download',
         percent: typeof payload.percent === 'number' ? payload.percent : null,
         receivedBytes: payload.receivedBytes,
-        totalBytes: payload.totalBytes
+        totalBytes: payload.totalBytes,
+        bytesPerSecond: payload.bytesPerSecond || 0,
+        activeThreads: payload.activeThreads || 1,
+        resumable: !!payload.resumable,
+        resumed: !!payload.resumed,
+        message: payload.message || ''
       };
       state.installPhase = state.progress.phase;
 
       syncCards();
       updateDetailProgress();
       if (state.installStatus === 'running') renderInstallToast();
+    },
+
+    renderResourceProgress(payload) {
+      this.renderProgress(payload);
     },
 
     renderResult(payload) {
@@ -1570,7 +1940,6 @@
       if (payload.success) {
         state.details.delete(id);
         let text = t('workshop.install_success', { version: payload.version || '' });
-        // 宿主把「保留了什么」结构化回推，这里按界面语言拼，避免整句固定中文。
         const preserved = Array.isArray(payload.preservedConfigs) ? payload.preservedConfigs : [];
         const disabled = Array.isArray(payload.preservedDisabled) ? payload.preservedDisabled : [];
         if (preserved.length) text += ' ' + t('workshop.preserved_config', { names: preserved.join(', ') });
@@ -1583,8 +1952,40 @@
       }
 
       load(state.page);
-      if (state.detail && state.detail.id === id) {
+      if (state.detail && state.detail.id === id && state.detailKind === 'mod') {
         post({ type: 'workshopDetail', id });
+      }
+    },
+
+    renderResourceResult(payload) {
+      if (!payload) return;
+      const id = payload.id || '';
+
+      state.installStatus = payload.success ? 'success' : payload.cancelled ? 'cancelled' : 'failed';
+      state.installMessage = payload.message || '';
+      renderInstallToast();
+      scheduleInstallToastHide(payload.success || payload.cancelled ? 5500 : 10000);
+
+      state.installingId = '';
+      state.progress = null;
+
+      if (payload.success) {
+        state.resourceDetails.delete(id);
+        state.lastInstalledJump = {
+          id,
+          jumpPage: payload.device ? 'devices' : payload.jumpPage || '',
+          device: payload.device || ''
+        };
+        toast(payload.message || t('workshop.install_success', { version: payload.version || '' }));
+      } else if (payload.cancelled) {
+        toast(payload.message || t('workshop.cancelled'));
+      } else {
+        toast(payload.message || t('workshop.install_failed'));
+      }
+
+      if (state.catalog === 'resources') load(state.page);
+      if (state.detail && state.detail.id === id && state.detailKind === 'resource') {
+        post({ type: 'workshopResourceDetail', id });
       }
     },
 

@@ -27,6 +27,9 @@ public static class AspatoysProtocol
     /// <summary>对外链接上标识来源的查询参数名。</summary>
     public const string FromParameter = "from";
 
+    /// <summary>资源模组安装协议主机名。</summary>
+    public const string InstallResourceHost = "install-resource";
+
     private const string InstallAction = "install-mod";
 
     /// <summary>是否是 <c>aspatoys://</c> 链接（不保证动作合法，只判断协议）。</summary>
@@ -41,8 +44,25 @@ public static class AspatoysProtocol
     /// 方便网页端以后换写法；生成链接时请用 <see cref="BuildInstallModUrl"/> 的标准格式。
     /// </summary>
     public static bool TryParseInstallMod(string? input, out string modId, out string? version)
+        => TryParseInstallTarget(input, InstallAction, allowShorthandInstall: true, maxIdLength: 128, rejectLeadingDot: false, out modId, out version);
+
+    /// <summary>
+    /// 解析安装资源模组链接（<c>aspatoys://install-resource?id=…&amp;version=…</c> 等写法）。
+    /// 工具箱收到后只切到资源市场并打开详情页，由用户确认后才下载安装。
+    /// </summary>
+    public static bool TryParseInstallResource(string? input, out string resourceId, out string? version)
+        => TryParseInstallTarget(input, InstallResourceHost, allowShorthandInstall: false, maxIdLength: 64, rejectLeadingDot: true, out resourceId, out version);
+
+    private static bool TryParseInstallTarget(
+        string? input,
+        string actionHost,
+        bool allowShorthandInstall,
+        int maxIdLength,
+        bool rejectLeadingDot,
+        out string targetId,
+        out string? version)
     {
-        modId = "";
+        targetId = "";
         version = null;
         if (string.IsNullOrWhiteSpace(input)) return false;
         if (!Uri.TryCreate(input.Trim(), UriKind.Absolute, out var uri)) return false;
@@ -59,29 +79,26 @@ public static class AspatoysProtocol
         var query = ParseQuery(uri.Query);
 
         string? idFromQuery = query.TryGetValue("id", out var queryId) ? queryId : null;
-        if (string.Equals(host, InstallAction, StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(host, actionHost, StringComparison.OrdinalIgnoreCase))
         {
-            // aspatoys://install-mod?id=…（标准）或 aspatoys://install-mod/<id>
             var id = !string.IsNullOrWhiteSpace(idFromQuery) ? idFromQuery
                 : segments.Length > 0 ? segments[0] : null;
-            if (!IsValidModId(id)) return false;
-            modId = id!.Trim();
+            if (!IsValidTargetId(id, maxIdLength, rejectLeadingDot)) return false;
+            targetId = id!.Trim();
         }
-        else if (string.Equals(host, "install", StringComparison.OrdinalIgnoreCase))
+        else if (allowShorthandInstall && string.Equals(host, "install", StringComparison.OrdinalIgnoreCase))
         {
-            // aspatoys://install/<id>
             var id = segments.Length > 0 ? segments[0] : idFromQuery;
-            if (!IsValidModId(id)) return false;
-            modId = id!.Trim();
+            if (!IsValidTargetId(id, maxIdLength, rejectLeadingDot)) return false;
+            targetId = id!.Trim();
         }
         else if (string.IsNullOrEmpty(host) && segments.Length > 0
-                 && string.Equals(segments[0], InstallAction, StringComparison.OrdinalIgnoreCase))
+                 && string.Equals(segments[0], actionHost, StringComparison.OrdinalIgnoreCase))
         {
-            // aspatoys:///install-mod?id=…
             var id = !string.IsNullOrWhiteSpace(idFromQuery) ? idFromQuery
                 : segments.Length > 1 ? segments[1] : null;
-            if (!IsValidModId(id)) return false;
-            modId = id!.Trim();
+            if (!IsValidTargetId(id, maxIdLength, rejectLeadingDot)) return false;
+            targetId = id!.Trim();
         }
         else
         {
@@ -100,8 +117,15 @@ public static class AspatoysProtocol
 
     /// <summary>生成标准安装链接：<c>aspatoys://install-mod?id=…&amp;version=…</c>。</summary>
     public static string BuildInstallModUrl(string modId, string? version = null)
+        => BuildInstallUrl(InstallAction, modId, version);
+
+    /// <summary>生成资源模组安装链接：<c>aspatoys://install-resource?id=…&amp;version=…</c>。</summary>
+    public static string BuildInstallResourceUrl(string resourceId, string? version = null)
+        => BuildInstallUrl(InstallResourceHost, resourceId, version);
+
+    private static string BuildInstallUrl(string actionHost, string id, string? version)
     {
-        var url = $"{Scheme}://{InstallAction}?id=" + Uri.EscapeDataString(modId.Trim());
+        var url = $"{Scheme}://{actionHost}?id=" + Uri.EscapeDataString(id.Trim());
         if (!string.IsNullOrWhiteSpace(version))
             url += "&version=" + Uri.EscapeDataString(version.Trim());
         return url;
@@ -144,12 +168,13 @@ public static class AspatoysProtocol
         return result;
     }
 
-    /// <summary>模组 ID 只认字母、数字和 <c>_ - .</c>，挡掉路径分隔、空格和控制字符。</summary>
-    private static bool IsValidModId(string? value)
+    /// <summary>模组/资源 ID 只认字母、数字和 <c>_ - .</c>，挡掉路径分隔、空格和控制字符。</summary>
+    private static bool IsValidTargetId(string? value, int maxLength, bool rejectLeadingDot)
     {
         if (string.IsNullOrWhiteSpace(value)) return false;
         var id = value.Trim();
-        if (id.Length > 128 || id is "." or "..") return false;
+        if (id.Length > maxLength || id is "." or "..") return false;
+        if (rejectLeadingDot && id.StartsWith('.')) return false;
         return id.All(ch => char.IsLetterOrDigit(ch) || ch is '_' or '-' or '.');
     }
 

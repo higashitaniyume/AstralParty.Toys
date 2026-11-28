@@ -87,17 +87,12 @@ public sealed class MobileModPackage
             .Where(f => f.Name.Length > 0)
             .ToList();
 
-        var sidecars = stripped.Where(f => f.Name.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
-                                            && !f.Name.Contains('/')
-                                            && !f.Name.StartsWith('_')).ToList();
-        if (sidecars.Count == 0)
-            throw new InvalidDataException("包内没有 sidecar（<ModId>.json）");
-
-        var sidecarName = Path.GetFileNameWithoutExtension(sidecars[0].Name);
+        var sidecar = SelectSidecar(stripped, prefix);
+        var sidecarName = Path.GetFileNameWithoutExtension(sidecar.Name);
         JsonDocument document;
         try
         {
-            document = JsonDocument.Parse(sidecars[0].Bytes);
+            document = JsonDocument.Parse(sidecar.Bytes);
         }
         catch (JsonException ex)
         {
@@ -156,6 +151,52 @@ public sealed class MobileModPackage
         return list.All(parts => parts.Length >= 2 && string.Equals(parts[0], first, StringComparison.Ordinal))
             ? first + "/"
             : "";
+    }
+
+    private static (string Name, byte[] Bytes) SelectSidecar(
+        List<(string Name, byte[] Bytes)> stripped,
+        string prefix)
+    {
+        var candidates = stripped.Where(f => f.Name.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
+                                             && !f.Name.Contains('/')
+                                             && !f.Name.StartsWith('_')
+                                             && !string.Equals(f.Name, "config.json", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (candidates.Count == 0)
+            throw new InvalidDataException("包内没有 sidecar（<ModId>.json）");
+
+        var dllStems = stripped
+            .Where(f => !f.Name.Contains('/') && f.Name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(f => Path.GetFileNameWithoutExtension(f.Name))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var topFolder = prefix.TrimEnd('/');
+
+        if (topFolder.Length > 0)
+        {
+            var exact = candidates.FirstOrDefault(f =>
+            {
+                var stem = Path.GetFileNameWithoutExtension(f.Name);
+                return string.Equals(stem, topFolder, StringComparison.OrdinalIgnoreCase)
+                       && dllStems.Contains(stem);
+            });
+            if (exact.Name is not null)
+                return exact;
+        }
+
+        var matchedDll = candidates.FirstOrDefault(f =>
+            dllStems.Contains(Path.GetFileNameWithoutExtension(f.Name)));
+        if (matchedDll.Name is not null)
+            return matchedDll;
+
+        if (topFolder.Length > 0)
+        {
+            var matchedFolder = candidates.FirstOrDefault(f =>
+                string.Equals(Path.GetFileNameWithoutExtension(f.Name), topFolder, StringComparison.OrdinalIgnoreCase));
+            if (matchedFolder.Name is not null)
+                return matchedFolder;
+        }
+
+        return candidates[0];
     }
 
     private static string? GetString(JsonElement element, string name) =>

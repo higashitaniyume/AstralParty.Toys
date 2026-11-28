@@ -238,6 +238,26 @@ host?.addEventListener('message', event => {
       window.WorkshopModule?.openInstallConfirm(msg.payload);
       break;
 
+    case 'workshopResourceList':
+      window.WorkshopModule?.renderResourceList?.(msg.payload);
+      break;
+
+    case 'workshopResourceDetail':
+      window.WorkshopModule?.renderResourceDetail?.(msg.payload);
+      break;
+
+    case 'workshopOpenResource':
+      window.WorkshopModule?.openExternalResource?.(msg.payload);
+      break;
+
+    case 'workshopResourceProgress':
+      window.WorkshopModule?.renderResourceProgress?.(msg.payload);
+      break;
+
+    case 'workshopResourceResult':
+      window.WorkshopModule?.renderResourceResult?.(msg.payload);
+      break;
+
     case 'workshopStickers':
       window.WorkshopModule?.renderStickers(msg.payload);
       break;

@@ -162,5 +162,49 @@ public sealed class AspatoysProtocolTests
         Assert.Contains("openExternalMod", workshop);
         Assert.Contains("openExternalModNow", workshop);
         Assert.Contains("state.externalMod", workshop);
+        Assert.Contains("openExternalResource", workshop);
+        Assert.Contains("openExternalResourceNow", workshop);
+        Assert.Contains("state.externalResource", workshop);
+    }
+
+    [Theory]
+    [InlineData("aspatoys://install-resource?id=sakura_cards", "sakura_cards", null)]
+    [InlineData("aspatoys://install-resource?id=sakura_cards&version=1.2.0", "sakura_cards", "1.2.0")]
+    [InlineData("ASPATOYS://INSTALL-RESOURCE?id=sakura.skin-v2&version=2.0.0-beta.1", "sakura.skin-v2", "2.0.0-beta.1")]
+    [InlineData("aspatoys://install-resource/sakura_cards?version=1.2.0", "sakura_cards", "1.2.0")]
+    [InlineData("aspatoys:///install-resource?id=sakura_cards", "sakura_cards", null)]
+    public void TryParseInstallResource_AcceptsExpectedForms(string input, string expectedId, string? expectedVersion)
+    {
+        Assert.True(AspatoysProtocol.TryParseInstallResource(input, out var id, out var version));
+        Assert.Equal(expectedId, id);
+        Assert.Equal(expectedVersion, version);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("aspatoys://install-resource")]
+    [InlineData("aspatoys://install-resource?id=")]
+    [InlineData("aspatoys://install-resource?id=.hidden")]
+    [InlineData("aspatoys://install-resource?id=../evil")]
+    [InlineData("aspatoys://install-resource?id=a/b")]
+    [InlineData("aspatoys://install-resource?id=ok&version=1.0/evil")]
+    public void TryParseInstallResource_RejectsInvalidLinks(string? input)
+    {
+        Assert.False(AspatoysProtocol.TryParseInstallResource(input, out _, out _));
+    }
+
+    [Fact]
+    public void BuildInstallResourceUrl_RoundTripsAndDispatcherHandlesIt()
+    {
+        var url = AspatoysProtocol.BuildInstallResourceUrl("sakura_cards", "1.2.0");
+        Assert.Equal("aspatoys://install-resource?id=sakura_cards&version=1.2.0", url);
+        Assert.True(AspatoysProtocol.TryParseInstallResource(url, out var id, out var ver));
+        Assert.Equal("sakura_cards", id);
+        Assert.Equal("1.2.0", ver);
+
+        var dispatcher = File.ReadAllText(Path.Combine(TestPaths.AppSourceDirectory, "HybridWindow.Dispatcher.cs"));
+        Assert.Contains("TryParseInstallResource", dispatcher);
+        Assert.Contains("workshopOpenResource", dispatcher);
     }
 }

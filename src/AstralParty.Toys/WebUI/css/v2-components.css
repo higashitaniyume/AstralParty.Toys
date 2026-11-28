@@ -291,6 +291,16 @@ html body .workshop-page .back-btn { height: 34px; padding: 0 12px; border: 1px 
 html body .workshop-page .back-btn:hover { background: var(--v2-hover); color: var(--v2-text); }
 html body .workshop-page .workshop-source { font-family: var(--v2-mono); font-size: 12px; }
 
+html body .workshop-page .workshop-catalog-bar { padding: 0 var(--v2-ws-gutter) 12px; background: none; border: 0; box-shadow: none; gap: 8px 12px; }
+html body .workshop-page .workshop-catalog-switch { padding: 3px; border: 1px solid var(--v2-border-strong); border-radius: 8px; background: var(--gp-bg); gap: 3px; }
+html body .workshop-page .workshop-catalog-tab { height: 26px; padding: 0 12px; border-radius: 6px; color: var(--gp-text-sub); font-size: 13px; font-weight: 500; }
+html body .workshop-page .workshop-catalog-tab:hover { background: var(--v2-hover); color: var(--v2-text); }
+html body .workshop-page .workshop-catalog-tab.is-active { background: var(--gp-pink); color: #fff; }
+html body .workshop-page .workshop-type-pill { height: 34px; padding: 0 12px; border: 1px solid var(--v2-border-strong); border-radius: 8px; background: var(--gp-bg); color: var(--gp-text-sub); font-size: 12.5px; font-weight: 500; box-sizing: border-box; }
+html body .workshop-page .workshop-type-pill:hover { background: var(--v2-hover); border-color: var(--v2-border-strong); color: var(--v2-text); }
+html body .workshop-page .workshop-type-pill.is-active { border-color: rgba(56, 189, 248, 0.55); background: rgba(56, 189, 248, 0.14); color: var(--gp-blue); }
+html body .workshop-page .workshop-threads-select { height: 34px !important; }
+
 html body .workshop-page .workshop-toolbar { padding: 0 var(--v2-ws-gutter) 12px; background: none; border: 0; box-shadow: none; gap: 8px; }
 html body .workshop-page .workshop-search { height: 34px; border: 1px solid var(--v2-border-strong); border-radius: 8px; background: var(--gp-bg); box-shadow: none; }
 html body .workshop-page .workshop-select { height: 34px; min-height: 34px; padding-block: 0; border: 1px solid var(--v2-border-strong); border-radius: 8px; background-color: var(--gp-bg); box-shadow: none; font-size: 13px; }

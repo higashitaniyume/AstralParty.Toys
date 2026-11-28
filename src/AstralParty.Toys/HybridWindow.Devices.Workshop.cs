@@ -42,10 +42,21 @@ public partial class HybridWindow
                     receivedBytes = value.ReceivedBytes,
                     totalBytes = value.TotalBytes,
                     percent = value.Percent,
+                    bytesPerSecond = value.BytesPerSecond,
+                    activeThreads = value.ActiveThreads,
+                    resumable = value.Resumable,
+                    resumed = value.Resumed,
                 },
             }));
 
-            var (sha256, _) = await _workshopService.DownloadPackageAsync(url, temporary, progress, CancellationToken.None);
+            var (sha256, _) = await _workshopService.DownloadPackageAsync(
+                url,
+                temporary,
+                progress,
+                CancellationToken.None,
+                WorkshopService.MaxPackageBytes,
+                _libraryService.Settings.WorkshopDownloadThreads,
+                selected.Sha256);
             if (!sha256.Equals(selected.Sha256, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException(
                     "下载到的文件与市场登记的 SHA-256 不一致，已拒绝安装。可能是作者替换了同版本文件。");

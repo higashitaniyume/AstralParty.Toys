@@ -58,7 +58,10 @@ public sealed class WorkshopWebUiTests
                  {
                      "workshopList", "workshopDetail", "workshopProgress",
                      "workshopResult", "workshopInstallConfirm",
-                     "workshopConsentRequired", "workshopConsent"
+                     "workshopConsentRequired", "workshopConsent",
+                     "workshopResourceList", "workshopResourceDetail",
+                     "workshopOpenResource", "workshopResourceProgress",
+                     "workshopResourceResult"
                  })
         {
             Assert.Contains($"case '{message}':", core);
@@ -104,7 +107,7 @@ public sealed class WorkshopWebUiTests
     public void EveryWorkshopTranslationKey_ExistsInAllFourLanguages()
     {
         var keys = new SortedSet<string>(StringComparer.Ordinal);
-        foreach (var match in JsKey.Matches(Read("js/workshop/module.js")).Cast<Match>())
+        foreach (var match in JsKey.Matches(Read("js/workshop/module.js") + "\n" + Read("js/workshop/resources.js")).Cast<Match>())
             keys.Add(match.Groups[1].Value);
         foreach (var match in IndexKey.Matches(Read("index.html")).Cast<Match>())
         {
@@ -150,6 +153,7 @@ public sealed class WorkshopWebUiTests
     public void WorkshopScriptsAndStyles_AreEmbedded()
     {
         Assert.Contains("js/workshop/module.js", EmbeddedWebStore.Paths);
+        Assert.Contains("js/workshop/resources.js", EmbeddedWebStore.Paths);
         Assert.Contains("css/workshop.css", EmbeddedWebStore.Paths);
         // README 渲染依赖的内嵌第三方资源，缺一个页面就只剩纯文本。
         Assert.Contains("js/markdown.js", EmbeddedWebStore.Paths);

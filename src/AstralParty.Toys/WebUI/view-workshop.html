@@ -9,11 +9,49 @@
             </div>
             <div class="utilities-header-actions">
               <span class="workshop-source" id="workshopSourceUrl"></span>
+              <label class="workshop-threads-picker" data-i18n-title="workshop.threads_hint" title="多线程并发下载与断点续传">
+                <span class="mi" data-icon="bolt"></span>
+                <select id="workshopThreadsSelect" class="workshop-select workshop-threads-select" aria-label="下载并发线程">
+                  <option value="1" data-i18n="workshop.threads_1">1 线程</option>
+                  <option value="4" data-i18n="workshop.threads_4">4 线程</option>
+                  <option value="8" data-i18n="workshop.threads_8">8 线程 (加速)</option>
+                  <option value="12" data-i18n="workshop.threads_12">12 线程</option>
+                  <option value="16" data-i18n="workshop.threads_16">16 线程</option>
+                </select>
+              </label>
               <button class="secondary-btn" id="workshopRefreshBtn">
                 <span class="mi" data-icon="refresh"></span>
                 <span data-i18n="common.refresh">刷新</span>
               </button>
             </div>
+          </div>
+
+          <div class="workshop-catalog-bar">
+            <div class="workshop-catalog-switch" role="tablist" aria-label="市场分类">
+              <button
+                type="button"
+                class="workshop-catalog-tab is-active"
+                id="workshopCatalogModsBtn"
+                data-catalog="mods"
+                role="tab"
+                aria-selected="true"
+                data-i18n="workshop.catalog_mods"
+              >
+                模组市场
+              </button>
+              <button
+                type="button"
+                class="workshop-catalog-tab"
+                id="workshopCatalogResourcesBtn"
+                data-catalog="resources"
+                role="tab"
+                aria-selected="false"
+                data-i18n="workshop.catalog_resources"
+              >
+                资源市场
+              </button>
+            </div>
+            <div id="workshopResourceTypesBar" class="workshop-type-pills hidden" role="tablist" aria-label="资源类型筛选"></div>
           </div>
 
           <div class="workshop-toolbar">
@@ -28,6 +66,16 @@
                 data-i18n-placeholder="workshop.search_placeholder"
               />
             </label>
+            <select
+              id="workshopRatingSelect"
+              class="workshop-select hidden"
+              aria-label="内容分级"
+            >
+              <option value="" data-i18n="workshop.rating_all">全部分级</option>
+              <option value="general" data-i18n="workshop.rating_general">全年龄</option>
+              <option value="teen" data-i18n="workshop.rating_teen">轻度暴露 / R15</option>
+              <option value="mature" data-i18n="workshop.rating_mature">敏感 / R18</option>
+            </select>
             <select
               id="workshopStatusSelect"
               class="workshop-select"
@@ -54,6 +102,7 @@
               <option value="updated" data-i18n="workshop.sort_updated">最近更新</option>
               <option value="downloads" data-i18n="workshop.sort_downloads">下载量</option>
               <option value="name" data-i18n="workshop.sort_name">名称</option>
+              <option value="size" data-resource-only="1" hidden data-i18n="workshop.sort_size">体积</option>
             </select>
             <div class="workshop-view-switch" role="group" aria-label="视图模式切换">
               <button

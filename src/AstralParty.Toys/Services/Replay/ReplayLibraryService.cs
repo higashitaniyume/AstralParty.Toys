@@ -207,6 +207,7 @@ public sealed partial class ReplayLibraryService
             WorkshopUrl = config.Workshop.Url,
             WorkshopConsentVersion = config.Workshop.ConsentVersion,
             WorkshopConsentAt = config.Workshop.ConsentAtUtc,
+            WorkshopDownloadThreads = config.Workshop.DownloadThreads,
             AutoCheckUpdates = config.Update.AutoCheck,
             AutoDownloadUpdates = config.Update.AutoDownload,
             AutoInstallUpdates = config.Update.AutoInstall,
@@ -223,6 +224,7 @@ public sealed partial class ReplayLibraryService
         settings.Language = AppLanguage.Normalize(settings.Language);
         settings.WorkshopUrl = WorkshopService.NormalizeBaseUrl(settings.WorkshopUrl);
         settings.WorkshopConsentVersion = Math.Max(0, settings.WorkshopConsentVersion);
+        settings.WorkshopDownloadThreads = Math.Clamp(settings.WorkshopDownloadThreads <= 0 ? 8 : settings.WorkshopDownloadThreads, 1, 16);
         settings.GitHubMirrorType = (settings.GitHubMirrorType ?? "").Trim().ToLowerInvariant();
         if (settings.GitHubMirrorType is not (GitHubMirrorHelper.TypeDirect or GitHubMirrorHelper.TypeGhProxy or GitHubMirrorHelper.TypeGhFast or GitHubMirrorHelper.TypeCustom))
         {
@@ -253,6 +255,7 @@ public sealed partial class ReplayLibraryService
             config.Workshop.Url = normalized.WorkshopUrl;
             config.Workshop.ConsentVersion = normalized.WorkshopConsentVersion;
             config.Workshop.ConsentAtUtc = normalized.WorkshopConsentAt;
+            config.Workshop.DownloadThreads = normalized.WorkshopDownloadThreads;
             config.Update.AutoCheck = normalized.AutoCheckUpdates;
             config.Update.AutoDownload = normalized.AutoDownloadUpdates;
             config.Update.AutoInstall = normalized.AutoInstallUpdates;

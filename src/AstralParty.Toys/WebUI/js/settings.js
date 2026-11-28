@@ -88,6 +88,7 @@
         autoMaintain: !!$('libraryAutoMaintainToggle')?.checked,
         keepInGame: keep,
         workshopUrl: ($('workshopUrlInput')?.value || '').trim() || null,
+        workshopDownloadThreads: Number(AppState.librarySettings?.workshopDownloadThreads || 8),
         autoCheckUpdates: !!$('autoCheckUpdatesToggle')?.checked,
         autoDownloadUpdates: !!$('autoDownloadUpdatesToggle')?.checked,
         autoInstallUpdates: !!$('autoInstallUpdatesToggle')?.checked,

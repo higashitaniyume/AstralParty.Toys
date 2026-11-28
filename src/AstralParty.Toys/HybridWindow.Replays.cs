@@ -375,6 +375,10 @@ public partial class HybridWindow
         var workshopUrl = root.TryGetProperty("workshopUrl", out var workshopElement)
             ? workshopElement.GetString()
             : _libraryService.Settings.WorkshopUrl;
+        var workshopDownloadThreads = root.TryGetProperty("workshopDownloadThreads", out var threadsEl)
+            && threadsEl.TryGetInt32(out var parsedThreads)
+            ? Math.Clamp(parsedThreads, 1, 16)
+            : _libraryService.Settings.WorkshopDownloadThreads;
 
         var autoCheckUpdates = root.TryGetProperty("autoCheckUpdates", out var checkEl)
             ? checkEl.GetBoolean()
@@ -401,6 +405,7 @@ public partial class HybridWindow
             KeepInGame = Math.Clamp(keepInGame, 1, ReplayLibraryService.GameSlotCapacity),
             Language = AppLanguage.Normalize(lang),
             WorkshopUrl = WorkshopService.NormalizeBaseUrl(workshopUrl),
+            WorkshopDownloadThreads = workshopDownloadThreads,
             AutoCheckUpdates = autoCheckUpdates,
             AutoDownloadUpdates = autoDownloadUpdates,
             AutoInstallUpdates = autoInstallUpdates,
@@ -447,6 +452,7 @@ public partial class HybridWindow
         language = _libraryService.Settings.Language,
         workshopUrl = _libraryService.Settings.WorkshopUrl,
         defaultWorkshopUrl = WorkshopService.DefaultBaseUrl,
+        workshopDownloadThreads = _libraryService.Settings.WorkshopDownloadThreads,
         workshopConsentVersion = _libraryService.Settings.WorkshopConsentVersion,
         workshopConsented = WorkshopConsent.IsGranted(_libraryService.Settings),
         workshopConsentAt = _libraryService.Settings.WorkshopConsentAt,

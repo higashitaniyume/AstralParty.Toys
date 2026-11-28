@@ -29,6 +29,9 @@ public sealed class ReplayLibrarySettings
     /// <summary>同意时间（UTC）。</summary>
     public DateTimeOffset? WorkshopConsentAt { get; set; }
 
+    /// <summary>市场下载并发线程数（1–16，默认 8）。</summary>
+    public int WorkshopDownloadThreads { get; set; } = 8;
+
     /// <summary>每次启动时自动检查更新。</summary>
     public bool AutoCheckUpdates { get; set; } = true;
 

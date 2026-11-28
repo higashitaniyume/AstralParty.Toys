@@ -602,7 +602,7 @@ public sealed class MyAccountTests : IDisposable
         Assert.Contains("el('accountInstallBtn').onclick = () => post({ type: 'myAccountInstallMod' })", account);
         Assert.Contains("else if (action === 'install') post({ type: 'myAccountInstallMod' })", account);
         Assert.Contains("if (p.id) window.WorkshopModule?.openExternalMod({ id: p.id })", account);
-        Assert.Contains("openDetail(pending.id, pending.version ? 'versions' : 'details')", Web("js/workshop/module.js"));
+        Assert.Contains("openDetail(pending.id, pending.version ? 'versions' : 'details', 'mod')", Web("js/workshop/module.js"));
     }
 
     [Fact]
