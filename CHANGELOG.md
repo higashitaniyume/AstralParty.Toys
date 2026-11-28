@@ -2,6 +2,28 @@
 
 欢迎您使用 **AstralParty.Toys**（吉星派对工具箱）与 **CesiumLoader** 模组加载器，衷心感谢您的支持与陪伴！如果您在使用过程中遇到任何问题、Bug 或有功能建议，非常欢迎前往 [GitHub Issues](https://github.com/higashitaniyume/AstralParty.Toys/issues) 提交反馈，也欢迎加入企鹅群 **1078464597**（[点击加群](https://qm.qq.com/cgi-bin/qm/qr?k=tYrqev4U2Xr2PPAA4EkILA0NKmP3zgeU&jump_from=webapi&authKey=jHiIqsg0jEV53dBtQ9V3qXohKKHwLDGmfWprcrg7gueM9pU9iz+ST/QHR6d1j3wa)）或 [Discord 频道](https://discord.gg/SZaYSwGX94) 和我们交流，我们会认真查看并尽力为您排查解决。
 
+## [v2.5.3] - 2026-11-28
+
+### 市场与资源包
+
+- 新增「资源市场」：在市场页支持切换浏览「模组市场」与「资源市场」，可按资源类型、内容分级、标签、体积与关键词筛选社区资源包（支持卡牌皮肤、角色皮肤、音效方案、主页背景与 RML 资源模组等）。
+- 资源详情页支持效果预览画廊、资源属性、前置模组/资源依赖状态检查以及署名与鸣谢展示；下载校验后自动规范化目录并安装至对应管理模块，记录已装版本以支持重新安装与「前往管理」快捷跳转。
+- 新增市场多线程并发分段下载与断点续传：可在设置或市场工具栏切换 1–16 线程（默认 8 线程），支持基于 HTTP Range 的分片下载、失败重试与断点续传；不支持 Range 的服务器自动回退单线程下载。
+- 支持通过 `aspatoys://install-resource?id=<资源ID>&version=<版本>` 协议链接从网页唤起工具箱并打开对应资源详情页。
+
+### 存储与清理
+
+- 设置页新增「存储与清理」：支持一键扫描并清理 C 盘 `LocalLow` 中废弃的旧版 Unity Addressables 缓存与旧版 catalog，以及游戏目录内不再被引用的过期 bundle 文件夹（严格保留当前激活版本、玩家存档、回放与多开档案）。
+- 支持将游戏本地数据目录（`AppData\LocalLow\<Company>`）一键迁移至其它磁盘并通过目录联接保持游戏正常读写，提供目标磁盘空间校验、实时迁移进度与还原支持。
+
+### 界面与设置
+
+- 设置页新增「感谢」分区，展示项目开发者、社区贡献者与交流渠道入口。
+
+### 加载器
+
+- 随包 CesiumLoader 更新至 `4.1.7`：包含 `ToysBadgeMod 1.0.2`（修复彩色/富文本昵称显示、支持多开独立标识及 `APE-` 徽章兼容）以及 SDK 新增的实验性上行 RPC 拦截能力 `RpcGate`。
+
 ## [v2.5.2] - 2026-11-26
 
 ### 组队大厅（Beta）
