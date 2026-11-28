@@ -101,6 +101,7 @@ body.page-home-active .page-container { height: auto; }
 .v2-theme-btn svg { width: 20px; height: 20px; }
 .v2-theme-btn:hover { background: var(--v2-hover); color: var(--v2-text); }
 .nav-crumb-btn[data-page="wiki"] { display: none; }
+.nav-crumb-btn[hidden] { display: none !important; }
 
 .page-container { margin-left: var(--v2-side); flex: 1 1 auto; height: auto; min-height: 0; }
 

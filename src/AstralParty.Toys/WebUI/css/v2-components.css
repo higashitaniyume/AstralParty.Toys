@@ -542,3 +542,46 @@ html body .profiles-page::-webkit-scrollbar-thumb { background-clip: padding-box
 .v2-credit-link:hover { border-color: var(--gp-pink); color: var(--gp-pink); background: var(--v2-pink-soft); }
 .v2-credit-link:focus-visible { outline: 2px solid var(--gp-pink); outline-offset: 1px; }
 .v2-credits-empty { padding: 10px 18px 16px; color: var(--gp-text-muted); font-size: 13px; }
+
+/* ---------- 设置页：界面 · 左侧边栏按钮 ---------- */
+.v2-sr-only {
+  position: absolute;
+  clip-path: inset(50%);
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  white-space: nowrap;
+}
+.v2-sidebar-hint { margin: 0; padding: 0 18px 10px; font-size: 13px; line-height: 1.55; }
+.v2-sidebar-fieldset { border: 0; margin: 0; padding: 0; }
+.v2-sidebar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; padding: 4px 18px 18px; }
+.v2-sidebar-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-block-size: 44px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--v2-panel-2);
+  border: 1px solid var(--v2-border);
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease;
+}
+.v2-sidebar-check:hover { border-color: var(--v2-border-strong); }
+.v2-sidebar-check:has(> .v2-sidebar-checkbox:checked) { border-color: rgba(255, 23, 118, .38); background: var(--v2-panel-2); }
+.v2-sidebar-check:has(> .v2-sidebar-checkbox:focus-visible) { outline: 2px solid var(--gp-pink); outline-offset: 2px; }
+.v2-sidebar-checkbox {
+  accent-color: var(--gp-pink);
+  inline-size: 1.15em;
+  aspect-ratio: 1;
+  margin: 2px 0 0;
+  cursor: pointer;
+  flex: none;
+}
+.v2-sidebar-checkbox:focus-visible { outline: 2px solid var(--gp-pink); outline-offset: 2px; }
+.v2-sidebar-check-text { display: flex; flex-direction: column; gap: 2px; min-inline-size: 0; }
+.v2-sidebar-check-title { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-weight: 500; color: var(--v2-text); font-size: 14px; }
+.v2-sidebar-check-text small { font-size: 12px; line-height: 1.45; white-space: normal; }

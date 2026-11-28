@@ -363,6 +363,42 @@
   const QQ_JOIN_URL = 'https://qm.qq.com/cgi-bin/qm/qr?k=tYrqev4U2Xr2PPAA4EkILA0NKmP3zgeU&jump_from=webapi&authKey=jHiIqsg0jEV53dBtQ9V3qXohKKHwLDGmfWprcrg7gueM9pU9iz+ST/QHR6d1j3wa';
   const DISCORD_URL = 'https://discord.gg/SZaYSwGX94';
 
+  function sidebarCardHtml() {
+    const sb = window.V2Sidebar;
+    const items = sb?.items || [];
+    const hiddenSet = new Set(sb?.getHidden?.() || ['hub']);
+    const shownCount = items.filter(item => !hiddenSet.has(item.page)).length;
+    const allShown = items.length > 0 && shownCount === items.length;
+    const isDefault = sb ? sb.isDefault() : true;
+    return `
+      <div class="v2-card" style="margin-top:14px">
+        <div class="v2-card-title">
+          <span>左侧边栏按钮 <span class="v2-muted" style="font-weight:400">已显示 ${shownCount} / ${items.length}</span></span>
+          <span>
+            <button type="button" class="v2-btn ghost" data-v2g="sidebarShowAll" ${allShown ? 'disabled' : ''}>全部显示</button>
+            <button type="button" class="v2-btn ghost" data-v2g="sidebarReset" ${isDefault ? 'disabled' : ''}>恢复默认</button>
+          </span>
+        </div>
+        <p class="v2-muted v2-sidebar-hint">勾选要在左侧边栏保留的入口（从「概览」到「移动设备」）；「系统设置」与深浅色切换按钮始终显示。</p>
+        <fieldset class="v2-sidebar-fieldset">
+          <legend class="v2-sr-only">左侧边栏显示按钮</legend>
+          <div class="v2-sidebar-grid">
+            ${items.map(item => {
+              const checked = !hiddenSet.has(item.page);
+              const inputId = `v2gSidebar_${item.page}`;
+              return `<label class="v2-sidebar-check" for="${inputId}">
+                <input type="checkbox" class="v2-sidebar-checkbox" id="${inputId}" name="sidebar_${esc(item.page)}" data-v2g-sidebar-page="${esc(item.page)}" ${checked ? 'checked' : ''}>
+                <span class="v2-sidebar-check-text">
+                  <span class="v2-sidebar-check-title">${esc(item.label)}${item.defaultHidden ? '<span class="v2-tag">默认隐藏</span>' : ''}</span>
+                  <small class="v2-muted">${esc(item.desc)}</small>
+                </span>
+              </label>`;
+            }).join('')}
+          </div>
+        </fieldset>
+      </div>`;
+  }
+
   function html() {
     const cap = LS().capacity || 10, keep = LS().keepInGame || cap;
     const info = window.VersionModule?.info;
@@ -380,7 +416,7 @@
       <div class="v2-card"><div class="v2-card-title"><span>界面</span></div>
         <div class="v2-row"><span class="k">界面动画</span><span class="v v2-muted">关掉后切页、弹窗都没有过渡动画</span>
           <label class="v2-switch"><input type="checkbox" id="v2gMotion" ${motionOn() ? 'checked' : ''}><span></span></label></div>
-      </div>`;
+      </div>${sidebarCardHtml()}`;
     else if (tab === 'game') main = `
       <div class="v2-card"><div class="v2-card-title"><span>游戏目录 <span class="v2-muted" style="font-weight:400">${profiles().length} 个</span></span>
           <span><button class="v2-btn ghost" data-v2g="scanQuick" ${G.scan?.running ? 'disabled' : ''}>${I().search}扫描</button>
@@ -798,6 +834,8 @@
     versionDetail: () => window.VersionModule?.showDetails(),
     changelog: () => window.VersionModule?.requestChangelog('app'),
     uninstall: () => post({ type: 'appUninstallInfo' }),
+    sidebarShowAll: () => { window.V2Sidebar?.showAll?.(); render(); toast('已显示全部侧边栏入口'); },
+    sidebarReset: () => { window.V2Sidebar?.resetDefault?.(); render(); toast('已恢复默认侧边栏设置'); },
     copyUrl: el => Promise.resolve(navigator.clipboard?.writeText(el.dataset.url)).then(() => toast('已复制地址'), () => toast('复制失败：' + el.dataset.url)),
   };
 
@@ -859,6 +897,14 @@
     if (t.dataset?.v2gCleanupId) {
       G.cleanupSelected[t.dataset.v2gCleanupId] = !!t.checked;
       render();
+      return;
+    }
+    if (t.dataset?.v2gSidebarPage) {
+      const page = t.dataset.v2gSidebarPage;
+      const inputId = t.id;
+      window.V2Sidebar?.setVisible?.(page, !!t.checked);
+      render();
+      $(inputId)?.focus();
       return;
     }
   });

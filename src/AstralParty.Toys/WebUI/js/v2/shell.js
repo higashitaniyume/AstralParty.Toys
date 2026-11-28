@@ -248,6 +248,91 @@
     syncHostTheme();
   }
 
+  /* ---------- 左侧边栏显示按钮管理（从「概览」到「移动设备」，默认隐藏「组队大厅」） ---------- */
+  const SIDEBAR_STORAGE_KEY = 'v2HiddenSidebarPages';
+  const SIDEBAR_DEFAULT_HIDDEN = ['hub'];
+  const SIDEBAR_ITEMS = [
+    { page: 'home', label: '概览', desc: '启动游戏、状态总览与快捷入口' },
+    { page: 'tools', label: '回放', desc: '本地回放库与对局复盘分析' },
+    { page: 'speedhack', label: '变速', desc: '游戏倍速与变速模式控制' },
+    { page: 'mods', label: '模组', desc: '加载器安装、模组开关与配置' },
+    { page: 'workshop', label: '市场', desc: '社区模组与资源包浏览安装' },
+    { page: 'skins', label: '自定义', desc: '角色皮肤、卡牌皮肤、音效、字体与主页背景' },
+    { page: 'profiles', label: '游戏多开', desc: '独立账号档案与多开启动管理' },
+    { page: 'hub', label: '组队大厅', desc: '联机找车、组队房间与个人名片', defaultHidden: true },
+    { page: 'devices', label: '移动设备', desc: 'USB 连接 iOS / 安卓设备管理' },
+  ];
+  const SIDEBAR_PAGE_SET = new Set(SIDEBAR_ITEMS.map(item => item.page));
+
+  function normalizeHiddenSidebarPages(pages) {
+    if (pages == null) return [...SIDEBAR_DEFAULT_HIDDEN];
+    const set = new Set((Array.isArray(pages) ? pages : []).map(p => String(p || '').trim()));
+    return SIDEBAR_ITEMS.filter(item => set.has(item.page)).map(item => item.page);
+  }
+
+  function readCachedHiddenSidebarPages() {
+    try {
+      const raw = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+      if (raw == null) return [...SIDEBAR_DEFAULT_HIDDEN];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? normalizeHiddenSidebarPages(parsed) : [...SIDEBAR_DEFAULT_HIDDEN];
+    } catch {
+      return [...SIDEBAR_DEFAULT_HIDDEN];
+    }
+  }
+
+  let hiddenSidebarPages = readCachedHiddenSidebarPages();
+  let sidebarUserNavigated = false;
+
+  function applySidebarVisibility(pages, { persist = false, syncHost = false, allowInitialRedirect = false } = {}) {
+    hiddenSidebarPages = normalizeHiddenSidebarPages(pages);
+    const hiddenSet = new Set(hiddenSidebarPages);
+    document.querySelectorAll('.nav-crumb-btn').forEach(btn => {
+      const page = btn.dataset.page;
+      if (SIDEBAR_PAGE_SET.has(page)) {
+        btn.hidden = hiddenSet.has(page);
+      } else if (page === 'settings') {
+        btn.hidden = false;
+      }
+    });
+    if (persist) {
+      try { localStorage.setItem(SIDEBAR_STORAGE_KEY, JSON.stringify(hiddenSidebarPages)); } catch { /* 存不了只影响下次启动首帧 */ }
+    }
+    if (syncHost) {
+      post({ type: 'setSidebarHiddenPages', hiddenPages: hiddenSidebarPages });
+    }
+    if (allowInitialRedirect && !sidebarUserNavigated && AppState.currentPage === 'home' && hiddenSet.has('home')) {
+      const fallback = SIDEBAR_ITEMS.find(item => !hiddenSet.has(item.page))?.page || 'settings';
+      window.showPage?.(fallback, { immediate: true });
+    }
+  }
+
+  window.V2Sidebar = {
+    items: SIDEBAR_ITEMS,
+    defaultHidden: [...SIDEBAR_DEFAULT_HIDDEN],
+    getHidden: () => [...hiddenSidebarPages],
+    isHidden: page => hiddenSidebarPages.includes(page),
+    isDefault: () => hiddenSidebarPages.length === SIDEBAR_DEFAULT_HIDDEN.length
+      && SIDEBAR_DEFAULT_HIDDEN.every((p, i) => hiddenSidebarPages[i] === p),
+    setVisible(page, visible) {
+      if (!SIDEBAR_PAGE_SET.has(page)) return;
+      const set = new Set(hiddenSidebarPages);
+      if (visible) set.delete(page);
+      else set.add(page);
+      applySidebarVisibility([...set], { persist: true, syncHost: true });
+    },
+    showAll() {
+      applySidebarVisibility([], { persist: true, syncHost: true });
+    },
+    resetDefault() {
+      applySidebarVisibility(SIDEBAR_DEFAULT_HIDDEN, { persist: true, syncHost: true });
+    },
+    syncFromSettings(settings) {
+      if (!Array.isArray(settings?.hiddenSidebarPages)) return;
+      applySidebarVisibility(settings.hiddenSidebarPages, { persist: true, syncHost: false, allowInitialRedirect: true });
+    },
+  };
+
   // 标题栏「当前目标」切换器：本机游戏档案 + 已发现的移动设备，一个列表里选。
   // 本机条目沿用 gameProfileSetActive（会同步模组/变速器状态），设备条目发 targetSetActive；
   // 两边都由宿主写 active-target.json，然后广播 targetChanged。
@@ -782,6 +867,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     mountTopbar();
     mountThemeButton();
+    applySidebarVisibility(hiddenSidebarPages, { persist: false, syncHost: false, allowInitialRedirect: true });
     renderHome();
 
     // 游戏多开的删除确认换成统一的弹窗；真正删除的消息和原版一样
@@ -798,6 +884,7 @@
         return;
       }
       const a = e.target.closest('[data-v2]'), p = e.target.closest('[data-v2page]');
+      if (e.target.closest('.nav-crumb-btn') || p) sidebarUserNavigated = true;
       if (a && !a.disabled) actions[a.dataset.v2]?.(a);
       if (p) showPage(p.dataset.v2page);
     });

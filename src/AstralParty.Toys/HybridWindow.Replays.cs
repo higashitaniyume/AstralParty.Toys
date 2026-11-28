@@ -450,6 +450,7 @@ public partial class HybridWindow
         keepInGame = _libraryService.Settings.KeepInGame,
         capacity = ReplayLibraryService.GameSlotCapacity,
         language = _libraryService.Settings.Language,
+        hiddenSidebarPages = AppConfigStore.Load().App.HiddenSidebarPages ?? [.. AppConfigSection.DefaultHiddenSidebarPages],
         workshopUrl = _libraryService.Settings.WorkshopUrl,
         defaultWorkshopUrl = WorkshopService.DefaultBaseUrl,
         workshopDownloadThreads = _libraryService.Settings.WorkshopDownloadThreads,

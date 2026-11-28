@@ -42,6 +42,7 @@ public sealed class ToysConfig
 
         App.Language = AppLanguage.Normalize(App.Language);
         App.Theme = string.Equals(App.Theme, "light", StringComparison.OrdinalIgnoreCase) ? "light" : "dark";
+        App.HiddenSidebarPages = AppConfigSection.NormalizeHiddenSidebarPages(App.HiddenSidebarPages);
 
         Logging.Level = ToysLog.NormalizeLevel(Logging.Level);
         Logging.RetentionDays = Math.Clamp(Logging.RetentionDays, 1, 365);
@@ -69,6 +70,15 @@ public sealed class ToysConfig
 
 public sealed class AppConfigSection
 {
+    /// <summary>可在设置中控制显示/隐藏的左侧边栏入口（按界面展示顺序，从「概览」到「移动设备」）。</summary>
+    public static readonly IReadOnlyList<string> ManageableSidebarPages =
+    [
+        "home", "tools", "speedhack", "mods", "workshop", "skins", "profiles", "hub", "devices"
+    ];
+
+    /// <summary>默认隐藏的左侧边栏入口。</summary>
+    public static readonly IReadOnlyList<string> DefaultHiddenSidebarPages = ["hub"];
+
     /// <summary>界面与配表语言（zh-Hans, zh-Hant, en, ja）。</summary>
     public string Language { get; set; } = AppLanguage.SimplifiedChinese;
 
@@ -77,6 +87,30 @@ public sealed class AppConfigSection
 
     /// <summary>「我的账号」免责说明是否已同意。</summary>
     public bool MyAccountConsent { get; set; }
+
+    /// <summary>
+    /// 左侧边栏隐藏的入口列表。
+    /// 为 <c>null</c> 表示尚未自定义（含旧版升级），归一化后采用默认值（仅隐藏 <c>hub</c>）；
+    /// 显式空列表 <c>[]</c> 表示全部显示。
+    /// </summary>
+    public List<string>? HiddenSidebarPages { get; set; }
+
+    public static List<string> NormalizeHiddenSidebarPages(IEnumerable<string>? pages)
+    {
+        if (pages is null) return [.. DefaultHiddenSidebarPages];
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var raw in pages)
+        {
+            var trimmed = (raw ?? "").Trim();
+            if (trimmed.Length > 0) set.Add(trimmed);
+        }
+        var normalized = new List<string>();
+        foreach (var page in ManageableSidebarPages)
+        {
+            if (set.Contains(page)) normalized.Add(page);
+        }
+        return normalized;
+    }
 }
 
 public sealed class LoggingConfigSection

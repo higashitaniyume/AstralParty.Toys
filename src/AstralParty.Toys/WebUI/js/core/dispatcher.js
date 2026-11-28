@@ -60,6 +60,7 @@ host?.addEventListener('message', event => {
 
     case 'librarySettings':
       AppState.librarySettings = msg.payload;
+      window.V2Sidebar?.syncFromSettings?.(msg.payload);
       if (msg.payload?.language && msg.payload.language !== window.i18n?.lang) {
         window.i18n?.setLanguage(msg.payload.language, false);
       }

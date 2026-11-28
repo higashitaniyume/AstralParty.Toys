@@ -332,6 +332,69 @@ public sealed class ConfigLocationTests
         Assert.False(result.Ok);
     }
 
+    [Fact]
+    public void ConfigStore_DefaultHiddenSidebarPages_HidesHubByDefault()
+    {
+        using var sandbox = new TestSandbox("ap-sidebar-default");
+        var path = sandbox.Combine(ToysPaths.ConfigFileName);
+
+        var fresh = new ToysConfigStore(path).Load();
+        Assert.Equal(["hub"], fresh.App.HiddenSidebarPages);
+
+        // 旧版配置文件没有 hiddenSidebarPages 字段时同样默认隐藏组队大厅
+        File.WriteAllText(path, "{\"schemaVersion\":1,\"app\":{\"language\":\"zh-Hans\",\"theme\":\"dark\"}}");
+        var migrated = new ToysConfigStore(path).Load();
+        Assert.Equal(["hub"], migrated.App.HiddenSidebarPages);
+    }
+
+    [Fact]
+    public void ConfigStore_HiddenSidebarPages_PreservesEmptyListAndNormalizesEntries()
+    {
+        using var sandbox = new TestSandbox("ap-sidebar-norm");
+        var path = sandbox.Combine(ToysPaths.ConfigFileName);
+        var store = new ToysConfigStore(path);
+
+        // 显式全选（空隐藏列表）必须持久保留为 []，不能回退到默认 ["hub"]
+        store.Update(cfg => cfg.App.HiddenSidebarPages = []);
+        var allShown = new ToysConfigStore(path).Load();
+        Assert.NotNull(allShown.App.HiddenSidebarPages);
+        Assert.Empty(allShown.App.HiddenSidebarPages);
+
+        // 大小写去重、按侧边栏顺序归整、过滤掉不允许隐藏或未知页面
+        store.Update(cfg => cfg.App.HiddenSidebarPages =
+            ["DEVICES", "settings", "wiki", "home", "hub", "home", "unknown"]);
+        store.Update(cfg => cfg.App.Theme = "light");
+
+        var loaded = new ToysConfigStore(path).Load();
+        Assert.Equal(["home", "hub", "devices"], loaded.App.HiddenSidebarPages);
+        Assert.Equal("light", loaded.App.Theme);
+    }
+
+    [Fact]
+    public void WebUi_SidebarVisibilityControls_CoverHomeToDevicesAndHideHubByDefault()
+    {
+        var indexHtml = Web("index.html");
+        var layoutCss = Web("css/v2-layout.css");
+        var shellJs = Web("js/v2/shell.js");
+        var settingsJs = Web("js/v2/settings.js");
+        var dispatcherJs = Web("js/core/dispatcher.js");
+
+        Assert.Contains("data-page=\"hub\" hidden", indexHtml);
+        Assert.Contains(".nav-crumb-btn[hidden] { display: none !important; }", layoutCss);
+
+        foreach (var page in AppConfigSection.ManageableSidebarPages)
+        {
+            Assert.Contains($"page: '{page}'", shellJs);
+        }
+
+        Assert.Contains("SIDEBAR_DEFAULT_HIDDEN = ['hub']", shellJs);
+        Assert.Contains("type: 'setSidebarHiddenPages'", shellJs);
+        Assert.Contains("V2Sidebar?.syncFromSettings", dispatcherJs);
+        Assert.Contains("<fieldset class=\"v2-sidebar-fieldset\">", settingsJs);
+        Assert.Contains("<legend class=\"v2-sr-only\">", settingsJs);
+        Assert.Contains("data-v2g-sidebar-page=", settingsJs);
+    }
+
     /// <summary>读内嵌的 WebUI 文件（页面与脚本都在程序集里）。</summary>
     private static string Web(string path)
     {

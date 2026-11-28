@@ -34,6 +34,28 @@ public partial class HybridWindow
 
     private bool HandleUiThemeMessage(string? type, JsonElement root)
     {
+        if (type == "setSidebarHiddenPages")
+        {
+            List<string>? requested = null;
+            if (root.TryGetProperty("hiddenPages", out var pagesEl) && pagesEl.ValueKind == JsonValueKind.Array)
+            {
+                requested = [];
+                foreach (var item in pagesEl.EnumerateArray())
+                {
+                    if (item.ValueKind == JsonValueKind.String)
+                        requested.Add(item.GetString() ?? "");
+                }
+            }
+            var normalized = AppConfigSection.NormalizeHiddenSidebarPages(requested);
+            try
+            {
+                AppConfigStore.Update(config => config.App.HiddenSidebarPages = normalized);
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+            Post(new { type = "librarySettings", payload = BuildLibrarySettingsPayload() });
+            return true;
+        }
         if (type != "uiThemeChanged") return false;
         bool light = root.TryGetProperty("light", out var value) && value.ValueKind == JsonValueKind.True;
         ApplyWindowBackground(light);

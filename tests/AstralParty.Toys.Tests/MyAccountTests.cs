@@ -574,9 +574,8 @@ public sealed class MyAccountTests : IDisposable
     [Fact]
     public void AccountNavigationIsAlwaysVisibleWithoutAnInterfaceToggle()
     {
-        // 「我的账号」已并入「组队大厅」子页面，左侧导航固定展示组队大厅入口（无隐藏开关）
-        Assert.Contains("class=\"nav-crumb-btn\" data-page=\"hub\">", Web("index.html"));
-        Assert.DoesNotContain("data-page=\"hub\" hidden", Web("index.html"));
+        // 「我的账号」已并入「组队大厅」子页面，不再保留独立的「我的账号」导航开关；组队大厅入口由设置中的侧边栏管理控制且默认隐藏
+        Assert.Contains("class=\"nav-crumb-btn\" data-page=\"hub\" hidden>", Web("index.html"));
         Assert.DoesNotContain("data-page=\"account\" hidden", Web("index.html"));
         Assert.Contains("showPage?.('account')", Web("js/hub/module.js"));
         var router = Web("js/core/router.js");
